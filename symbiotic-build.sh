@@ -99,6 +99,12 @@ clean_and_exit()
 	exit $CODE
 }
 
+build()
+{
+	make "$OPTS" $CFLAGS $CPPFLAGS $LDFLAGS $1 || exit 1
+	return 0
+}
+
 # download llvm-3.2 and unpack
 if [ $FROM -eq 0 ]; then
 	if [ ! -d 'llvm-3.2.src' ]; then
@@ -128,7 +134,7 @@ if [ $FROM -eq 0 ]; then
 	fi
 
 	# build llvm
-	make "$OPTS" || exit 1
+	build
 
 	# we need build binaries
 
@@ -155,7 +161,7 @@ if [ $FROM -le 1 ]; then
 			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
 	fi
 
-	(make "$OPTS" && make install) || exit 1
+	(build && make install) || exit 1
 	cd -
 fi
 
@@ -171,7 +177,7 @@ if [ $FROM -le 2 ]; then
 			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
 	fi
 
-	(make "$OPTS" && make install) || exit 1
+	(build && make install) || exit 1
 	cd -
 fi
 
@@ -182,7 +188,7 @@ if [ $FROM -le 3 ]; then
 		-DBUILD_SHARED_LIBS:BOOL=OFF \
 		-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
 
-	(make "$OPTS" OPTIMIZE=-O2 CFLAGS_M32=install && make install) || exit 1
+	(build "OPTIMIZE=-O2 CFLAGS_M32=install" && make install) || exit 1
 	cd -
 
 	# we must build llvm once again with configure script (klee needs this)
@@ -196,7 +202,7 @@ if [ $FROM -le 3 ]; then
 			--enable-targets=x86 --enable-docs=no || clean_and_exit 1
 	fi
 
-	make "$OPTS" || exit 1
+	build || exit 1
 	cd -
 fi
 
@@ -214,7 +220,7 @@ if [ $FROM -le 4 ]; then
 		--with-stp=$PREFIX || clean_and_exit 1 "git"
 	fi
 
-	(make "$OPTS" ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_SHARED=0 && make install) || exit 1
+	(build "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_SHARED=0" && make install) || exit 1
 	cd -
 fi
 
