@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Build symbiotic from scratch and setup environment for
 # development if needed
