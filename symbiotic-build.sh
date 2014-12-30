@@ -9,6 +9,16 @@ OPTS="$1"
 
 check()
 {
+	if ! wget --version &>/dev/null; then
+		if ! curl --version &>/dev/null; then
+			echo "Need wget or curl to download files"
+			exit 1
+		fi
+
+		# try replace wget with curl
+		alias wget='curl -O'
+	fi
+
 	if ! python --version 2>&1 | grep -q 'Python 2'; then
 		echo "llvm-3.2 needs python 2 to build"
 		exit 1
