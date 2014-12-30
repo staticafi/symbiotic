@@ -146,7 +146,7 @@ rm -f clang-3.2.src.tar.gz &>/dev/null || exit 1
 
 if [ $FROM -le 1 ]; then
 	# download slicer
-	git clone git://github.com/jirislaby/LLVMSlicer.git
+	git clone git://github.com/mchalupa/LLVMSlicer.git
 	cd LLVMSlicer
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
@@ -162,7 +162,7 @@ fi
 
 if [ $FROM -le 2 ]; then
 	# download svc13
-	git clone git://github.com/jirislaby/svc13.git
+	git clone git://github.com/mchalupa/svc13.git
 	cd svc13
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
