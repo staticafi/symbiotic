@@ -101,7 +101,7 @@ clean_and_exit()
 
 build()
 {
-	make "$OPTS" $CFLAGS $CPPFLAGS $LDFLAGS $1 || exit 1
+	make "$OPTS" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $1 || exit 1
 	return 0
 }
 
