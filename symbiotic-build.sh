@@ -143,6 +143,7 @@ if [ $FROM -eq 0 ]; then
 	mkdir -p $PREFIX/bin
 	cp bin/clang $PREFIX/bin/clang || exit 1
 	cp bin/opt $PREFIX/bin/opt || exit 1
+	cp bin/llvm-link $PREFIX/bin/llvm-link || exit 1
 	cd -
 fi
 
@@ -180,6 +181,10 @@ if [ $FROM -le 2 ]; then
 
 	(build && make install) || exit 1
 	cd -
+
+	# we need klee-log-parser
+	git clone git://github.com/jirislaby/AI_slicing.git
+	cp AI_slicing/klee-log-parser.sh $PREFIX/
 fi
 
 if [ $FROM -le 3 ]; then
