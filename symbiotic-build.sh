@@ -38,7 +38,6 @@ check()
 set_env()
 {
 	export PREFIX=`pwd`/install
-	export PATH=$PREFIX/bin:$PATH
 	export SYMBIOTIC_ENV=1
 }
 
@@ -47,7 +46,10 @@ set_env
 if [ "$OPTS" = "shell" ]; then
 	# stp needs this
 	ulimit -s unlimited
-	# the environment is already set, just exec the shell
+
+	# most of the environment is already set
+	export PATH=$PREFIX/bin:$PATH
+
 	exec $SHELL
 elif [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
