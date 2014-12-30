@@ -233,10 +233,20 @@ if [ $FROM -le 5 ]; then
 		bin/clang \
 		bin/opt \
 		bin/klee \
+		bin/stp \
 		lib/LLVMSlicer.so \
 		lib/LLVMsvc13.so \
 		lib/libkleeRuntest.so \
-		lib/libkleeRuntimeIntrinsic.bca
+		lib/libkleeRuntimeIntrinsic.bca \
+		include/assert.h \
+		include/klee/klee.h \
+		lib.c \
+		build-fix.sh \
+		instrument.sh \
+		process_set.sh \
+		runme \
+		LLVM_SLICER_VERSION \
+		SVC_SCRIPTS_VERSION
 
 	git commit -m "Create Symbiotic distribution `date`"
 	# remove unnecessary files
