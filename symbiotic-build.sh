@@ -92,8 +92,8 @@ if [ ! -d CMakeFiles ]; then
 		-DLLVM_INCLUDE_TESTS=OFF \
 		-DLLVM_ENABLE_TIMESTAMPS=OFF \
 		-DLLVM_TARGETS_TO_BUILD="X86" \
-		-DCMAKE_C_FLAGS_DEBUG="-Og -g" \
-		-DCMAKE_CXX_FLAGS_DEBUG="-Og -g" || clean_and_exit
+		-DCMAKE_C_FLAGS_DEBUG="-O0 -g" \
+		-DCMAKE_CXX_FLAGS_DEBUG="-O0 -g" || clean_and_exit
 fi
 
 # build llvm
