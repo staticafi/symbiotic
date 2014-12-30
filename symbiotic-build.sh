@@ -28,28 +28,29 @@ case $1 in
 	;;
 	'slicer')
 		FROM='1'
+		OPTS="$2"
 	;;
 	'svc13')
 		FROM='2'
+		OPTS="$2"
 	;;
 	'stp')
 		FROM='3'
+		OPTS="$2"
 	;;
 	'klee')
 		FROM='4'
+		OPTS="$2"
 	;;
 	'bin')
 		FROM='5'
+		OPTS="$2"
 	;;
 	*)
 		FROM='0'
 		OPTS="$1"
 	;;
 esac
-
-if [ ! -z "$FROM" ]; then
-	OPTS="$2"
-fi
 
 if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
