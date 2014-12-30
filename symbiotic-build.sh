@@ -240,6 +240,7 @@ if [ $FROM -le 5 ]; then
 		bin/opt \
 		bin/klee \
 		bin/stp \
+		bin/llvm-link \
 		lib/LLVMSlicer.so \
 		lib/LLVMsvc13.so \
 		lib/libkleeRuntest.so \
@@ -251,6 +252,7 @@ if [ $FROM -le 5 ]; then
 		instrument.sh \
 		process_set.sh \
 		runme \
+		klee-log-parser.sh \
 		LLVM_SLICER_VERSION \
 		SVC_SCRIPTS_VERSION
 
