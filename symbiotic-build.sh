@@ -100,14 +100,17 @@ fi
 make "$OPTS" || exit 1
 
 # we need build binaries
-make install DESTDIR=$PREFIX || exit 1
 
 # we need these binaries in symbiotic
-cp bin/clang $PREFIX/bin
-cp bin/opt $PREFIX/bin
+mkdir -p $PREFIX/bin
+cp bin/clang $PREFIX/bin/ || exit 1
+cp bin/opt $PREFIX/bin/ || exit 1
 cd -
 
 export LLVM_DIR=`pwd`/llvm-build-cmake/share/llvm/cmake/
+
+rm -f llvm-3.2.src.tar.gz || exit 1
+rm -f clang-3.2.src.tar.gz || exit 1
 
 # download slicer
 git clone git://github.com/jirislaby/LLVMSlicer.git
