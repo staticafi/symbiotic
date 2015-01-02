@@ -6,7 +6,7 @@
 usage()
 {
 
-	echo "$0 [shell] [no-llvm] [slicer | svc13 | stp | klee | bin] OPTS"
+	echo "$0 [shell] [no-llvm] [slicer | scripts | stp | klee | bin] OPTS"
 	echo "" # new line
 	echo -e "shell   - run shell with environment set"
 	echo -e "no-llvm - skip compiling llvm (assume that llvm is already"
@@ -46,7 +46,7 @@ while [ $# -gt 0 ]; do
 		'slicer')
 			FROM='1'
 		;;
-		'svc13')
+		'scripts')
 			FROM='2'
 		;;
 		'stp')
@@ -196,7 +196,7 @@ fi
 
 
 if [ $FROM -le 2 ]; then
-	# download svc13
+	# download scripts
 	git clone git://github.com/mchalupa/svc13.git
 	cd svc13
 	if [ ! -d CMakeFiles ]; then
