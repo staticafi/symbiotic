@@ -3,6 +3,7 @@
 # Build symbiotic from scratch and setup environment for
 # development if needed
 
+
 export PREFIX=`pwd`/install
 export SYMBIOTIC_ENV=1
 
@@ -54,6 +55,13 @@ esac
 
 if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
+fi
+
+# we don't want to build symbiotic in the same directory as
+# these scripts
+if [ "`dirname $0`" = '.' ]; then
+	echo "Building symbiotic in the directory is forbidden"
+	exit 1
 fi
 
 check()
