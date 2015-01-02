@@ -223,13 +223,13 @@ if [ $FROM -le 3 ]; then
 
 	(build "OPTIMIZE=-O2 CFLAGS_M32=install" && make install) || exit 1
 	cd -
-
-	# we must build llvm once again with configure script (klee needs this)
-	mkdir -p llvm-build-configure
-	cd llvm-build-configure
 fi
 
 if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
+	# we must build llvm once again with configure script (klee needs this)
+	mkdir -p llvm-build-configure
+	cd llvm-build-configure
+
 	# configure llvm if not done yet
 	if [ ! -f config.log ]; then
 		../llvm-3.2.src/configure \
