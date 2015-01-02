@@ -179,9 +179,19 @@ export LLVM_DIR=`pwd`/llvm-build-cmake/share/llvm/cmake/
 rm -f llvm-3.2.src.tar.gz &>/dev/null || exit 1
 rm -f clang-3.2.src.tar.gz &>/dev/null || exit 1
 
+git_clone_or_pull()
+{
+	REPO="$1"
+	FOLDER="$2"
+
+	git clone $REPO || (cd $FOLDER && git pull)
+	# do not throw error if pull fails, we can have uncommited
+	# changes that we want there
+}
+
 if [ $FROM -le 1 ]; then
 	# download slicer
-	git clone git://github.com/mchalupa/LLVMSlicer.git
+	git_clone_or_pull https://github.com/mchalupa/LLVMSlicer.git LLVMSlicer
 	cd LLVMSlicer
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
@@ -197,7 +207,7 @@ fi
 
 if [ $FROM -le 2 ]; then
 	# download scripts
-	git clone git://github.com/mchalupa/svc13.git
+	git_clone_or_pull https://github.com/mchalupa/svc13.git svc13
 	cd svc13
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
@@ -210,12 +220,12 @@ if [ $FROM -le 2 ]; then
 	cd -
 
 	# we need klee-log-parser
-	git clone git://github.com/mchalupa/AI_slicing.git
+	git_clone_or_pull https://github.com/mchalupa/AI_slicing.git AI_slicing
 	cp AI_slicing/klee-log-parser.sh $PREFIX/
 fi
 
 if [ $FROM -le 3 ]; then
-	git clone git://github.com/stp/stp.git
+	git_clone_or_pull git://github.com/stp/stp.git stp
 	cd stp
 	cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
 		-DBUILD_SHARED_LIBS:BOOL=OFF \
@@ -244,7 +254,7 @@ fi
 
 if [ $FROM -le 4 ]; then
 	# build klee
-	git clone git://github.com/klee/klee.git
+	git_clone_or_pull git://github.com/klee/klee.git klee
 	cd klee
 
 	if [ ! -f config.log ]; then
