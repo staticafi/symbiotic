@@ -24,7 +24,7 @@ export PREFIX=`pwd`/install
 export SYMBIOTIC_ENV=1
 
 FROM='0'
-NO_LLVM=
+NO_LLVM='0'
 OPTS=
 
 MODE="$1"
