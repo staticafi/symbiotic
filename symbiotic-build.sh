@@ -79,7 +79,7 @@ fi
 # we don't want to build symbiotic in the same directory as
 # these scripts
 if [ "`dirname $0`" = '.' ]; then
-	echo "Building symbiotic in the directory is forbidden"
+	echo "Building symbiotic in this directory is forbidden"
 	exit 1
 fi
 
