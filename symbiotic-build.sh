@@ -210,7 +210,7 @@ if [ $FROM -le 2 ]; then
 	cd -
 
 	# we need klee-log-parser
-	git clone git://github.com/jirislaby/AI_slicing.git
+	git clone git://github.com/mchalupa/AI_slicing.git
 	cp AI_slicing/klee-log-parser.sh $PREFIX/
 fi
 
