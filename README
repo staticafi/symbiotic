@@ -1,0 +1,24 @@
+Building
+======================================================================
+
+Symbiotic must be built in another directory then the sources.
+Baisacally, the usage is:
+
+  symbiotic-build.sh make_options
+
+An example:
+
+$ git clone https://github.com/mchalupa/symbiotic
+$ mkdir build
+$ cd build
+$ ../symbiotic/symbiotic-build.sh -j4
+
+Result is to be in build/install directory and is under git control, so you
+can see the difrences between versions or make an archive using git archive
+command.
+
+If you need to specify paths to header files or libraries, you can do it
+by passing CFLAGS, CPPFLAGS, LDFLAGS environment variables either by exporting
+them beforehead, or by passing them as a make options.
+
+Have fun! ;)
