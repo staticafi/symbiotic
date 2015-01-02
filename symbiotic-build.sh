@@ -3,55 +3,74 @@
 # Build symbiotic from scratch and setup environment for
 # development if needed
 
+usage()
+{
+
+	echo "$0 [shell] [no-llvm] [slicer | svc13 | stp | klee | bin] OPTS"
+	echo "" # new line
+	echo -e "shell   - run shell with environment set"
+	echo -e "no-llvm - skip compiling llvm (assume that llvm is already"
+	echo -e "          present in build directory in folders"
+	echo -e "          llvm-build-cmake and llvm-build-configure)"
+	echo "" # new line
+	echo -e "slicer, svc13"
+	echo -e "klee, bin, stp      - run compilation _from_ this point"
+	echo "" # new line
+	echo -e "OPTS = options for make (i. e. -j8)"
+}
+
 
 export PREFIX=`pwd`/install
 export SYMBIOTIC_ENV=1
 
-FROM=
-case $1 in
-	'shell')
-		# stp needs this
-		ulimit -s unlimited
+FROM='0'
+NO_LLVM=
+OPTS=
 
-		# most of the environment is already set
-		export PATH=$PREFIX/bin:$PATH
+MODE="$1"
 
-		exec $SHELL
-	;;
-	'help')
-		echo "$0 [shell | slicer | svc13 | stp | klee | bin] OPTS"
-		echo -e "\tshell - run shell with environment set"
-		echo -e "\tslicer, svc13, stp"
-		echo -e "\tklee, bin           - run compilation _from_ this point"
-		echo -e "\t                      (dependencies exclusive)"
-		echo -e "\tOPTS = options for make (i. e. -j8)"
-		exit 0
-	;;
-	'slicer')
-		FROM='1'
-		OPTS="$2"
-	;;
-	'svc13')
-		FROM='2'
-		OPTS="$2"
-	;;
-	'stp')
-		FROM='3'
-		OPTS="$2"
-	;;
-	'klee')
-		FROM='4'
-		OPTS="$2"
-	;;
-	'bin')
-		FROM='5'
-		OPTS="$2"
-	;;
-	*)
-		FROM='0'
-		OPTS="$1"
-	;;
-esac
+while [ $# -gt 0 ]; do
+	case $1 in
+		'shell')
+			# stp needs this
+			ulimit -s unlimited
+
+			# most of the environment is already set
+			export PATH=$PREFIX/bin:$PATH
+			exec $SHELL
+		;;
+		'help'|'--help')
+			usage
+			exit 0
+		;;
+		'slicer')
+			FROM='1'
+		;;
+		'svc13')
+			FROM='2'
+		;;
+		'stp')
+			FROM='3'
+		;;
+		'klee')
+			FROM='4'
+		;;
+		'bin')
+			FROM='5'
+		;;
+		'no-llvm')
+			NO_LLVM=1
+		;;
+		*)
+			if [ -z "$OPTS" ]; then
+				OPTS="$1"
+			else
+				OPTS="$OPTS $1"
+			fi
+		;;
+	esac
+	shift
+done
 
 if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
@@ -115,7 +134,7 @@ build()
 }
 
 # download llvm-3.2 and unpack
-if [ $FROM -eq 0 ]; then
+if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	if [ ! -d 'llvm-3.2.src' ]; then
 		wget http://llvm.org/releases/3.2/llvm-3.2.src.tar.gz || exit 1
 		wget http://llvm.org/releases/3.2/clang-3.2.src.tar.gz || exit 1
@@ -208,7 +227,9 @@ if [ $FROM -le 3 ]; then
 	# we must build llvm once again with configure script (klee needs this)
 	mkdir -p llvm-build-configure
 	cd llvm-build-configure
+fi
 
+if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 	# configure llvm if not done yet
 	if [ ! -f config.log ]; then
 		../llvm-3.2.src/configure \
