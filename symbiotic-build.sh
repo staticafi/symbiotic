@@ -284,8 +284,8 @@ if [ $FROM -le 5 ]; then
 		lib/LLVMsvc13.so \
 		lib/libkleeRuntest.so \
 		lib/libkleeRuntimeIntrinsic.bca \
-		include/assert.h \
 		include/klee/klee.h \
+		include/symbiotic.h \
 		lib.c \
 		build-fix.sh \
 		instrument.sh \
