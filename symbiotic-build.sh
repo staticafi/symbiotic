@@ -266,6 +266,10 @@ if [ $FROM -le 4 ]; then
 	fi
 
 	(build "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_SHARED=0" && make install) || exit 1
+
+	# we need klee version
+	git rev-parse --short=8 HEAD > $PREFIX/KLEE_VERSION
+
 	cd -
 fi
 
@@ -291,7 +295,8 @@ if [ $FROM -le 5 ]; then
 		include/symbiotic.h \
 		lib.c \
 		LLVM_SLICER_VERSION \
-		SVC_SCRIPTS_VERSION
+		SVC_SCRIPTS_VERSION \
+		KLEE_VERSION
 
 	git commit -m "Create Symbiotic distribution `date`"
 	# remove unnecessary files
