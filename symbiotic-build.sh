@@ -273,25 +273,23 @@ if [ $FROM -le 5 ]; then
 	cd $PREFIX
 	# create git repository and add all files that we need
 	# then remove the rest and create distribution
+	BINARIES="bin/clang bin/opt bin/klee bin/stp bin/llvm-link"
+	LIBRARIES="lib/LLVMSlicer.so lib/LLVMsvc13.so lib/libkleeRuntest.so\
+			lib/libkleeRuntimeIntrinsic.bca"
+	SCRIPTS="klee-log-parser.sh build-fix.sh instrument.sh\
+		process_set.sh runme"
+
+	#strip binaries, it will save us 500 MB!
+	strip $BINARIES
+
 	git init
 	git add \
-		bin/clang \
-		bin/opt \
-		bin/klee \
-		bin/stp \
-		bin/llvm-link \
-		lib/LLVMSlicer.so \
-		lib/LLVMsvc13.so \
-		lib/libkleeRuntest.so \
-		lib/libkleeRuntimeIntrinsic.bca \
+		$BINARIES \
+		$LIBRARIES \
+		$SCRIPTS \
 		include/klee/klee.h \
 		include/symbiotic.h \
 		lib.c \
-		build-fix.sh \
-		instrument.sh \
-		process_set.sh \
-		runme \
-		klee-log-parser.sh \
 		LLVM_SLICER_VERSION \
 		SVC_SCRIPTS_VERSION
 
