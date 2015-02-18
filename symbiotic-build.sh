@@ -232,6 +232,10 @@ if [ $FROM -le 3 ]; then
 		-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
 
 	(build "OPTIMIZE=-O2 CFLAGS_M32=install" && make install) || exit 1
+
+	# we need stp version
+	git rev-parse --short=8 HEAD > $PREFIX/STP_VERSION
+
 	cd -
 fi
 
@@ -296,6 +300,7 @@ if [ $FROM -le 5 ]; then
 		lib.c \
 		LLVM_SLICER_VERSION \
 		SVC_SCRIPTS_VERSION \
+		STP_VERSION	    \
 		KLEE_VERSION
 
 	git commit -m "Create Symbiotic distribution `date`"
