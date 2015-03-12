@@ -290,7 +290,7 @@ if [ $FROM -le 5 ]; then
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
 	# create git repository and add all files that we need
 	# then remove the rest and create distribution
-	BINARIES="bin/clang bin/opt bin/klee bin/stp bin/llvm-link"
+	BINARIES="bin/clang bin/opt bin/klee bin/llvm-link"
 	LIBRARIES="lib/LLVMSlicer.so lib/LLVMsvc13.so lib/libkleeRuntest.so\
 			lib/libkleeRuntimeIntrinsic.bca"
 	SCRIPTS="klee-log-parser.sh build-fix.sh instrument.sh\
