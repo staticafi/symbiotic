@@ -130,6 +130,12 @@ clean_and_exit()
 	exit $CODE
 }
 
+exitmsg()
+{
+	echo "$1" >/dev/stderr
+	exit 1
+}
+
 build()
 {
 	make "$OPTS" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $1 || exit 1
@@ -150,7 +156,7 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	fi
 
 	mkdir -p llvm-build-cmake
-	cd llvm-build-cmake
+	cd llvm-build-cmake || exitmsg "downloading failed"
 
 	# configure llvm
 	if [ ! -d CMakeFiles ]; then
@@ -194,7 +200,7 @@ git_clone_or_pull()
 if [ $FROM -le 1 ]; then
 	# download slicer
 	git_clone_or_pull https://github.com/mchalupa/LLVMSlicer.git LLVMSlicer
-	cd LLVMSlicer
+	cd LLVMSlicer || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
 			-DLLVM_SRC_PATH=../llvm-3.2.src/ \
@@ -210,7 +216,7 @@ fi
 if [ $FROM -le 2 ]; then
 	# download scripts
 	git_clone_or_pull https://github.com/mchalupa/svc13.git svc13
-	cd svc13
+	cd svc13 || exitmsg "Clonging failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
 			-DLLVM_SRC_PATH=../llvm-3.2.src/ \
@@ -228,7 +234,7 @@ fi
 
 if [ $FROM -le 3 ]; then
 	git_clone_or_pull git://github.com/stp/stp.git stp
-	cd stp
+	cd stp || exitmsg "Clonging failed"
 	cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
 		-DBUILD_SHARED_LIBS:BOOL=OFF \
 		-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
@@ -243,8 +249,9 @@ fi
 
 if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 	# we must build llvm once again with configure script (klee needs this)
-	mkdir -p llvm-build-configure
+	mkdir -p llvm-build-configure || exitmsg "Creating building directory failed"
 	cd llvm-build-configure
+
 
 	# configure llvm if not done yet
 	if [ ! -f config.log ]; then
@@ -261,7 +268,7 @@ fi
 if [ $FROM -le 4 ]; then
 	# build klee
 	git_clone_or_pull git://github.com/klee/klee.git klee
-	cd klee
+	cd klee || exitmsg "Clonging failed"
 
 	if [ ! -f config.log ]; then
 	./configure \
@@ -280,7 +287,7 @@ if [ $FROM -le 4 ]; then
 fi
 
 if [ $FROM -le 5 ]; then
-	cd $PREFIX
+	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
 	# create git repository and add all files that we need
 	# then remove the rest and create distribution
 	BINARIES="bin/clang bin/opt bin/klee bin/stp bin/llvm-link"
