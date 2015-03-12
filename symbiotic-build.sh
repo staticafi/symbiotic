@@ -76,6 +76,9 @@ if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
 fi
 
+# create prefix directory
+mkdir -p $PREFIX/bin
+
 # we don't want to build symbiotic in the same directory as
 # these scripts
 if [ "`dirname $0`" = '.' ]; then
@@ -167,7 +170,6 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	# we need build binaries
 
 	# we need these binaries in symbiotic
-	mkdir -p $PREFIX/bin
 	cp bin/clang $PREFIX/bin/clang || exit 1
 	cp bin/opt $PREFIX/bin/opt || exit 1
 	cp bin/llvm-link $PREFIX/bin/llvm-link || exit 1
