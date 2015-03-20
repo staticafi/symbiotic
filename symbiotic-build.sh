@@ -19,7 +19,6 @@ usage()
 	echo -e "OPTS = options for make (i. e. -j8)"
 }
 
-
 export PREFIX=`pwd`/install
 export SYMBIOTIC_ENV=1
 
@@ -138,7 +137,7 @@ exitmsg()
 
 build()
 {
-	make "$OPTS" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $1 || exit 1
+	make "$OPTS" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $@ || exit 1
 	return 0
 }
 
@@ -160,18 +159,21 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 
 	# configure llvm
 	if [ ! -d CMakeFiles ]; then
+		echo 'we should definitely build RelWithDebInfo here, no?'
+		echo 'N.B. we strip below anyway, so why not Release actually?'
 		cmake ../llvm-3.2.src \
 			-DCMAKE_BUILD_TYPE=Debug \
 			-DLLVM_INCLUDE_EXAMPLES=OFF \
 			-DLLVM_INCLUDE_TESTS=OFF \
 			-DLLVM_ENABLE_TIMESTAMPS=OFF \
 			-DLLVM_TARGETS_TO_BUILD="X86" \
+			-DLLVM_ENABLE_PIC=ON \
 			-DCMAKE_C_FLAGS_DEBUG="-O0 -g" \
 			-DCMAKE_CXX_FLAGS_DEBUG="-O0 -g" || clean_and_exit
 	fi
 
 	# build llvm
-	build
+	build "ONLY_TOOLS='opt clang llvm-link llvm-dis'"
 
 	# we need build binaries
 
@@ -236,6 +238,9 @@ if [ $FROM -le 3 ]; then
 	git_clone_or_pull git://github.com/stp/stp.git stp
 	cd stp || exitmsg "Clonging failed"
 	cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
+		-DCMAKE_CXX_FLAGS_RELEASE=-O2 \
+		-DCMAKE_C_FLAGS_RELEASE=-O2 \
+		-DCMAKE_BUILD_TYPE=Release \
 		-DBUILD_SHARED_LIBS:BOOL=OFF \
 		-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
 
@@ -257,7 +262,8 @@ if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 	if [ ! -f config.log ]; then
 		../llvm-3.2.src/configure \
 			--enable-optimized --enable-assertions \
-			--enable-targets=x86 --enable-docs=no || clean_and_exit 1
+			--enable-targets=x86 --enable-docs=no \
+			--enable-timestamps=no || clean_and_exit 1
 	fi
 
 	build || exit 1
@@ -267,18 +273,24 @@ fi
 
 if [ $FROM -le 4 ]; then
 	# build klee
-	git_clone_or_pull git://github.com/klee/klee.git klee
-	cd klee || exitmsg "Clonging failed"
+	git_clone_or_pull git://github.com/klee/klee.git klee || exitmsg "Cloning failed"
+
+	mkdir klee-build/
+	cd klee-build/
 
 	if [ ! -f config.log ]; then
-	./configure \
+	../klee/configure \
 		--prefix=$PREFIX \
 		--with-llvmsrc=../llvm-3.2.src \
 		--with-llvmobj=../llvm-build-configure \
 		--with-stp=$PREFIX || clean_and_exit 1 "git"
 	fi
 
-	(build "ENABLE_OPTIMIZED=1 DISABLE_ASSERTIONS=1 ENABLE_SHARED=0" && make install) || exit 1
+	make -C runtime/Intrinsic CFLAGS=-m32
+	cp Release+Asserts/lib/libkleeRuntimeIntrinsic.bca $PREFIX/lib/libkleeRuntimeIntrinsic_32.bca
+	make -C runtime/Intrinsic clean
+
+	(build "ENABLE_SHARED=0" && make install) || exit 1
 
 	# we need klee version
 	git rev-parse --short=8 HEAD > $PREFIX/KLEE_VERSION
