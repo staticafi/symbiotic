@@ -175,8 +175,6 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	# build llvm
 	ONLY_TOOLS='opt clang llvm-link llvm-dis' build
 
-	# we need build binaries
-
 	# we need these binaries in symbiotic
 	cp bin/clang $PREFIX/bin/clang || exit 1
 	cp bin/opt $PREFIX/bin/opt || exit 1
@@ -298,6 +296,7 @@ if [ $FROM -le 4 ]; then
 
 	make -C runtime/Intrinsic clean
 	rm -f Release+Asserts/lib/libkleeRuntimeIntrinsic.bca*
+
 	(build "ENABLE_SHARED=0" && make install) || exit 1
 
 	# we need klee version
