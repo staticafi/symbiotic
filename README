@@ -14,7 +14,7 @@ $ cd build
 $ ../symbiotic/symbiotic-build.sh -j4
 
 Result is to be in build/install directory and is under git control, so you
-can see the difrences between versions or make an archive using git archive
+can see the differences between versions or make an archive using git archive
 command.
 
 If you need to specify paths to header files or libraries, you can do it
