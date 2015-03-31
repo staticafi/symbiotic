@@ -173,7 +173,7 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	fi
 
 	# build llvm
-	build "ONLY_TOOLS='opt clang llvm-link llvm-dis'"
+	ONLY_TOOLS='opt clang llvm-link llvm-dis' build
 
 	# we need build binaries
 
@@ -286,10 +286,18 @@ if [ $FROM -le 4 ]; then
 		--with-stp=$PREFIX || clean_and_exit 1 "git"
 	fi
 
-	make -C runtime/Intrinsic CFLAGS=-m32
-	cp Release+Asserts/lib/libkleeRuntimeIntrinsic.bca $PREFIX/lib/libkleeRuntimeIntrinsic_32.bca
+	# clean any other previous build (it can be 64-bit)
+	# and build 32-bit version of runtime library
 	make -C runtime/Intrinsic clean
+	rm -f Release+Asserts/lib/libkleeRuntimeIntrinsic.bca*
+	make -C runtime/Intrinsic CFLAGS=-m32
 
+	# create 32-bit version of runtime libraries
+	mkdir -p $PREFIX/lib32
+	cp Release+Asserts/lib/libkleeRuntimeIntrinsic.bca $PREFIX/lib32/libkleeRuntimeIntrinsic.bca
+
+	make -C runtime/Intrinsic clean
+	rm -f Release+Asserts/lib/libkleeRuntimeIntrinsic.bca*
 	(build "ENABLE_SHARED=0" && make install) || exit 1
 
 	# we need klee version
@@ -300,11 +308,13 @@ fi
 
 if [ $FROM -le 5 ]; then
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
+
 	# create git repository and add all files that we need
 	# then remove the rest and create distribution
-	BINARIES="bin/clang bin/opt bin/klee bin/llvm-link"
-	LIBRARIES="lib/LLVMSlicer.so lib/LLVMsvc13.so lib/libkleeRuntest.so\
-			lib/libkleeRuntimeIntrinsic.bca"
+	BINARIES="bin/clang bin/opt bin/klee bin/stp bin/llvm-link"
+	LIBRARIES="lib/LLVMSlicer.so lib/LLVMsvc13.so lib/libkleeRuntest.so \
+			lib/libkleeRuntimeIntrinsic.bca \
+			lib32/libkleeRuntimeIntrinsic.bca"
 	SCRIPTS="klee-log-parser.sh build-fix.sh instrument.sh\
 		process_set.sh runme"
 
