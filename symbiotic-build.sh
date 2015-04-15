@@ -6,15 +6,17 @@
 usage()
 {
 
-	echo "$0 [shell] [no-llvm] [slicer | scripts | stp | klee | bin] OPTS"
+	echo "$0 [shell] [no-llvm] [update] [slicer | scripts | minisat | stp | klee | bin] OPTS"
 	echo "" # new line
 	echo -e "shell   - run shell with environment set"
 	echo -e "no-llvm - skip compiling llvm (assume that llvm is already"
 	echo -e "          present in build directory in folders"
 	echo -e "          llvm-build-cmake and llvm-build-configure)"
+	echo -e "update  - update repositories"
 	echo "" # new line
-	echo -e "slicer, svc13"
-	echo -e "klee, bin, stp      - run compilation _from_ this point"
+	echo -e "slicer, scripts,"
+	echo -e "minisat, stp, klee,"
+	echo -e "bin     - run compilation _from_ this point"
 	echo "" # new line
 	echo -e "OPTS = options for make (i. e. -j8)"
 }
@@ -24,6 +26,7 @@ export SYMBIOTIC_ENV=1
 
 FROM='0'
 NO_LLVM='0'
+UPDATE=
 OPTS=
 
 MODE="$1"
@@ -48,17 +51,23 @@ while [ $# -gt 0 ]; do
 		'scripts')
 			FROM='2'
 		;;
-		'stp')
+		'minisat')
 			FROM='3'
 		;;
-		'klee')
+		'stp')
 			FROM='4'
 		;;
-		'bin')
+		'klee')
 			FROM='5'
+		;;
+		'bin')
+			FROM='6'
 		;;
 		'no-llvm')
 			NO_LLVM=1
+		;;
+		'update')
+			UPDATE=1
 		;;
 		*)
 			if [ -z "$OPTS" ]; then
@@ -189,10 +198,11 @@ rm -f clang-3.2.src.tar.gz &>/dev/null || exit 1
 
 git_clone_or_pull()
 {
+
 	REPO="$1"
 	FOLDER="$2"
 
-	git clone $REPO || (cd $FOLDER && git pull)
+	git clone $REPO || (test "x$UPDATE" = "x1" && cd $FOLDER && git pull)
 	# do not throw error if pull fails, we can have uncommited
 	# changes that we want there
 }
@@ -229,10 +239,22 @@ if [ $FROM -le 2 ]; then
 
 	# we need klee-log-parser
 	git_clone_or_pull https://github.com/mchalupa/AI_slicing.git AI_slicing
-	cp AI_slicing/klee-log-parser.sh $PREFIX/
+	cp AI_slicing/klee-log-parser.sh $PREFIX/ || exit 1
 fi
 
 if [ $FROM -le 3 ]; then
+	git_clone_or_pull git://github.com/niklasso/minisat.git minisat
+	cd minisat
+	(build lr && make prefix=$PREFIX install-headers) || exit 1
+	cp build/release/lib/libminisat.a $PREFIX/lib/ || exit 1
+
+	# we need stp version
+	git rev-parse --short=8 HEAD > $PREFIX/MINISAT_VERSION
+
+	cd -
+fi
+
+if [ $FROM -le 4 ]; then
 	git_clone_or_pull git://github.com/stp/stp.git stp
 	cd stp || exitmsg "Clonging failed"
 	cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
@@ -250,7 +272,7 @@ if [ $FROM -le 3 ]; then
 	cd -
 fi
 
-if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
+if [ $FROM -le 5 -a $NO_LLVM -ne 1 ]; then
 	# we must build llvm once again with configure script (klee needs this)
 	mkdir -p llvm-build-configure || exitmsg "Creating building directory failed"
 	cd llvm-build-configure
@@ -269,7 +291,7 @@ if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 fi
 
 
-if [ $FROM -le 4 ]; then
+if [ $FROM -le 5 ]; then
 	# build klee
 	git_clone_or_pull git://github.com/klee/klee.git klee || exitmsg "Cloning failed"
 
@@ -296,16 +318,17 @@ if [ $FROM -le 4 ]; then
 
 	make -C runtime/Intrinsic clean
 	rm -f Release+Asserts/lib/libkleeRuntimeIntrinsic.bca*
-
 	(build "ENABLE_SHARED=0" && make install) || exit 1
 
 	# we need klee version
+	cd -
+	cd klee
 	git rev-parse --short=8 HEAD > $PREFIX/KLEE_VERSION
 
 	cd -
 fi
 
-if [ $FROM -le 5 ]; then
+if [ $FROM -le 6 ]; then
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
 
 	# create git repository and add all files that we need
@@ -329,11 +352,14 @@ if [ $FROM -le 5 ]; then
 		include/symbiotic.h \
 		lib.c \
 		LLVM_SLICER_VERSION \
+		MINISAT_VERSION \
 		SVC_SCRIPTS_VERSION \
 		STP_VERSION	    \
 		KLEE_VERSION
 
 	git commit -m "Create Symbiotic distribution `date`"
 	# remove unnecessary files
-	git clean -xdf
+# DO NOT: so that the tools are not rebuilt over and over
+# They depend on the installed headers and libs.
+#	git clean -xdf
 fi
