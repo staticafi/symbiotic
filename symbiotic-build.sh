@@ -202,9 +202,17 @@ git_clone_or_pull()
 	REPO="$1"
 	FOLDER="$2"
 
-	git clone $REPO || (test "x$UPDATE" = "x1" && cd $FOLDER && git pull)
-	# do not throw error if pull fails, we can have uncommited
-	# changes that we want there
+	if [ -d "$FOLDER" ]; then
+		if [ "x$UPDATE" = "x1" ]; then
+			# we don't have to cd back, because if git pull fails
+			# the script will be killed
+			cd $FOLDER && git pull
+		fi
+	else
+		git clone $REPO $FOLDER
+	fi
+
+	return 0
 }
 
 if [ $FROM -le 1 ]; then
