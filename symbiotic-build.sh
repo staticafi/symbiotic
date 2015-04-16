@@ -204,9 +204,7 @@ git_clone_or_pull()
 
 	if [ -d "$FOLDER" ]; then
 		if [ "x$UPDATE" = "x1" ]; then
-			# we don't have to cd back, because if git pull fails
-			# the script will be killed
-			cd $FOLDER && git pull
+			cd $FOLDER && git pull && cd -
 		fi
 	else
 		git clone $REPO $FOLDER
