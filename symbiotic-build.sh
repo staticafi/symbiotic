@@ -28,6 +28,7 @@ FROM='0'
 NO_LLVM='0'
 UPDATE=
 OPTS=
+SRCDIR=`dirname $0`
 
 MODE="$1"
 
@@ -244,8 +245,7 @@ if [ $FROM -le 2 ]; then
 	cd -
 
 	# we need klee-log-parser
-	git_clone_or_pull https://github.com/mchalupa/AI_slicing.git AI_slicing
-	cp AI_slicing/klee-log-parser.sh $PREFIX/ || exit 1
+	cp $SRCDIR/scripts/klee-log-parser.sh $PREFIX/ || exit 1
 fi
 
 if [ $FROM -le 3 ]; then
