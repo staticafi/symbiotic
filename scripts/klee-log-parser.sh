@@ -13,12 +13,13 @@ for file in $FILES; do
 	grep -q 'HaltTimer invoked' $file && echo -n 'EKLEETIMEOUT '
 	grep -q 'failed external call' $file && echo -n 'EEXTERNCALL '
 	grep -q 'ERROR: unable to load symbol' $file && echo -n 'ELOADSYM '
-	grep -qE 'memory error|invalid function pointer' $file && echo -n 'EINVALPTR '
+#	grep -qE 'memory error|invalid function pointer' $file && echo -n 'EINVALPTR '
 	grep -q 'LLVM ERROR: Code generator does not support' $file && echo -n 'EINVALINST '
 	grep -q 'klee: .*Assertion .* failed.' $file && echo -n 'EKLEEASSERT '
 	grep -q 'silently concretizing'  $file && echo -n 'ESILENTLYCONCRETIZED '
 	grep -q 'calling .* with extra arguments'  $file && echo -n 'EEXTRAARGS '
 	grep -q 'abort failure'  $file && echo -n 'EABORT '
+	grep -q 'now ignoring this error at this location'  $file && echo -n 'EGENERAL '
 
 	echo "$file"
 done
