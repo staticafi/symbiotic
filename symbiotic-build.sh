@@ -49,16 +49,16 @@ while [ $# -gt 0 ]; do
 		'slicer')
 			FROM='1'
 		;;
-		'scripts')
+		'minisat')
 			FROM='2'
 		;;
-		'minisat')
+		'stp')
 			FROM='3'
 		;;
-		'stp')
+		'klee')
 			FROM='4'
 		;;
-		'klee')
+		'scripts')
 			FROM='5'
 		;;
 		'bin')
@@ -229,26 +229,7 @@ if [ $FROM -le 1 ]; then
 	cd -
 fi
 
-
 if [ $FROM -le 2 ]; then
-	# download scripts
-	git_clone_or_pull https://github.com/mchalupa/svc13.git svc13
-	cd svc13 || exitmsg "Clonging failed"
-	if [ ! -d CMakeFiles ]; then
-		cmake . \
-			-DLLVM_SRC_PATH=../llvm-3.2.src/ \
-			-DLLVM_BUILD_PATH=../llvm-build-cmake/ \
-			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
-	fi
-
-	(build && make install) || exit 1
-	cd -
-
-	# we need klee-log-parser
-	cp $SRCDIR/scripts/klee-log-parser.sh $PREFIX/ || exit 1
-fi
-
-if [ $FROM -le 3 ]; then
 	git_clone_or_pull git://github.com/niklasso/minisat.git minisat
 	cd minisat
 	(build lr && make prefix=$PREFIX install-headers) || exit 1
@@ -260,7 +241,7 @@ if [ $FROM -le 3 ]; then
 	cd -
 fi
 
-if [ $FROM -le 4 ]; then
+if [ $FROM -le 3 ]; then
 	git_clone_or_pull git://github.com/stp/stp.git stp
 	cd stp || exitmsg "Clonging failed"
 	cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
@@ -278,7 +259,7 @@ if [ $FROM -le 4 ]; then
 	cd -
 fi
 
-if [ $FROM -le 5 -a $NO_LLVM -ne 1 ]; then
+if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 	# we must build llvm once again with configure script (klee needs this)
 	mkdir -p llvm-build-configure || exitmsg "Creating building directory failed"
 	cd llvm-build-configure
@@ -304,7 +285,7 @@ if [ $FROM -le 5 -a $NO_LLVM -ne 1 ]; then
 fi
 
 
-if [ $FROM -le 5 ]; then
+if [ $FROM -le 4 ]; then
 	# build klee
 	git_clone_or_pull git://github.com/klee/klee.git klee || exitmsg "Cloning failed"
 
@@ -343,6 +324,26 @@ if [ $FROM -le 5 ]; then
 
 	cd -
 fi
+
+if [ $FROM -le 5 ]; then
+	# download scripts
+	git_clone_or_pull https://github.com/mchalupa/svc13.git svc13
+	cd svc13 || exitmsg "Clonging failed"
+	if [ ! -d CMakeFiles ]; then
+		cmake . \
+			-DLLVM_SRC_PATH=../llvm-3.2.src/ \
+			-DLLVM_BUILD_PATH=../llvm-build-cmake/ \
+			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
+	fi
+
+	(build && make install) || exit 1
+	cd -
+
+	# we need klee-log-parser
+	cp $SRCDIR/scripts/klee-log-parser.sh $PREFIX/ || exit 1
+fi
+
+
 
 if [ $FROM -le 6 ]; then
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
