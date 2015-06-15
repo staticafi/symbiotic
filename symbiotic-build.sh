@@ -327,9 +327,12 @@ if [ $FROM -le 5 ]; then
 
 	# create 32-bit version of runtime libraries
 	mkdir -p $PREFIX/lib32
-	cp Release+Asserts/lib/libkleeRuntimeIntrinsic.bca $PREFIX/lib32/libkleeRuntimeIntrinsic.bca
+	cp Release+Asserts/lib/libkleeRuntimeIntrinsic.bca \
+		$PREFIX/lib32/libkleeRuntimeIntrinsic.bca \
+		|| exitmsg "Did not build 32-bit klee runtime lib"
 
-	make -C runtime/Intrinsic clean
+	make -C runtime/Intrinsic clean \
+		|| exitmsg "Failed building klee runtime library"
 	rm -f Release+Asserts/lib/libkleeRuntimeIntrinsic.bca*
 	(build "ENABLE_SHARED=0" && make install) || exit 1
 
