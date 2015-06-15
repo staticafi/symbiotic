@@ -283,6 +283,13 @@ if [ $FROM -le 5 -a $NO_LLVM -ne 1 ]; then
 	mkdir -p llvm-build-configure || exitmsg "Creating building directory failed"
 	cd llvm-build-configure
 
+	# on some systems the libxml library is libxml2 library and
+	# the paths are mismatched. Use pkg-config in this case. If it won't
+	# work, user has work to do ^_^
+	if [ pkg-config --exists libxml-2.0 ]; then
+		export CPPFLAGS="$CPPFLAGS `pkg-config --cflags libxml-2.0`"
+		export LDFLAGS="$LDFLAGS `pkg-config --libs libxml-2.0`"
+	fi
 
 	# configure llvm if not done yet
 	if [ ! -f config.log ]; then
