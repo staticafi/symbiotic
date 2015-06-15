@@ -326,9 +326,9 @@ if [ $FROM -le 5 ]; then
 	make -C runtime/Intrinsic CFLAGS=-m32
 
 	# create 32-bit version of runtime libraries
-	mkdir -p $PREFIX/lib32
+	mkdir -p $PREFIX/lib32/klee/runtime
 	cp Release+Asserts/lib/libkleeRuntimeIntrinsic.bca \
-		$PREFIX/lib32/libkleeRuntimeIntrinsic.bca \
+		$PREFIX/lib32/klee/runtime/libkleeRuntimeIntrinsic.bca \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
 
 	make -C runtime/Intrinsic clean \
@@ -349,10 +349,12 @@ if [ $FROM -le 6 ]; then
 
 	# create git repository and add all files that we need
 	# then remove the rest and create distribution
-	BINARIES="bin/clang bin/opt bin/klee bin/stp bin/llvm-link"
-	LIBRARIES="lib/LLVMSlicer.so lib/LLVMsvc13.so lib/libkleeRuntest.so \
-			lib/libkleeRuntimeIntrinsic.bca \
-			lib32/libkleeRuntimeIntrinsic.bca"
+	BINARIES="bin/clang bin/opt bin/klee bin/llvm-link"
+	LIBRARIES="\
+		lib/LLVMSlicer.so lib/LLVMsvc13.so \
+		lib/libkleeRuntest.so \
+		lib/klee/runtime/libkleeRuntimeIntrinsic.bca \
+		lib32/klee/runtime/libkleeRuntimeIntrinsic.bca"
 	SCRIPTS="klee-log-parser.sh build-fix.sh instrument.sh\
 		process_set.sh runme"
 
