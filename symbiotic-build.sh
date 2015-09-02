@@ -87,6 +87,9 @@ fi
 
 # create prefix directory
 mkdir -p $PREFIX/bin
+mkdir -p $PREFIX/lib
+mkdir -p $PREFIX/lib32
+mkdir -p $PREFIX/include
 
 # we don't want to build symbiotic in the same directory as
 # these scripts
@@ -151,17 +154,17 @@ build()
 	return 0
 }
 
-# download llvm-3.2 and unpack
+# download llvm-3.4 and unpack
 if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
-	if [ ! -d 'llvm-3.2.src' ]; then
-		wget http://llvm.org/releases/3.2/llvm-3.2.src.tar.gz || exit 1
-		wget http://llvm.org/releases/3.2/clang-3.2.src.tar.gz || exit 1
+	if [ ! -d 'llvm-3.4' ]; then
+		wget http://llvm.org/releases/3.4/llvm-3.4.src.tar.gz || exit 1
+		wget http://llvm.org/releases/3.4/clang-3.4.src.tar.gz || exit 1
 
-		tar -xf llvm-3.2.src.tar.gz || exit 1
-		tar -xf clang-3.2.src.tar.gz || exit 1
+		tar -xf llvm-3.4.src.tar.gz || exit 1
+		tar -xf clang-3.4.src.tar.gz || exit 1
 
 		# move clang to llvm/tools and rename to clang
-		mv clang-3.2.src llvm-3.2.src/tools/clang
+		mv clang-3.4 llvm-3.4/tools/clang
 	fi
 
 	mkdir -p llvm-build-cmake
@@ -171,7 +174,7 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	if [ ! -d CMakeFiles ]; then
 		echo 'we should definitely build RelWithDebInfo here, no?'
 		echo 'N.B. we strip below anyway, so why not Release actually?'
-		cmake ../llvm-3.2.src \
+		cmake ../llvm-3.4 \
 			-DCMAKE_BUILD_TYPE=Debug \
 			-DLLVM_INCLUDE_EXAMPLES=OFF \
 			-DLLVM_INCLUDE_TESTS=OFF \
@@ -194,33 +197,32 @@ fi
 
 export LLVM_DIR=`pwd`/llvm-build-cmake/share/llvm/cmake/
 
-rm -f llvm-3.2.src.tar.gz &>/dev/null || exit 1
-rm -f clang-3.2.src.tar.gz &>/dev/null || exit 1
+rm -f llvm-3.4.tar.gz &>/dev/null || exit 1
+rm -f clang-3.4.src.tar.gz &>/dev/null || exit 1
 
 git_clone_or_pull()
 {
 
 	REPO="$1"
 	FOLDER="$2"
+	shift;shift
 
 	if [ -d "$FOLDER" ]; then
 		if [ "x$UPDATE" = "x1" ]; then
 			cd $FOLDER && git pull && cd -
 		fi
 	else
-		git clone $REPO $FOLDER
+		git clone $REPO $FOLDER $@
 	fi
-
-	return 0
 }
 
 if [ $FROM -le 1 ]; then
 	# download slicer
-	git_clone_or_pull https://github.com/mchalupa/LLVMSlicer.git LLVMSlicer
+	git_clone_or_pull https://github.com/mchalupa/LLVMSlicer.git LLVMSlicer -b llvm-3.4
 	cd LLVMSlicer || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH=../llvm-3.2.src/ \
+			-DLLVM_SRC_PATH=../llvm-3.4/ \
 			-DLLVM_BUILD_PATH=../llvm-build-cmake/ \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
 	fi
@@ -274,7 +276,7 @@ if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 
 	# configure llvm if not done yet
 	if [ ! -f config.log ]; then
-		../llvm-3.2.src/configure \
+		../llvm-3.4/configure \
 			--enable-optimized --enable-assertions \
 			--enable-targets=x86 --enable-docs=no \
 			--enable-timestamps=no || clean_and_exit 1
@@ -295,7 +297,7 @@ if [ $FROM -le 4 ]; then
 	if [ ! -f config.log ]; then
 	../klee/configure \
 		--prefix=$PREFIX \
-		--with-llvmsrc=../llvm-3.2.src \
+		--with-llvmsrc=../llvm-3.4 \
 		--with-llvmobj=../llvm-build-configure \
 		--with-stp=$PREFIX || clean_and_exit 1 "git"
 	fi
@@ -307,9 +309,9 @@ if [ $FROM -le 4 ]; then
 	make -C runtime/Intrinsic CFLAGS=-m32
 
 	# create 32-bit version of runtime libraries
-	mkdir -p $PREFIX/lib32/klee/runtime
+	# the 64-bit will be installed by 'make install'
 	cp Release+Asserts/lib/libkleeRuntimeIntrinsic.bca \
-		$PREFIX/lib32/klee/runtime/libkleeRuntimeIntrinsic.bca \
+		$PREFIX/lib32/libkleeRuntimeIntrinsic.bca \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
 
 	make -C runtime/Intrinsic clean \
@@ -327,11 +329,11 @@ fi
 
 if [ $FROM -le 5 ]; then
 	# download scripts
-	git_clone_or_pull https://github.com/mchalupa/svc13.git svc13
+	git_clone_or_pull https://github.com/mchalupa/svc13.git svc13 -b port-3.4
 	cd svc13 || exitmsg "Clonging failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH=../llvm-3.2.src/ \
+			-DLLVM_SRC_PATH=../llvm-3.4/ \
 			-DLLVM_BUILD_PATH=../llvm-build-cmake/ \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
 	fi
@@ -354,8 +356,8 @@ if [ $FROM -le 6 ]; then
 	LIBRARIES="\
 		lib/LLVMSlicer.so lib/LLVMsvc13.so \
 		lib/libkleeRuntest.so \
-		lib/klee/runtime/libkleeRuntimeIntrinsic.bca \
-		lib32/klee/runtime/libkleeRuntimeIntrinsic.bca"
+		lib/libkleeRuntimeIntrinsic.bca \
+		lib32/libkleeRuntimeIntrinsic.bca"
 	SCRIPTS="klee-log-parser.sh build-fix.sh instrument.sh\
 		process_set.sh runme"
 
