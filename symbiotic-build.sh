@@ -197,7 +197,7 @@ fi
 
 export LLVM_DIR=`pwd`/llvm-build-cmake/share/llvm/cmake/
 
-rm -f llvm-3.4.tar.gz &>/dev/null || exit 1
+rm -f llvm-3.4.src.tar.gz &>/dev/null || exit 1
 rm -f clang-3.4.src.tar.gz &>/dev/null || exit 1
 
 git_clone_or_pull()
@@ -218,7 +218,7 @@ git_clone_or_pull()
 
 if [ $FROM -le 1 ]; then
 	# download slicer
-	git_clone_or_pull https://github.com/mchalupa/LLVMSlicer.git LLVMSlicer -b llvm-3.4
+	git_clone_or_pull https://github.com/jirislaby/LLVMSlicer.git LLVMSlicer -b llvm-3.4
 	cd LLVMSlicer || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
@@ -228,6 +228,9 @@ if [ $FROM -le 1 ]; then
 	fi
 
 	(build && make install) || exit 1
+
+	# need slicer version
+	git rev-parse --short=8 HEAD > $PREFIX/LLVM_SLICER_VERSION
 	cd -
 fi
 
@@ -269,7 +272,7 @@ if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 	# on some systems the libxml library is libxml2 library and
 	# the paths are mismatched. Use pkg-config in this case. If it won't
 	# work, user has work to do ^_^
-	if [ pkg-config --exists libxml-2.0 ]; then
+	if pkg-config --exists libxml-2.0; then
 		export CPPFLAGS="$CPPFLAGS `pkg-config --cflags libxml-2.0`"
 		export LDFLAGS="$LDFLAGS `pkg-config --libs libxml-2.0`"
 	fi
@@ -302,22 +305,26 @@ if [ $FROM -le 4 ]; then
 		--with-stp=$PREFIX || clean_and_exit 1 "git"
 	fi
 
-	# clean any other previous build (it can be 64-bit)
-	# and build 32-bit version of runtime library
-	make -C runtime/Intrinsic clean
-	rm -f Release+Asserts/lib/libkleeRuntimeIntrinsic.bca*
-	make -C runtime/Intrinsic CFLAGS=-m32
+	# clean runtime libs, it may be 32-bit from last build
+	make -C runtime clean \
+		|| exitmsg "Failed cleaning klee runtime library"
+	rm -f Release+Asserts/lib/kleeRuntimeIntrinsic.bc*
+	# build 64-bit libs and install them to prefix
+	(build "ENABLE_SHARED=0" && make install) || exit 1
 
-	# create 32-bit version of runtime libraries
-	# the 64-bit will be installed by 'make install'
-	cp Release+Asserts/lib/libkleeRuntimeIntrinsic.bca \
-		$PREFIX/lib32/libkleeRuntimeIntrinsic.bca \
+	# clean 64-bit build and build 32-bit version of runtime library
+	make -C runtime clean \
+		|| exitmsg "Failed building klee 32-bit runtime library"
+	rm -f Release+Asserts/lib/kleeRuntimeIntrinsic.bc*
+	make -C runtime/Intrinsic CFLAGS=-m32 ENABLE_SHARED=0 \
+		|| exitmsg "Failed building 32-bit klee runtime library"
+
+	# copy 32-bit library version to prefix
+	mkdir -p $PREFIX/lib32/klee/runtime
+	cp Release+Asserts/lib/kleeRuntimeIntrinsic.bc \
+		$PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
 
-	make -C runtime/Intrinsic clean \
-		|| exitmsg "Failed building klee runtime library"
-	rm -f Release+Asserts/lib/libkleeRuntimeIntrinsic.bca*
-	(build "ENABLE_SHARED=0" && make install) || exit 1
 
 	# we need klee version
 	cd -
@@ -339,6 +346,9 @@ if [ $FROM -le 5 ]; then
 	fi
 
 	(build && make install) || exit 1
+
+	git rev-parse --short=8 HEAD > $PREFIX/SVC_SCRIPTS_VERSION
+
 	cd -
 
 	# we need klee-log-parser
@@ -356,8 +366,8 @@ if [ $FROM -le 6 ]; then
 	LIBRARIES="\
 		lib/LLVMSlicer.so lib/LLVMsvc13.so \
 		lib/libkleeRuntest.so \
-		lib/libkleeRuntimeIntrinsic.bca \
-		lib32/libkleeRuntimeIntrinsic.bca"
+		lib/klee/runtime/kleeRuntimeIntrinsic.bc \
+		lib32/klee/runtime/kleeRuntimeIntrinsic.bc"
 	SCRIPTS="klee-log-parser.sh build-fix.sh instrument.sh\
 		process_set.sh runme"
 
