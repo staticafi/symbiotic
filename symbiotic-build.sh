@@ -218,7 +218,7 @@ git_clone_or_pull()
 
 if [ $FROM -le 1 ]; then
 	# download slicer
-	git_clone_or_pull https://github.com/jirislaby/LLVMSlicer.git LLVMSlicer -b llvm-3.4
+	git_clone_or_pull https://github.com/jirislaby/LLVMSlicer.git LLVMSlicer
 	cd LLVMSlicer || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
