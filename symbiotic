@@ -1,0 +1,294 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import re
+import getopt
+from subprocess import call, Popen, PIPE, STDOUT
+
+# define and compile regular expressions for parsing klee's output
+patterns = {
+    'ASSERTIONFAILED' : re.compile('.*ASSERTION FAIL: verifier assertion failed.*'),
+    'ESTPTIMEOUT' : re.compile('.*query timed out (resolve).*'),
+    'EKLEETIMEOUT' : re.compile('.*HaltTimer invoked.*'),
+    'EEXTENCALL' : re.compile('.*failed external call.*'),
+    'ELOADSYM' : re.compile('.*ERROR: unable to load symbol.*'),
+    'EINVALINST' : re.compile('.*LLVM ERROR: Code generator does not support.*'),
+    'EKLEEASSERT' : re.compile('.*klee: .*Assertion .* failed.*'),
+    'EINITVALS' : re.compile('.*unable to compute initial values.*'),
+    'ESYMSOL' : re.compile('.*unable to get symbolic solution.*'),
+    'ESLIENTLYCONCRETIZED' : re.compile('.*silently concretizing.*'),
+    'EEXTRAARGS' : re.compile('.*calling .* with extra arguments.*'),
+    'EABORT' : re.compile('.*abort failure.*'),
+    'EGENERAL' : re.compile('.*now ignoring this error at this location.*')
+}
+
+enable_debug = True
+got_error = False
+
+def print_svcomp(what):
+    if what == 'ASSERTIONFAILED':
+        print('FALSE')
+    elif what[0] == 'E':
+        got_error = True
+        print('UNKNOWN')
+
+def get_match(line):
+    for (key, pattern) in patterns.iteritems():
+        if pattern.match(line):
+            # return True so that we know we should terminate
+            if key == 'ASSERTIONFAILED':
+                return (key, True)
+            else:
+                return (key, False)
+
+    return (None, False)
+
+def print_stderr(msg, prefix = None, print_newline = True):
+    if not prefix is None:
+        sys.stderr.write(prefix)
+
+    sys.stderr.write(msg)
+    if print_newline:
+        sys.stderr.write('\n')
+
+    sys.stderr.flush()
+
+def err(msg):
+    print_stderr(msg, 'ERR: ')
+    sys.exit(1)
+
+def dbg(msg, print_newline = True):
+    if enable_debug:
+        print_stderr(msg, 'DBG: ', print_newline)
+
+def instrument():
+    pass
+
+def get_symbiotic_dir():
+    return os.path.abspath(os.path.dirname(sys.argv[0]))
+
+def set_environ(is32bit = False):
+    def prepend(env, what):
+        if os.environ.has_key(env):
+            newenv = '{0}:{1}'.format(what, os.environ[env])
+        else:
+            newenv = what
+
+        os.environ[env] = newenv
+
+    symbiotic_dir = get_symbiotic_dir()
+    prepend('PATH', '{0}/bin'.format(symbiotic_dir))
+    prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
+    prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
+    if is32bit:
+        prepend('KLEE_RUNTIME_LIBRARY_PATH',
+                '{0}/lib32/klee/runtime'.format(symbiotic_dir))
+    else:
+        prepend('KLEE_RUNTIME_LIBRARY_PATH',
+                '{0}/lib/klee/runtime'.format(symbiotic_dir))
+
+    dbg(os.environ['PATH'])
+    dbg(os.environ['LD_LIBRARY_PATH'])
+
+def compile_to_llvm(source, is32bit = False, output = None):
+    symbiotic_dir = get_symbiotic_dir()
+
+    cmd = ['clang', '-c', '-emit-llvm', '-I']
+    cmd.append('{0}/include'.format(symbiotic_dir))
+
+    if is32bit:
+        cmd.append('-m32')
+
+    cmd.append('-o')
+    if output is None:
+        llvmfile = '{0}.bc'.format(source[:source.rfind('.')])
+    else:
+        llvmfile = output
+
+    cmd.append(llvmfile)
+
+    dbg(os.environ['PATH'])
+    dbg(os.environ['LD_LIBRARY_PATH'])
+
+def compile_to_llvm(source, is32bit = False, output = None):
+    symbiotic_dir = get_symbiotic_dir()
+
+    cmd = ['clang', '-c', '-emit-llvm', '-I']
+    cmd.append('{0}/include'.format(symbiotic_dir))
+    cmd.append('-include')
+    cmd.append('{0}/include/symbiotic.h'.format(symbiotic_dir))
+
+    if is32bit:
+        cmd.append('-m32')
+
+    cmd.append('-o')
+    if output is None:
+        llvmfile = '{0}.bc'.format(source[:source.rfind('.')])
+    else:
+        llvmfile = output
+
+    cmd.append(llvmfile)
+    cmd.append(source)
+
+    dbg(str(cmd))
+    if call(cmd) != 0:
+        return None
+
+    return llvmfile
+
+def prepare():
+    pass
+
+def get_verifier_funcs(is32bit = False):
+    symbiotic_dir = get_symbiotic_dir()
+    if is32bit:
+        libbc = '{0}/lib32/lib.bc'.format(symbiotic_dir)
+    else:
+        libbc = '{0}/lib/lib.bc'.format(symbiotic_dir)
+
+    if os.path.isfile(libbc):
+        return libbc
+
+    libc = '{0}/lib.c'.format(symbiotic_dir)
+    return compile_to_llvm(libc, is32bit, libbc)
+
+def link(llvmfile, lib):
+    output = '{0}-linked.bc'.format(source[:source.rfind('.')])
+    cmd = ['llvm-link', llvmfile, lib, '-o', output]
+
+    dbg(str(cmd))
+    if call(cmd) != 0:
+        return None
+
+    return output
+
+def slicer(llvmfile, criterion):
+    output = '{0}.sliced'.format(llvmfile[:llvmfile.rfind('.')])
+    cmd = ['llvm-slicer', '-c', criterion, llvmfile]
+
+    dbg(str(cmd))
+    if call(cmd) != 0:
+        return None
+
+    return output
+
+def parse_klee_output(line):
+    dbg(line, False)
+    return get_match(line)
+
+def run_symexe(llvmfile):
+    cmd = ['klee', llvmfile]
+    dbg(str(cmd))
+    process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+
+    found = ''
+    while True:
+        line = process.stdout.readline()
+        if line == '' and process.poll() is not None:
+            break
+
+        nxt, done = parse_klee_output(line)
+
+        if done:
+            process.terminate()
+            process.kill()
+	    found = nxt
+            break
+        elif not nxt is None:
+            found += '{0} '.format(nxt)
+
+    process.wait()
+    return found
+
+class Options(object):
+    def __init__(self, is32bit = True, noslice=False, prp=None, svcomp = False, timeout=0):
+        self.is32bit = is32bit
+        self.prp = prp
+        self.noslice = noslice
+        self.svcomp = svcomp
+        self.timeout = 0
+
+def get_prp(prp):
+    # if property is given in file, read the file
+    if os.path.isfile(prp):
+        f = open(prp, 'r')
+        prp = f.readline()
+        f.close()
+
+    return prp
+
+def parse_command_line():
+    options = Options()
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], None, 
+                                   ['no-slice', '64', 'prp=',
+                                    'debug', 'timeout=', 'sv-comp'])
+                                   # add klee-params
+    except getopt.GetoptError as e:
+        err('{0}'.format(str(e)))
+
+    for opt, arg in opts:
+        if opt == '--no-slice':
+            dbg('Will not slice')
+            options.noslice = True
+        elif opt == '--64':
+            dbg('Will use 64-bit environment')
+            options.is32bit = False
+        elif opt == '--prp':
+            options.prp = get_prp(arg)
+            dbg('Property: {0}'.format(options.prp))
+        elif opt == '--debug':
+            dbg('debug enabled')
+            enable_debug = True
+        elif opt == '--sv-comp':
+            dbg('Output format is sv-comp')
+            options.svcomp = True
+
+    return options, args
+
+def report_results(res, svcomp):
+    dbg(res)
+    if svcomp:
+        if found.startswith('ASSERTIONFAILED'):
+            print('FALSE')
+        elif res == '':
+            print('TRUE')
+        else:
+            print('UNKNOWN')
+    else:
+        print(res)
+
+if __name__ == "__main__":
+    opts, args = parse_command_line()
+    set_environ(opts.is32bit)
+    if len(args) != 1:
+        err('Usage: symbiotic [--64 | --no-slice | prp=property] source')
+
+    source=args[0]
+
+    llvmfile = compile_to_llvm(source, opts.is32bit)
+    if llvmfile is None:
+        err('Failed compiling the source {0}'.format(source))
+
+    lib = get_verifier_funcs(opts.is32bit)
+    if lib is None:
+        err('Failed compiling suppor library')
+
+    linkedfile = link(llvmfile, lib)
+    if linkedfile is None:
+        err('Failed linking library with source')
+
+    if opts.noslice:
+        slicedfile = None
+    else:
+        slicedfile = slicer(linkedfile, '__assert_fail')
+
+    if slicedfile is None:
+        found = run_symexe(linkedfile)
+    else:
+        found = run_symexe(slicedfile)
+
+    report_results(found, opts.svcomp)
+    sys.exit(0)
