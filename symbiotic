@@ -23,8 +23,22 @@ patterns = {
     'EGENERAL' : re.compile('.*now ignoring this error at this location.*')
 }
 
-enable_debug = True
+enable_debug = False
 got_error = False
+
+def run_and_watch(cmd, watch):
+    dbg(' '.join(cmd))
+    process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+
+    while True:
+        line = process.stdout.readline()
+        if line == '' and process.poll() is not None:
+            break
+
+        watch(line)
+
+    process.wait()
+    return process.returncode
 
 def print_svcomp(what):
     if what == 'ASSERTIONFAILED':
@@ -78,7 +92,8 @@ def set_environ(is32bit = False):
         os.environ[env] = newenv
 
     symbiotic_dir = get_symbiotic_dir()
-    prepend('PATH', '{0}/bin'.format(symbiotic_dir))
+    # set path without preprending, we want to use only our stuff
+    os.environ['PATH'] = '{0}/bin'.format(symbiotic_dir)
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
     prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
     if is32bit:
@@ -111,6 +126,9 @@ def compile_to_llvm(source, is32bit = False, output = None):
     dbg(os.environ['PATH'])
     dbg(os.environ['LD_LIBRARY_PATH'])
 
+def dbg_watch(l):
+    dbg(l, False)
+
 def compile_to_llvm(source, is32bit = False, output = None):
     symbiotic_dir = get_symbiotic_dir()
 
@@ -131,8 +149,7 @@ def compile_to_llvm(source, is32bit = False, output = None):
     cmd.append(llvmfile)
     cmd.append(source)
 
-    dbg(str(cmd))
-    if call(cmd) != 0:
+    if run_and_watch(cmd, dbg_watch) != 0:
         return None
 
     return llvmfile
@@ -157,8 +174,7 @@ def link(llvmfile, lib):
     output = '{0}-linked.bc'.format(source[:source.rfind('.')])
     cmd = ['llvm-link', llvmfile, lib, '-o', output]
 
-    dbg(str(cmd))
-    if call(cmd) != 0:
+    if run_and_watch(cmd, dbg_watch) != 0:
         return None
 
     return output
@@ -167,8 +183,7 @@ def slicer(llvmfile, criterion):
     output = '{0}.sliced'.format(llvmfile[:llvmfile.rfind('.')])
     cmd = ['llvm-slicer', '-c', criterion, llvmfile]
 
-    dbg(str(cmd))
-    if call(cmd) != 0:
+    if run_and_watch(cmd, dbg_watch) != 0:
         return None
 
     return output
@@ -222,7 +237,7 @@ def parse_command_line():
     options = Options()
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], None, 
+        opts, args = getopt.getopt(sys.argv[1:], '',
                                    ['no-slice', '64', 'prp=',
                                     'debug', 'timeout=', 'sv-comp'])
                                    # add klee-params
@@ -230,7 +245,11 @@ def parse_command_line():
         err('{0}'.format(str(e)))
 
     for opt, arg in opts:
-        if opt == '--no-slice':
+        if opt == '--debug':
+            dbg('debug enabled')
+            global enable_debug
+            enable_debug = True
+        elif opt == '--no-slice':
             dbg('Will not slice')
             options.noslice = True
         elif opt == '--64':
@@ -239,9 +258,6 @@ def parse_command_line():
         elif opt == '--prp':
             options.prp = get_prp(arg)
             dbg('Property: {0}'.format(options.prp))
-        elif opt == '--debug':
-            dbg('debug enabled')
-            enable_debug = True
         elif opt == '--sv-comp':
             dbg('Output format is sv-comp')
             options.svcomp = True
