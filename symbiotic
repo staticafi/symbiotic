@@ -4,6 +4,7 @@ import sys
 import os
 import re
 import getopt
+import signal
 from subprocess import call, Popen, PIPE, STDOUT
 
 # define and compile regular expressions for parsing klee's output
@@ -25,6 +26,25 @@ patterns = {
 
 enable_debug = False
 got_error = False
+# this is global variable for currently running
+# klee process, so that we can kill it if we need
+# (e. g. on timeout)
+klee_process = None
+
+class Timeout(Exception):
+    pass
+
+def start_timeout(sec):
+    def alarm_handler(signum, data):
+        raise Timeout
+
+    signal.signal(signal.SIGALRM, alarm_handler)
+    signal.alarm(sec)
+
+def stop_timeout():
+    # turn of timeout
+    signal.signal(signal.SIGALRM, signal.SIG_DFL)
+    signal.alarm(0)
 
 def run_and_watch(cmd, watch):
     dbg(' '.join(cmd))
@@ -127,7 +147,8 @@ def compile_to_llvm(source, is32bit = False, output = None):
     dbg(os.environ['LD_LIBRARY_PATH'])
 
 def dbg_watch(l):
-    dbg(l, False)
+    if l != '':
+        dbg(l, False)
 
 def compile_to_llvm(source, is32bit = False, output = None):
     symbiotic_dir = get_symbiotic_dir()
@@ -193,21 +214,23 @@ def parse_klee_output(line):
     return get_match(line)
 
 def run_symexe(llvmfile):
-    cmd = ['klee', llvmfile]
+    cmd = ['klee', '-optimize', llvmfile]
     dbg(str(cmd))
-    process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+
+    global klee_process
+    klee_process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
 
     found = ''
     while True:
-        line = process.stdout.readline()
-        if line == '' and process.poll() is not None:
+        line = klee_process.stdout.readline()
+        if line == '' and klee_process.poll() is not None:
             break
 
         nxt, done = parse_klee_output(line)
 
         if done:
-            process.terminate()
-            process.kill()
+            klee_process.terminate()
+            klee_process.kill()
 	    found = nxt
             break
         elif not nxt is None:
@@ -226,9 +249,10 @@ class Options(object):
 
 def get_prp(prp):
     # if property is given in file, read the file
-    if os.path.isfile(prp):
-        f = open(prp, 'r')
-        prp = f.readline()
+    epath = os.path.expanduser(prp)
+    if os.path.isfile(epath):
+        f = open(epath, 'r')
+        prp = f.readline().strip()
         f.close()
 
     return prp
@@ -258,6 +282,9 @@ def parse_command_line():
         elif opt == '--prp':
             options.prp = get_prp(arg)
             dbg('Property: {0}'.format(options.prp))
+        elif opt == '--timeout':
+            options.timeout = int(arg)
+            dbg('Timeout set to {0} sec'.format(arg))
         elif opt == '--sv-comp':
             dbg('Output format is sv-comp')
             options.svcomp = True
@@ -267,30 +294,25 @@ def parse_command_line():
 def report_results(res, svcomp):
     dbg(res)
     if svcomp:
-        if found.startswith('ASSERTIONFAILED'):
+        if res.startswith('ASSERTIONFAILED'):
             print('FALSE')
         elif res == '':
             print('TRUE')
+        elif res == 'TIMEOUT':
+            print('TIMEOUT')
         else:
             print('UNKNOWN')
     else:
         print(res)
 
-if __name__ == "__main__":
-    opts, args = parse_command_line()
-    set_environ(opts.is32bit)
-    if len(args) != 1:
-        err('Usage: symbiotic [--64 | --no-slice | prp=property] source')
-
-    source=args[0]
-
+def do_it(source, opts):
     llvmfile = compile_to_llvm(source, opts.is32bit)
     if llvmfile is None:
         err('Failed compiling the source {0}'.format(source))
 
     lib = get_verifier_funcs(opts.is32bit)
     if lib is None:
-        err('Failed compiling suppor library')
+        err('Failed compiling support library')
 
     linkedfile = link(llvmfile, lib)
     if linkedfile is None:
@@ -307,4 +329,30 @@ if __name__ == "__main__":
         found = run_symexe(slicedfile)
 
     report_results(found, opts.svcomp)
+
+
+if __name__ == "__main__":
+    opts, args = parse_command_line()
+    set_environ(opts.is32bit)
+    if len(args) != 1:
+        err('Usage: symbiotic [--64 | --timeout=t | --no-slice | prp=property] source')
+
+    source = args[0]
+
+    if opts.timeout != 0:
+        start_timeout(opts.timeout)
+
+    try:
+        do_it(source, opts)
+    except Timeout:
+        sys.stdout.flush()
+        sys.stderr.flush()
+	if not klee_process is None:
+            klee_process.terminate()
+            klee_process.kill()
+
+        report_results('TIMEOUT', opts.svcomp)
+    finally:
+        stop_timeout()
+
     sys.exit(0)
