@@ -24,6 +24,8 @@ usage()
 export PREFIX=`pwd`/install
 export SYMBIOTIC_ENV=1
 
+export LD_LIBRARY_PATH="$PREFIX/lib:$LD_LIBRARY_PATH"
+
 FROM='0'
 NO_LLVM='0'
 UPDATE=
@@ -66,7 +68,7 @@ while [ $# -gt 0 ]; do
 		;;
 		'bin')
 			FROM='7'
-		;;
+		;
 		'no-llvm')
 			NO_LLVM=1
 		;;
@@ -225,8 +227,8 @@ if [ $FROM -le 1 ]; then
 	cd LLVMSlicer || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH=../llvm-3.4/ \
-			-DLLVM_BUILD_PATH=../llvm-build-cmake/ \
+			-DLLVM_SRC_PATH=`pwd`/../llvm-3.4/ \
+			-DLLVM_BUILD_PATH=`pwd`/../llvm-build-cmake/ \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
 	fi
 
@@ -234,6 +236,22 @@ if [ $FROM -le 1 ]; then
 
 	# need slicer version
 	git rev-parse --short=8 HEAD > $PREFIX/LLVM_SLICER_VERSION
+	cd -
+
+	# download new slicer
+	git_clone_or_pull https://github.com/mchalupa/dg dg -b backport-llvm-3.4
+	cd dg || exitmsg "Cloning failed"
+	if [ ! -d CMakeFiles ]; then
+		cmake . \
+			-DLLVM_SRC_PATH=`pwd`/../llvm-3.4/ \
+			-DLLVM_BUILD_PATH=`pwd`/../llvm-build-cmake/ \
+			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
+	fi
+
+	(build && make install) || exit 1
+
+	# need slicer version
+	git rev-parse --short=8 HEAD > $PREFIX/LLVM_NEW_SLICER_VERSION
 	cd -
 fi
 
@@ -297,22 +315,23 @@ if [ $FROM -le 4 ]; then
 	# build klee
 	git_clone_or_pull git://github.com/klee/klee.git klee || exitmsg "Cloning failed"
 
-	mkdir klee-build/
+	mkdir -p klee-build/
 	cd klee-build/
 
 	if [ ! -f config.log ]; then
 	../klee/configure \
 		--prefix=$PREFIX \
-		--with-llvmsrc=../llvm-3.4 \
-		--with-llvmobj=../llvm-build-configure \
+		--with-llvmsrc=`pwd`/../llvm-3.4 \
+		--with-llvmobj=`pwd`/../llvm-build-configure \
 		--with-stp=$PREFIX || clean_and_exit 1 "git"
 	fi
 
 	# clean runtime libs, it may be 32-bit from last build
-	make -C runtime clean \
-		|| exitmsg "Failed cleaning klee runtime library"
-	rm -f Release+Asserts/lib/kleeRuntimeIntrinsic.bc*
+	make -C runtime clean 2>/dev/null
+	rm -f Release+Asserts/lib/kleeRuntimeIntrinsic.bc* 2>/dev/null
+
 	# build 64-bit libs and install them to prefix
+	pwd
 	(build "ENABLE_SHARED=0" && make install) || exit 1
 
 	# clean 64-bit build and build 32-bit version of runtime library
@@ -328,10 +347,9 @@ if [ $FROM -le 4 ]; then
 		$PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
 
-
 	# we need klee version
 	cd -
-	cd klee
+	cd klee || exit 1
 	git rev-parse --short=8 HEAD > $PREFIX/KLEE_VERSION
 
 	cd -
@@ -352,8 +370,8 @@ if [ $FROM -le 6 ]; then
 	cd svc13 || exitmsg "Clonging failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH=../llvm-3.4/ \
-			-DLLVM_BUILD_PATH=../llvm-build-cmake/ \
+			-DLLVM_SRC_PATH=`pwd`/../llvm-3.4/ \
+			-DLLVM_BUILD_PATH=`pwd`/../llvm-build-cmake/ \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
 	fi
 
@@ -365,24 +383,32 @@ if [ $FROM -le 6 ]; then
 
 	# we need klee-log-parser
 	cp $SRCDIR/scripts/klee-log-parser.sh $PREFIX/ || exit 1
-	# and also verify_path.sh
+	# and verify_path.sh
 	cp $SRCDIR/scripts/verify_path.sh $PREFIX/ || exit 1
+	# and also the symbiotic script
+	cp $SRCDIR/symbiotic $PREFIX/ || exit 1
+
+	cd "$SRCDIR"
+	git rev-parse --short=8 HEAD > $PREFIX/SYMBIOTIC_VERSION
+	cd -
 fi
+
 
 if [ $FROM -le 7 ]; then
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
 
 	# create git repository and add all files that we need
 	# then remove the rest and create distribution
-	BINARIES="bin/clang bin/opt bin/klee bin/llvm-link"
+	BINARIES="bin/clang bin/opt bin/klee bin/llvm-link bin/llvm-slicer"
 	LIBRARIES="\
-		lib/LLVMSlicer.so lib/LLVMsvc13.so \
+		lib/libllvmdg.so lib/LLVMSlicer.so lib/LLVMsvc13.so \
 		lib/libkleeRuntest.so \
 		lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		lib32/klee/runtime/kleeRuntimeIntrinsic.bc"
 	SCRIPTS="klee-log-parser.sh build-fix.sh instrument.sh\
 		process_set.sh path_to_ml.pl verify_path.sh runme"
 	CPACHECKER=`find CPAchecker/`
+
 	#strip binaries, it will save us 500 MB!
 	strip $BINARIES
 
@@ -396,6 +422,7 @@ if [ $FROM -le 7 ]; then
 		include/symbiotic.h \
 		lib.c \
 		LLVM_SLICER_VERSION \
+		LLVM_NEW_SLICER_VERSION \
 		MINISAT_VERSION \
 		SVC_SCRIPTS_VERSION \
 		STP_VERSION	    \
