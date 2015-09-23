@@ -24,6 +24,12 @@ patterns = {
     'EGENERAL' : re.compile('.*now ignoring this error at this location.*')
 }
 
+supported_properties = {
+    'REACHCALL'  : 'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )'
+}
+
+unsupported_call = re.compile('.*call to .* is unsupported.*')
+
 enable_debug = False
 got_error = False
 # this is global variable for currently running
@@ -55,7 +61,10 @@ def run_and_watch(cmd, watch):
         if line == '' and process.poll() is not None:
             break
 
-        watch(line)
+        if not watch(line):
+            process.terminate()
+            process.kill()
+            return -1
 
     process.wait()
     return process.returncode
@@ -79,6 +88,8 @@ def get_match(line):
     return (None, False)
 
 def print_stderr(msg, prefix = None, print_newline = True):
+    if msg == '':
+        return
     if not prefix is None:
         sys.stderr.write(prefix)
 
@@ -147,8 +158,8 @@ def compile_to_llvm(source, is32bit = False, output = None):
     dbg(os.environ['LD_LIBRARY_PATH'])
 
 def dbg_watch(l):
-    if l != '':
-        dbg(l, False)
+    dbg(l, False)
+    return True
 
 def compile_to_llvm(source, is32bit = False, output = None):
     symbiotic_dir = get_symbiotic_dir()
@@ -175,8 +186,18 @@ def compile_to_llvm(source, is32bit = False, output = None):
 
     return llvmfile
 
-def prepare():
-    pass
+def prepare(src, svcomp):
+    if not svcomp:
+        return src
+
+    output = '{0}-prepared.bc'.format(src[:src.rfind('.')])
+    cmd = ['opt', '-load', 'LLVMsvc13.so', '-prepare',
+           src, '-o', output]
+
+    if run_and_watch(cmd, dbg_watch) != 0:
+        return None
+
+    return output
 
 def get_verifier_funcs(is32bit = False):
     symbiotic_dir = get_symbiotic_dir()
@@ -209,6 +230,18 @@ def slicer(llvmfile, criterion):
 
     return output
 
+def unsupp_watch(line):
+    dbg(line, False)
+    return not unsupported_call.match(line)
+
+def check_llvmfile(llvmfile):
+    cmd = ['opt', '-load', 'LLVMsvc13.so', '-check-unsupported',
+           '-o', '/dev/null', llvmfile]
+    if run_and_watch(cmd, unsupp_watch) == -1:
+        return False
+
+    return True
+
 def parse_klee_output(line):
     dbg(line, False)
     return get_match(line)
@@ -236,16 +269,8 @@ def run_symexe(llvmfile):
         elif not nxt is None:
             found += '{0} '.format(nxt)
 
-    process.wait()
+    klee_process.wait()
     return found
-
-class Options(object):
-    def __init__(self, is32bit = True, noslice=False, prp=None, svcomp = False, timeout=0):
-        self.is32bit = is32bit
-        self.prp = prp
-        self.noslice = noslice
-        self.svcomp = svcomp
-        self.timeout = 0
 
 def get_prp(prp):
     # if property is given in file, read the file
@@ -256,6 +281,24 @@ def get_prp(prp):
         f.close()
 
     return prp
+
+def check_property(prp):
+    if prp is None:
+        return True
+
+    for r in supported_properties.values():
+        if prp == r:
+            return True
+
+    return False
+
+class Options(object):
+    def __init__(self, is32bit = True, noslice=False, prp=None, svcomp = False, timeout=0):
+        self.is32bit = is32bit
+        self.prp = prp
+        self.noslice = noslice
+        self.svcomp = svcomp
+        self.timeout = 0
 
 def parse_command_line():
     options = Options()
@@ -305,16 +348,26 @@ def report_results(res, svcomp):
     else:
         print(res)
 
+    sys.stdout.flush()
+
 def do_it(source, opts):
     llvmfile = compile_to_llvm(source, opts.is32bit)
     if llvmfile is None:
         err('Failed compiling the source {0}'.format(source))
 
+    if not check_llvmfile(llvmfile):
+        report_results('ECALL unsupported call', opts.svcomp)
+        sys.exit(1)
+
+    prepared = prepare(llvmfile, opts.svcomp)
+    if prepared is None:
+        err('Failed preparing the llvm file')
+
     lib = get_verifier_funcs(opts.is32bit)
     if lib is None:
         err('Failed compiling support library')
 
-    linkedfile = link(llvmfile, lib)
+    linkedfile = link(prepared, lib)
     if linkedfile is None:
         err('Failed linking library with source')
 
@@ -322,6 +375,8 @@ def do_it(source, opts):
         slicedfile = None
     else:
         slicedfile = slicer(linkedfile, '__assert_fail')
+        if slicedfile is None:
+            dbg("Slicing failed, using original file")
 
     if slicedfile is None:
         found = run_symexe(linkedfile)
@@ -343,6 +398,10 @@ if __name__ == "__main__":
         start_timeout(opts.timeout)
 
     try:
+        if not check_property(opts.prp):
+            report_results('EPRP usupported property', opts.svcomp)
+            sys.exit(1)
+
         do_it(source, opts)
     except Timeout:
         sys.stdout.flush()
@@ -355,4 +414,6 @@ if __name__ == "__main__":
     finally:
         stop_timeout()
 
+    sys.stderr.flush()
+    sys.stdout.flush()
     sys.exit(0)
