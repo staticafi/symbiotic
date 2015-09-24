@@ -107,9 +107,6 @@ def dbg(msg, print_newline = True):
     if enable_debug:
         print_stderr(msg, 'DBG: ', print_newline)
 
-def instrument():
-    pass
-
 def get_symbiotic_dir():
     return os.path.abspath(os.path.dirname(sys.argv[0]))
 
@@ -185,6 +182,15 @@ def compile_to_llvm(source, is32bit = False, output = None):
         return None
 
     return llvmfile
+
+def instrument(source):
+    sd = get_symbiotic_dir()
+    cmd = ['/bin/sh', '-c', '{0}/build-fix.sh {1}'.format(sd, source)]
+    if run_and_watch(cmd, dbg_watch) != 0:
+        return None
+
+    # we're instrumenting right into the source
+    return source
 
 def prepare(src, svcomp):
     if not svcomp:
@@ -351,7 +357,16 @@ def report_results(res, svcomp):
     sys.stdout.flush()
 
 def do_it(source, opts):
-    llvmfile = compile_to_llvm(source, opts.is32bit)
+    instrumented = instrument(source)
+    if instrumented is None:
+        err('Failed instrumenting the code')
+
+    # set environ here, because in instrumentation we use
+    # grep and similar commands
+    # FIXME rewrite instrumentation here
+    set_environ(opts.is32bit)
+
+    llvmfile = compile_to_llvm(instrumented, opts.is32bit)
     if llvmfile is None:
         err('Failed compiling the source {0}'.format(source))
 
@@ -388,7 +403,7 @@ def do_it(source, opts):
 
 if __name__ == "__main__":
     opts, args = parse_command_line()
-    set_environ(opts.is32bit)
+    #set_environ(opts.is32bit)
     if len(args) != 1:
         err('Usage: symbiotic [--64 | --timeout=t | --no-slice | prp=property] source')
 
