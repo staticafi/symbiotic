@@ -197,7 +197,7 @@ def prepare(src, svcomp):
         return src
 
     output = '{0}-prepared.bc'.format(src[:src.rfind('.')])
-    cmd = ['opt', '-load', 'LLVMsvc13.so', '-prepare',
+    cmd = ['opt', '-load', 'LLVMsvc13.so', '-prepare', '-delete-undefined',
            src, '-o', output]
 
     if run_and_watch(cmd, dbg_watch) != 0:
