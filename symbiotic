@@ -212,9 +212,6 @@ def get_verifier_funcs(is32bit = False):
     else:
         libbc = '{0}/lib/lib.bc'.format(symbiotic_dir)
 
-    if os.path.isfile(libbc):
-        return libbc
-
     libc = '{0}/lib.c'.format(symbiotic_dir)
     return compile_to_llvm(libc, is32bit, libbc)
 
