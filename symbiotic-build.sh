@@ -58,11 +58,14 @@ while [ $# -gt 0 ]; do
 		'klee')
 			FROM='4'
 		;;
-		'scripts')
+		'cpa')
 			FROM='5'
 		;;
-		'bin')
+		'scripts')
 			FROM='6'
+		;;
+		'bin')
+			FROM='7'
 		;;
 		'no-llvm')
 			NO_LLVM=1
@@ -335,6 +338,16 @@ if [ $FROM -le 4 ]; then
 fi
 
 if [ $FROM -le 5 ]; then
+	if [ ! -d CPAchecker-1.4-unix ]; then
+		wget http://cpachecker.sosy-lab.org/CPAchecker-1.4-unix.tar.bz2 || exit 1
+		tar xf CPAchecker-1.4-unix.tar.bz2 || exit 1
+		rm -f CPAchecker-1.4-unix.tar.bz2
+	fi
+fi
+
+exit 0
+
+if [ $FROM -le 6 ]; then
 	# download scripts
 	git_clone_or_pull https://github.com/mchalupa/svc13.git svc13 -b port-3.4
 	cd svc13 || exitmsg "Clonging failed"
@@ -357,7 +370,7 @@ fi
 
 
 
-if [ $FROM -le 6 ]; then
+if [ $FROM -le 7 ]; then
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
 
 	# create git repository and add all files that we need
