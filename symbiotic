@@ -250,7 +250,7 @@ def parse_klee_output(line):
     return get_match(line)
 
 def run_symexe(llvmfile):
-    cmd = ['klee', '-optimize', llvmfile]
+    cmd = ['klee', '-optimize', '-write-paths', llvmfile]
     dbg(str(cmd))
 
     global klee_process
