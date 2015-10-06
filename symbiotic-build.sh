@@ -68,7 +68,7 @@ while [ $# -gt 0 ]; do
 		;;
 		'bin')
 			FROM='7'
-		;
+		;;
 		'no-llvm')
 			NO_LLVM=1
 		;;
