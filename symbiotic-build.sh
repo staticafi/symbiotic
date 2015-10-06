@@ -342,14 +342,13 @@ if [ $FROM -le 5 ]; then
 		wget http://cpachecker.sosy-lab.org/CPAchecker-1.4-unix.tar.bz2 || exit 1
 		tar xf CPAchecker-1.4-unix.tar.bz2 || exit 1
 		rm -f CPAchecker-1.4-unix.tar.bz2
+		cp -r CPAchecker-1.4-unix $PREFIX/CPAchecker
 	fi
 fi
 
-exit 0
-
 if [ $FROM -le 6 ]; then
 	# download scripts
-	git_clone_or_pull https://github.com/mchalupa/svc13.git svc13 -b port-3.4
+	git_clone_or_pull https://github.com/jirislaby/svc13.git svc13
 	cd svc13 || exitmsg "Clonging failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
@@ -382,8 +381,8 @@ if [ $FROM -le 7 ]; then
 		lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		lib32/klee/runtime/kleeRuntimeIntrinsic.bc"
 	SCRIPTS="klee-log-parser.sh build-fix.sh instrument.sh\
-		process_set.sh runme"
-
+		process_set.sh path_to_ml.pl runme"
+	CPACHECKER=`find CPAchecker/`
 	#strip binaries, it will save us 500 MB!
 	strip $BINARIES
 
@@ -392,6 +391,7 @@ if [ $FROM -le 7 ]; then
 		$BINARIES \
 		$LIBRARIES \
 		$SCRIPTS \
+		$CPACHECKER \
 		include/klee/klee.h \
 		include/symbiotic.h \
 		lib.c \
