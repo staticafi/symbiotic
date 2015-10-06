@@ -365,9 +365,9 @@ if [ $FROM -le 6 ]; then
 
 	# we need klee-log-parser
 	cp $SRCDIR/scripts/klee-log-parser.sh $PREFIX/ || exit 1
+	# and also verify_path.sh
+	cp $SRCDIR/scripts/verify_path.sh $PREFIX/ || exit 1
 fi
-
-
 
 if [ $FROM -le 7 ]; then
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
@@ -381,7 +381,7 @@ if [ $FROM -le 7 ]; then
 		lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		lib32/klee/runtime/kleeRuntimeIntrinsic.bc"
 	SCRIPTS="klee-log-parser.sh build-fix.sh instrument.sh\
-		process_set.sh path_to_ml.pl runme"
+		process_set.sh path_to_ml.pl verify_path.sh runme"
 	CPACHECKER=`find CPAchecker/`
 	#strip binaries, it will save us 500 MB!
 	strip $BINARIES
