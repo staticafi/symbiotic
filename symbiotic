@@ -265,8 +265,11 @@ def run_symexe(llvmfile):
         nxt, done = parse_klee_output(line)
 
         if done:
-            klee_process.terminate()
-            klee_process.kill()
+            # send klee the sigint, so that it
+            # will stop running and dump the traces
+	    klee_process.send_signal(2)
+            #klee_process.terminate()
+            #klee_process.kill()
 	    found = nxt
             break
         elif not nxt is None:
