@@ -406,7 +406,7 @@ if [ $FROM -le 7 ]; then
 		lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		lib32/klee/runtime/kleeRuntimeIntrinsic.bc"
 	SCRIPTS="klee-log-parser.sh build-fix.sh instrument.sh\
-		process_set.sh path_to_ml.pl verify_path.sh runme"
+		process_set.sh path_to_ml.pl verify_path.sh runme symbiotic"
 	CPACHECKER=`find CPAchecker/`
 
 	#strip binaries, it will save us 500 MB!
