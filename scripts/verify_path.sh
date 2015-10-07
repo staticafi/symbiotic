@@ -1,30 +1,10 @@
 DIR=`dirname $0`
-KLEE_OUTPUT_DIR="$1"
 
-get_path_file()
-{
-	KLEE_OUTPUT_DIR="$1"
-	FILE=`ls $KLEE_OUTPUT_DIR | grep assert.err`
-	echo "${FILE%.assert.err}.path"
-}
 
+GRAPHML="$1"
 PRPFILE="$2"
 BENCHMARK="$3"
 BENCHMARKDIR=`dirname "$BENCHMARK"`
-PTH="$KLEE_OUTPUT_DIR/`get_path_file $KLEE_OUTPUT_DIR`"
-GRAPHML="${PTH%.path}.graphml"
-
-if [ ! -f "$PTH" ]; then
-	echo "Failed getting .path file"
-	exit 1
-fi
-
-# convert path file to .graphml
-$DIR/path_to_ml.pl "$PTH" > "$GRAPHML" || exit 1
-if [ ! -f "$GRAPHML" ]; then
-	echo "Failed generating .graphml file"
-	exit 1
-fi
 
 test -z $CPA && CPA="$DIR/CPAchecker/scripts/cpa.sh"
 CPADIR=`dirname $CPA`
