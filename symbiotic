@@ -31,11 +31,16 @@ supported_properties = {
 unsupported_call = re.compile('.*call to .* is unsupported.*')
 
 enable_debug = False
+debug_opts = []
 got_error = False
 # this is global variable for currently running
 # klee process, so that we can kill it if we need
 # (e. g. on timeout)
 klee_process = None
+
+def parse_debug_opts(opts):
+    global debug_opts
+    debug_opts = opts.split(',')
 
 class Timeout(Exception):
     pass
@@ -87,14 +92,22 @@ def get_match(line):
 
     return (None, False)
 
-def print_stderr(msg, prefix = None, print_newline = True):
+def print_stderr(msg, prefix = None, print_nl = True):
+    """
+    Print message to stderr
+
+    @ msg     : str    message to print
+    @ prefix  : str    prefix for the message
+    @print_nl : bool   print new line after the message
+    """
+
     if msg == '':
         return
     if not prefix is None:
         sys.stderr.write(prefix)
 
     sys.stderr.write(msg)
-    if print_newline:
+    if print_nl:
         sys.stderr.write('\n')
 
     sys.stderr.flush()
@@ -103,9 +116,11 @@ def err(msg):
     print_stderr(msg, 'ERR: ')
     sys.exit(1)
 
-def dbg(msg, print_newline = True):
+def dbg(msg, domain = 'all', print_nl = True):
     if enable_debug:
-        print_stderr(msg, 'DBG: ', print_newline)
+        global debug_opts
+        if domain == 'all' or domain in debug_opts:
+            print_stderr(msg, 'DBG: ', print_nl)
 
 def get_symbiotic_dir():
     return os.path.abspath(os.path.dirname(sys.argv[0]))
@@ -131,8 +146,8 @@ def set_environ(is32bit = False):
         prepend('KLEE_RUNTIME_LIBRARY_PATH',
                 '{0}/lib/klee/runtime'.format(symbiotic_dir))
 
-    dbg(os.environ['PATH'])
-    dbg(os.environ['LD_LIBRARY_PATH'])
+    dbg('PATH: {0}'.format(os.environ['PATH']))
+    dbg('LD_LIBRARY_PATH: {0}'.format(os.environ['LD_LIBRARY_PATH']))
 
 def compile_to_llvm(source, is32bit = False, output = None):
     symbiotic_dir = get_symbiotic_dir()
@@ -154,8 +169,8 @@ def compile_to_llvm(source, is32bit = False, output = None):
     dbg(os.environ['PATH'])
     dbg(os.environ['LD_LIBRARY_PATH'])
 
-def dbg_watch(l):
-    dbg(l, False)
+def dbg_watch(l, dbgdomain = 'all'):
+    dbg(l, domain = dbgdomain, print_nl = False)
     return True
 
 def compile_to_llvm(source, is32bit = False, output = None):
@@ -178,7 +193,7 @@ def compile_to_llvm(source, is32bit = False, output = None):
     cmd.append(llvmfile)
     cmd.append(source)
 
-    if run_and_watch(cmd, dbg_watch) != 0:
+    if run_and_watch(cmd, lambda l: dbg_watch(l, 'compile')) != 0:
         return None
 
     return llvmfile
@@ -200,7 +215,7 @@ def prepare(src, svcomp):
     cmd = ['opt', '-load', 'LLVMsvc13.so', '-prepare', '-delete-undefined',
            src, '-o', output]
 
-    if run_and_watch(cmd, dbg_watch) != 0:
+    if run_and_watch(cmd, lambda l: dbg_watch(l, 'prepare')) != 0:
         return None
 
     return output
@@ -219,7 +234,7 @@ def link(llvmfile, lib):
     output = '{0}-linked.bc'.format(source[:source.rfind('.')])
     cmd = ['llvm-link', llvmfile, lib, '-o', output]
 
-    if run_and_watch(cmd, dbg_watch) != 0:
+    if run_and_watch(cmd, lambda l: dbg_watch(l, 'compile')) != 0:
         return None
 
     return output
@@ -228,13 +243,13 @@ def slicer(llvmfile, criterion):
     output = '{0}.sliced'.format(llvmfile[:llvmfile.rfind('.')])
     cmd = ['llvm-slicer', '-c', criterion, llvmfile]
 
-    if run_and_watch(cmd, dbg_watch) != 0:
+    if run_and_watch(cmd, lambda l: dbg_watch(l, 'slicer')) != 0:
         return None
 
     return output
 
 def unsupp_watch(line):
-    dbg(line, False)
+    dbg(line, domain='prepare', print_nl = False)
     return not unsupported_call.match(line)
 
 def check_llvmfile(llvmfile):
@@ -246,7 +261,7 @@ def check_llvmfile(llvmfile):
     return True
 
 def parse_klee_output(line):
-    dbg(line, False)
+    dbg(line, print_nl = False)
     return get_match(line)
 
 def run_symexe(llvmfile):
@@ -312,16 +327,16 @@ def parse_command_line():
     try:
         opts, args = getopt.getopt(sys.argv[1:], '',
                                    ['no-slice', '64', 'prp=',
-                                    'debug', 'timeout=', 'sv-comp'])
+                                    'debug=', 'timeout=', 'sv-comp'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
 
     for opt, arg in opts:
         if opt == '--debug':
-            dbg('debug enabled')
             global enable_debug
             enable_debug = True
+            parse_debug_opts(arg)
         elif opt == '--no-slice':
             dbg('Will not slice')
             options.noslice = True
@@ -400,12 +415,23 @@ def do_it(source, opts):
 
     report_results(found, opts.svcomp)
 
+usage_msg = """
+Usage: symbiotic [--64 | --timeout=t | --no-slice | --sv-comp | --prp=property | --debug=what] source
+
+    --64              Use 64-bit environment
+    --timeout=t       Set timeout to t seconds
+    --no-slice        Do not slice the code
+    --sv-comp         Give output in sv-comp format (FALSE, TRUE, UNKNOWN)
+    --prp=property    Specify property that should hold. Relevant only with sv-comp atm.
+    --debug=what      Print debug messages, what can be comma separated list of: all, compile, prepare, slicer
+                      In that case you get verbose output. You can just use --debug= to print basic messages.
+"""
 
 if __name__ == "__main__":
     opts, args = parse_command_line()
     #set_environ(opts.is32bit)
     if len(args) != 1:
-        err('Usage: symbiotic [--64 | --timeout=t | --no-slice | prp=property] source')
+        err(usage_msg)
 
     source = args[0]
 
