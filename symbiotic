@@ -76,13 +76,6 @@ def run_and_watch(cmd, watch):
     process.wait()
     return process.returncode
 
-def print_svcomp(what):
-    if what == 'ASSERTIONFAILED':
-        print('FALSE')
-    elif what[0] == 'E':
-        got_error = True
-        print('UNKNOWN')
-
 def get_match(line):
     for (key, pattern) in patterns.iteritems():
         if pattern.match(line):
@@ -151,26 +144,6 @@ def set_environ(is32bit = False):
     dbg('PATH: {0}'.format(os.environ['PATH']))
     dbg('LD_LIBRARY_PATH: {0}'.format(os.environ['LD_LIBRARY_PATH']))
 
-def compile_to_llvm(source, is32bit = False, output = None):
-    symbiotic_dir = get_symbiotic_dir()
-
-    cmd = ['clang', '-c', '-emit-llvm', '-I']
-    cmd.append('{0}/include'.format(symbiotic_dir))
-
-    if is32bit:
-        cmd.append('-m32')
-
-    cmd.append('-o')
-    if output is None:
-        llvmfile = '{0}.bc'.format(source[:source.rfind('.')])
-    else:
-        llvmfile = output
-
-    cmd.append(llvmfile)
-
-    dbg(os.environ['PATH'])
-    dbg(os.environ['LD_LIBRARY_PATH'])
-
 def dbg_watch(l, dbgdomain = 'all'):
     dbg(l, domain = dbgdomain, print_nl = False)
     return True
@@ -180,8 +153,6 @@ def compile_to_llvm(source, is32bit = False, output = None):
 
     cmd = ['clang', '-c', '-emit-llvm', '-I']
     cmd.append('{0}/include'.format(symbiotic_dir))
-    cmd.append('-include')
-    cmd.append('{0}/include/symbiotic.h'.format(symbiotic_dir))
 
     if is32bit:
         cmd.append('-m32')
@@ -295,6 +266,26 @@ def run_symexe(llvmfile):
     klee_process.wait()
     return found
 
+def generate_graphml(path, saveto):
+    if saveto is None:
+        saveto = '{0}.graphml'.format(os.path.basename(path))
+
+    dbg('Generating counterexample: {0}'.format(saveto))
+    dbg('counterexample from: {0}'.format(path))
+    bindir = os.path.dirname(sys.argv[0])
+    f = open('/dev/null', 'r')
+    ret = call(['{0}/path_to_ml.pl {1} > {2}'.format(bindir, path, saveto)],
+               shell=True, stdout = f, stderr = f)
+    if ret != 0:
+        dbg('Generating witness failed')
+
+def generate_counterexample(bindir, saveto = None):
+    for path in os.listdir('{0}/klee-last'.format(bindir)):
+        if 'assert' in path:
+            pth = os.path.abspath('{0}/klee-last/{1}.path'.format(bindir, path[:-11]))
+            generate_graphml(pth, saveto)
+            break
+
 def get_prp(prp):
     # if property is given in file, read the file
     epath = os.path.expanduser(prp)
@@ -362,19 +353,22 @@ def parse_command_line():
 
 def report_results(res, svcomp):
     dbg(res)
+    result = res
+
     if svcomp:
         if res.startswith('ASSERTIONFAILED'):
-            print('FALSE')
+            result = 'FALSE'
         elif res == '':
-            print('TRUE')
+            result = 'TRUE'
         elif res == 'TIMEOUT':
-            print('TIMEOUT')
+            result = 'TIMEOUT'
         else:
-            print('UNKNOWN')
-    else:
-        print(res)
+            result = 'UNKNOWN'
 
+    print(result)
     sys.stdout.flush()
+
+    return result
 
 def do_it(source, opts):
     instrumented = instrument(source)
@@ -418,7 +412,7 @@ def do_it(source, opts):
     else:
         found = run_symexe(slicedfile)
 
-    report_results(found, opts.svcomp)
+    return report_results(found, opts.svcomp)
 
 usage_msg = """
 Usage: symbiotic [--64 | --timeout=t | --no-slice | --sv-comp | --prp=property | --debug=what] source
@@ -448,7 +442,13 @@ if __name__ == "__main__":
             report_results('EPRP usupported property', opts.svcomp)
             sys.exit(1)
 
-        do_it(source, opts)
+        res = do_it(source, opts)
+
+        if res == 'FALSE' or res == 'ASSERTIONFAILED':
+            srcdir = os.path.dirname(source)
+            saveto = '{0}/{1}.graphml'.format(srcdir,
+                                              os.path.basename(source))
+            generate_counterexample(srcdir, saveto)
     except Timeout:
         sys.stdout.flush()
         sys.stderr.flush()
@@ -459,7 +459,7 @@ if __name__ == "__main__":
         report_results('TIMEOUT', opts.svcomp)
     finally:
         stop_timeout()
+        sys.stderr.flush()
+        sys.stdout.flush()
 
-    sys.stderr.flush()
-    sys.stdout.flush()
     sys.exit(0)

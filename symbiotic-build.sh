@@ -180,7 +180,7 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 		echo 'we should definitely build RelWithDebInfo here, no?'
 		echo 'N.B. we strip below anyway, so why not Release actually?'
 		cmake ../llvm-3.4 \
-			-DCMAKE_BUILD_TYPE=Debug \
+			-DCMAKE_BUILD_TYPE=Release\
 			-DLLVM_INCLUDE_EXAMPLES=OFF \
 			-DLLVM_INCLUDE_TESTS=OFF \
 			-DLLVM_ENABLE_TIMESTAMPS=OFF \
