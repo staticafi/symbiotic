@@ -7,6 +7,8 @@ import getopt
 import signal
 from subprocess import call, Popen, PIPE, STDOUT
 
+VERSION='2.ns-alpha'
+
 # define and compile regular expressions for parsing klee's output
 patterns = {
     'ASSERTIONFAILED' : re.compile('.*ASSERTION FAIL: verifier assertion failed.*'),
@@ -327,7 +329,7 @@ def parse_command_line():
     try:
         opts, args = getopt.getopt(sys.argv[1:], '',
                                    ['no-slice', '64', 'prp=',
-                                    'debug=', 'timeout=', 'sv-comp'])
+                                    'debug=', 'timeout=', 'sv-comp', 'version'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -337,6 +339,9 @@ def parse_command_line():
             global enable_debug
             enable_debug = True
             parse_debug_opts(arg)
+        elif opt == '--version':
+            print(VERSION)
+            sys.exit(0)
         elif opt == '--no-slice':
             dbg('Will not slice')
             options.noslice = True
