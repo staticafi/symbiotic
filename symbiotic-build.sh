@@ -360,8 +360,11 @@ if [ $FROM -le 5 ]; then
 		wget http://cpachecker.sosy-lab.org/CPAchecker-1.4-unix.tar.bz2 || exit 1
 		tar xf CPAchecker-1.4-unix.tar.bz2 || exit 1
 		rm -f CPAchecker-1.4-unix.tar.bz2
-		cp -r CPAchecker-1.4-unix $PREFIX/CPAchecker
 	fi
+
+	# unconditionally update the CPAchecker
+	mkdir -p $PREFIX/CPAchecker
+	rsync -a CPAchecker-1.4-unix/ $PREFIX/CPAchecker
 fi
 
 if [ $FROM -le 6 ]; then
