@@ -193,19 +193,27 @@ def prepare(src, svcomp):
 
     return output
 
-def get_verifier_funcs(is32bit = False):
+def get_verifier_funcs(is32bit = False, add_libc = True):
     symbiotic_dir = get_symbiotic_dir()
+
+    d = '{0}/lib'.format(symbiotic_dir)
     if is32bit:
-        libbc = '{0}/lib32/lib.bc'.format(symbiotic_dir)
-    else:
-        libbc = '{0}/lib/lib.bc'.format(symbiotic_dir)
+        d += '32'
 
     libc = '{0}/lib.c'.format(symbiotic_dir)
-    return compile_to_llvm(libc, is32bit, libbc)
+    llvmlibbc = compile_to_llvm(libc, is32bit)
+    if llvmlibbc is None:
+        return []
+
+    files = [llvmlibbc]
+    if add_libc:
+        files.append('{0}/klee/runtime/klee-libc.bc'.format(d))
+
+    return files
 
 def link(llvmfile, lib):
     output = '{0}-linked.bc'.format(source[:source.rfind('.')])
-    cmd = ['llvm-link', llvmfile, lib, '-o', output]
+    cmd = ['llvm-link', llvmfile, '-o', output] + lib
 
     if run_and_watch(cmd, lambda l: dbg_watch(l, 'compile')) != 0:
         return None
@@ -313,6 +321,7 @@ class Options(object):
         self.noslice = noslice
         self.svcomp = svcomp
         self.timeout = 0
+        self.add_libc = False
 
 def parse_command_line():
     options = Options()
@@ -320,7 +329,8 @@ def parse_command_line():
     try:
         opts, args = getopt.getopt(sys.argv[1:], '',
                                    ['no-slice', '64', 'prp=',
-                                    'debug=', 'timeout=', 'sv-comp', 'version'])
+                                    'debug=', 'timeout=', 'sv-comp', 'version',
+                                    'libc='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -330,6 +340,12 @@ def parse_command_line():
             global enable_debug
             enable_debug = True
             parse_debug_opts(arg)
+        elif opt == '--libc':
+             if arg == 'klee':
+                 options.add_libc = True
+             else:
+                 print('Unknown libc')
+                 sys.exit(0)
         elif opt == '--version':
             print(VERSION)
             sys.exit(0)
@@ -392,8 +408,8 @@ def do_it(source, opts):
     if prepared is None:
         err('Failed preparing the llvm file')
 
-    lib = get_verifier_funcs(opts.is32bit)
-    if lib is None:
+    lib = get_verifier_funcs(opts.is32bit, opts.add_libc)
+    if not lib:
         err('Failed compiling support library')
 
     linkedfile = link(prepared, lib)
