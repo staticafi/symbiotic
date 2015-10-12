@@ -277,9 +277,9 @@ def run_symexe(llvmfile):
 def generate_graphml(path, saveto):
     if saveto is None:
         saveto = '{0}.graphml'.format(os.path.basename(path))
+        saveto = os.path.abspath(saveto)
 
     dbg('Generating counterexample: {0}'.format(saveto))
-    dbg('counterexample from: {0}'.format(path))
     bindir = os.path.dirname(sys.argv[0])
     f = open('/dev/null', 'r')
     ret = call(['{0}/path_to_ml.pl {1} > {2}'.format(bindir, path, saveto)],
@@ -288,9 +288,10 @@ def generate_graphml(path, saveto):
         dbg('Generating witness failed')
 
 def generate_counterexample(bindir, saveto = None):
-    for path in os.listdir('{0}/klee-last'.format(bindir)):
+    abd = os.path.abspath(bindir)
+    for path in os.listdir('{0}/klee-last'.format(abd)):
         if 'assert' in path:
-            pth = os.path.abspath('{0}/klee-last/{1}.path'.format(bindir, path[:-11]))
+            pth = os.path.abspath('{0}/klee-last/{1}.path'.format(abd, path[:-11]))
             generate_graphml(pth, saveto)
             break
 
@@ -462,7 +463,7 @@ if __name__ == "__main__":
 
         if res == 'FALSE' or res == 'ASSERTIONFAILED':
             srcdir = os.path.dirname(source)
-            saveto = '{0}/{1}.graphml'.format(srcdir,
+            saveto = '{0}/{1}.graphml'.format(os.path.abspath(srcdir),
                                               os.path.basename(source))
             generate_counterexample(srcdir, saveto)
     except Timeout:
