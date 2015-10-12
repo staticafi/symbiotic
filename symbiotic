@@ -185,7 +185,7 @@ def prepare(src, svcomp):
         return src
 
     output = '{0}-prepared.bc'.format(src[:src.rfind('.')])
-    cmd = ['opt', '-load', 'LLVMsvc13.so', '-prepare', '-delete-undefined',
+    cmd = ['opt', '-load', 'LLVMsvc15.so', '-prepare', '-delete-undefined',
            src, '-o', output]
 
     if run_and_watch(cmd, lambda l: dbg_watch(l, 'prepare')) != 0:
@@ -234,7 +234,7 @@ def unsupp_watch(line):
     return not unsupported_call.match(line)
 
 def check_llvmfile(llvmfile):
-    cmd = ['opt', '-load', 'LLVMsvc13.so', '-check-unsupported',
+    cmd = ['opt', '-load', 'LLVMsvc15.so', '-check-unsupported',
            '-o', '/dev/null', llvmfile]
     if run_and_watch(cmd, unsupp_watch) == -1:
         return False

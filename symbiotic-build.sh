@@ -377,8 +377,8 @@ fi
 
 if [ $FROM -le 6 ]; then
 	# download scripts
-	git_clone_or_pull https://github.com/jirislaby/svc13.git svc13
-	cd svc13 || exitmsg "Clonging failed"
+	git_clone_or_pull https://github.com/staticafi/svc15.git svc15
+	cd svc15 || exitmsg "Clonging failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
 			-DLLVM_SRC_PATH=`pwd`/../llvm-3.4/ \
@@ -412,7 +412,7 @@ if [ $FROM -le 7 ]; then
 	# then remove the rest and create distribution
 	BINARIES="bin/clang bin/opt bin/klee bin/llvm-link bin/llvm-slicer"
 	LIBRARIES="\
-		lib/libllvmdg.so lib/LLVMSlicer.so lib/LLVMsvc13.so \
+		lib/libllvmdg.so lib/LLVMSlicer.so lib/LLVMsvc15.so \
 		lib/libkleeRuntest.so \
 		lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		lib32/klee/runtime/kleeRuntimeIntrinsic.bc\
