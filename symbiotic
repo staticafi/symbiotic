@@ -220,9 +220,13 @@ def link(llvmfile, lib):
 
     return output
 
-def slicer(llvmfile, criterion):
+def slicer(llvmfile, criterion, old_slicer = False):
     output = '{0}.sliced'.format(llvmfile[:llvmfile.rfind('.')])
-    cmd = ['llvm-slicer', '-c', criterion, llvmfile]
+    if old_slicer:
+        cmd = ['opt', '-load', 'LLVMSlicer.so', '-simplifycfg', '-create-hammock-cfg',
+               '-slice-inter', '-simplifycfg', '-o', output, llvmfile]
+    else:
+        cmd = ['llvm-slicer', '-c', criterion, llvmfile]
 
     if run_and_watch(cmd, lambda l: dbg_watch(l, 'slicer')) != 0:
         return None
@@ -323,6 +327,7 @@ class Options(object):
         self.svcomp = svcomp
         self.timeout = 0
         self.add_libc = False
+        self.old_slicer = False
 
 def parse_command_line():
     options = Options()
@@ -331,7 +336,7 @@ def parse_command_line():
         opts, args = getopt.getopt(sys.argv[1:], '',
                                    ['no-slice', '64', 'prp=',
                                     'debug=', 'timeout=', 'sv-comp', 'version',
-                                    'libc='])
+                                    'libc=', 'old-slicer'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -353,6 +358,9 @@ def parse_command_line():
         elif opt == '--no-slice':
             dbg('Will not slice')
             options.noslice = True
+        elif opt == '--old-slicer':
+            dbg('Will use old slicer')
+            options.old_slicer = True
         elif opt == '--64':
             dbg('Will use 64-bit environment')
             options.is32bit = False
@@ -420,7 +428,7 @@ def do_it(source, opts):
     if opts.noslice:
         slicedfile = None
     else:
-        slicedfile = slicer(linkedfile, '__assert_fail')
+        slicedfile = slicer(linkedfile, '__assert_fail', opts.old_slicer)
         if slicedfile is None:
             dbg("Slicing failed, using original file")
 
