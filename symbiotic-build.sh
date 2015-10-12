@@ -329,6 +329,7 @@ if [ $FROM -le 4 ]; then
 	# clean runtime libs, it may be 32-bit from last build
 	make -C runtime clean 2>/dev/null
 	rm -f Release+Asserts/lib/kleeRuntimeIntrinsic.bc* 2>/dev/null
+	rm -f Release+Asserts/lib/klee-libc.bc* 2>/dev/null
 
 	# build 64-bit libs and install them to prefix
 	pwd
@@ -338,7 +339,10 @@ if [ $FROM -le 4 ]; then
 	make -C runtime clean \
 		|| exitmsg "Failed building klee 32-bit runtime library"
 	rm -f Release+Asserts/lib/kleeRuntimeIntrinsic.bc*
+	rm -f Release+Asserts/lib/klee-libc.bc*
 	make -C runtime/Intrinsic CFLAGS=-m32 ENABLE_SHARED=0 \
+		|| exitmsg "Failed building 32-bit klee runtime library"
+	make -C runtime/klee-libc CFLAGS=-m32 ENABLE_SHARED=0 \
 		|| exitmsg "Failed building 32-bit klee runtime library"
 
 	# copy 32-bit library version to prefix
@@ -346,6 +350,10 @@ if [ $FROM -le 4 ]; then
 	cp Release+Asserts/lib/kleeRuntimeIntrinsic.bc \
 		$PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
+	cp Release+Asserts/lib/klee-libc.bc \
+		$PREFIX/lib32/klee/runtime/klee-libc.bc \
+		|| exitmsg "Did not build 32-bit klee runtime lib"
+
 
 	# we need klee version
 	cd -
@@ -407,7 +415,9 @@ if [ $FROM -le 7 ]; then
 		lib/libllvmdg.so lib/LLVMSlicer.so lib/LLVMsvc13.so \
 		lib/libkleeRuntest.so \
 		lib/klee/runtime/kleeRuntimeIntrinsic.bc \
-		lib32/klee/runtime/kleeRuntimeIntrinsic.bc"
+		lib32/klee/runtime/kleeRuntimeIntrinsic.bc\
+		lib/klee/runtime/klee-libc.bc\
+		lib32/klee/runtime/klee-libc.bc"
 	SCRIPTS="klee-log-parser.sh build-fix.sh instrument.sh\
 		process_set.sh path_to_ml.pl verify_path.sh runme symbiotic"
 	CPACHECKER=`find CPAchecker/`
