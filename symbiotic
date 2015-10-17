@@ -328,6 +328,7 @@ class Options(object):
         self.timeout = 0
         self.add_libc = False
         self.old_slicer = False
+        self.require_slicer = False
 
 def parse_command_line():
     options = Options()
@@ -336,7 +337,7 @@ def parse_command_line():
         opts, args = getopt.getopt(sys.argv[1:], '',
                                    ['no-slice', '64', 'prp=',
                                     'debug=', 'timeout=', 'sv-comp', 'version',
-                                    'libc=', 'old-slicer'])
+                                    'libc=', 'old-slicer', 'require-slicer'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -358,6 +359,8 @@ def parse_command_line():
         elif opt == '--no-slice':
             dbg('Will not slice')
             options.noslice = True
+        elif opt == '--require-slicer':
+            options.require_slicer = True
         elif opt == '--old-slicer':
             dbg('Will use old slicer')
             options.old_slicer = True
@@ -430,7 +433,10 @@ def do_it(source, opts):
     else:
         slicedfile = slicer(linkedfile, '__assert_fail', opts.old_slicer)
         if slicedfile is None:
-            dbg("Slicing failed, using original file")
+            if opts.require_slicer:
+                err("Slicing failed, aborting...")
+            else:
+                dbg("Slicing failed, using original file")
 
     if slicedfile is None:
         found = run_symexe(linkedfile)
@@ -445,6 +451,7 @@ Usage: symbiotic [--64 | --timeout=t | --no-slice | --sv-comp | --prp=property |
     --64              Use 64-bit environment
     --timeout=t       Set timeout to t seconds
     --no-slice        Do not slice the code
+    --require-slicer  Abort if slicing fails (default is to use the original file)
     --sv-comp         Give output in sv-comp format (FALSE, TRUE, UNKNOWN)
     --prp=property    Specify property that should hold. Relevant only with sv-comp atm.
     --debug=what      Print debug messages, what can be comma separated list of: all, compile, prepare, slicer
