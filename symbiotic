@@ -267,10 +267,10 @@ def run_symexe(llvmfile):
         if done:
             # send klee the sigint, so that it
             # will stop running and dump the traces
-	    klee_process.send_signal(2)
+            klee_process.send_signal(2)
             #klee_process.terminate()
             #klee_process.kill()
-	    found = nxt
+            found = nxt
             break
         elif not nxt is None:
             found += '{0} '.format(nxt)
@@ -477,7 +477,7 @@ if __name__ == "__main__":
     except Timeout:
         sys.stdout.flush()
         sys.stderr.flush()
-	if not klee_process is None:
+        if not klee_process is None:
             klee_process.terminate()
             klee_process.kill()
 
