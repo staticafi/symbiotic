@@ -123,7 +123,7 @@ def print_stderr(msg, prefix = None, print_nl = True):
     sys.stderr.flush()
 
 def err(msg):
-    print_stderr(msg, 'ERR: ')
+    print_stderr(msg, 'ERROR: ')
     sys.exit(1)
 
 def dbg(msg, domain = 'all', print_nl = True):
@@ -186,29 +186,7 @@ def compile_to_llvm(source, is32bit = False, output = None):
 
     return llvmfile
 
-def instrument(source):
-    sd = get_symbiotic_dir()
-    cmd = ['/bin/sh', '-c', '{0}/build-fix.sh {1}'.format(sd, source)]
-    if run_and_watch(cmd, dbg_watch) != 0:
-        return None
-
-    # we're instrumenting right into the source
-    return source
-
-def prepare(src, svcomp):
-    if not svcomp:
-        return src
-
-    output = '{0}-prepared.bc'.format(src[:src.rfind('.')])
-    cmd = ['opt', '-load', 'LLVMsvc15.so', '-prepare', '-delete-undefined',
-           src, '-o', output]
-
-    if run_and_watch(cmd, lambda l: dbg_watch(l, 'prepare')) != 0:
-        return None
-
-    return output
-
-def get_verifier_funcs(is32bit = False, add_libc = True):
+def get_libraries(is32bit = False, add_libc = True):
     symbiotic_dir = get_symbiotic_dir()
 
     d = '{0}/lib'.format(symbiotic_dir)
@@ -226,33 +204,11 @@ def get_verifier_funcs(is32bit = False, add_libc = True):
 
     return files
 
-def link(llvmfile, lib):
-    output = '{0}-linked.bc'.format(source[:source.rfind('.')])
-    cmd = ['llvm-link', llvmfile, '-o', output] + lib
-
-    if run_and_watch(cmd, lambda l: dbg_watch(l, 'compile')) != 0:
-        return None
-
-    return output
-
-def slicer(llvmfile, criterion, old_slicer = False):
-    output = '{0}.sliced'.format(llvmfile[:llvmfile.rfind('.')])
-    if old_slicer:
-        cmd = ['opt', '-load', 'LLVMSlicer.so', '-simplifycfg', '-create-hammock-cfg',
-               '-slice-inter', '-simplifycfg', '-o', output, llvmfile]
-    else:
-        cmd = ['llvm-slicer', '-c', criterion, llvmfile]
-
-    if run_and_watch(cmd, lambda l: dbg_watch(l, 'slicer')) != 0:
-        return None
-
-    return output
-
-def unsupp_watch(line):
-    dbg(line, domain='prepare', print_nl = False)
-    return not unsupported_call.match(line)
-
 def check_llvmfile(llvmfile):
+    def unsupp_watch(line):
+        dbg(line, domain='prepare', print_nl = False)
+        return not unsupported_call.match(line)
+
     cmd = ['opt', '-load', 'LLVMsvc15.so', '-check-unsupported',
            '-o', '/dev/null', llvmfile]
     if run_and_watch(cmd, unsupp_watch) == -1:
@@ -260,11 +216,11 @@ def check_llvmfile(llvmfile):
 
     return True
 
-def parse_klee_output(line):
-    dbg(line, print_nl = False)
-    return get_match(line)
-
 def run_symexe(llvmfile):
+    def parse_klee_output(line):
+        dbg(line, print_nl = False)
+        return get_match(line)
+
     cmd = ['klee', '-optimize', '-write-paths', llvmfile]
     dbg(str(cmd))
 
@@ -292,6 +248,138 @@ def run_symexe(llvmfile):
 
     current_process.wait()
     return found
+
+def report_results(res, svcomp):
+    dbg(res)
+    result = res
+
+    if svcomp:
+        if res.startswith('ASSERTIONFAILED'):
+            result = 'FALSE'
+        elif res == '':
+            result = 'TRUE'
+        elif res == 'TIMEOUT':
+            result = 'TIMEOUT'
+        else:
+            result = 'UNKNOWN'
+
+    print(result)
+    sys.stdout.flush()
+
+    return result
+
+class SymbioticException(Exception):
+    def __init__(self, msg):
+        Exception.__init__(self, msg)
+
+class SymbioticOptions(object):
+    def __init__(self, is32bit = True, noslice=False, prp=None, svcomp = False, timeout=0):
+        self.is32bit = is32bit
+        self.prp = prp
+        self.noslice = noslice
+        self.svcomp = svcomp
+        self.timeout = 0
+        self.add_libc = False
+        self.old_slicer = False
+        self.require_slicer = False
+
+class Symbiotic(object):
+    """
+    Instance of symbiotic tool. Instruments, prepares, compiles and runs
+    symbolic execution on given source
+    """
+    def __init__(self, src, opts = None):
+        # source file
+        self.source = src
+        # source compiled to llvm bytecode
+        self.llvmfile = None
+        # libraries to be linked to the llvm file
+        self.libs = []
+        # the file that will be used for symbolic execution
+        self.runfile = None
+
+        if opts is None:
+            self.options = SymbioticOptions()
+        else:
+            self.options = opts
+
+    def instrument(self):
+        """
+        Instrument the code. This writes right into the file we got
+        """
+        sd = get_symbiotic_dir()
+        cmd = ['/bin/sh', '-c', '{0}/build-fix.sh {1}'.format(sd, self.source)]
+        if run_and_watch(cmd, dbg_watch) != 0:
+            raise SymbioticException('Failed instrumenting the code')
+
+    def prepare(self):
+        output = '{0}-prepared.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+        cmd = ['opt', '-load', 'LLVMsvc15.so', '-prepare', '-delete-undefined',
+               self.llvmfile, '-o', output]
+
+        if run_and_watch(cmd, lambda l: dbg_watch(l, 'prepare')) != 0:
+            raise SymbioticException('Prepare phase failed')
+
+        self.llvmfile = output
+
+    def link(self):
+        if not self.libs:
+            return
+
+        output = '{0}-linked.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+        cmd = ['llvm-link', self.llvmfile, '-o', output] + self.libs
+
+        if run_and_watch(cmd, lambda l: dbg_watch(l, 'compile')) != 0:
+            raise SymbioticException('Failed linking llvm file with libraries')
+
+        self.llvmfile = output
+
+    def slicer(self, criterion):
+        output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+        if self.options.old_slicer:
+            cmd = ['opt', '-load', 'LLVMSlicer.so', '-simplifycfg', '-create-hammock-cfg',
+                   '-slice-inter', '-simplifycfg', '-o', output, self.llvmfile]
+        else:
+            cmd = ['llvm-slicer', '-c', criterion, self.llvmfile]
+
+        if run_and_watch(cmd, lambda l: dbg_watch(l, 'slicer')) != 0:
+            raise SymbioticException('Slicing failed')
+
+        self.llvmfile = output
+
+    def run(self, criterion = '__assert_fail'):
+        try:
+            self.instrument()
+
+            # set environ here, because in instrumentation we use
+            # grep and similar commands
+            # FIXME rewrite instrumentation here
+            set_environ(opts.is32bit)
+
+            # FIXME do next two phases more "pure"
+            self.llvmfile = compile_to_llvm(self.source, self.options.is32bit)
+            if self.llvmfile is None:
+                err('Failed compiling the source {0}'.format(self.source))
+
+            if not check_llvmfile(self.llvmfile):
+                report_results('ECALL unsupported call', self.options.svcomp)
+                sys.exit(1)
+
+            self.prepare()
+            self.libs = get_libraries(opts.is32bit, opts.add_libc)
+            if not self.libs:
+                err('Failed compiling support library')
+
+            self.link()
+            if not self.options.noslice:
+                self.slicer(criterion)
+
+        except SymbioticException as e:
+            # FIXME if we should not run further, do not run further
+            err('Failure >> {0}'.format(e.message))
+
+        found = run_symexe(self.llvmfile)
+        return report_results(found, self.options.svcomp)
 
 def generate_graphml(path, saveto):
     if saveto is None:
@@ -334,19 +422,8 @@ def check_property(prp):
 
     return False
 
-class Options(object):
-    def __init__(self, is32bit = True, noslice=False, prp=None, svcomp = False, timeout=0):
-        self.is32bit = is32bit
-        self.prp = prp
-        self.noslice = noslice
-        self.svcomp = svcomp
-        self.timeout = 0
-        self.add_libc = False
-        self.old_slicer = False
-        self.require_slicer = False
-
 def parse_command_line():
-    options = Options()
+    options = SymbioticOptions()
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], '',
@@ -394,72 +471,6 @@ def parse_command_line():
 
     return options, args
 
-def report_results(res, svcomp):
-    dbg(res)
-    result = res
-
-    if svcomp:
-        if res.startswith('ASSERTIONFAILED'):
-            result = 'FALSE'
-        elif res == '':
-            result = 'TRUE'
-        elif res == 'TIMEOUT':
-            result = 'TIMEOUT'
-        else:
-            result = 'UNKNOWN'
-
-    print(result)
-    sys.stdout.flush()
-
-    return result
-
-def do_it(source, opts):
-    instrumented = instrument(source)
-    if instrumented is None:
-        err('Failed instrumenting the code')
-
-    # set environ here, because in instrumentation we use
-    # grep and similar commands
-    # FIXME rewrite instrumentation here
-    set_environ(opts.is32bit)
-
-    llvmfile = compile_to_llvm(instrumented, opts.is32bit)
-    if llvmfile is None:
-        err('Failed compiling the source {0}'.format(source))
-
-    if not check_llvmfile(llvmfile):
-        report_results('ECALL unsupported call', opts.svcomp)
-        sys.exit(1)
-
-    prepared = prepare(llvmfile, opts.svcomp)
-    if prepared is None:
-        err('Failed preparing the llvm file')
-
-    lib = get_verifier_funcs(opts.is32bit, opts.add_libc)
-    if not lib:
-        err('Failed compiling support library')
-
-    linkedfile = link(prepared, lib)
-    if linkedfile is None:
-        err('Failed linking library with source')
-
-    if opts.noslice:
-        slicedfile = None
-    else:
-        slicedfile = slicer(linkedfile, '__assert_fail', opts.old_slicer)
-        if slicedfile is None:
-            if opts.require_slicer:
-                err("Slicing failed, aborting...")
-            else:
-                dbg("Slicing failed, using original file")
-
-    if slicedfile is None:
-        found = run_symexe(linkedfile)
-    else:
-        found = run_symexe(slicedfile)
-
-    return report_results(found, opts.svcomp)
-
 if __name__ == "__main__":
     opts, args = parse_command_line()
     #set_environ(opts.is32bit)
@@ -476,7 +487,8 @@ if __name__ == "__main__":
             report_results('EPRP usupported property', opts.svcomp)
             sys.exit(1)
 
-        res = do_it(source, opts)
+        symbiotic = Symbiotic(source, opts)
+        res = symbiotic.run()
 
         if res == 'FALSE' or res == 'ASSERTIONFAILED':
             srcdir = os.path.dirname(source)
