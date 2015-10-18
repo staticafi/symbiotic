@@ -347,6 +347,15 @@ class Symbiotic(object):
 
         self.llvmfile = output
 
+    def optimize(self, passes = ['-simplifycfg', '-dce']):
+        output = '{0}-optimized.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+        cmd = ['opt', '-o', output, self.llvmfile] + passes
+
+        if run_and_watch(cmd, lambda l: dbg_watch(l, 'slicer')) != 0:
+            raise SymbioticException('Optimizing the code failed')
+
+        self.llvmfile = output
+
     def run(self, criterion = '__assert_fail'):
         try:
             self.instrument()
@@ -371,8 +380,10 @@ class Symbiotic(object):
                 err('Failed compiling support library')
 
             self.link()
+            self.optimize(passes=['-simplifycfg', '-constprop'])
             if not self.options.noslice:
                 self.slicer(criterion)
+                self.optimize()
 
         except SymbioticException as e:
             # FIXME if we should not run further, do not run further
