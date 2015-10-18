@@ -36,7 +36,9 @@ patterns = {
     'ESLIENTLYCONCRETIZED' : re.compile('.*silently concretizing.*'),
     'EEXTRAARGS' : re.compile('.*calling .* with extra arguments.*'),
     'EABORT' : re.compile('.*abort failure.*'),
-    'EGENERAL' : re.compile('.*now ignoring this error at this location.*')
+    'EGENERAL' : re.compile('.*now ignoring this error at this location.*'),
+    'ESKIPFORK' : re.compile('.*skipping fork.*'),
+    'EKILLSTATE' : re.compile('.*killing.*states (over memory cap).*')
 }
 
 supported_properties = {
