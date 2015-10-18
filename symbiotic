@@ -9,6 +9,19 @@ from subprocess import call, Popen, PIPE, STDOUT
 
 VERSION='2.ns-alpha'
 
+usage_msg = """
+Usage: symbiotic [--64 | --timeout=t | --no-slice | --sv-comp | --prp=property | --debug=what] source
+
+    --64              Use 64-bit environment
+    --timeout=t       Set timeout to t seconds
+    --no-slice        Do not slice the code
+    --require-slicer  Abort if slicing fails (default is to use the original file)
+    --sv-comp         Give output in sv-comp format (FALSE, TRUE, UNKNOWN)
+    --prp=property    Specify property that should hold. Relevant only with sv-comp atm.
+    --debug=what      Print debug messages, what can be comma separated list of: all, compile, prepare, slicer
+                      In that case you get verbose output. You can just use --debug= to print basic messages.
+"""
+
 # define and compile regular expressions for parsing klee's output
 patterns = {
     'ASSERTIONFAILED' : re.compile('.*ASSERTION FAIL: verifier assertion failed.*'),
@@ -445,19 +458,6 @@ def do_it(source, opts):
         found = run_symexe(slicedfile)
 
     return report_results(found, opts.svcomp)
-
-usage_msg = """
-Usage: symbiotic [--64 | --timeout=t | --no-slice | --sv-comp | --prp=property | --debug=what] source
-
-    --64              Use 64-bit environment
-    --timeout=t       Set timeout to t seconds
-    --no-slice        Do not slice the code
-    --require-slicer  Abort if slicing fails (default is to use the original file)
-    --sv-comp         Give output in sv-comp format (FALSE, TRUE, UNKNOWN)
-    --prp=property    Specify property that should hold. Relevant only with sv-comp atm.
-    --debug=what      Print debug messages, what can be comma separated list of: all, compile, prepare, slicer
-                      In that case you get verbose output. You can just use --debug= to print basic messages.
-"""
 
 if __name__ == "__main__":
     opts, args = parse_command_line()
