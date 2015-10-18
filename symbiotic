@@ -49,7 +49,6 @@ unsupported_call = re.compile('.*call to .* is unsupported.*')
 
 enable_debug = False
 debug_opts = []
-got_error = False
 # this is global variable for currently running
 # klee process, so that we can kill it if we need
 # (e. g. on timeout)
