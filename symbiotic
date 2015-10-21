@@ -221,7 +221,7 @@ def run_symexe(llvmfile):
         dbg(line, print_nl = False)
         return get_match(line)
 
-    cmd = ['klee', '-optimize', '-write-paths', llvmfile]
+    cmd = ['klee', '-halt-after-assert', '-optimize', '-write-paths', llvmfile]
     dbg(str(cmd))
 
     global current_process
