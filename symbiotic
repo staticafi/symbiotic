@@ -166,7 +166,7 @@ def dbg_watch(l, dbgdomain = 'all'):
 def compile_to_llvm(source, is32bit = False, output = None):
     symbiotic_dir = get_symbiotic_dir()
 
-    cmd = ['clang', '-c', '-emit-llvm', '-I']
+    cmd = ['clang', '-g', '-c', '-emit-llvm', '-I']
     cmd.append('{0}/include'.format(symbiotic_dir))
 
     if is32bit:
