@@ -40,6 +40,17 @@ cd $CPADIR/.. || exit 1
 -spec "$PRPFILE" \
 "$BENCHMARK") 1>/dev/null 2>"$VERIFIER_RESULT"
 
+#test -z $UA && UA="$DIR/UltimateAutomizer/UltimateWitnessChecker.py"
+#UADIR=`dirname $UA`
+#cd $UADIR || exit 1
+#
+## Is '32bit simple' correct for all benchmarks?
+#python3 UltimateWitnessChecker.py \
+#    "$PRPFILE" \
+#    "$BENCHMARK" \
+#    32bit simple \
+#    "$GRAPHML"
+
 if [ $? -ne 0 ]; then
 	echo "error"
 elif grep -q 'Error path found and confirmed' "$VERIFIER_RESULT"; then

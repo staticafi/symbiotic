@@ -66,7 +66,7 @@ while [ $# -gt 0 ]; do
 		'klee')
 			FROM='4'
 		;;
-		'cpa')
+		'witness')
 			FROM='5'
 		;;
 		'scripts')
@@ -375,10 +375,15 @@ if [ $FROM -le 5 ]; then
 		tar xf CPAchecker-1.4-unix.tar.bz2 || exit 1
 		rm -f CPAchecker-1.4-unix.tar.bz2
 	fi
+	if [ ! -d UltimateAutomizer ]; then
+		wget http://www.sosy-lab.org/~dbeyer/cpa-witnesses/ultimateautomizer.tar.gz || exit 1
+		tar xf ultimateautomizer.tar.gz || exit 1
+		rm -f ultimateautomizer.tar.gz
+	fi
 
-	# unconditionally update the CPAchecker
-	mkdir -p $PREFIX/CPAchecker
-	rsync -a CPAchecker-1.4-unix/ $PREFIX/CPAchecker
+	# unconditionally update the witness checkers
+	rsync -a CPAchecker-1.4-unix/ $PREFIX/CPAchecker/
+	rsync -a UltimateAutomizer $PREFIX/
 fi
 
 if [ $FROM -le 6 ]; then
@@ -425,7 +430,8 @@ if [ $FROM -le 7 ]; then
 		lib/klee/runtime/klee-libc.bc\
 		lib32/klee/runtime/klee-libc.bc"
 	SCRIPTS="build-fix.sh path_to_ml.pl verify_path.sh symbiotic"
-	CPACHECKER=`find CPAchecker/`
+	CPACHECKER=`find CPAchecker/ -type f`
+	ULTIAUTO=`find UltimateAutomizer/ -type f`
 
 	#strip binaries, it will save us 500 MB!
 	strip $BINARIES
@@ -436,6 +442,7 @@ if [ $FROM -le 7 ]; then
 		$LIBRARIES \
 		$SCRIPTS \
 		$CPACHECKER \
+		$ULTIAUTO \
 		include/klee/klee.h \
 		include/symbiotic.h \
 		lib.c \
