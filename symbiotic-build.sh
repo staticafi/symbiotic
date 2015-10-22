@@ -403,10 +403,6 @@ if [ $FROM -le 6 ]; then
 
 	cd -
 
-	# we need klee-log-parser
-	cp $SRCDIR/scripts/klee-log-parser.sh $PREFIX/ || exit 1
-	# and verify_path.sh
-	cp $SRCDIR/scripts/verify_path.sh $PREFIX/ || exit 1
 	# and also the symbiotic script
 	cp $SRCDIR/symbiotic $PREFIX/ || exit 1
 
