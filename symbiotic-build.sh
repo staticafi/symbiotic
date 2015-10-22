@@ -429,7 +429,7 @@ if [ $FROM -le 7 ]; then
 		lib32/klee/runtime/kleeRuntimeIntrinsic.bc\
 		lib/klee/runtime/klee-libc.bc\
 		lib32/klee/runtime/klee-libc.bc"
-	SCRIPTS="build-fix.sh path_to_ml.pl verify_path.sh symbiotic"
+	SCRIPTS="build-fix.sh path_to_ml.pl symbiotic"
 	CPACHECKER=`find CPAchecker/ -type f`
 	ULTIAUTO=`find UltimateAutomizer/ -type f`
 
