@@ -373,8 +373,8 @@ class Symbiotic(object):
                 report_results('ECALL unsupported call', self.options.svcomp)
                 sys.exit(1)
 
-            # remove invaild function definitions
-            self.prepare(passes = ['-prepare'])
+            # remove invaild function definitions and instrument our malloc
+            self.prepare(passes = ['-prepare', '-instrument-alloc', '-initialize-uninitialized'])
             self.libs = get_libraries(opts.is32bit, opts.add_libc)
             if not self.libs:
                 err('Failed compiling support library')
