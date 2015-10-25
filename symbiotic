@@ -339,7 +339,8 @@ class Symbiotic(object):
     def slicer(self, criterion):
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         if self.options.old_slicer:
-            cmd = ['opt', '-load', 'LLVMSlicer.so', '-simplifycfg', '-create-hammock-cfg',
+            cmd = ['opt', '-load', 'LLVMSlicer.so',
+                   '-simplifycfg', '-create-hammock-cfg',
                    '-slice-inter', '-simplifycfg', '-o', output, self.llvmfile]
         else:
             cmd = ['llvm-slicer', '-c', criterion, self.llvmfile]
@@ -353,7 +354,7 @@ class Symbiotic(object):
         output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-o', output, self.llvmfile] + passes
 
-        if run_and_watch(cmd, lambda l: dbg_watch(l, 'slicer')) != 0:
+        if run_and_watch(cmd, lambda l: dbg_watch(l, 'prepare')) != 0:
             raise SymbioticException('Optimizing the code failed')
 
         self.llvmfile = output
@@ -377,7 +378,8 @@ class Symbiotic(object):
                 sys.exit(1)
 
             # remove invaild function definitions and instrument our malloc
-            self.prepare(passes = ['-prepare', '-instrument-alloc', '-initialize-uninitialized'])
+            self.prepare(passes = ['-prepare', '-instrument-alloc',
+                                   '-initialize-uninitialized'])
             self.libs = get_libraries(opts.is32bit, opts.add_libc)
             if not self.libs:
                 err('Failed compiling support library')
