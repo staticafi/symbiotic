@@ -316,7 +316,7 @@ class Symbiotic(object):
             raise SymbioticException('Failed instrumenting the code')
 
     def prepare(self, passes = ['-prepare', '-delete-undefined']):
-        output = '{0}-prepared.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+        output = '{0}-prep.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-load', 'LLVMsvc15.so', self.llvmfile, '-o', output] + passes
 
         if run_and_watch(cmd, lambda l: dbg_watch(l, 'prepare')) != 0:
@@ -350,7 +350,7 @@ class Symbiotic(object):
         self.llvmfile = output
 
     def optimize(self, passes = ['-simplifycfg', '-dce']):
-        output = '{0}-optimized.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+        output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-o', output, self.llvmfile] + passes
 
         if run_and_watch(cmd, lambda l: dbg_watch(l, 'slicer')) != 0:
