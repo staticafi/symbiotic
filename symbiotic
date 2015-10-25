@@ -221,7 +221,7 @@ def run_symexe(llvmfile):
         dbg(line, print_nl = False)
         return get_match(line)
 
-    cmd = ['klee', '-halt-after-assert', '-optimize', '-write-paths', llvmfile]
+    cmd = ['klee', '-halt-after-assert', '-write-paths', llvmfile]
     dbg(str(cmd))
 
     global current_process
@@ -388,10 +388,32 @@ class Symbiotic(object):
             # delete undefined function calls
             self.prepare(passes = ['-delete-undefined'])
 
-            self.optimize(passes=['-simplifycfg', '-constprop'])
+            # run optimizations that can make slicing more precise
+            self.optimize(passes=['-simplifycfg', '-ipconstprop',
+                                  '-argpromotion', '-instcombine',
+                                  '-deadargelim', '-simplifycfg'])
             if not self.options.noslice:
                 self.slicer(criterion)
-                self.optimize()
+                # the list of optimizations is based on klee -optimize
+                # option
+                optimizations = ['-simplifycfg', '-globalopt',
+                                 '-globaldce', '-ipconstprop',
+                                 '-deadargelim', '-instcombine',
+                                 '-simplifycfg', '-prune-eh',
+                                 '-functionattrs', '-inline',
+                                 '-argpromotion', '-instcombine',
+                                 '-jump-threading', '-simplifycfg',
+                                 '-gvn', '-scalarrepl', '-instcombine',
+                                 '-tailcallelim', '-simplifycfg',
+                                 '-reassociate', '-loop-rotate', '-licm',
+                                 '-loop-unswitch', '-instcombine', '-indvars',
+                                 '-loop-deletion', '-loop-unroll',
+                                 '-instcombine', '-memcpyopt', '-sccp',
+                                 '-instcombine', '-dse', '-adce',
+                                 '-simplifycfg', '-strip-dead-prototypes',
+                                 '-constmerge', '-ipsccp', '-deadargelim',
+                                 '-die', '-instcombine']
+                self.optimize(passes=optimizations)
 
         except SymbioticException as e:
             # FIXME if we should not run further, do not run further
