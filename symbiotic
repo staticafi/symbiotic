@@ -246,7 +246,10 @@ def run_symexe(llvmfile):
         elif not nxt is None:
             found += '{0} '.format(nxt)
 
-    current_process.wait()
+    ret = current_process.wait()
+    if ret != 0:
+        found = 'EKLEEERROR {0}'.format(found)
+
     return found
 
 def report_results(res, svcomp):
