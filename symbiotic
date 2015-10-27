@@ -10,14 +10,13 @@ from subprocess import call, Popen, PIPE, STDOUT
 VERSION='2.ns-alpha'
 
 usage_msg = """
-Usage: symbiotic [--64 | --timeout=t | --no-slice | --sv-comp | --prp=property | --debug=what] source
+Usage: symbiotic [--64 | --timeout=t | --no-slice | --prp=property | --debug=what] source
 
     --64              Use 64-bit environment
     --timeout=t       Set timeout to t seconds
     --no-slice        Do not slice the code
     --require-slicer  Abort if slicing fails (default is to use the original file)
-    --sv-comp         Give output in sv-comp format (FALSE, TRUE, UNKNOWN)
-    --prp=property    Specify property that should hold. Relevant only with sv-comp atm.
+    --prp=property    Specify property that should hold
     --debug=what      Print debug messages, what can be comma separated list of: all, compile, prepare, slicer
                       In that case you get verbose output. You can just use --debug= to print basic messages.
 """
@@ -33,7 +32,7 @@ patterns = {
     'EKLEEASSERT' : re.compile('.*klee: .*Assertion .* failed.*'),
     'EINITVALS' : re.compile('.*unable to compute initial values.*'),
     'ESYMSOL' : re.compile('.*unable to get symbolic solution.*'),
-    'ESLIENTLYCONCRETIZED' : re.compile('.*silently concretizing.*'),
+    'ESILENTLYCONCRETIZED' : re.compile('.*silently concretizing.*'),
     'EEXTRAARGS' : re.compile('.*calling .* with extra arguments.*'),
     'EABORT' : re.compile('.*abort failure.*'),
     'EGENERAL' : re.compile('.*now ignoring this error at this location.*'),
@@ -235,16 +234,16 @@ def run_symexe(llvmfile):
 
         nxt, done = parse_klee_output(line)
 
+        if not nxt is None:
+            found += '{0} '.format(nxt)
+
         if done:
             # send klee the sigint, so that it
             # will stop running and dump the traces
             current_process.send_signal(2)
             #current_process.terminate()
-            #current_process.kill()
             found = nxt
             break
-        elif not nxt is None:
-            found += '{0} '.format(nxt)
 
     ret = current_process.wait()
     if ret != 0:
@@ -255,9 +254,17 @@ def run_symexe(llvmfile):
 def report_results(res, svcomp):
     dbg(res)
     result = res
+    unsound = False
+
+    if 'EINITVALS' in res or 'ESYMSOL' in res or\
+       'ESILENTLYCONCRETIZED' in res or 'EEXTRAARGS' in res:
+        print('The result is unsound')
+        unsound = True
 
     if svcomp:
-        if res.startswith('ASSERTIONFAILED'):
+        if unsound:
+            result = 'UNKNOWN'
+        elif res.startswith('ASSERTIONFAILED'):
             result = 'FALSE'
         elif res == '':
             result = 'TRUE'
@@ -276,11 +283,12 @@ class SymbioticException(Exception):
         Exception.__init__(self, msg)
 
 class SymbioticOptions(object):
-    def __init__(self, is32bit = True, noslice=False, prp=None, svcomp = False, timeout=0):
+    def __init__(self, is32bit = True, noslice=False, prp=None, timeout=0):
         self.is32bit = is32bit
         self.prp = prp
         self.noslice = noslice
-        self.svcomp = svcomp
+        # FIXME: remove sv-comp option completely and return human-readable output
+        self.svcomp = True
         self.timeout = 0
         self.add_libc = False
         self.old_slicer = False
@@ -475,7 +483,7 @@ def parse_command_line():
     try:
         opts, args = getopt.getopt(sys.argv[1:], '',
                                    ['no-slice', '64', 'prp=',
-                                    'debug=', 'timeout=', 'sv-comp', 'version',
+                                    'debug=', 'timeout=', 'version',
                                     'libc=', 'old-slicer', 'require-slicer'])
                                    # add klee-params
     except getopt.GetoptError as e:
@@ -512,9 +520,6 @@ def parse_command_line():
         elif opt == '--timeout':
             options.timeout = int(arg)
             dbg('Timeout set to {0} sec'.format(arg))
-        elif opt == '--sv-comp':
-            dbg('Output format is sv-comp')
-            options.svcomp = True
 
     return options, args
 
