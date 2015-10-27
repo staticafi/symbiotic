@@ -295,6 +295,7 @@ class SymbioticOptions(object):
         self.add_libc = False
         self.old_slicer = False
         self.require_slicer = False
+        self.no_optimize = False
 
 class Symbiotic(object):
     """
@@ -361,6 +362,9 @@ class Symbiotic(object):
         self.llvmfile = output
 
     def optimize(self, passes = ['-simplifycfg', '-dce']):
+        if self.options.no_optimize:
+            return
+
         output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-o', output, self.llvmfile] + passes
 
@@ -493,7 +497,7 @@ def parse_command_line():
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], '',
-                                   ['no-slice', '64', 'prp=',
+                                   ['no-slice', '64', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=', 'version',
                                     'libc=', 'old-slicer', 'require-slicer'])
                                    # add klee-params
@@ -525,6 +529,9 @@ def parse_command_line():
         elif opt == '--64':
             dbg('Will use 64-bit environment')
             options.is32bit = False
+        elif opt == '--no-optimize':
+            dbg('Will not optimize the code')
+            options.no_optimize = True
         elif opt == '--prp':
             options.prp = get_prp(arg)
             dbg('Property: {0}'.format(options.prp))
