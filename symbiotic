@@ -87,8 +87,10 @@ def run_and_watch(cmd, watch):
             current_process.kill()
             return -1
 
-    current_process.wait()
-    return current_process.returncode
+    ret = current_process.wait()
+    current_process = None
+
+    return ret
 
 def get_match(line):
     for (key, pattern) in patterns.iteritems():
@@ -221,7 +223,7 @@ def run_symexe(llvmfile):
         return get_match(line)
 
     cmd = ['klee', '-halt-after-assert', '-write-paths', llvmfile]
-    dbg(str(cmd))
+    dbg(' '.join(cmd))
 
     global current_process
     current_process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
@@ -242,10 +244,10 @@ def run_symexe(llvmfile):
             # will stop running and dump the traces
             current_process.send_signal(2)
             #current_process.terminate()
-            found = nxt
             break
 
     ret = current_process.wait()
+    current_process = None
     if ret != 0:
         found = 'EKLEEERROR {0}'.format(found)
 
@@ -368,6 +370,15 @@ class Symbiotic(object):
         self.llvmfile = output
 
     def run(self, criterion = '__assert_fail'):
+        try:
+            return self._run(criterion);
+        except KeyboardInterrupt:
+            if current_process:
+                current_process.terminate()
+                current_process.kill()
+            print('Interrupted...')
+
+    def _run(self, criterion = '__assert_fail'):
         try:
             self.instrument()
 
