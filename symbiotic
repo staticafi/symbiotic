@@ -401,7 +401,7 @@ class Symbiotic(object):
                 sys.exit(1)
 
             # remove invaild function definitions and instrument our malloc
-            self.prepare(passes = ['-prepare', '-instrument-alloc',
+            self.prepare(passes = ['-prepare', '-instrument-alloc-nf',
                                    '-initialize-uninitialized'])
             self.libs = get_libraries(opts.is32bit, opts.add_libc)
             if not self.libs:
