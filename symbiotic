@@ -401,8 +401,9 @@ class Symbiotic(object):
                 sys.exit(1)
 
             # remove invaild function definitions and instrument our malloc
-            self.prepare(passes = ['-prepare', '-instrument-alloc',
-                                   '-initialize-uninitialized'])
+            # DONT -instrument-alloc, it is still buggy, we need to
+            # debug it first
+            self.prepare(passes = ['-prepare', '-initialize-uninitialized'])
             self.libs = get_libraries(opts.is32bit, opts.add_libc)
             if not self.libs:
                 err('Failed compiling support library')
