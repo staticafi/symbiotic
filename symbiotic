@@ -249,24 +249,16 @@ def run_symexe(llvmfile):
     ret = current_process.wait()
     current_process = None
     if ret != 0:
-        found = 'EKLEEERROR {0}'.format(found)
+        found += '{0} EKLEEERROR'.format(found)
 
     return found
 
 def report_results(res, svcomp):
     dbg(res)
     result = res
-    unsound = False
-
-    if 'EINITVALS' in res or 'ESYMSOL' in res or\
-       'ESILENTLYCONCRETIZED' in res or 'EEXTRAARGS' in res:
-        print('The result is unsound')
-        unsound = True
 
     if svcomp:
-        if unsound:
-            result = 'UNKNOWN'
-        elif res.startswith('ASSERTIONFAILED'):
+        if res.startswith('ASSERTIONFAILED'):
             result = 'FALSE'
         elif res == '':
             result = 'TRUE'
