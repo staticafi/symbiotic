@@ -237,7 +237,7 @@ def run_symexe(llvmfile):
         nxt, done = parse_klee_output(line)
 
         if not nxt is None:
-            found += '{0} '.format(nxt)
+            found = '{0} {1}'.format(nxt, found)
 
         if done:
             # send klee the sigint, so that it
