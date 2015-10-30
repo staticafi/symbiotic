@@ -19,6 +19,7 @@ Usage: symbiotic [--64 | --timeout=t | --no-slice | --prp=property | --debug=wha
     --prp=property    Specify property that should hold
     --debug=what      Print debug messages, what can be comma separated list of: all, compile, prepare, slicer
                       In that case you get verbose output. You can just use --debug= to print basic messages.
+    --help            Show help message
 """
 
 # define and compile regular expressions for parsing klee's output
@@ -490,14 +491,17 @@ def parse_command_line():
     try:
         opts, args = getopt.getopt(sys.argv[1:], '',
                                    ['no-slice', '64', 'prp=', 'no-optimize',
-                                    'debug=', 'timeout=', 'version',
+                                    'debug=', 'timeout=', 'version', 'help',
                                     'libc=', 'old-slicer', 'require-slicer'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
 
     for opt, arg in opts:
-        if opt == '--debug':
+        if opt == '--help':
+            print(usage_msg)
+            sys.exit(0)
+        elif opt == '--debug':
             global enable_debug
             enable_debug = True
             parse_debug_opts(arg)
