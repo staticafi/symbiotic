@@ -5,17 +5,18 @@
 
 usage()
 {
-
-	echo "$0 [shell] [no-llvm] [update] [slicer | scripts | minisat | stp | klee | bin] OPTS"
+	echo "$0 [shell] [no-llvm] [update] [slicer | scripts | minisat | stp | klee | witness | bin] OPTS"
 	echo "" # new line
-	echo -e "shell   - run shell with environment set"
-	echo -e "no-llvm - skip compiling llvm (assume that llvm is already"
-	echo -e "          present in build directory in folders"
-	echo -e "          llvm-build-cmake and llvm-build-configure)"
-	echo -e "update  - update repositories"
+	echo -e "shell    - run shell with environment set"
+	echo -e "no-llvm  - skip compiling llvm (assume that llvm is already"
+	echo -e "           present in build directory in folders"
+	echo -e "           llvm-build-cmake and llvm-build-configure)"
+	echo -e "update   - update repositories"
+	echo -e "with-cpa - downlad CPAchecker (due to witness checking)"
+	echo -e "with-ultimate-automizer - downlad UltimateAutmizer (due to witness checking)"
 	echo "" # new line
 	echo -e "slicer, scripts,"
-	echo -e "minisat, stp, klee,"
+	echo -e "minisat, stp, klee, witness"
 	echo -e "bin     - run compilation _from_ this point"
 	echo "" # new line
 	echo -e "OPTS = options for make (i. e. -j8)"
@@ -36,6 +37,9 @@ FROM='0'
 NO_LLVM='0'
 UPDATE=
 OPTS=
+WITH_CPA='0'
+WITH_ULTIMATEAUTOMIZER='0'
+
 SRCDIR=`dirname $0`
 
 MODE="$1"
@@ -80,6 +84,12 @@ while [ $# -gt 0 ]; do
 		;;
 		'update')
 			UPDATE=1
+		;;
+		'with-cpa')
+			WITH_CPA='1'
+		;;
+		'with-ultimate-automizer')
+			WITH_ULTIMATEAUTOMIZER='1'
 		;;
 		*)
 			if [ -z "$OPTS" ]; then
@@ -369,21 +379,37 @@ if [ $FROM -le 4 ]; then
 	cd -
 fi
 
-if [ $FROM -le 5 ]; then
-	if [ ! -d CPAchecker-1.4-unix ]; then
-		wget http://cpachecker.sosy-lab.org/CPAchecker-1.4-unix.tar.bz2 || exit 1
-		tar xf CPAchecker-1.4-unix.tar.bz2 || exit 1
-		rm -f CPAchecker-1.4-unix.tar.bz2
-	fi
-	if [ ! -d UltimateAutomizer ]; then
-		wget http://www.sosy-lab.org/~dbeyer/cpa-witnesses/ultimateautomizer.tar.gz || exit 1
-		tar xf ultimateautomizer.tar.gz || exit 1
-		rm -f ultimateautomizer.tar.gz
-	fi
+download_tar()
+{
+	wget "$1" || exit 1
+	BASENAME="`basename $1`"
+	tar xf "$BASENAME" || exit 1
+	rm -f "BASENAME"
+}
 
-	# unconditionally update the witness checkers
-	rsync -a CPAchecker-1.4-unix/ $PREFIX/CPAchecker/
-	rsync -a UltimateAutomizer $PREFIX/
+get_cpa()
+{
+	if [ ! -d CPAchecker-1.4-unix ]; then
+		download_tar http://cpachecker.sosy-lab.org/CPAchecker-1.4-unix.tar.bz2
+	fi
+}
+
+get_ultimize()
+{
+	if [ ! -d UltimateAutomizer ]; then
+		download_tar http://www.sosy-lab.org/~dbeyer/cpa-witnesses/ultimateautomizer.tar.gz
+	fi
+}
+
+if [ $FROM -le 5 ]; then
+	if [ $WITH_CPA -eq 1 ]; then
+		get_cpa
+		rsync -a CPAchecker-1.4-unix/ $PREFIX/CPAchecker/
+	fi
+	if [ $WITH_ULTIMATEAUTOMIZER -eq 1 ]; then
+		get_ultimize
+		rsync -a UltimateAutomizer $PREFIX/
+	fi
 fi
 
 if [ $FROM -le 6 ]; then
@@ -426,8 +452,15 @@ if [ $FROM -le 7 ]; then
 		lib/klee/runtime/klee-libc.bc\
 		lib32/klee/runtime/klee-libc.bc"
 	SCRIPTS="build-fix.sh path_to_ml.pl symbiotic"
-	CPACHECKER=`find CPAchecker/ -type f`
-	ULTIAUTO=`find UltimateAutomizer/ -type f`
+
+	CPACHECKER=
+	ULTIAUTO=
+	if [ $WITH_CPA -eq 1 ]; then
+		CPACHECKER=`find CPAchecker/ -type f`
+	fi
+	if [ $WITH_ULTIMATEAUTOMIZER -eq 1 ]; then
+		ULTIAUTO=`find UltimateAutomizer/ -type f`
+	fi
 
 	#strip binaries, it will save us 500 MB!
 	strip $BINARIES
