@@ -24,7 +24,8 @@ import getopt
 import signal
 from subprocess import call, Popen, PIPE, STDOUT
 
-VERSION='2.ns-alpha'
+# FIXME print versions of components too
+VERSION='3.0.0'
 
 usage_msg = """
 Usage: symbiotic [--64 | --timeout=t | --no-slice | --prp=property | --debug=what] source
@@ -37,6 +38,7 @@ Usage: symbiotic [--64 | --timeout=t | --no-slice | --prp=property | --debug=wha
     --debug=what      Print debug messages, what can be comma separated list of: all, compile, prepare, slicer
                       In that case you get verbose output. You can just use --debug= to print basic messages.
     --help            Show help message
+    --version         Return version
 """
 
 # define and compile regular expressions for parsing klee's output
