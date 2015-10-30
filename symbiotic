@@ -34,9 +34,13 @@ Usage: symbiotic [--64 | --timeout=t | --no-slice | --prp=property | --debug=wha
     --timeout=t       Set timeout to t seconds
     --no-slice        Do not slice the code
     --require-slicer  Abort if slicing fails (default is to use the original file)
+    --no-optimize     Don't optimize the code
+    --libc=klee       Let klee use its libc
     --prp=property    Specify property that should hold
-    --debug=what      Print debug messages, what can be comma separated list of: all, compile, prepare, slicer
-                      In that case you get verbose output. You can just use --debug= to print basic messages.
+    --debug=what      Print debug messages, what can be comma separated list of:
+                      all, compile, prepare, slicer
+                      In that case you get verbose output. You can just use
+                      --debug= to print basic messages.
     --help            Show help message
     --version         Return version
 """
