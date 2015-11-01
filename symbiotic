@@ -34,6 +34,7 @@ Usage: symbiotic [--64 | --timeout=t | --no-slice | --prp=property | --debug=wha
     --timeout=t       Set timeout to t seconds
     --no-slice        Do not slice the code
     --require-slicer  Abort if slicing fails (default is to use the original file)
+    --no-symexe       Do not run symbolic execution (handy for debugging)
     --no-optimize     Don't optimize the code
     --libc=klee       Let klee use its libc
     --prp=property    Specify property that should hold
@@ -41,6 +42,7 @@ Usage: symbiotic [--64 | --timeout=t | --no-slice | --prp=property | --debug=wha
                       all, compile, prepare, slicer
                       In that case you get verbose output. You can just use
                       --debug= to print basic messages.
+    --output=name     Store the final code (that is to be run by symexe) to name
     --help            Show help message
     --version         Return version
 """
@@ -312,6 +314,8 @@ class SymbioticOptions(object):
         self.old_slicer = False
         self.require_slicer = False
         self.no_optimize = False
+        self.no_symexe = False
+        self.final_output = None
 
 class Symbiotic(object):
     """
@@ -464,7 +468,19 @@ class Symbiotic(object):
             # FIXME if we should not run further, do not run further
             err('Failure >> {0}'.format(e.message))
 
-        found = run_symexe(self.llvmfile)
+        if not self.options.final_output is None:
+            # copy the file to final_output
+            try:
+                os.rename(self.llvmfile, self.options.final_output)
+                self.llvmfile = self.options.final_output
+            except OSError as e:
+                err('Cannot create {0}: {1}'.format(self.options.final_output,
+                                                    e.message))
+        if not self.options.no_symexe:
+            found = run_symexe(self.llvmfile)
+        else:
+            found = 'Did not run symbolic execution'
+
         return report_results(found, self.options.svcomp)
 
 def generate_graphml(path, saveto):
@@ -515,7 +531,8 @@ def parse_command_line():
         opts, args = getopt.getopt(sys.argv[1:], '',
                                    ['no-slice', '64', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=', 'version', 'help',
-                                    'libc=', 'old-slicer', 'require-slicer'])
+                                    'libc=', 'old-slicer', 'require-slicer',
+                                    'no-symexe', 'output='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -540,6 +557,9 @@ def parse_command_line():
         elif opt == '--no-slice':
             dbg('Will not slice')
             options.noslice = True
+        elif opt == '--no-symexe':
+            dbg('Will not run symbolic execution')
+            options.no_symexe = True
         elif opt == '--require-slicer':
             options.require_slicer = True
         elif opt == '--old-slicer':
@@ -557,12 +577,14 @@ def parse_command_line():
         elif opt == '--timeout':
             options.timeout = int(arg)
             dbg('Timeout set to {0} sec'.format(arg))
+        elif opt == '--output':
+            options.final_output = arg
+            dbg('Output will be stored to {0}'.format(arg))
 
     return options, args
 
 if __name__ == "__main__":
     opts, args = parse_command_line()
-    #set_environ(opts.is32bit)
     if len(args) != 1:
         err(usage_msg)
 
