@@ -344,7 +344,7 @@ fi
 
 if [ $FROM -le 4 ]; then
 	# build klee
-	git_clone_or_pull git://github.com/klee/klee.git klee || exitmsg "Cloning failed"
+	git_clone_or_pull git://github.com/staticafi/klee.git klee || exitmsg "Cloning failed"
 
 	mkdir -p klee-build/
 	cd klee-build/
