@@ -28,7 +28,9 @@ from subprocess import call, Popen, PIPE, STDOUT
 VERSION='3.0.0'
 
 usage_msg = """
-Usage: symbiotic [--64 | --timeout=t | --no-slice | --prp=property | --debug=what] source
+Usage: symbiotic OPTS source
+
+where OPTS can be following:
 
     --64              Use 64-bit environment
     --timeout=t       Set timeout to t seconds
@@ -42,7 +44,8 @@ Usage: symbiotic [--64 | --timeout=t | --no-slice | --prp=property | --debug=wha
                       all, compile, prepare, slicer
                       In that case you get verbose output. You can just use
                       --debug= to print basic messages.
-    --output=name     Store the final code (that is to be run by symexe) to name
+    --output=FILE     Store the final code (that is to be run by symexe) to FILE
+    --witness=FILE    Store witness into FILE (default is witness.graphml)
     --help            Show help message
     --version         Return version
 """
@@ -316,6 +319,7 @@ class SymbioticOptions(object):
         self.no_optimize = False
         self.no_symexe = False
         self.final_output = None
+        self.witness_output = 'witness.graphml'
 
 class Symbiotic(object):
     """
@@ -532,7 +536,7 @@ def parse_command_line():
                                    ['no-slice', '64', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=', 'version', 'help',
                                     'libc=', 'old-slicer', 'require-slicer',
-                                    'no-symexe', 'output='])
+                                    'no-symexe', 'output=', 'witness='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -580,6 +584,9 @@ def parse_command_line():
         elif opt == '--output':
             options.final_output = arg
             dbg('Output will be stored to {0}'.format(arg))
+        elif opt == '--witness':
+            options.witness_output = arg
+            dbg('Witness will be stored to {0}'.format(arg))
 
     return options, args
 
@@ -605,7 +612,7 @@ if __name__ == "__main__":
             srcdir = os.path.dirname(source)
             saveto = '{0}/{1}.graphml'.format(os.path.abspath(srcdir),
                                               os.path.basename(source))
-            generate_counterexample(srcdir, saveto)
+            generate_counterexample(srcdir, opts.witness_output)
     except Timeout:
         sys.stdout.flush()
         sys.stderr.flush()
