@@ -199,6 +199,11 @@ def compile_to_llvm(source, is32bit = False, output = None):
     cmd = ['clang', '-g', '-c', '-emit-llvm', '-I']
     cmd.append('{0}/include'.format(symbiotic_dir))
 
+    if os.environ.has_key('CFLAGS'):
+        cmd += os.environ['CFLAGS'].split(' ')
+    if os.environ.has_key('CPPFLAGS'):
+        cmd += os.environ['CPPFLAGS'].split(' ')
+
     if is32bit:
         cmd.append('-m32')
 
