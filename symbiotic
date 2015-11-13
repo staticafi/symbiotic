@@ -28,7 +28,7 @@ from subprocess import call, Popen, PIPE, STDOUT
 VERSION='3.0.1'
 
 usage_msg = """
-Usage: symbiotic OPTS source
+Usage: symbiotic OPTS sources
 
 where OPTS can be following:
 
@@ -48,6 +48,8 @@ where OPTS can be following:
     --witness=FILE    Store witness into FILE (default is witness.graphml)
     --help            Show help message
     --version         Return version
+
+    One (and only one) of the sources must contain 'main' function
 """
 
 # define and compile regular expressions for parsing klee's output
@@ -333,7 +335,7 @@ class Symbiotic(object):
     """
     def __init__(self, src, opts = None):
         # source file
-        self.source = src
+        self.sources = src
         # source compiled to llvm bytecode
         self.llvmfile = None
         # libraries to be linked to the llvm file
@@ -346,14 +348,21 @@ class Symbiotic(object):
         else:
             self.options = opts
 
-    def instrument(self):
+    def _instrument(self, source):
         """
         Instrument the code. This writes right into the file we got
         """
         sd = get_symbiotic_dir()
-        cmd = ['/bin/sh', '-c', '{0}/build-fix.sh {1}'.format(sd, self.source)]
+        cmd = ['/bin/sh', '-c', '{0}/build-fix.sh {1}'.format(sd, source)]
         if run_and_watch(cmd, dbg_watch) != 0:
             raise SymbioticException('Failed instrumenting the code')
+
+    def instrument(self):
+        """
+        Instrument the code. This writes right into the file we got
+        """
+        for source in self.sources:
+            self._instrument(source)
 
     def prepare(self, passes = ['-prepare', '-delete-undefined']):
         output = '{0}-prep.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
@@ -364,12 +373,19 @@ class Symbiotic(object):
 
         self.llvmfile = output
 
-    def link(self):
-        if not self.libs:
+    def link(self, output = None, libs = None):
+        if libs is None:
+            libs = self.libs
+
+        if not libs:
             return
 
-        output = '{0}-linked.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['llvm-link', self.llvmfile, '-o', output] + self.libs
+        if output is None:
+            output = '{0}-linked.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+
+        cmd = ['llvm-link', '-o', output] + libs
+        if self.llvmfile:
+            cmd.append(self.llvmfile)
 
         if run_and_watch(cmd, lambda l: dbg_watch(l, 'compile')) != 0:
             raise SymbioticException('Failed linking llvm file with libraries')
@@ -420,10 +436,20 @@ class Symbiotic(object):
             # FIXME rewrite instrumentation here
             set_environ(opts.is32bit)
 
-            # FIXME do next two phases more "pure"
-            self.llvmfile = compile_to_llvm(self.source, self.options.is32bit)
+            # compile all sources
+            llvmsrc = []
+            for source in self.sources:
+                llvms = compile_to_llvm(source, self.options.is32bit)
+                if llvms is None:
+                    err('Failed compiling the source {0}'.format(source))
+
+                llvmsrc.append(llvms)
+
+            # link all compiled sources to a one bytecode
+            # the result is stored to self.llvmfile
+            self.link('symbiotic_code.bc', llvmsrc)
             if self.llvmfile is None:
-                err('Failed compiling the source {0}'.format(self.source))
+                err('Failed linking compiled sources together')
 
             if not check_llvmfile(self.llvmfile):
                 report_results('ECALL unsupported call', self.options.svcomp)
@@ -597,10 +623,10 @@ def parse_command_line():
 
 if __name__ == "__main__":
     opts, args = parse_command_line()
-    if len(args) != 1:
+    if len(args) < 1:
         err(usage_msg)
 
-    source = args[0]
+    sources = args
 
     if opts.timeout != 0:
         start_timeout(opts.timeout)
@@ -610,7 +636,7 @@ if __name__ == "__main__":
             report_results('EPRP usupported property', opts.svcomp)
             sys.exit(1)
 
-        symbiotic = Symbiotic(source, opts)
+        symbiotic = Symbiotic(sources, opts)
         res = symbiotic.run()
 
         if res == 'FALSE' or res == 'ASSERTIONFAILED':
