@@ -652,9 +652,7 @@ if __name__ == "__main__":
         res = symbiotic.run()
 
         if res == 'FALSE' or res == 'ASSERTIONFAILED':
-            srcdir = os.path.dirname(source)
-            saveto = '{0}/{1}.graphml'.format(os.path.abspath(srcdir),
-                                              os.path.basename(source))
+            srcdir = os.path.dirname(symbiotic.llvmfile)
             generate_counterexample(srcdir, opts.witness_output)
     except Timeout:
         sys.stdout.flush()
