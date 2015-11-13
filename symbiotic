@@ -32,6 +32,7 @@ Usage: symbiotic OPTS sources
 
 where OPTS can be following:
 
+    --bc              Given file is a bytecode
     --64              Use 64-bit environment
     --timeout=t       Set timeout to t seconds
     --no-slice        Do not slice the code
@@ -327,6 +328,7 @@ class SymbioticOptions(object):
         self.no_symexe = False
         self.final_output = None
         self.witness_output = 'witness.graphml'
+        self.source_is_bc = False
 
 class Symbiotic(object):
     """
@@ -429,27 +431,32 @@ class Symbiotic(object):
 
     def _run(self, criterion = '__assert_fail'):
         try:
-            self.instrument()
+            if not self.options.source_is_bc:
+                self.instrument()
 
-            # set environ here, because in instrumentation we use
+            # set environ here, after instrumentaion,
+            # because in instrumentation we use
             # grep and similar commands
-            # FIXME rewrite instrumentation here
+            # FIXME rewrite instrumentation to Python too
             set_environ(opts.is32bit)
 
-            # compile all sources
-            llvmsrc = []
-            for source in self.sources:
-                llvms = compile_to_llvm(source, self.options.is32bit)
-                if llvms is None:
-                    err('Failed compiling the source {0}'.format(source))
+            if self.options.source_is_bc:
+                self.llvmfile = sources[0]
+            else:
+                # compile all sources
+                llvmsrc = []
+                for source in self.sources:
+                    llvms = compile_to_llvm(source, self.options.is32bit)
+                    if llvms is None:
+                        err('Failed compiling the source {0}'.format(source))
 
-                llvmsrc.append(llvms)
+                    llvmsrc.append(llvms)
 
-            # link all compiled sources to a one bytecode
-            # the result is stored to self.llvmfile
-            self.link('symbiotic_code.bc', llvmsrc)
-            if self.llvmfile is None:
-                err('Failed linking compiled sources together')
+                # link all compiled sources to a one bytecode
+                # the result is stored to self.llvmfile
+                self.link('symbiotic_code.bc', llvmsrc)
+                if self.llvmfile is None:
+                    err('Failed linking compiled sources together')
 
             if not check_llvmfile(self.llvmfile):
                 report_results('ECALL unsupported call', self.options.svcomp)
@@ -567,7 +574,7 @@ def parse_command_line():
                                    ['no-slice', '64', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=', 'version', 'help',
                                     'libc=', 'old-slicer', 'require-slicer',
-                                    'no-symexe', 'output=', 'witness='])
+                                    'no-symexe', 'output=', 'witness=', 'bc'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -618,6 +625,9 @@ def parse_command_line():
         elif opt == '--witness':
             options.witness_output = arg
             dbg('Witness will be stored to {0}'.format(arg))
+        elif opt == '--bc':
+            options.source_is_bc = True
+            dbg('Given code is bytecode')
 
     return options, args
 
@@ -627,6 +637,8 @@ if __name__ == "__main__":
         err(usage_msg)
 
     sources = args
+    if opts.source_is_bc and len(sources) != 1:
+        err('Bytecode must be only one file')
 
     if opts.timeout != 0:
         start_timeout(opts.timeout)
