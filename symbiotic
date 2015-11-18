@@ -38,6 +38,11 @@ where OPTS can be following:
     --no-slice        Do not slice the code
     --require-slicer  Abort if slicing fails (default is to use the original file)
     --no-symexe       Do not run symbolic execution (handy for debugging)
+    --optimize=TYPES  Run optimizations, TYPES can be: before, before-O2, after.
+                      before/after means before or/and after slicing. before-O2
+                      runs full optimizations before slicing (normally only some
+                      conservative optimizations are run before slicing).
+                      none disables optimizations (same as --no-optimize)
     --no-optimize     Don't optimize the code
     --libc=klee       Let klee use its libc
     --prp=property    Specify property that should hold
@@ -77,6 +82,21 @@ supported_properties = {
 }
 
 unsupported_call = re.compile('.*call to .* is unsupported.*')
+
+# the list of optimizations is based on klee -optimize
+# option, but is adjusted for our needs (therefore
+# we don't use the -optimize option with klee)
+optimizations_O2 = ['-simplifycfg', '-globalopt', '-globaldce', '-ipconstprop',
+                    '-deadargelim', '-instcombine', '-simplifycfg', '-prune-eh',
+                    '-functionattrs', '-inline', '-argpromotion', '-instcombine',
+                    '-jump-threading', '-simplifycfg', '-gvn', '-scalarrepl',
+                    '-instcombine', '-tailcallelim', '-simplifycfg',
+                    '-reassociate', '-loop-rotate', '-licm', '-loop-unswitch',
+                    '-instcombine', '-indvars', '-loop-deletion', '-loop-unroll',
+                    '-instcombine', '-memcpyopt', '-sccp', '-instcombine',
+                    '-dse', '-adce', '-simplifycfg', '-strip-dead-prototypes',
+                    '-constmerge', '-ipsccp', '-deadargelim', '-die',
+                    '-instcombine']
 
 enable_debug = False
 debug_opts = []
@@ -329,6 +349,7 @@ class SymbioticOptions(object):
         self.final_output = None
         self.witness_output = 'witness.graphml'
         self.source_is_bc = False
+        self.optlevel = ["before", "after"]
 
 class Symbiotic(object):
     """
@@ -408,7 +429,7 @@ class Symbiotic(object):
 
         self.llvmfile = output
 
-    def optimize(self, passes = ['-simplifycfg', '-dce']):
+    def optimize(self, passes = optimizations_O2):
         if self.options.no_optimize:
             return
 
@@ -478,33 +499,18 @@ class Symbiotic(object):
             # slice the code
             if not self.options.noslice:
                 # run optimizations that can make slicing more precise
-                self.optimize(passes=['-simplifycfg', '-ipconstprop',
-                                      '-argpromotion', '-instcombine',
-                                      '-deadargelim', '-simplifycfg'])
+                if "before-O2" in self.options.optlevel:
+                    self.optimize(passes=optimizations_O2)
+                elif "before" in self.options.optlevel:
+                    self.optimize(passes=['-simplifycfg', '-ipconstprop',
+                                          '-argpromotion', '-instcombine',
+                                          '-deadargelim', '-simplifycfg'])
+
                 self.slicer(criterion)
 
             # optimize the code before symbolic execution
-            # the list of optimizations is based on klee -optimize
-            # option, but is adjusted for our needs (therefore
-            # we don't use the -optimize option)
-            optimizations = ['-simplifycfg', '-globalopt',
-                             '-globaldce', '-ipconstprop',
-                             '-deadargelim', '-instcombine',
-                             '-simplifycfg', '-prune-eh',
-                             '-functionattrs', '-inline',
-                             '-argpromotion', '-instcombine',
-                             '-jump-threading', '-simplifycfg',
-                             '-gvn', '-scalarrepl', '-instcombine',
-                             '-tailcallelim', '-simplifycfg',
-                             '-reassociate', '-loop-rotate', '-licm',
-                             '-loop-unswitch', '-instcombine', '-indvars',
-                             '-loop-deletion', '-loop-unroll',
-                             '-instcombine', '-memcpyopt', '-sccp',
-                             '-instcombine', '-dse', '-adce',
-                             '-simplifycfg', '-strip-dead-prototypes',
-                             '-constmerge', '-ipsccp', '-deadargelim',
-                             '-die', '-instcombine']
-            self.optimize(passes=optimizations)
+            if "after" in self.options.optlevel:
+                self.optimize()
 
         except SymbioticException as e:
             # FIXME if we should not run further, do not run further
@@ -574,7 +580,8 @@ def parse_command_line():
                                    ['no-slice', '64', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=', 'version', 'help',
                                     'libc=', 'old-slicer', 'require-slicer',
-                                    'no-symexe', 'output=', 'witness=', 'bc'])
+                                    'no-symexe', 'output=', 'witness=', 'bc',
+                                    'optimize='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -613,6 +620,17 @@ def parse_command_line():
         elif opt == '--no-optimize':
             dbg('Will not optimize the code')
             options.no_optimize = True
+        elif opt == '--optimize':
+            dbg('Optimization levels: ' + arg)
+            options.optlevel = arg.split(',')
+            for o in options.optlevel:
+                o = o.strip()
+                if o == "none":
+                    options.no_optimize = True
+                    options.optlevel = []
+                    break
+                if not o in ["before", "after", "before-O2", "none"]:
+                    err('Unknown optimization level')
         elif opt == '--prp':
             options.prp = get_prp(arg)
             dbg('Property: {0}'.format(options.prp))
