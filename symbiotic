@@ -187,7 +187,9 @@ def dbg(msg, domain = 'all', print_nl = True):
             print_stderr(msg, 'DBG: ', print_nl)
 
 def get_symbiotic_dir():
-    return os.path.abspath(os.path.dirname(sys.argv[0]))
+    # get real path (strip off links)
+    realpath = os.path.realpath(sys.argv[0])
+    return os.path.abspath(os.path.dirname(realpath))
 
 def set_environ(is32bit = False):
     def prepend(env, what):
