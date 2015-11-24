@@ -36,6 +36,7 @@ where OPTS can be following:
     --64              Use 64-bit environment
     --timeout=t       Set timeout to t seconds
     --no-slice        Do not slice the code
+    --no-prepare      Do not prepare the code
     --require-slicer  Abort if slicing fails (default is to use the original file)
     --no-symexe       Do not run symbolic execution (handy for debugging)
     --optimize=TYPES  Run optimizations, TYPES can be: before, before-O2, after.
@@ -338,6 +339,7 @@ class SymbioticOptions(object):
         self.is32bit = is32bit
         self.prp = prp
         self.noslice = noslice
+        self.noprepare = False
         # FIXME: remove sv-comp option completely and return human-readable output
         self.svcomp = True
         self.timeout = 0
@@ -388,6 +390,9 @@ class Symbiotic(object):
             self._instrument(source)
 
     def prepare(self, passes = ['-prepare', '-delete-undefined']):
+        if self.options.noprepare:
+            return
+
         output = '{0}-prep.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-load', 'LLVMsvc15.so', self.llvmfile, '-o', output] + passes
 
@@ -581,7 +586,7 @@ def parse_command_line():
                                     'debug=', 'timeout=', 'version', 'help',
                                     'libc=', 'old-slicer', 'require-slicer',
                                     'no-symexe', 'output=', 'witness=', 'bc',
-                                    'optimize='])
+                                    'optimize=', 'no-prepare'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -606,6 +611,9 @@ def parse_command_line():
         elif opt == '--no-slice':
             dbg('Will not slice')
             options.noslice = True
+        elif opt == '--no-prepare':
+            dbg('Will not prepare code')
+            options.noprepare = True
         elif opt == '--no-symexe':
             dbg('Will not run symbolic execution')
             options.no_symexe = True
