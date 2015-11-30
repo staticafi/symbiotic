@@ -238,7 +238,9 @@ class CompileWatch(ProcessWatch):
 
     def parse(self, line):
         if 'error' in line or 'ERROR' in line:
-            print(line)
+            sys.stderr.write('cc: {0}'.format(line))
+        else:
+            dbg(line, 'compile', False)
 
 def compile_to_llvm(source, is32bit = False, output = None):
     symbiotic_dir = get_symbiotic_dir()
@@ -263,7 +265,7 @@ def compile_to_llvm(source, is32bit = False, output = None):
     cmd.append(llvmfile)
     cmd.append(source)
 
-    if run_and_watch(cmd, DbgWatch('compile')) != 0:
+    if run_and_watch(cmd, CompileWatch()) != 0:
         return None
 
     return llvmfile
