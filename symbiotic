@@ -135,7 +135,8 @@ def run_and_watch(cmd, watch):
         if line == '' and current_process.poll() is not None:
             break
 
-        if not watch(line):
+        watch.parse(line)
+        if not watch.ok():
             current_process.terminate()
             current_process.kill()
             return -1
@@ -215,9 +216,29 @@ def set_environ(is32bit = False):
     dbg('PATH: {0}'.format(os.environ['PATH']))
     dbg('LD_LIBRARY_PATH: {0}'.format(os.environ['LD_LIBRARY_PATH']))
 
-def dbg_watch(l, dbgdomain = 'all'):
-    dbg(l, domain = dbgdomain, print_nl = False)
-    return True
+class ProcessWatch(object):
+    """ Parse output of running process """
+
+    def parse(self, line):
+        pass
+
+    def ok(self):
+        return True
+
+class DbgWatch(ProcessWatch):
+    def __init__(self, domain = 'all', print_nl = False):
+        self.domain = domain
+        self.print_nl = print_nl
+
+    def parse(self, line):
+        dbg(line, self.domain, self.print_nl)
+
+class CompileWatch(ProcessWatch):
+    """ Parse output of compilation """
+
+    def parse(self, line):
+        if 'error' in line or 'ERROR' in line:
+            print(line)
 
 def compile_to_llvm(source, is32bit = False, output = None):
     symbiotic_dir = get_symbiotic_dir()
@@ -242,7 +263,7 @@ def compile_to_llvm(source, is32bit = False, output = None):
     cmd.append(llvmfile)
     cmd.append(source)
 
-    if run_and_watch(cmd, lambda l: dbg_watch(l, 'compile')) != 0:
+    if run_and_watch(cmd, DbgWatch('compile')) != 0:
         return None
 
     return llvmfile
@@ -265,14 +286,21 @@ def get_libraries(is32bit = False, add_libc = True):
 
     return files
 
-def check_llvmfile(llvmfile):
-    def unsupp_watch(line):
-        dbg(line, domain='prepare', print_nl = False)
-        return not unsupported_call.match(line)
+class UnsuppWatch(ProcessWatch):
+    def __init__(self):
+        self._ok = True
 
+    def ok(self):
+        return self._ok
+
+    def parse(self, line):
+        dbg(line, domain='prepare', print_nl = False)
+        self._ok = not unsupported_call.match(line)
+
+def check_llvmfile(llvmfile):
     cmd = ['opt', '-load', 'LLVMsvc15.so', '-check-unsupported',
            '-o', '/dev/null', llvmfile]
-    if run_and_watch(cmd, unsupp_watch) == -1:
+    if run_and_watch(cmd, UnsuppWatch()) == -1:
         return False
 
     return True
@@ -381,7 +409,7 @@ class Symbiotic(object):
         """
         sd = get_symbiotic_dir()
         cmd = ['/bin/sh', '-c', '{0}/build-fix.sh {1}'.format(sd, source)]
-        if run_and_watch(cmd, dbg_watch) != 0:
+        if run_and_watch(cmd, DbgWatch()) != 0:
             raise SymbioticException('Failed instrumenting the code')
 
     def instrument(self):
@@ -398,7 +426,7 @@ class Symbiotic(object):
         output = '{0}-prep.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-load', 'LLVMsvc15.so', self.llvmfile, '-o', output] + passes
 
-        if run_and_watch(cmd, lambda l: dbg_watch(l, 'prepare')) != 0:
+        if run_and_watch(cmd, DbgWatch('prepare')) != 0:
             raise SymbioticException('Prepare phase failed')
 
         self.llvmfile = output
@@ -417,7 +445,7 @@ class Symbiotic(object):
         if self.llvmfile:
             cmd.append(self.llvmfile)
 
-        if run_and_watch(cmd, lambda l: dbg_watch(l, 'compile')) != 0:
+        if run_and_watch(cmd, DbgWatch('compile')) != 0:
             raise SymbioticException('Failed linking llvm file with libraries')
 
         self.llvmfile = output
@@ -431,7 +459,7 @@ class Symbiotic(object):
         else:
             cmd = ['llvm-slicer', '-c', criterion, self.llvmfile]
 
-        if run_and_watch(cmd, lambda l: dbg_watch(l, 'slicer')) != 0:
+        if run_and_watch(cmd, DbgWatch('slicer')) != 0:
             raise SymbioticException('Slicing failed')
 
         self.llvmfile = output
@@ -443,7 +471,7 @@ class Symbiotic(object):
         output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-o', output, self.llvmfile] + passes
 
-        if run_and_watch(cmd, lambda l: dbg_watch(l, 'prepare')) != 0:
+        if run_and_watch(cmd, DbgWatch('prepare')) != 0:
             raise SymbioticException('Optimizing the code failed')
 
         self.llvmfile = output
