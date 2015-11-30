@@ -146,17 +146,6 @@ def run_and_watch(cmd, watch):
 
     return ret
 
-def get_match(line):
-    for (key, pattern) in patterns.iteritems():
-        if pattern.match(line):
-            # return True so that we know we should terminate
-            if key == 'ASSERTIONFAILED':
-                return (key, True)
-            else:
-                return (key, False)
-
-    return (None, False)
-
 def print_stderr(msg, prefix = None, print_nl = True):
     """
     Print message to stderr
@@ -233,6 +222,22 @@ class DbgWatch(ProcessWatch):
     def parse(self, line):
         dbg(line, self.domain, self.print_nl)
 
+class PrepareWatch(ProcessWatch):
+    def parse(self, line):
+        if 'removing' in line:
+            sys.stdout.write(line)
+        else:
+            dbg(line, 'prepare', False)
+
+class SlicerWatch(ProcessWatch):
+    def parse(self, line):
+        if 'INFO' in line:
+            sys.stdout.write(line)
+        elif 'ERROR' in line or 'error' in line:
+            sys.stderr.write(line)
+        else:
+            dbg(line, 'slicer', False)
+
 class CompileWatch(ProcessWatch):
     """ Parse output of compilation """
 
@@ -307,39 +312,63 @@ def check_llvmfile(llvmfile):
 
     return True
 
-def run_symexe(llvmfile):
-    def parse_klee_output(line):
-        dbg(line, print_nl = False)
-        return get_match(line)
+def get_match(line):
+    for (key, pattern) in patterns.iteritems():
+        if pattern.match(line):
+            # return True so that we know we should terminate
+            if key == 'ASSERTIONFAILED':
+                return (key, True)
+            else:
+                return (key, False)
 
+    return (None, False)
+
+class KleeWatch(ProcessWatch):
+    def __init__(self):
+        self._done = False
+        self._found = []
+
+    def done(self):
+        return self._done
+
+    def found(self):
+        return ' '.join(self._found)
+
+    def parse(self, line):
+        found, self._done = get_match(line)
+        if found:
+            self._found.insert(0, found)
+
+        if 'ERROR' in line or 'WARN' in line:
+            sys.stdout.write(line)
+        elif 'error' in line:
+            sys.stderr.write(line)
+        else:
+            dbg(line, 'all', False)
+
+def run_symexe(llvmfile):
     cmd = ['klee', '-halt-after-assert', '-write-paths', llvmfile]
     dbg(' '.join(cmd))
 
     global current_process
     current_process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
 
-    found = ''
+    watch = KleeWatch()
     while True:
         line = current_process.stdout.readline()
         if line == '' and current_process.poll() is not None:
             break
 
-        nxt, done = parse_klee_output(line)
-
-        if not nxt is None:
-            found = '{0} {1}'.format(nxt, found)
-
-        if done:
-            # send klee the sigint, so that it
-            # will stop running and dump the traces
-            current_process.send_signal(2)
-            #current_process.terminate()
+        watch.parse(line)
+        if watch.done():
             break
 
     ret = current_process.wait()
     current_process = None
+
+    found = watch.found()
     if ret != 0:
-        found += '{0} EKLEEERROR'.format(found)
+        found += ' EKLEEERROR'
 
     return found
 
@@ -428,7 +457,7 @@ class Symbiotic(object):
         output = '{0}-prep.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-load', 'LLVMsvc15.so', self.llvmfile, '-o', output] + passes
 
-        if run_and_watch(cmd, DbgWatch('prepare')) != 0:
+        if run_and_watch(cmd, PrepareWatch()) != 0:
             raise SymbioticException('Prepare phase failed')
 
         self.llvmfile = output
@@ -461,7 +490,7 @@ class Symbiotic(object):
         else:
             cmd = ['llvm-slicer', '-c', criterion, self.llvmfile]
 
-        if run_and_watch(cmd, DbgWatch('slicer')) != 0:
+        if run_and_watch(cmd, SlicerWatch()) != 0:
             raise SymbioticException('Slicing failed')
 
         self.llvmfile = output
