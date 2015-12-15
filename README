@@ -5,6 +5,7 @@ Symbiotic is a tool for verifying computer programs. It uses three well-know tec
 instrumentation, slicing and symbolic execution. Symbiotic is highly modular,
 so most of the components are in self-standing repository (see https://github.com/staticafi)
 
-Building and running instructions can be found in the projects wiki: https://github.com/staticafi/symbiotic/wiki
+Building and running instructions can be found in the projects wiki:
+https://github.com/staticafi/symbiotic/wiki/Symbiotic
 
 Have fun! ;)
