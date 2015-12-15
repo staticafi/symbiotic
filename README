@@ -1,24 +1,10 @@
-Building
-======================================================================
+What is Symbiotic?
+======================
 
-Symbiotic must be built in other directory than the sources.
-Basically, the usage is:
+Symbiotic is a tool for verifying computer programs. It uses three well-know techniques -
+instrumentation, slicing and symbolic execution. Symbiotic is highly modular,
+so most of the components are in self-standing repository (see https://github.com/staticafi)
 
-  symbiotic-build.sh make_options
-
-An example:
-
-$ git clone https://github.com/staticafi/symbiotic
-$ mkdir build
-$ cd build
-$ ../symbiotic/symbiotic-build.sh -j4
-
-Result is to be in build/install directory and is under git control, so you
-can see the differences between versions or make an archive using git archive
-command.
-
-If you need to specify paths to header files or libraries, you can do it
-by passing CFLAGS, CPPFLAGS, LDFLAGS environment variables either by exporting
-them beforehead, or by passing them as make options.
+Building and running instructions can be found in the projects wiki: https://github.com/staticafi/symbiotic/wiki
 
 Have fun! ;)
