@@ -23,6 +23,7 @@ import re
 import getopt
 import signal
 from subprocess import call, Popen, PIPE, STDOUT
+from time import time
 
 # FIXME print versions of components too
 VERSION='3.0.1'
@@ -719,6 +720,10 @@ def parse_command_line():
     return options, args
 
 if __name__ == "__main__":
+    # store time when we have started, so that we can
+    # measure how long Symbiotic ran
+    start_time = time()
+
     opts, args = parse_command_line()
     if len(args) < 1:
         err(usage_msg)
@@ -754,4 +759,6 @@ if __name__ == "__main__":
         sys.stderr.flush()
         sys.stdout.flush()
 
+    # print information about how long Symbiotic ran
+    print('INFO: Time elapsed: {0}'.format(time() - start_time))
     sys.exit(0)
