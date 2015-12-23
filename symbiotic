@@ -33,29 +33,30 @@ Usage: symbiotic OPTS sources
 
 where OPTS can be following:
 
-    --bc              Given file is a bytecode
-    --64              Use 64-bit environment
-    --timeout=t       Set timeout to t seconds
-    --no-slice        Do not slice the code
-    --no-prepare      Do not prepare the code
-    --require-slicer  Abort if slicing fails (default is to use the original file)
-    --no-symexe       Do not run symbolic execution (handy for debugging)
-    --optimize=TYPES  Run optimizations, TYPES can be: before, before-O2, after.
-                      before/after means before or/and after slicing. before-O2
-                      runs full optimizations before slicing (normally only some
-                      conservative optimizations are run before slicing).
-                      none disables optimizations (same as --no-optimize)
-    --no-optimize     Don't optimize the code
-    --libc=klee       Let klee use its libc
-    --prp=property    Specify property that should hold
-    --debug=what      Print debug messages, what can be comma separated list of:
-                      all, compile, prepare, slicer
-                      In that case you get verbose output. You can just use
-                      --debug= to print basic messages.
-    --output=FILE     Store the final code (that is to be run by symexe) to FILE
-    --witness=FILE    Store witness into FILE (default is witness.graphml)
-    --help            Show help message
-    --version         Return version
+    --bc                  Given file is a bytecode
+    --64                  Use 64-bit environment
+    --timeout=t           Set timeout to t seconds
+    --no-slice            Do not slice the code
+    --no-prepare          Do not prepare the code
+    --malloc-never-fails  Suppose malloc and calloc never return NULL
+    --require-slicer      Abort if slicing fails (default is to use the original file)
+    --no-symexe           Do not run symbolic execution (handy for debugging)
+    --optimize=TYPES      Run optimizations, TYPES can be: before, before-O2, after.
+                          before/after means before or/and after slicing. before-O2
+                          runs full optimizations before slicing (normally only some
+                          conservative optimizations are run before slicing).
+                          none disables optimizations (same as --no-optimize)
+    --no-optimize         Don't optimize the code
+    --libc=klee           Let klee use its libc
+    --prp=property        Specify property that should hold
+    --debug=what          Print debug messages, what can be comma separated list of:
+                          all, compile, prepare, slicer
+                          In that case you get verbose output. You can just use
+                          --debug= to print basic messages.
+    --output=FILE         Store the final code (that is to be run by symexe) to FILE
+    --witness=FILE        Store witness into FILE (default is witness.graphml)
+    --help                Show help message
+    --version             Return version
 
     One (and only one) of the sources must contain 'main' function
 """
@@ -401,6 +402,7 @@ class SymbioticOptions(object):
         self.is32bit = is32bit
         self.prp = prp
         self.noslice = noslice
+        self.malloc_never_fails = False
         self.noprepare = False
         # FIXME: remove sv-comp option completely and return human-readable output
         self.svcomp = True
@@ -550,9 +552,17 @@ class Symbiotic(object):
                 report_results('ECALL unsupported call', self.options.svcomp)
                 sys.exit(1)
 
+            # check if we should instrument the version of malloc
+            # that never returns a NULL pointer
+            if self.options.malloc_never_fails:
+                instrument_alloc = '-instrument-alloc-nf'
+            else:
+                instrument_alloc = '-instrument-alloc'
+
             # remove invaild function definitions and instrument our malloc
-            self.prepare(passes = ['-prepare', '-instrument-alloc-nf',
+            self.prepare(passes = ['-prepare', instrument_alloc,
                                    '-initialize-uninitialized'])
+
             self.libs = get_libraries(opts.is32bit, opts.add_libc)
             if not self.libs:
                 err('Failed compiling support library')
@@ -648,7 +658,7 @@ def parse_command_line():
                                     'debug=', 'timeout=', 'version', 'help',
                                     'libc=', 'old-slicer', 'require-slicer',
                                     'no-symexe', 'output=', 'witness=', 'bc',
-                                    'optimize=', 'no-prepare'])
+                                    'optimize=', 'no-prepare', 'malloc-never-fails'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -676,6 +686,9 @@ def parse_command_line():
         elif opt == '--no-prepare':
             dbg('Will not prepare code')
             options.noprepare = True
+        elif opt == '--malloc-never-fails':
+            dbg('Assuming malloc and calloc will never fail')
+            options.malloc_never_fails = True
         elif opt == '--no-symexe':
             dbg('Will not run symbolic execution')
             options.no_symexe = True
