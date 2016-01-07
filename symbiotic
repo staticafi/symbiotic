@@ -751,7 +751,7 @@ if __name__ == "__main__":
     try:
         if not check_property(opts.prp):
             report_results('EPRP usupported property', opts.svcomp)
-            sys.exit(1)
+            sys.exit(0)
 
         symbiotic = Symbiotic(sources, opts)
         res = symbiotic.run()
