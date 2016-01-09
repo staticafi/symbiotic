@@ -492,6 +492,17 @@ class SymbioticOptions(object):
         self.source_is_bc = False
         self.optlevel = ["before", "after"]
 
+
+def run_checked(cmd, error_msg, dbg_domain = 'all'):
+    """
+    Run command and raise an exeception on error
+    """
+    watch = BufferedDbgWatch(dbg_domain)
+    if run_and_watch(cmd, watch) != 0:
+       for line in watch.getLines():
+           print_stderr(line, 'ERR: ')
+       raise SymbioticException(error_msg)
+
 class Symbiotic(object):
     """
     Instance of symbiotic tool. Instruments, prepares, compiles and runs
@@ -519,11 +530,7 @@ class Symbiotic(object):
         sd = get_symbiotic_dir()
         cmd = ['/bin/sh', '-c', '{0}/build-fix.sh {1}'.format(sd, source)]
 
-        watch = BufferedDbgWatch()
-        if run_and_watch(cmd, watch) != 0:
-            for line in watch.getLines():
-                print_stderr(line, 'ERR: ')
-            raise SymbioticException('Failed instrumenting the code')
+        run_checked(cmd, 'Failed instrumenting the code')
 
     def instrument(self):
         """
@@ -558,11 +565,7 @@ class Symbiotic(object):
         if self.llvmfile:
             cmd.append(self.llvmfile)
 
-        watch = BufferedDbgWatch('compile')
-        if run_and_watch(cmd, watch) != 0:
-            for line in watch.getLines():
-                print_stderr(line, 'ERR: ')
-            raise SymbioticException('Failed linking llvm file with libraries')
+        run_checked(cmd, 'Failed linking llvm file with libraries', 'compile')
 
         self.llvmfile = output
 
@@ -587,11 +590,7 @@ class Symbiotic(object):
         output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-o', output, self.llvmfile] + passes
 
-        watch = BufferedDbgWatch('prepare')
-        if run_and_watch(cmd, watch) != 0:
-            for line in watch.getLines():
-                print_stderr(line, 'ERR: ')
-            raise SymbioticException('Optimizing the code failed')
+        run_checked(cmd, 'Optimizing the code failed', 'prepare')
 
         self.llvmfile = output
 
