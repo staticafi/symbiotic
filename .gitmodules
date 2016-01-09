@@ -1,0 +1,9 @@
+[submodule "dg"]
+	path = dg
+	url = https://github.com/mchalupa/dg
+[submodule "svc15"]
+	path = svc15
+	url = https://github.com/staticafi/svc15
+[submodule "LLVMSlicer"]
+	path = LLVMSlicer
+	url = https://github.com/jirislaby/LLVMSlicer
