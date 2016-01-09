@@ -111,46 +111,6 @@ debug_opts = []
 # (e. g. on timeout)
 current_process = None
 
-def parse_debug_opts(opts):
-    global debug_opts
-    debug_opts = opts.split(',')
-
-class Timeout(Exception):
-    pass
-
-def start_timeout(sec):
-    def alarm_handler(signum, data):
-        raise Timeout
-
-    signal.signal(signal.SIGALRM, alarm_handler)
-    signal.alarm(sec)
-
-def stop_timeout():
-    # turn of timeout
-    signal.signal(signal.SIGALRM, signal.SIG_DFL)
-    signal.alarm(0)
-
-def run_and_watch(cmd, watch):
-    dbg(' '.join(cmd))
-    global current_process
-    current_process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
-
-    while True:
-        line = current_process.stdout.readline()
-        if line == '' and current_process.poll() is not None:
-            break
-
-        watch.parse(line)
-        if not watch.ok():
-            current_process.terminate()
-            current_process.kill()
-            return -1
-
-    ret = current_process.wait()
-    current_process = None
-
-    return ret
-
 def print_stderr(msg, prefix = None, print_nl = True):
     """
     Print message to stderr
@@ -210,14 +170,75 @@ def set_environ(is32bit = False):
     dbg('PATH: {0}'.format(os.environ['PATH']))
     dbg('LD_LIBRARY_PATH: {0}'.format(os.environ['LD_LIBRARY_PATH']))
 
+class Timeout(Exception):
+    pass
+
+def start_timeout(sec):
+    def alarm_handler(signum, data):
+        raise Timeout
+
+    signal.signal(signal.SIGALRM, alarm_handler)
+    signal.alarm(sec)
+
+def stop_timeout():
+    # turn of timeout
+    signal.signal(signal.SIGALRM, signal.SIG_DFL)
+    signal.alarm(0)
+
 class ProcessWatch(object):
     """ Parse output of running process """
 
     def parse(self, line):
+        """
+        Parse output of running process.
+        This method will be override by child class
+        """
         pass
 
     def ok(self):
+        """
+        Return True if everyithing is ok with the process,
+        or False if anything went wrong (based on the process' output).
+        In case that this method returns False, run_and_watch() function
+        will terminate the process and return -1
+        """
         return True
+
+def run_and_watch(cmd, watch):
+    """
+    Run command @cmd and pass its stdout+stderr output
+    to @watch object. watch object is supposed to be
+    an instance of ProcessWatch object. Running process
+    has handle in current_process global variable.
+
+    \return return code of the process or -1 on watch error
+    """
+
+    dbg(' '.join(cmd))
+
+    # run the command and store handle into global variable
+    # current_process, so that we can easily kill this process
+    # on timeout or signal. This way we can run only one
+    # process at the time, but we don't need more (yet?)
+    global current_process
+    current_process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+
+    while True:
+        line = current_process.stdout.readline()
+        if line == '' and current_process.poll() is not None:
+            break
+
+        watch.parse(line)
+        if not watch.ok():
+            # watch told us to kill the process for some reason
+            current_process.terminate()
+            current_process.kill()
+            return -1
+
+    ret = current_process.wait()
+    current_process = None
+
+    return ret
 
 class DbgWatch(ProcessWatch):
     def __init__(self, domain = 'all', print_nl = False):
@@ -317,7 +338,7 @@ def check_llvmfile(llvmfile):
 
     return True
 
-def get_match(line):
+def is_assertion_failed(line):
     for (key, pattern) in patterns.iteritems():
         if pattern.match(line):
             # return True so that we know we should terminate
@@ -340,7 +361,7 @@ class KleeWatch(ProcessWatch):
         return ' '.join(self._found)
 
     def parse(self, line):
-        found, self._done = get_match(line)
+        found, self._done = is_assertion_failed(line)
         if found:
             self._found.insert(0, found)
 
@@ -423,7 +444,7 @@ class SymbioticOptions(object):
 class Symbiotic(object):
     """
     Instance of symbiotic tool. Instruments, prepares, compiles and runs
-    symbolic execution on given source
+    symbolic execution on given source(s)
     """
     def __init__(self, src, opts = None):
         # source file
@@ -619,6 +640,8 @@ def generate_graphml(path, saveto):
     dbg('Generating counterexample: {0}'.format(saveto))
     bindir = os.path.dirname(sys.argv[0])
     f = open('/dev/null', 'r')
+    # FIXME: rewrite path_to_ml.pl to python, so that we can use it
+    # right from here
     ret = call(['{0}/path_to_ml.pl {1} > {2}'.format(bindir, path, saveto)],
                shell=True, stdout = f, stderr = f)
     if ret != 0:
@@ -672,8 +695,9 @@ def parse_command_line():
             sys.exit(0)
         elif opt == '--debug':
             global enable_debug
+            global debug_opts
             enable_debug = True
-            parse_debug_opts(arg)
+            debug_opts = arg.split(',')
         elif opt == '--libc':
              if arg == 'klee':
                  options.add_libc = True
