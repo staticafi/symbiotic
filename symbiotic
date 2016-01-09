@@ -114,12 +114,13 @@ current_process = None
 COLORS = {
     'RED'   : '\033[1;31m',
     'GREEN' : '\033[1;32m',
+    'BROWN' : '\033[0;33m',
     'RESET' : '\033[0m'
 }
 
-def print_stderr(msg, prefix = None, print_nl = True, color = None):
+def print_stream(msg, stream, prefix = None, print_nl = True, color = None):
     """
-    Print message to stderr
+    Print message to stderr/stdout
 
     @ msg      : str    message to print
     @ prefix   : str    prefix for the message
@@ -129,26 +130,32 @@ def print_stderr(msg, prefix = None, print_nl = True, color = None):
 
     # don't print color when the output is redirected
     # to a file
-    if not sys.stderr.isatty():
+    if not stream.isatty():
         color = None
 
     if not color is None:
-        sys.stderr.write(COLORS[color])
+        stream.write(COLORS[color])
 
     if msg == '':
         return
     if not prefix is None:
-        sys.stderr.write(prefix)
+        stream.write(prefix)
 
-    sys.stderr.write(msg)
+    stream.write(msg)
 
     if not color is None:
-        sys.stderr.write(COLORS['RESET'])
+        stream.write(COLORS['RESET'])
 
     if print_nl:
-        sys.stderr.write('\n')
+        stream.write('\n')
 
-    sys.stderr.flush()
+    stream.flush()
+
+def print_stderr(msg, prefix = None, print_nl = True, color = None):
+    print_stream(msg, sys.stderr, prefix, print_nl, color)
+
+def print_stdout(msg, prefix = None, print_nl = True, color = None):
+    print_stream(msg, sys.stdout, prefix, print_nl, color)
 
 def err(msg, color = 'RED'):
     print_stderr(msg, 'ERROR: ', color=color)
@@ -459,8 +466,7 @@ def report_results(res):
     else:
         result = 'UNKNOWN'
 
-    print(result)
-    sys.stdout.flush()
+    print_stdout(result, color='BROWN')
 
     return result
 
