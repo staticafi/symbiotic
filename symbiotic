@@ -111,14 +111,29 @@ debug_opts = []
 # (e. g. on timeout)
 current_process = None
 
-def print_stderr(msg, prefix = None, print_nl = True):
+COLORS = {
+    'RED'   : '\033[1;31m',
+    'GREEN' : '\033[1;32m',
+    'RESET' : '\033[0m'
+}
+
+def print_stderr(msg, prefix = None, print_nl = True, color = None):
     """
     Print message to stderr
 
-    @ msg     : str    message to print
-    @ prefix  : str    prefix for the message
-    @print_nl : bool   print new line after the message
+    @ msg      : str    message to print
+    @ prefix   : str    prefix for the message
+    @ print_nl : bool  print new line after the message
+    @ color    : str    color to use when printing, default None
     """
+
+    # don't print color when the output is redirected
+    # to a file
+    if not sys.stderr.isatty():
+        color = None
+
+    if not color is None:
+        sys.stderr.write(COLORS[color])
 
     if msg == '':
         return
@@ -126,13 +141,17 @@ def print_stderr(msg, prefix = None, print_nl = True):
         sys.stderr.write(prefix)
 
     sys.stderr.write(msg)
+
+    if not color is None:
+        sys.stderr.write(COLORS['RESET'])
+
     if print_nl:
         sys.stderr.write('\n')
 
     sys.stderr.flush()
 
-def err(msg):
-    print_stderr(msg, 'ERROR: ')
+def err(msg, color = 'RED'):
+    print_stderr(msg, 'ERROR: ', color=color)
     sys.exit(1)
 
 def dbg(msg, domain = 'all', print_nl = True):
@@ -589,7 +608,8 @@ class Symbiotic(object):
 
             # set environ here, after instrumentaion,
             # because in instrumentation we use
-            # grep and similar commands
+            # grep and similar commands and in set_environ
+            # we reset PATH variable
             # FIXME rewrite instrumentation to Python too
             set_environ(opts.is32bit)
 
@@ -779,7 +799,7 @@ def parse_command_line():
                     options.optlevel = []
                     break
                 if not o in ["before", "after", "before-O2", "none"]:
-                    err('Unknown optimization level')
+                    err('Unknown optimization level, try --help')
         elif opt == '--prp':
             options.prp = get_prp(arg)
             dbg('Property: {0}'.format(options.prp))
@@ -805,7 +825,8 @@ if __name__ == "__main__":
 
     opts, args = parse_command_line()
     if len(args) < 1:
-        err(usage_msg)
+        print(usage_msg)
+        sys.exit(1)
 
     sources = args
     if opts.source_is_bc and len(sources) != 1:
