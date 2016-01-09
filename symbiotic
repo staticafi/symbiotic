@@ -248,6 +248,35 @@ class DbgWatch(ProcessWatch):
     def parse(self, line):
         dbg(line, self.domain, self.print_nl)
 
+class BufferedDbgWatch(DbgWatch):
+    """
+    This is same as dbg watch, but it stores
+    few last lines of the output
+    """
+    def __init__(self, domain = 'all', print_nl = False, maxlines = 50):
+        DbgWatch.__init__(self, domain, print_nl)
+        self.lines = []
+        self.MAX_LINES_NUM = maxlines
+        self.cur_lines_num = 0
+
+        # use DbgWatch in this case
+        assert maxlines > 0
+
+    def getLines(self):
+        return self.lines
+
+    def parse(self, line):
+        DbgWatch.parse(self, line)
+
+        # store the output
+        if self.cur_lines_num == self.MAX_LINES_NUM:
+            self.lines.pop(0)
+        else:
+            self.cur_lines_num += 1
+
+        self.lines.append(line)
+        assert self.cur_lines_num <= self.MAX_LINES_NUM
+
 class PrepareWatch(ProcessWatch):
     def parse(self, line):
         if 'removing' in line:
@@ -467,7 +496,11 @@ class Symbiotic(object):
         """
         sd = get_symbiotic_dir()
         cmd = ['/bin/sh', '-c', '{0}/build-fix.sh {1}'.format(sd, source)]
-        if run_and_watch(cmd, DbgWatch()) != 0:
+
+        watch = BufferedDbgWatch()
+        if run_and_watch(cmd, watch) != 0:
+            for line in watch.getLines():
+                print_stderr(line, 'ERR: ')
             raise SymbioticException('Failed instrumenting the code')
 
     def instrument(self):
@@ -503,7 +536,10 @@ class Symbiotic(object):
         if self.llvmfile:
             cmd.append(self.llvmfile)
 
-        if run_and_watch(cmd, DbgWatch('compile')) != 0:
+        watch = BufferedDbgWatch('compile')
+        if run_and_watch(cmd, watch) != 0:
+            for line in watch.getLines():
+                print_stderr(line, 'ERR: ')
             raise SymbioticException('Failed linking llvm file with libraries')
 
         self.llvmfile = output
@@ -529,7 +565,10 @@ class Symbiotic(object):
         output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-o', output, self.llvmfile] + passes
 
-        if run_and_watch(cmd, DbgWatch('prepare')) != 0:
+        watch = BufferedDbgWatch('prepare')
+        if run_and_watch(cmd, watch) != 0:
+            for line in watch.getLines():
+                print_stderr(line, 'ERR: ')
             raise SymbioticException('Optimizing the code failed')
 
         self.llvmfile = output
