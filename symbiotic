@@ -456,17 +456,20 @@ def run_symexe(llvmfile):
 def report_results(res):
     dbg(res)
     result = res
+    color = 'BROWN'
 
     if res.startswith('ASSERTIONFAILED'):
         result = 'FALSE'
+        color = 'RED'
     elif res == '':
         result = 'TRUE'
+        color='GREEN'
     elif res == 'TIMEOUT':
         result = 'TIMEOUT'
     else:
         result = 'UNKNOWN'
 
-    print_stdout(result, color='BROWN')
+    print_stdout(result, color=color)
 
     return result
 
