@@ -420,7 +420,7 @@ class KleeWatch(ProcessWatch):
         if found:
             self._found.insert(0, found)
 
-        if 'ERROR' in line or 'WARN' in line:
+        if 'ERROR' in line or 'WARN' in line or 'Assertion' in line:
             sys.stdout.write(line)
         elif 'error' in line:
             sys.stderr.write(line)
@@ -466,6 +466,9 @@ def report_results(res):
         color='GREEN'
     elif res == 'TIMEOUT':
         result = 'TIMEOUT'
+    elif 'EKLEEERROR' in res:
+        result = 'ERROR'
+        color='RED'
     else:
         result = 'UNKNOWN'
 
