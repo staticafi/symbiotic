@@ -446,19 +446,18 @@ def run_symexe(llvmfile):
 
     return found
 
-def report_results(res, svcomp):
+def report_results(res):
     dbg(res)
     result = res
 
-    if svcomp:
-        if res.startswith('ASSERTIONFAILED'):
-            result = 'FALSE'
-        elif res == '':
-            result = 'TRUE'
-        elif res == 'TIMEOUT':
-            result = 'TIMEOUT'
-        else:
-            result = 'UNKNOWN'
+    if res.startswith('ASSERTIONFAILED'):
+        result = 'FALSE'
+    elif res == '':
+        result = 'TRUE'
+    elif res == 'TIMEOUT':
+        result = 'TIMEOUT'
+    else:
+        result = 'UNKNOWN'
 
     print(result)
     sys.stdout.flush()
@@ -476,8 +475,6 @@ class SymbioticOptions(object):
         self.noslice = noslice
         self.malloc_never_fails = False
         self.noprepare = False
-        # FIXME: remove sv-comp option completely and return human-readable output
-        self.svcomp = True
         self.timeout = 0
         self.add_libc = False
         self.old_slicer = False
@@ -632,7 +629,7 @@ class Symbiotic(object):
                     err('Failed linking compiled sources together')
 
             if not check_llvmfile(self.llvmfile):
-                report_results('ECALL unsupported call', self.options.svcomp)
+                report_results('ECALL unsupported call')
                 sys.exit(1)
 
             # check if we should instrument the version of malloc
@@ -689,7 +686,7 @@ class Symbiotic(object):
         else:
             found = 'Did not run symbolic execution'
 
-        return report_results(found, self.options.svcomp)
+        return report_results(found)
 
 def generate_graphml(path, saveto):
     if saveto is None:
@@ -837,7 +834,7 @@ if __name__ == "__main__":
 
     try:
         if not check_property(opts.prp):
-            report_results('EPRP usupported property', opts.svcomp)
+            report_results('EPRP usupported property')
             sys.exit(0)
 
         symbiotic = Symbiotic(sources, opts)
@@ -853,7 +850,7 @@ if __name__ == "__main__":
             current_process.terminate()
             current_process.kill()
 
-        report_results('TIMEOUT', opts.svcomp)
+        report_results('TIMEOUT')
     finally:
         stop_timeout()
         sys.stderr.flush()
