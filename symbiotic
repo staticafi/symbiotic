@@ -187,11 +187,9 @@ def set_environ(is32bit = False):
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
     prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
     if is32bit:
-        prepend('KLEE_RUNTIME_LIBRARY_PATH',
-                '{0}/lib32/klee/runtime'.format(symbiotic_dir))
+        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] = '{0}/lib32/klee/runtime'.format(symbiotic_dir)
     else:
-        prepend('KLEE_RUNTIME_LIBRARY_PATH',
-                '{0}/lib/klee/runtime'.format(symbiotic_dir))
+        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] = '{0}/lib/klee/runtime'.format(symbiotic_dir)
 
     dbg('PATH: {0}'.format(os.environ['PATH']))
     dbg('LD_LIBRARY_PATH: {0}'.format(os.environ['LD_LIBRARY_PATH']))
