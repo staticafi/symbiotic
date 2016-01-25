@@ -191,8 +191,8 @@ def set_environ(is32bit = False):
     else:
         os.environ['KLEE_RUNTIME_LIBRARY_PATH'] = '{0}/lib/klee/runtime'.format(symbiotic_dir)
 
-    dbg('PATH: {0}'.format(os.environ['PATH']))
-    dbg('LD_LIBRARY_PATH: {0}'.format(os.environ['LD_LIBRARY_PATH']))
+    dbg('PATH={0}'.format(os.environ['PATH']))
+    dbg('LD_LIBRARY_PATH={0}'.format(os.environ['LD_LIBRARY_PATH']))
 
 class Timeout(Exception):
     pass
