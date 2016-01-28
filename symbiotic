@@ -93,16 +93,14 @@ unsupported_call = re.compile('.*call to .* is unsupported.*')
 # option, but is adjusted for our needs (therefore
 # we don't use the -optimize option with klee)
 optimizations_O2 = ['-simplifycfg', '-globalopt', '-globaldce', '-ipconstprop',
-                    '-deadargelim', '-instcombine', '-simplifycfg', '-prune-eh',
-                    '-functionattrs', '-inline', '-argpromotion', '-instcombine',
+                    '-deadargelim', '-simplifycfg', '-prune-eh',
+                    '-functionattrs', '-inline', '-argpromotion',
                     '-jump-threading', '-simplifycfg', '-gvn', '-scalarrepl',
-                    '-instcombine', '-tailcallelim', '-simplifycfg',
-                    '-reassociate', '-loop-rotate', '-licm', '-loop-unswitch',
-                    '-instcombine', '-indvars', '-loop-deletion', '-loop-unroll',
-                    '-instcombine', '-memcpyopt', '-sccp', '-instcombine',
+                    '-tailcallelim', '-simplifycfg', '-reassociate',
+                    '-loop-rotate', '-licm', '-loop-unswitch', '-indvars',
+                    '-loop-deletion', '-loop-unroll', '-memcpyopt', '-sccp',
                     '-dse', '-adce', '-simplifycfg', '-strip-dead-prototypes',
-                    '-constmerge', '-ipsccp', '-deadargelim', '-die',
-                    '-instcombine']
+                    '-constmerge', '-ipsccp', '-deadargelim', '-die']
 
 enable_debug = False
 debug_opts = []
@@ -669,8 +667,8 @@ class Symbiotic(object):
                     self.optimize(passes=optimizations_O2)
                 elif "before" in self.options.optlevel:
                     self.optimize(passes=['-simplifycfg', '-ipconstprop',
-                                          '-argpromotion', '-instcombine',
-                                          '-deadargelim', '-simplifycfg'])
+                                          '-argpromotion', '-deadargelim',
+                                          '-simplifycfg'])
 
                 self.slicer(criterion)
 
