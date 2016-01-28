@@ -666,9 +666,9 @@ class Symbiotic(object):
                 if "before-O2" in self.options.optlevel:
                     self.optimize(passes=optimizations_O2)
                 elif "before" in self.options.optlevel:
-                    self.optimize(passes=['-simplifycfg', '-ipconstprop',
-                                          '-argpromotion', '-deadargelim',
-                                          '-simplifycfg'])
+                    self.optimize(passes=['-dce', '-constmerge', '-simplifycfg',
+                                          '-ipconstprop', '-argpromotion',
+                                          '-deadargelim', '-simplifycfg'])
 
                 self.slicer(criterion)
 
