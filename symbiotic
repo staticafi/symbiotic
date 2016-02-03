@@ -424,7 +424,8 @@ class KleeWatch(ProcessWatch):
             dbg(line, 'all', False)
 
 def run_symexe(llvmfile):
-    cmd = ['klee', '-halt-after-assert', '-write-paths', llvmfile]
+    cmd = ['klee', '-halt-after-assert', '-write-paths',
+           'solver-optimize-divides=false', llvmfile]
     dbg(' '.join(cmd))
 
     global current_process
