@@ -127,13 +127,6 @@ mkdir -p $PREFIX/lib
 mkdir -p $PREFIX/lib32
 mkdir -p $PREFIX/include
 
-# we don't want to build symbiotic in the same directory as
-# these scripts
-if [ "`dirname $0`" = '.' ]; then
-	echo "Building symbiotic in this directory is forbidden"
-	exit 1
-fi
-
 check()
 {
 	if ! wget --version &>/dev/null; then
@@ -252,9 +245,19 @@ git_clone_or_pull()
 	fi
 }
 
+git_submodule_init()
+{
+	cd `dirname $0`
+
+	git submodule init || exitmsg "submodule init failed"
+	git submodule update || exitmsg "submodule update failed"
+
+	cd -
+}
+
 if [ $FROM -le 1 ]; then
-	# download slicer
-	git_clone_or_pull https://github.com/jirislaby/LLVMSlicer.git LLVMSlicer
+	git_submodule_init
+
 	cd LLVMSlicer || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
@@ -270,7 +273,6 @@ if [ $FROM -le 1 ]; then
 	cd -
 
 	# download new slicer
-	git_clone_or_pull https://github.com/mchalupa/dg dg -b backport-llvm-3.4
 	cd dg || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
@@ -429,7 +431,8 @@ fi
 
 if [ $FROM -le 6 ]; then
 	# download scripts
-	git_clone_or_pull https://github.com/staticafi/svc15.git svc15
+	git_submodule_init
+
 	cd svc15 || exitmsg "Clonging failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
