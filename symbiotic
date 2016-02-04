@@ -93,14 +93,16 @@ unsupported_call = re.compile('.*call to .* is unsupported.*')
 # option, but is adjusted for our needs (therefore
 # we don't use the -optimize option with klee)
 optimizations_O2 = ['-simplifycfg', '-globalopt', '-globaldce', '-ipconstprop',
-                    '-deadargelim', '-simplifycfg', '-prune-eh',
-                    '-functionattrs', '-inline', '-argpromotion',
+                    '-deadargelim', '-instcombine', '-simplifycfg', '-prune-eh',
+                    '-functionattrs', '-inline', '-argpromotion', '-instcombine',
                     '-jump-threading', '-simplifycfg', '-gvn', '-scalarrepl',
-                    '-tailcallelim', '-simplifycfg', '-reassociate',
-                    '-loop-rotate', '-licm', '-loop-unswitch', '-indvars',
-                    '-loop-deletion', '-loop-unroll', '-memcpyopt', '-sccp',
+                    '-instcombine', '-tailcallelim', '-simplifycfg',
+                    '-reassociate', '-loop-rotate', '-licm', '-loop-unswitch',
+                    '-instcombine', '-indvars', '-loop-deletion', '-loop-unroll',
+                    '-instcombine', '-memcpyopt', '-sccp', '-instcombine',
                     '-dse', '-adce', '-simplifycfg', '-strip-dead-prototypes',
-                    '-constmerge', '-ipsccp', '-deadargelim', '-die']
+                    '-constmerge', '-ipsccp', '-deadargelim', '-die',
+                    '-instcombine']
 
 enable_debug = False
 debug_opts = []
@@ -667,9 +669,10 @@ class Symbiotic(object):
                 if "before-O2" in self.options.optlevel:
                     self.optimize(passes=optimizations_O2)
                 elif "before" in self.options.optlevel:
-                    self.optimize(passes=['-dce', '-constmerge', '-simplifycfg',
+                    self.optimize(passes=['-simplifycfg', '-constmerge', '-dce',
                                           '-ipconstprop', '-argpromotion',
-                                          '-deadargelim', '-simplifycfg'])
+                                          '-instcombine', '-deadargelim',
+                                          '-simplifycfg'])
 
                 self.slicer(criterion)
 
