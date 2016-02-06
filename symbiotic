@@ -311,6 +311,7 @@ class PrepareWatch(ProcessWatch):
 class SlicerWatch(ProcessWatch):
     def parse(self, line):
         if 'INFO' in line:
+            sys.stdout.write('slicer-')
             sys.stdout.write(line)
         elif 'ERROR' in line or 'error' in line:
             sys.stderr.write(line)
@@ -609,6 +610,8 @@ class Symbiotic(object):
             print('Interrupted...')
 
     def _run(self, criterion = '__assert_fail'):
+        last_time = time();
+
         try:
             if not self.options.source_is_bc:
                 self.instrument()
@@ -663,6 +666,10 @@ class Symbiotic(object):
             # delete undefined function calls
             self.prepare(passes = ['-delete-undefined'])
 
+            # print info about time
+            print('INFO: Compilation and preparation time: {0}'.format(time() - last_time))
+            last_time = time()
+
             # slice the code
             if not self.options.noslice:
                 # run optimizations that can make slicing more precise
@@ -674,11 +681,17 @@ class Symbiotic(object):
                                           '-instcombine', '-deadargelim',
                                           '-simplifycfg'])
 
+                    print('INFO: Before optimizations time: {0}'.format(time() - last_time))
+                    last_time = time()
+
                 self.slicer(criterion)
+                print('INFO: Total slicing time: {0}'.format(time() - last_time))
+                last_time = time()
 
             # optimize the code before symbolic execution
             if "after" in self.options.optlevel:
                 self.optimize()
+                print('INFO: After optimizations time: {0}'.format(time() - last_time))
 
         except SymbioticException as e:
             # FIXME if we should not run further, do not run further
@@ -868,5 +881,5 @@ if __name__ == "__main__":
         sys.stdout.flush()
 
     # print information about how long Symbiotic ran
-    print('INFO: Time elapsed: {0}'.format(time() - start_time))
+    print('INFO: Total time elapsed: {0}'.format(time() - start_time))
     sys.exit(0)
