@@ -167,33 +167,6 @@ def dbg(msg, domain = 'all', print_nl = True):
         if domain == 'all' or domain in debug_opts:
             print_stderr(msg, 'DBG: ', print_nl)
 
-def get_symbiotic_dir():
-    # get real path (strip off links)
-    realpath = os.path.realpath(sys.argv[0])
-    return os.path.abspath(os.path.dirname(realpath))
-
-def set_environ(is32bit = False):
-    def prepend(env, what):
-        if os.environ.has_key(env):
-            newenv = '{0}:{1}'.format(what, os.environ[env])
-        else:
-            newenv = what
-
-        os.environ[env] = newenv
-
-    symbiotic_dir = get_symbiotic_dir()
-    # set path without preprending, we want to use only our stuff
-    os.environ['PATH'] = '{0}/bin'.format(symbiotic_dir)
-    prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
-    prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
-    if is32bit:
-        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] = '{0}/lib32/klee/runtime'.format(symbiotic_dir)
-    else:
-        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] = '{0}/lib/klee/runtime'.format(symbiotic_dir)
-
-    dbg('PATH={0}'.format(os.environ['PATH']))
-    dbg('LD_LIBRARY_PATH={0}'.format(os.environ['LD_LIBRARY_PATH']))
-
 class Timeout(Exception):
     pass
 
@@ -327,11 +300,67 @@ class CompileWatch(ProcessWatch):
         else:
             dbg(line, 'compile', False)
 
+def get_symbiotic_dir():
+    # get real path (strip off links)
+    realpath = os.path.realpath(sys.argv[0])
+    return os.path.abspath(os.path.dirname(realpath))
+
+def get_include_paths():
+    """
+    Find paths where standard headers are located
+    """
+    cmd = ['find', '/usr/lib', '-name', 'stddef.h']
+    watch = BufferedDbgWatch(None)
+    paths = []
+
+    if run_and_watch(cmd, watch) == 0:
+        for line in watch.getLines():
+            if line.startswith('/usr/lib/'):
+                paths.append(os.path.dirname(line))
+
+    return paths
+
+def set_environ(is32bit = False):
+    def prepend(env, what):
+        if os.environ.has_key(env):
+            newenv = '{0}:{1}'.format(what, os.environ[env])
+        else:
+            newenv = what
+
+        os.environ[env] = newenv
+
+    # do this before we override PATH - we need 'find' utility
+    additional_paths = get_include_paths()
+    for p in additional_paths:
+        prepend('C_INCLUDE_DIR', p)
+
+    symbiotic_dir = get_symbiotic_dir()
+    # set path without preprending, we want to use only our stuff
+    os.environ['PATH'] = '{0}/bin'.format(symbiotic_dir)
+    prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
+    prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
+
+    if is32bit:
+        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] = '{0}/lib32/klee/runtime'.format(symbiotic_dir)
+    else:
+        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] = '{0}/lib/klee/runtime'.format(symbiotic_dir)
+
+    dbg('PATH={0}'.format(os.environ['PATH']))
+    dbg('LD_LIBRARY_PATH={0}'.format(os.environ['LD_LIBRARY_PATH']))
+    dbg('C_INCLUDE_DIR={0}'.format(os.environ['C_INCLUDE_DIR']))
+
 def compile_to_llvm(source, is32bit = False, output = None):
+    """
+    Compile given source to LLVM bytecode
+    """
     symbiotic_dir = get_symbiotic_dir()
 
-    cmd = ['clang', '-g', '-c', '-emit-llvm', '-I']
-    cmd.append('{0}/include'.format(symbiotic_dir))
+    cmd = ['clang', '-g', '-c', '-emit-llvm']
+
+    # add include paths
+    for p in os.environ['C_INCLUDE_DIR'].split(':'):
+        cmd.append('-I')
+        cmd.append(p)
 
     if os.environ.has_key('CFLAGS'):
         cmd += os.environ['CFLAGS'].split(' ')
