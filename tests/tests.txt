@@ -4,3 +4,4 @@ TRUE division_regression-true.c
 TRUE instcombine_bug-true.c
 FALSE minepump_regression-false.c
 FALSE ludcmp_false-unreach-call.i
+TRUE terminator-true.i
