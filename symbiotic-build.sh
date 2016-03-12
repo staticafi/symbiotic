@@ -258,7 +258,7 @@ git_submodule_init()
 if [ $FROM -le 1 ]; then
 	git_submodule_init
 
-	cd LLVMSlicer || exitmsg "Cloning failed"
+	cd `dirname $0`/LLVMSlicer || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
 			-DLLVM_SRC_PATH=`pwd`/../llvm-3.4/ \
@@ -273,7 +273,7 @@ if [ $FROM -le 1 ]; then
 	cd -
 
 	# download new slicer
-	cd dg || exitmsg "Cloning failed"
+	cd `dirname $0`/dg || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
 			-DLLVM_SRC_PATH=`pwd`/../llvm-3.4/ \
@@ -433,7 +433,7 @@ if [ $FROM -le 6 ]; then
 	# download scripts
 	git_submodule_init
 
-	cd svc15 || exitmsg "Clonging failed"
+	cd `dirname $0`/svc15 || exitmsg "Clonging failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
 			-DLLVM_SRC_PATH=`pwd`/../llvm-3.4/ \
