@@ -55,7 +55,10 @@ OPTS=
 WITH_CPA='0'
 WITH_ULTIMATEAUTOMIZER='0'
 
+RUNDIR=`pwd`
 SRCDIR=`dirname $0`
+ABS_RUNDIR=`readlink -f $RUNDIR`
+ABS_SRCDIR=`readlink -f $SRCDIR`
 
 MODE="$1"
 
@@ -247,7 +250,7 @@ git_clone_or_pull()
 
 git_submodule_init()
 {
-	cd `dirname $0`
+	cd "$SRCDIR"
 
 	git submodule init || exitmsg "submodule init failed"
 	git submodule update || exitmsg "submodule update failed"
@@ -258,11 +261,11 @@ git_submodule_init()
 if [ $FROM -le 1 ]; then
 	git_submodule_init
 
-	cd `dirname $0`/LLVMSlicer || exitmsg "Cloning failed"
+	cd "$SRCDIR/LLVMSlicer" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH=`pwd`/../llvm-3.4/ \
-			-DLLVM_BUILD_PATH=`pwd`/../llvm-build-cmake/ \
+			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
+			-DLLVM_BUILD_PATH="$ABS_RUNDIR"/llvm-build-cmake/ \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
 	fi
 
@@ -273,11 +276,11 @@ if [ $FROM -le 1 ]; then
 	cd -
 
 	# download new slicer
-	cd `dirname $0`/dg || exitmsg "Cloning failed"
+	cd "$SRCDIR/dg" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH=`pwd`/../llvm-3.4/ \
-			-DLLVM_BUILD_PATH=`pwd`/../llvm-build-cmake/ \
+			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
+			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
 	fi
 
@@ -433,11 +436,11 @@ if [ $FROM -le 6 ]; then
 	# download scripts
 	git_submodule_init
 
-	cd `dirname $0`/svc15 || exitmsg "Clonging failed"
+	cd "$SRCDIR/svc15" || exitmsg "Clonging failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH=`pwd`/../llvm-3.4/ \
-			-DLLVM_BUILD_PATH=`pwd`/../llvm-build-cmake/ \
+			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
+			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
 	fi
 
