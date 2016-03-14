@@ -7,3 +7,6 @@
 [submodule "LLVMSlicer"]
 	path = LLVMSlicer
 	url = https://github.com/jirislaby/LLVMSlicer
+[submodule "LLVMInstrumentation"]
+	path = LLVMInstrumentation
+	url = https://github.com/staticafi/LLVMInstrumentation
