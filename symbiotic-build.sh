@@ -227,7 +227,7 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	cd -
 fi
 
-export LLVM_DIR=`pwd`/llvm-build-cmake/share/llvm/cmake/
+export LLVM_DIR=$ABS_RUNDIR/llvm-build-cmake/share/llvm/cmake/
 
 rm -f llvm-3.4.src.tar.gz &>/dev/null || exit 1
 rm -f clang-3.4.src.tar.gz &>/dev/null || exit 1
@@ -450,6 +450,26 @@ if [ $FROM -le 6 ]; then
 
 	cd -
 
+	cd "$SRCDIR/LLVMInstrumentation" || exitmsg "Cloning failed"
+	if [ ! -d CMakeFiles ]; then
+		./bootstrap-json.sh || exitmsg "Failed generating json files"
+		cmake . \
+			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
+			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
+			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
+	fi
+
+	(build && make install) || exit 1
+
+	# we need the config files and error checkers
+	mkdir -p $PREFIX/instrumentation
+	rsync -r null_deref $PREFIX/instrumentation
+	rsync -r double_free $PREFIX/instrumentation
+
+	git rev-parse --short=8 HEAD > $PREFIX/LLVM_INSTRUMENTATION_VERSION
+
+	cd -
+
 	# and also the symbiotic script
 	cp $SRCDIR/symbiotic $PREFIX/ || exit 1
 
@@ -472,6 +492,11 @@ if [ $FROM -le 7 ]; then
 		lib/klee/runtime/klee-libc.bc\
 		lib32/klee/runtime/klee-libc.bc"
 	SCRIPTS="build-fix.sh path_to_ml.pl symbiotic"
+	INSTR="bin/LLVMinstr\
+	       instrumentation/null_deref/config.json\
+	       instrumentation/null_deref/null_deref.c\
+	       instrumentation/double_free/config.json\
+	       instrumentation/double_free/double_free"
 
 	CPACHECKER=
 	ULTIAUTO=
@@ -490,6 +515,7 @@ if [ $FROM -le 7 ]; then
 		$BINARIES \
 		$LIBRARIES \
 		$SCRIPTS \
+		$INSTR\
 		$CPACHECKER \
 		$ULTIAUTO \
 		include/klee/klee.h \
@@ -501,7 +527,8 @@ if [ $FROM -le 7 ]; then
 		SVC_SCRIPTS_VERSION \
 		SYMBIOTIC_VERSION \
 		STP_VERSION	    \
-		KLEE_VERSION
+		KLEE_VERSION	\
+		LLVM_INSTRUMENTATION_VERSION
 
 	git commit -m "Create Symbiotic distribution `date`"
 	# remove unnecessary files
