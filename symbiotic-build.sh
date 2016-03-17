@@ -496,7 +496,7 @@ if [ $FROM -le 7 ]; then
 	       instrumentation/null_deref/config.json\
 	       instrumentation/null_deref/null_deref.c\
 	       instrumentation/double_free/config.json\
-	       instrumentation/double_free/double_free"
+	       instrumentation/double_free/double_free.c"
 
 	CPACHECKER=
 	ULTIAUTO=
