@@ -29,7 +29,7 @@ from subprocess import call, Popen, PIPE, STDOUT
 from time import time
 
 # FIXME print versions of components too
-VERSION='3.0.2'
+VERSION='3.0.3-dev'
 
 usage_msg = """
 Usage: symbiotic OPTS sources
