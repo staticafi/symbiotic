@@ -51,7 +51,11 @@ where OPTS can be following:
                           none disables optimizations (same as --no-optimize)
     --no-optimize         Don't optimize the code
     --libc=klee           Let klee use its libc
-    --prp=property        Specify property that should hold
+    --prp=property        Specify property that should hold. It is either LTL formula
+                          as specivied by SV-COMP, or one of following shortcuts:
+                            null-deref   -- program is free of null-dereferences
+                            valid-free   -- all free() calls are valid
+                          The string can be given on line or in a file.
     --debug=what          Print debug messages, what can be comma separated list of:
                           all, compile, prepare, slicer
                           In that case you get verbose output. You can just use
@@ -84,7 +88,11 @@ patterns = {
 }
 
 supported_properties = {
-    'REACHCALL'  : 'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )'
+    'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )' : 'REACHCALL',
+    'CHECK( init(main()), LTL(G valid-free) )'                 : 'VALID-FREE',
+    'valid-free'                                               : 'VALID-FREE',
+    # SV-COMP don't have this, it has only valid-deref
+    'null-deref'                                               : 'NULL-DEREF',
 }
 
 unsupported_call = re.compile('.*call to .* is unsupported.*')
@@ -510,9 +518,9 @@ class SymbioticException(Exception):
         Exception.__init__(self, msg)
 
 class SymbioticOptions(object):
-    def __init__(self, is32bit = True, noslice=False, prp=None, timeout=0):
+    def __init__(self, is32bit = True, noslice=False, timeout=0):
         self.is32bit = is32bit
-        self.prp = prp
+        self.prp = None
         self.noslice = noslice
         self.malloc_never_fails = False
         self.noprepare = False
@@ -558,21 +566,15 @@ class Symbiotic(object):
         else:
             self.options = opts
 
-    def _instrument(self, source):
+    def _build_fix(self):
         """
-        Instrument the code. This writes right into the file we got
+        Build fix. We use clang 3.4 that has some bugs regarding inlining.
         """
         sd = get_symbiotic_dir()
-        cmd = ['/bin/sh', '-c', '{0}/build-fix.sh {1}'.format(sd, source)]
-
-        run_checked(cmd, 'Failed instrumenting the code')
-
-    def instrument(self):
-        """
-        Instrument the code. This writes right into the file we got
-        """
         for source in self.sources:
-            self._instrument(source)
+            cmd = ['/bin/sh', '-c', '{0}/build-fix.sh {1}'.format(sd, source)]
+            run_checked(cmd, 'Failed preprocessing the code')
+
 
     def prepare(self, passes = ['-prepare', '-delete-undefined']):
         if self.options.noprepare:
@@ -586,6 +588,38 @@ class Symbiotic(object):
 
         self.llvmfile = output
 
+    def instrument(self):
+        """
+        Instrument the code.
+        """
+        prp = self.options.prp
+        if prp is None or prp == 'REACHCALL':
+            return
+
+        prefix = '{0}/instrumentation/'.format(get_symbiotic_dir())
+        if prp == 'VALID-FREE':
+            config = prefix + 'double_free/config.json'
+            tolink = prefix + 'double_free/double_free.c'
+        elif prp == 'NULL-DEREF':
+            config = prefix + 'null_deref/config.json'
+            tolink = prefix + 'null_deref/null_deref.c'
+        else:
+            raise SymbioticException('BUG: Unhandled property')
+
+        # we need to compile and link the state machines before the
+        # instrumentation itself
+
+        tolink = compile_to_llvm(tolink, self.options.is32bit)
+        self.link(libs=[tolink])
+
+        output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+        cmd = ['LLVMinstr', config, self.llvmfile, output]
+
+        if run_and_watch(cmd, DbgWatch()) != 0:
+            raise SymbioticException('Instrumenting the code failed')
+
+        self.llvmfile = output
+
     def link(self, output = None, libs = None):
         if libs is None:
             libs = self.libs
@@ -594,7 +628,7 @@ class Symbiotic(object):
             return
 
         if output is None:
-            output = '{0}-linked.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+            output = '{0}-lnkd.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
 
         cmd = ['llvm-link', '-o', output] + libs
         if self.llvmfile:
@@ -643,7 +677,7 @@ class Symbiotic(object):
 
         try:
             if not self.options.source_is_bc:
-                self.instrument()
+                self._build_fix()
 
             # set environ here, after instrumentaion,
             # because in instrumentation we use
@@ -694,6 +728,9 @@ class Symbiotic(object):
 
             # delete undefined function calls
             self.prepare(passes = ['-delete-undefined'])
+
+            # now instrument the code according to properties
+            self.instrument()
 
             # print info about time
             print('INFO: Compilation and preparation time: {0}'.format(time() - last_time))
@@ -773,16 +810,6 @@ def get_prp(prp):
         f.close()
 
     return prp
-
-def check_property(prp):
-    if prp is None:
-        return True
-
-    for r in supported_properties.values():
-        if prp == r:
-            return True
-
-    return False
 
 def parse_command_line():
     options = SymbioticOptions()
@@ -886,10 +913,16 @@ if __name__ == "__main__":
         start_timeout(opts.timeout)
 
     try:
-        if not check_property(opts.prp):
-            report_results('EPRP usupported property')
+        try:
+            # opts.prp now contain a key (or None), but we want the value
+            # from the map
+            if not opts.prp is None:
+                opts.prp = supported_properties[opts.prp]
+        except KeyError:
+            report_results('EPRP usupported property: {0}'.format(opts.prp))
             sys.exit(0)
 
+        # let the show begin!
         symbiotic = Symbiotic(sources, opts)
         res = symbiotic.run()
 
