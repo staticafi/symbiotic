@@ -266,7 +266,9 @@ if [ $FROM -le 1 ]; then
 		cmake . \
 			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
 			-DLLVM_BUILD_PATH="$ABS_RUNDIR"/llvm-build-cmake/ \
-			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
+			-DLLVM_DIR=$LLVM_DIR \
+			-DCMAKE_INSTALL_PREFIX=$PREFIX \
+			|| clean_and_exit 1 "git"
 	fi
 
 	(build && make install) || exit 1
@@ -281,7 +283,9 @@ if [ $FROM -le 1 ]; then
 		cmake . \
 			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
 			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
-			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
+			-DLLVM_DIR=$LLVM_DIR \
+			-DCMAKE_INSTALL_PREFIX=$PREFIX \
+			|| clean_and_exit 1 "git"
 	fi
 
 	(build && make install) || exit 1
@@ -441,7 +445,9 @@ if [ $FROM -le 6 ]; then
 		cmake . \
 			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
 			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
-			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
+			-DLLVM_DIR=$LLVM_DIR \
+			-DCMAKE_INSTALL_PREFIX=$PREFIX \
+			|| clean_and_exit 1 "git"
 	fi
 
 	(build && make install) || exit 1
@@ -456,7 +462,9 @@ if [ $FROM -le 6 ]; then
 		cmake . \
 			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
 			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
-			-DCMAKE_INSTALL_PREFIX=$PREFIX || clean_and_exit 1 "git"
+			-DLLVM_DIR=$LLVM_DIR \
+			-DCMAKE_INSTALL_PREFIX=$PREFIX \
+			|| clean_and_exit 1 "git"
 	fi
 
 	(build && make install) || exit 1
