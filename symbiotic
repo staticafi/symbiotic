@@ -56,6 +56,9 @@ where OPTS can be following:
                             null-deref   -- program is free of null-dereferences
                             valid-free   -- all free() calls are valid
                           The string can be given on line or in a file.
+    --pta=[fs|fi|old]     Use flow-sensitive/flow-insensitive or old
+                          (flow-insensitive too) points-to analysis when slicing.
+                          Default is the old
     --debug=what          Print debug messages, what can be comma separated list of:
                           all, compile, prepare, slicer
                           In that case you get verbose output. You can just use
@@ -534,6 +537,7 @@ class SymbioticOptions(object):
         self.witness_output = 'witness.graphml'
         self.source_is_bc = False
         self.optlevel = ["before", "after"]
+        self.slicer_pta = 'old'
 
 
 def run_checked(cmd, error_msg, dbg_domain = 'all'):
@@ -645,7 +649,12 @@ class Symbiotic(object):
                    '-simplifycfg', '-create-hammock-cfg',
                    '-slice-inter', '-simplifycfg', '-o', output, self.llvmfile]
         else:
-            cmd = ['llvm-slicer', '-c', criterion, self.llvmfile]
+            cmd = ['llvm-slicer', '-c', criterion]
+            if self.options.slicer_pta in ['fi', 'fs']:
+                cmd.append('-pta')
+                cmd.append(self.options.slicer_pta)
+
+            cmd.append(self.llvmfile)
 
         if run_and_watch(cmd, SlicerWatch()) != 0:
             raise SymbioticException('Slicing failed')
@@ -820,7 +829,8 @@ def parse_command_line():
                                     'debug=', 'timeout=', 'version', 'help',
                                     'libc=', 'old-slicer', 'require-slicer',
                                     'no-symexe', 'output=', 'witness=', 'bc',
-                                    'optimize=', 'no-prepare', 'malloc-never-fails'])
+                                    'optimize=', 'no-prepare', 'malloc-never-fails',
+                                    'pta='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -880,6 +890,12 @@ def parse_command_line():
         elif opt == '--prp':
             options.prp = get_prp(arg)
             dbg('Property: {0}'.format(options.prp))
+        elif opt == '--pta':
+            options.slicer_pta = arg
+            if not arg in ['fs', 'fi', 'old']:
+                err('Points-to analysis can be one of: fs, fi, old')
+
+            dbg('Points-to: {0}'.format(arg))
         elif opt == '--timeout':
             options.timeout = int(arg)
             dbg('Timeout set to {0} sec'.format(arg))
