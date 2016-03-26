@@ -17,7 +17,12 @@ if [ ! -f $SYMBIOTIC ]; then
 	fail "Couldn't find compiled symbiotic"
 fi
 
-cat `dirname $0`/tests.txt | while read DESIRED FILE; do
+if [ $# -ne 1 ]; then
+	fail "Usage: $0 tests.txt"
+fi
+
+TESTS=`readlink -f $1`
+cat $TESTS | while read DESIRED FILE; do
 	TOTAL_NUM=$[$TOTAL_NUM + 1]
 	OUTPUT=`$SYMBIOTIC $FILE 2>&1`
 
@@ -33,3 +38,5 @@ cat `dirname $0`/tests.txt | while read DESIRED FILE; do
 		fail  "Wrong syntax in tests.txt"
 	fi
 done
+
+rm -rf klee-* *.bc *.sliced
