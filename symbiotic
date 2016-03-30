@@ -512,6 +512,7 @@ def report_results(res):
     else:
         result = 'UNKNOWN'
 
+    sys.stdout.flush()
     print_stdout(result, color=color)
 
     return result
@@ -714,8 +715,7 @@ class Symbiotic(object):
                     err('Failed linking compiled sources together')
 
             if not check_llvmfile(self.llvmfile):
-                report_results('ECALL unsupported call')
-                sys.exit(1)
+                err('Unsupported call (probably pthread API)')
 
             # check if we should instrument the version of malloc
             # that never returns a NULL pointer
@@ -935,8 +935,7 @@ if __name__ == "__main__":
             if not opts.prp is None:
                 opts.prp = supported_properties[opts.prp]
         except KeyError:
-            report_results('EPRP usupported property: {0}'.format(opts.prp))
-            sys.exit(0)
+            err('Unknown or unsupported property: {0}'.format(opts.prp))
 
         # let the show begin!
         symbiotic = Symbiotic(sources, opts)
