@@ -36,37 +36,40 @@ Usage: symbiotic OPTS sources
 
 where OPTS can be following:
 
-    --bc                  Given file is a bytecode
-    --64                  Use 64-bit environment
-    --timeout=t           Set timeout to t seconds
-    --no-slice            Do not slice the code
-    --no-prepare          Do not prepare the code
-    --malloc-never-fails  Suppose malloc and calloc never return NULL
-    --require-slicer      Abort if slicing fails (default is to use the original file)
-    --no-symexe           Do not run symbolic execution (handy for debugging)
-    --optimize=TYPES      Run optimizations, TYPES can be: before, before-O2, after.
-                          before/after means before or/and after slicing. before-O2
-                          runs full optimizations before slicing (normally only some
-                          conservative optimizations are run before slicing).
-                          none disables optimizations (same as --no-optimize)
-    --no-optimize         Don't optimize the code
-    --libc=klee           Let klee use its libc
-    --prp=property        Specify property that should hold. It is either LTL formula
-                          as specivied by SV-COMP, or one of following shortcuts:
-                            null-deref   -- program is free of null-dereferences
-                            valid-free   -- all free() calls are valid
-                          The string can be given on line or in a file.
-    --pta=[fs|fi|old]     Use flow-sensitive/flow-insensitive or old
-                          (flow-insensitive too) points-to analysis when slicing.
-                          Default is the old
-    --debug=what          Print debug messages, what can be comma separated list of:
-                          all, compile, prepare, slicer
-                          In that case you get verbose output. You can just use
-                          --debug= to print basic messages.
-    --output=FILE         Store the final code (that is to be run by symexe) to FILE
-    --witness=FILE        Store witness into FILE (default is witness.graphml)
-    --help                Show help message
-    --version             Return version
+    --bc                   Given file is a bytecode
+    --64                   Use 64-bit environment
+    --timeout=t            Set timeout to t seconds
+    --no-slice             Do not slice the code
+    --no-prepare           Do not prepare the code
+    --malloc-never-fails   Suppose malloc and calloc never return NULL
+    --require-slicer       Abort if slicing fails (default is to use the original file)
+    --no-symexe            Do not run symbolic execution (handy for debugging)
+    --optimize=TYPES       Run optimizations, TYPES can be: before, before-O2, after.
+                           before/after means before or/and after slicing. before-O2
+                           runs full optimizations before slicing (normally only some
+                           conservative optimizations are run before slicing).
+                           none disables optimizations (same as --no-optimize)
+    --no-optimize          Don't optimize the code (same as --optimize=none)
+    --libc=klee            Link klee-libc.bc to the module
+    --no-lib               Don't link lib.bc to the module
+    --slicing-criterion=C  Slice to slicing criterion (function call-sites) 'C'
+                           (default is '__assert_fail')
+    --prp=property         Specify property that should hold. It is either LTL formula
+                           as specivied by SV-COMP, or one of following shortcuts:
+                             null-deref   -- program is free of null-dereferences
+                             valid-free   -- all free() calls are valid
+                           The string can be given on line or in a file.
+    --pta=[fs|fi|old]      Use flow-sensitive/flow-insensitive or old
+                           (flow-insensitive too) points-to analysis when slicing.
+                           Default is the old
+    --debug=what           Print debug messages, what can be comma separated list of:
+                           all, compile, prepare, slicer
+                           In that case you get verbose output. You can just use
+                           --debug= to print basic messages.
+    --output=FILE          Store the final code (that is to be run by symexe) to FILE
+    --witness=FILE         Store witness into FILE (default is witness.graphml)
+    --help                 Show help message
+    --version              Return version
 
     One (and only one) of the sources must contain 'main' function
 """
@@ -395,20 +398,24 @@ def compile_to_llvm(source, is32bit = False, output = None):
 
     return llvmfile
 
-def get_libraries(is32bit = False, add_libc = True):
-    symbiotic_dir = get_symbiotic_dir()
+def get_libraries(opts):
+    files = []
 
-    d = '{0}/lib'.format(symbiotic_dir)
-    if is32bit:
-        d += '32'
+    if not opts.no_lib:
+        symbiotic_dir = get_symbiotic_dir()
 
-    libc = '{0}/lib.c'.format(symbiotic_dir)
-    llvmlibbc = compile_to_llvm(libc, is32bit)
-    if llvmlibbc is None:
-        return []
+        d = '{0}/lib'.format(symbiotic_dir)
+        if opts.is32bit:
+            d += '32'
 
-    files = [llvmlibbc]
-    if add_libc:
+        libc = '{0}/lib.c'.format(symbiotic_dir)
+        llvmlibbc = compile_to_llvm(libc, opts.is32bit)
+        if llvmlibbc is None:
+            err('Failed compiling support library (lib.bc)')
+
+        files.append(llvmlibbc)
+
+    if opts.add_libc:
         files.append('{0}/klee/runtime/klee-libc.bc'.format(d))
 
     return files
@@ -530,6 +537,7 @@ class SymbioticOptions(object):
         self.noprepare = False
         self.timeout = 0
         self.add_libc = False
+        self.no_lib = False
         self.old_slicer = False
         self.require_slicer = False
         self.no_optimize = False
@@ -539,7 +547,7 @@ class SymbioticOptions(object):
         self.source_is_bc = False
         self.optlevel = ["before", "after"]
         self.slicer_pta = 'old'
-
+        self.slicing_criterion = '__assert_fail'
 
 def run_checked(cmd, error_msg, dbg_domain = 'all'):
     """
@@ -561,8 +569,6 @@ class Symbiotic(object):
         self.sources = src
         # source compiled to llvm bytecode
         self.llvmfile = None
-        # libraries to be linked to the llvm file
-        self.libs = []
         # the file that will be used for symbolic execution
         self.runfile = None
 
@@ -627,7 +633,7 @@ class Symbiotic(object):
 
     def link(self, output = None, libs = None):
         if libs is None:
-            libs = self.libs
+            libs = get_libraries(opts)
 
         if not libs:
             return
@@ -654,6 +660,9 @@ class Symbiotic(object):
             if self.options.slicer_pta in ['fi', 'fs']:
                 cmd.append('-pta')
                 cmd.append(self.options.slicer_pta)
+
+            if 'slicer' in debug_opts:
+                cmd.append('-statistics')
 
             cmd.append(self.llvmfile)
 
@@ -728,10 +737,6 @@ class Symbiotic(object):
             self.prepare(passes = ['-prepare', instrument_alloc,
                                    '-initialize-uninitialized'])
 
-            self.libs = get_libraries(opts.is32bit, opts.add_libc)
-            if not self.libs:
-                err('Failed compiling support library')
-
             # link with libraries (add our definitions)
             self.link()
 
@@ -759,7 +764,7 @@ class Symbiotic(object):
                     print('INFO: Before optimizations time: {0}'.format(time() - last_time))
                     last_time = time()
 
-                self.slicer(criterion)
+                self.slicer(self.options.slicing_criterion)
                 print('INFO: Total slicing time: {0}'.format(time() - last_time))
                 last_time = time()
 
@@ -830,7 +835,7 @@ def parse_command_line():
                                     'libc=', 'old-slicer', 'require-slicer',
                                     'no-symexe', 'output=', 'witness=', 'bc',
                                     'optimize=', 'no-prepare', 'malloc-never-fails',
-                                    'pta='])
+                                    'pta=', 'no-lib', 'slicing-criterion='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -850,6 +855,10 @@ def parse_command_line():
              else:
                  print('Unknown libc')
                  sys.exit(0)
+
+        elif opt == '--no-lib':
+            dbg('Won\'t link lib.bc to the module')
+            options.no_lib = True
         elif opt == '--version':
             print(VERSION)
             sys.exit(0)
@@ -896,6 +905,9 @@ def parse_command_line():
                 err('Points-to analysis can be one of: fs, fi, old')
 
             dbg('Points-to: {0}'.format(arg))
+        elif opt == '--slicing-criterion':
+            options.slicing_criterion = arg
+            dbg('Slicing criterion: {0}'.format(options.prp))
         elif opt == '--timeout':
             options.timeout = int(arg)
             dbg('Timeout set to {0} sec'.format(arg))
