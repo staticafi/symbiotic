@@ -737,14 +737,14 @@ class Symbiotic(object):
             self.prepare(passes = ['-prepare', instrument_alloc,
                                    '-initialize-uninitialized'])
 
-            # link with libraries (add our definitions)
-            self.link()
-
             # delete undefined function calls
             self.prepare(passes = ['-delete-undefined'])
 
             # now instrument the code according to properties
             self.instrument()
+
+            # link with libraries (add our definitions)
+            self.link()
 
             # print info about time
             print('INFO: Compilation and preparation time: {0}'.format(time() - last_time))
