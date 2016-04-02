@@ -125,6 +125,17 @@ debug_opts = []
 # (e. g. on timeout)
 current_process = None
 
+# variable used to measure elapsed time
+last_time = None
+def print_elapsed_time(msg):
+    global last_time
+    assert last_time is not None
+
+    tm = time() - last_time
+    print('{0}: {1}'.format(msg, tm))
+    # set new starting point
+    last_time = time()
+
 COLORS = {
     'RED'   : '\033[1;31m',
     'GREEN' : '\033[1;32m',
@@ -439,30 +450,37 @@ def check_llvmfile(llvmfile):
 
     return True
 
-def is_assertion_failed(line):
+def parse_klee_output(line):
     for (key, pattern) in patterns.iteritems():
         if pattern.match(line):
             # return True so that we know we should terminate
             if key == 'ASSERTIONFAILED':
-                return (key, True)
+                return key
             else:
-                return (key, False)
+                return key
 
-    return (None, False)
+    return None
 
 class KleeWatch(ProcessWatch):
     def __init__(self):
         self._done = False
         self._found = []
 
+    # XXX don't kill klee after the assertion
+    # is found - we have a -halt-affter-assert
+    # switch in klee that will do that for us.
+    # If we don't klee the klee, we'll get how
+    # many paths we discovered
+    # def done(self):
+    #     return self._done
     def done(self):
-        return self._done
+        return False;
 
     def found(self):
         return ' '.join(self._found)
 
     def parse(self, line):
-        found, self._done = is_assertion_failed(line)
+        found = parse_klee_output(line)
         if found:
             self._found.insert(0, found)
 
@@ -473,9 +491,10 @@ class KleeWatch(ProcessWatch):
         else:
             dbg(line, 'all', False)
 
-def run_symexe(llvmfile):
+def run_symexe(llvmfile, timeout = 0):
     cmd = ['klee', '-halt-after-assert', '-write-paths',
-           '-solver-optimize-divides=false', llvmfile]
+           '-solver-optimize-divides=false',
+           '-max-time={0}'.format(timeout), llvmfile]
     dbg(' '.join(cmd))
 
     global current_process
@@ -692,6 +711,8 @@ class Symbiotic(object):
             print('Interrupted...')
 
     def _run(self, criterion = '__assert_fail'):
+        # start counting time
+        global last_time
         last_time = time();
 
         try:
@@ -746,10 +767,6 @@ class Symbiotic(object):
             # link with libraries (add our definitions)
             self.link()
 
-            # print info about time
-            print('INFO: Compilation and preparation time: {0}'.format(time() - last_time))
-            last_time = time()
-
             # slice the code
             if not self.options.noslice:
                 # run optimizations that can make slicing more precise
@@ -761,17 +778,16 @@ class Symbiotic(object):
                                           '-instcombine', '-deadargelim',
                                           '-simplifycfg'])
 
-                    print('INFO: Before optimizations time: {0}'.format(time() - last_time))
-                    last_time = time()
+                # print info about time
+                print_elapsed_time('INFO: Compilation, preparation and\
+                                    instrumentation time')
 
                 self.slicer(self.options.slicing_criterion)
-                print('INFO: Total slicing time: {0}'.format(time() - last_time))
-                last_time = time()
+                print_elapsed_time('INFO: Total slicing time')
 
             # optimize the code before symbolic execution
             if "after" in self.options.optlevel:
                 self.optimize()
-                print('INFO: After optimizations time: {0}'.format(time() - last_time))
 
         except SymbioticException as e:
             # FIXME if we should not run further, do not run further
