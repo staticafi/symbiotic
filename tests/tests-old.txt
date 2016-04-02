@@ -6,3 +6,4 @@ TRUE select_inst_regression-true.c
 FALSE minepump_regression-false.c
 FALSE ludcmp_false-unreach-call.i
 TRUE terminator-true.i
+FALSE --prp=valid-free --malloc-never-fails double_free.c

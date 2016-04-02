@@ -6,3 +6,4 @@ TRUE --pta fs select_inst_regression-true.c
 FALSE --pta fs minepump_regression-false.c
 FALSE --pta fs ludcmp_false-unreach-call.i
 TRUE --pta fs terminator-true.i
+FALSE --pta fs --prp=valid-free --malloc-never-fails double_free.c
