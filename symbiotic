@@ -86,9 +86,11 @@ patterns = {
     'EINITVALS' : re.compile('.*unable to compute initial values.*'),
     'ESYMSOL' : re.compile('.*unable to get symbolic solution.*'),
     'ESILENTLYCONCRETIZED' : re.compile('.*silently concretizing.*'),
+    'ECONCRETIZED' : re.compile('.* concretized symbolic size.*'),
     'EEXTRAARGS' : re.compile('.*calling .* with extra arguments.*'),
     'EABORT' : re.compile('.*abort failure.*'),
     #'EGENERAL' : re.compile('.*now ignoring this error at this location.*'),
+    'EMALLOC' : re.compile('.*found huge malloc, returning 0.*'),
     'ESKIPFORK' : re.compile('.*skipping fork.*'),
     'EKILLSTATE' : re.compile('.*killing.*states (over memory cap).*')
 }
