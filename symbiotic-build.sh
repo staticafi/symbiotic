@@ -530,6 +530,7 @@ if [ $FROM -le 7 ]; then
 		include/klee/klee.h \
 		include/symbiotic.h \
 		lib.c \
+		memalloc.c \
 		LLVM_SLICER_VERSION \
 		LLVM_NEW_SLICER_VERSION \
 		MINISAT_VERSION \

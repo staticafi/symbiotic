@@ -409,7 +409,7 @@ def compile_to_llvm(source, is32bit = False, output = None):
 
     return llvmfile
 
-def get_libraries(opts):
+def get_libraries(opts, which=['lib', 'memalloc']):
     files = []
 
     if not opts.no_lib:
@@ -419,12 +419,21 @@ def get_libraries(opts):
         if opts.is32bit:
             d += '32'
 
-        libc = '{0}/lib.c'.format(symbiotic_dir)
-        llvmlibbc = compile_to_llvm(libc, opts.is32bit)
-        if llvmlibbc is None:
-            err('Failed compiling support library (lib.bc)')
+        if 'lib' in which:
+            libc = '{0}/lib.c'.format(symbiotic_dir)
+            llvmlibbc = compile_to_llvm(libc, opts.is32bit)
+            if llvmlibbc is None:
+                err('Failed compiling support library (lib.bc)')
 
-        files.append(llvmlibbc)
+            files.append(llvmlibbc)
+
+        if 'memalloc' in which:
+            libc = '{0}/memalloc.c'.format(symbiotic_dir)
+            llvmlibbc = compile_to_llvm(libc, opts.is32bit)
+            if llvmlibbc is None:
+                err('Failed compiling support library (memalloc.bc)')
+
+            files.append(llvmlibbc)
 
     if opts.add_libc:
         files.append('{0}/klee/runtime/klee-libc.bc'.format(d))
@@ -645,8 +654,7 @@ class Symbiotic(object):
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['LLVMinstr', config, self.llvmfile, output]
 
-        if run_and_watch(cmd, DbgWatch()) != 0:
-            raise SymbioticException('Instrumenting the code failed')
+        run_checked(cmd, 'Instrumenting the code failed', 'instrument')
 
         self.llvmfile = output
 
@@ -761,11 +769,24 @@ class Symbiotic(object):
             # delete undefined function calls
             self.prepare(passes = ['-delete-undefined'])
 
+            # in the case of valid-free property we want to
+            # instrument even __VERIFIER_malloc functions,
+            # so we need to link it before instrumenting
+            if self.options.prp == 'VALID-FREE':
+                lib = get_libraries(self.options, ['memalloc'])
+                self.link(libs = lib)
+
             # now instrument the code according to properties
             self.instrument()
 
             # link with libraries (add our definitions)
-            self.link()
+            if self.options.prp == 'VALID-FREE':
+                # link only lib in this case, otherwise we'll get multiple
+                # definitions to some functions
+                lib = get_libraries(self.options, ['lib'])
+                self.link(libs=lib)
+            else:
+                self.link()
 
             # slice the code
             if not self.options.noslice:
@@ -779,8 +800,8 @@ class Symbiotic(object):
                                           '-simplifycfg'])
 
                 # print info about time
-                print_elapsed_time('INFO: Compilation, preparation and\
-                                    instrumentation time')
+                print_elapsed_time('INFO: Compilation, preparation and '\
+                                   'instrumentation time')
 
                 self.slicer(self.options.slicing_criterion)
                 print_elapsed_time('INFO: Total slicing time')
