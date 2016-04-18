@@ -629,14 +629,7 @@ class Symbiotic(object):
 
         self.llvmfile = output
 
-    def instrument(self):
-        """
-        Instrument the code.
-        """
-        prp = self.options.prp
-        if prp is None or prp == 'REACHCALL':
-            return
-
+    def _instrument(self, prp):
         prefix = '{0}/instrumentation/'.format(get_symbiotic_dir())
         if prp == 'VALID-FREE':
             config = prefix + 'double_free/config.json'
@@ -659,6 +652,18 @@ class Symbiotic(object):
         run_checked(cmd, 'Instrumenting the code failed', 'instrument')
 
         self.llvmfile = output
+
+    def instrument(self):
+        """
+        Instrument the code.
+        """
+        if self.options.prp is None:
+            return
+
+        if 'VALID-FREE' in self.options.prp:
+            self._instrument('VALID-FREE')
+        if 'NULL-DEREF' in self.options.prp:
+            self._instrument('NULL-DEREF')
 
     def link(self, output = None, libs = None):
         if libs is None:
@@ -774,7 +779,8 @@ class Symbiotic(object):
             # in the case of valid-free property we want to
             # instrument even __VERIFIER_malloc functions,
             # so we need to link it before instrumenting
-            if self.options.prp == 'VALID-FREE':
+            is_valid_free = ('VALID-FREE' in self.options.prp)
+            if is_valid_free:
                 lib = get_libraries(self.options, ['memalloc'])
                 self.link(libs = lib)
 
@@ -782,7 +788,7 @@ class Symbiotic(object):
             self.instrument()
 
             # link with libraries (add our definitions)
-            if self.options.prp == 'VALID-FREE':
+            if is_valid_free:
                 # link only lib in this case, otherwise we'll get multiple
                 # definitions to some functions
                 lib = get_libraries(self.options, ['lib'])
@@ -858,11 +864,15 @@ def get_prp(prp):
     # if property is given in file, read the file
     epath = os.path.expanduser(prp)
     if os.path.isfile(epath):
+        prp_list = []
         f = open(epath, 'r')
-        prp = f.readline().strip()
+        for line in f.readlines():
+            prp_list.append(line.strip())
         f.close()
+        return prp_list
 
-    return prp
+    # it is not a file, so it is given as a string
+    return prp.split()
 
 def parse_command_line():
     options = SymbioticOptions()
@@ -937,7 +947,8 @@ def parse_command_line():
                     err('Unknown optimization level, try --help')
         elif opt == '--prp':
             options.prp = get_prp(arg)
-            dbg('Property: {0}'.format(options.prp))
+            for prp in options.prp:
+                dbg('Property: {0}'.format(prp))
         elif opt == '--pta':
             options.slicer_pta = arg
             if not arg in ['fs', 'fi', 'old']:
@@ -946,7 +957,7 @@ def parse_command_line():
             dbg('Points-to: {0}'.format(arg))
         elif opt == '--slicing-criterion':
             options.slicing_criterion = arg
-            dbg('Slicing criterion: {0}'.format(options.prp))
+            dbg('Slicing criterion: {0}'.format(arg))
         elif opt == '--timeout':
             options.timeout = int(arg)
             dbg('Timeout set to {0} sec'.format(arg))
@@ -981,12 +992,16 @@ if __name__ == "__main__":
 
     try:
         try:
-            # opts.prp now contain a key (or None), but we want the value
-            # from the map
+            # opts.prp now contain a list with keys (or None),
+            # but we want the value from the map
             if not opts.prp is None:
-                opts.prp = supported_properties[opts.prp]
-        except KeyError:
-            err('Unknown or unsupported property: {0}'.format(opts.prp))
+                prps = opts.prp[:] # make copy of properties
+                opts.prp = []
+
+                for prp in prps:
+                    opts.prp.append(supported_properties[prp])
+        except KeyError as ke:
+            err('Unknown or unsupported property: {0}'.format(ke.message))
 
         # let the show begin!
         symbiotic = Symbiotic(sources, opts)
