@@ -867,11 +867,16 @@ def get_prp(prp):
         prp_list = []
         f = open(epath, 'r')
         for line in f.readlines():
-            prp_list.append(line.strip())
+            line = line.strip()
+            # ignore empty lines
+            if line:
+                prp_list.append(line)
         f.close()
         return prp_list
 
     # it is not a file, so it is given as a string
+    # FIXME: this does not work for properties given
+    # as LTL (there are spaces)
     return prp.split()
 
 def parse_command_line():
