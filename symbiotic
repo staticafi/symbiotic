@@ -57,6 +57,7 @@ where OPTS can be following:
     --prp=property         Specify property that should hold. It is either LTL formula
                            as specivied by SV-COMP, or one of following shortcuts:
                              null-deref   -- program is free of null-dereferences
+                             valid-deref  -- all dereferences are valid
                              valid-free   -- all free() calls are valid
                            The string can be given on line or in a file.
     --pta=[fs|fi|old]      Use flow-sensitive/flow-insensitive or old
@@ -98,7 +99,11 @@ patterns = {
 supported_properties = {
     'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )' : 'REACHCALL',
     'CHECK( init(main()), LTL(G valid-free) )'                 : 'VALID-FREE',
+    'CHECK( init(main()), LTL(G valid-deref) )'                : 'VALID-DEREF',
+    #'CHECK( init(main()), LTL(G valid-memtrack) )'             : 'MEM-LEAKS',
+    'valid-deref'                                              : 'VALID-DEREF',
     'valid-free'                                               : 'VALID-FREE',
+    #'mem-leaks'                                                : 'MEM-LEAKS',
     # SV-COMP don't have this, it has only valid-deref
     'null-deref'                                               : 'NULL-DEREF',
 }
@@ -461,21 +466,26 @@ def check_llvmfile(llvmfile):
 
     return True
 
-def parse_klee_output(line):
+def parse_klee_output(line, valid_deref = False):
     for (key, pattern) in patterns.iteritems():
         if pattern.match(line):
             # return True so that we know we should terminate
             if key == 'ASSERTIONFAILED':
                 return key
+            elif valid_deref and key == 'EMEMERROR':
+                return 'ASSERTIONFAILED (valid-deref)'
+            elif valid_deref and key == 'EFREE':
+                return 'ASSERTIONFAILED (valid-free)'
             else:
                 return key
 
     return None
 
 class KleeWatch(ProcessWatch):
-    def __init__(self):
+    def __init__(self, valid_deref = False):
         self._done = False
         self._found = []
+        self._valid_deref = valid_deref
 
     # XXX don't kill klee after the assertion
     # is found - we have a -halt-affter-assert
@@ -491,7 +501,7 @@ class KleeWatch(ProcessWatch):
         return ' '.join(self._found)
 
     def parse(self, line):
-        found = parse_klee_output(line)
+        found = parse_klee_output(line, self._valid_deref)
         if found:
             self._found.insert(0, found)
 
@@ -502,7 +512,7 @@ class KleeWatch(ProcessWatch):
         else:
             dbg(line, 'all', False)
 
-def run_symexe(llvmfile, timeout = 0):
+def run_symexe(llvmfile, opts, timeout = 0):
     cmd = ['klee', '-halt-after-assert', '-write-paths',
            '-solver-optimize-divides=false',
            '-max-time={0}'.format(timeout), llvmfile]
@@ -511,7 +521,7 @@ def run_symexe(llvmfile, timeout = 0):
     global current_process
     current_process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
 
-    watch = KleeWatch()
+    watch = KleeWatch('VALID-DEREF' in opts.prp)
     while True:
         line = current_process.stdout.readline()
         if line == '' and current_process.poll() is not None:
@@ -561,7 +571,7 @@ class SymbioticException(Exception):
 class SymbioticOptions(object):
     def __init__(self, is32bit = True, noslice=False, timeout=0):
         self.is32bit = is32bit
-        self.prp = None
+        self.prp = []
         self.noslice = noslice
         self.malloc_never_fails = False
         self.noprepare = False
@@ -657,8 +667,6 @@ class Symbiotic(object):
         """
         Instrument the code.
         """
-        if self.options.prp is None:
-            return
 
         if 'VALID-FREE' in self.options.prp:
             self._instrument('VALID-FREE')
@@ -831,7 +839,7 @@ class Symbiotic(object):
                 err('Cannot create {0}: {1}'.format(self.options.final_output,
                                                     e.message))
         if not self.options.no_symexe:
-            found = run_symexe(self.llvmfile)
+            found = run_symexe(self.llvmfile, opts = self.options)
         else:
             found = 'Did not run symbolic execution'
 
@@ -999,12 +1007,24 @@ if __name__ == "__main__":
         try:
             # opts.prp now contain a list with keys (or None),
             # but we want the value from the map
-            if not opts.prp is None:
+            if opts.prp:
                 prps = opts.prp[:] # make copy of properties
                 opts.prp = []
 
                 for prp in prps:
-                    opts.prp.append(supported_properties[prp])
+                    prp_key = supported_properties[prp]
+                    opts.prp.append(prp_key)
+
+                    # for some properties we need to modify
+                    # parsing of the output
+                    if prp_key == 'VALID-DEREF':
+                        # we don't know to which locations
+                        # we should slice, so suspend the slicing
+                        # for now
+                        dbg('Will not slice due to VALID-DEREF property')
+                        opts.noslice = True
+                        patterns['EMEMERROR'] = re.compile('.*memory error: out of bound pointer.*')
+                        patterns['EFREE'] = re.compile('.*memory error: invalid pointer: free.*')
         except KeyError as ke:
             err('Unknown or unsupported property: {0}'.format(ke.message))
 
