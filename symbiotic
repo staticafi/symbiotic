@@ -100,11 +100,10 @@ supported_properties = {
     'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )' : 'REACHCALL',
     'CHECK( init(main()), LTL(G valid-free) )'                 : 'VALID-FREE',
     'CHECK( init(main()), LTL(G valid-deref) )'                : 'VALID-DEREF',
-    #'CHECK( init(main()), LTL(G valid-memtrack) )'             : 'MEM-LEAKS',
+    'CHECK( init(main()), LTL(G valid-memtrack) )'             : 'MEM-TRACK',
     'valid-deref'                                              : 'VALID-DEREF',
     'valid-free'                                               : 'VALID-FREE',
-    #'mem-leaks'                                                : 'MEM-LEAKS',
-    # SV-COMP don't have this, it has only valid-deref
+    'valid-memtrack'                                           : 'MEM-TRACK',
     'null-deref'                                               : 'NULL-DEREF',
 }
 
@@ -644,6 +643,9 @@ class Symbiotic(object):
         if prp == 'VALID-FREE':
             config = prefix + 'double_free/config.json'
             tolink = prefix + 'double_free/double_free.c'
+        elif prp == 'MEM-TRACK':
+            config = prefix + 'double_free/config-memtrack.json'
+            tolink = prefix + 'double_free/double_free.c'
         elif prp == 'NULL-DEREF':
             config = prefix + 'null_deref/config.json'
             tolink = prefix + 'null_deref/null_deref.c'
@@ -668,8 +670,12 @@ class Symbiotic(object):
         Instrument the code.
         """
 
-        if 'VALID-FREE' in self.options.prp:
+        # these options are exclusive
+        if 'MEM-TRACK' in self.options.prp:
+            self._instrument('MEM-TRACK')
+        elif 'VALID-FREE' in self.options.prp:
             self._instrument('VALID-FREE')
+
         if 'NULL-DEREF' in self.options.prp:
             self._instrument('NULL-DEREF')
 
@@ -787,7 +793,8 @@ class Symbiotic(object):
             # in the case of valid-free property we want to
             # instrument even __VERIFIER_malloc functions,
             # so we need to link it before instrumenting
-            is_valid_free = ('VALID-FREE' in self.options.prp)
+            is_valid_free = ('VALID-FREE' in self.options.prp) or\
+                            ('MEM-TRACK' in self.options.prp)
             if is_valid_free:
                 lib = get_libraries(self.options, ['memalloc'])
                 self.link(libs = lib)
@@ -1023,6 +1030,7 @@ if __name__ == "__main__":
                         # for now
                         dbg('Will not slice due to VALID-DEREF property')
                         opts.noslice = True
+
                         patterns['EMEMERROR'] = re.compile('.*memory error: out of bound pointer.*')
                         patterns['EFREE'] = re.compile('.*memory error: invalid pointer: free.*')
         except KeyError as ke:
