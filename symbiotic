@@ -69,6 +69,9 @@ where OPTS can be following:
                            --debug= to print basic messages.
     --output=FILE          Store the final code (that is to be run by symexe) to FILE
     --witness=FILE         Store witness into FILE (default is witness.graphml)
+    --cflags=flags
+    --cppflags=flags       Append extra CFLAGS and CPPFLAGS to use while compiling,
+                           the environment CFLAGS and CPPFLAGS are used too
     --help                 Show help message
     --version              Return version
 
@@ -130,6 +133,10 @@ debug_opts = []
 # klee process, so that we can kill it if we need
 # (e. g. on timeout)
 current_process = None
+
+# shared global flags for compilation
+CFLAGS = []
+CPPFLAGS = []
 
 # variable used to measure elapsed time
 last_time = None
@@ -380,6 +387,23 @@ def set_environ(is32bit = False):
     dbg('LD_LIBRARY_PATH={0}'.format(os.environ['LD_LIBRARY_PATH']))
     dbg('C_INCLUDE_DIR={0}'.format(os.environ['C_INCLUDE_DIR']))
 
+def parse_environ():
+    """
+    Parse environment variables of interest and
+    change running options accordingly
+    """
+
+    global CFLAGS
+    global CPPFLAGS
+
+    for p in os.environ['C_INCLUDE_DIR'].split(':'):
+        CPPFLAGS.append('-I{0}'.format(p))
+
+    if os.environ.has_key('CFLAGS'):
+        CFLAGS += os.environ['CFLAGS'].split(' ')
+    if os.environ.has_key('CPPFLAGS'):
+        CPPFLAGS += os.environ['CPPFLAGS'].split(' ')
+
 def compile_to_llvm(source, is32bit = False, output = None):
     """
     Compile given source to LLVM bytecode
@@ -388,15 +412,13 @@ def compile_to_llvm(source, is32bit = False, output = None):
 
     cmd = ['clang', '-g', '-c', '-emit-llvm']
 
-    # add include paths
-    for p in os.environ['C_INCLUDE_DIR'].split(':'):
-        cmd.append('-I')
-        cmd.append(p)
+    global CFLAGS
+    global CPPFLAGS
 
-    if os.environ.has_key('CFLAGS'):
-        cmd += os.environ['CFLAGS'].split(' ')
-    if os.environ.has_key('CPPFLAGS'):
-        cmd += os.environ['CPPFLAGS'].split(' ')
+    if CFLAGS:
+        cmd += CFLAGS
+    if CPPFLAGS:
+        cmd += CPPFLAGS
 
     if is32bit:
         cmd.append('-m32')
@@ -752,8 +774,12 @@ class Symbiotic(object):
             # because in instrumentation we use
             # grep and similar commands and in set_environ
             # we reset PATH variable
-            # FIXME rewrite instrumentation to Python too
+            # FIXME rewrite instrumentation to Python too,
+            # so that we can set and parse environ outside of _run(),
+            # this just don't belong to this place...
             set_environ(opts.is32bit)
+            # set CFLAGS and CPPFLAGS for compilation
+            parse_environ()
 
             if self.options.source_is_bc:
                 self.llvmfile = sources[0]
@@ -904,7 +930,8 @@ def parse_command_line():
                                     'libc=', 'old-slicer', 'require-slicer',
                                     'no-symexe', 'output=', 'witness=', 'bc',
                                     'optimize=', 'no-prepare', 'malloc-never-fails',
-                                    'pta=', 'no-lib', 'slicing-criterion='])
+                                    'pta=', 'no-lib', 'slicing-criterion=',
+                                    'cflags=', 'cppflags='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -990,6 +1017,12 @@ def parse_command_line():
         elif opt == '--bc':
             options.source_is_bc = True
             dbg('Given code is bytecode')
+        elif opt == '--cflags':
+            global CFLAGS
+            CFLAGS += arg.split()
+        elif opt == '--cppflags':
+            global CPPFLAGS
+            CPPFLAGS += arg.split()
 
     return options, args
 
