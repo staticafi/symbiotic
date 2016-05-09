@@ -186,17 +186,19 @@ build()
 	return 0
 }
 
-# download llvm-3.4 and unpack
+# download llvm-3.8 and unpack
 if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
-	if [ ! -d 'llvm-3.4' ]; then
-		wget http://llvm.org/releases/3.4/llvm-3.4.src.tar.gz || exit 1
-		wget http://llvm.org/releases/3.4/clang-3.4.src.tar.gz || exit 1
+	if [ ! -d 'llvm-3.8.0' ]; then
+		wget http://llvm.org/releases/3.8.0/llvm-3.8.0.src.tar.xz || exit 1
+		wget http://llvm.org/releases/3.8.0/cfe-3.8.0.src.tar.xz || exit 1
 
-		tar -xf llvm-3.4.src.tar.gz || exit 1
-		tar -xf clang-3.4.src.tar.gz || exit 1
+		tar -xf llvm-3.8.0.src.tar.xz || exit 1
+		tar -xf cfe-3.8.0.src.tar.xz || exit 1
 
+                # rename llvm folder
+                mv llvm-3.8.0.src llvm-3.8.0
 		# move clang to llvm/tools and rename to clang
-		mv clang-3.4 llvm-3.4/tools/clang
+		mv cfe-3.8.0.src llvm-3.8.0/tools/clang
 	fi
 
 	mkdir -p llvm-build-cmake
@@ -206,7 +208,7 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	if [ ! -d CMakeFiles ]; then
 		echo 'we should definitely build RelWithDebInfo here, no?'
 		echo 'N.B. we strip below anyway, so why not Release actually?'
-		cmake ../llvm-3.4 \
+		cmake ../llvm-3.8.0 \
 			-DCMAKE_BUILD_TYPE=Release\
 			-DLLVM_INCLUDE_EXAMPLES=OFF \
 			-DLLVM_INCLUDE_TESTS=OFF \
@@ -229,8 +231,8 @@ fi
 
 export LLVM_DIR=$ABS_RUNDIR/llvm-build-cmake/share/llvm/cmake/
 
-rm -f llvm-3.4.src.tar.gz &>/dev/null || exit 1
-rm -f clang-3.4.src.tar.gz &>/dev/null || exit 1
+rm -f llvm-3.8.0.src.tar.xz &>/dev/null || exit 1
+rm -f cfe-3.8.0.src.tar.xz &>/dev/null || exit 1
 
 git_clone_or_pull()
 {
@@ -261,27 +263,27 @@ git_submodule_init()
 if [ $FROM -le 1 ]; then
 	git_submodule_init
 
-	cd "$SRCDIR/LLVMSlicer" || exitmsg "Cloning failed"
-	if [ ! -d CMakeFiles ]; then
-		cmake . \
-			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
-			-DLLVM_BUILD_PATH="$ABS_RUNDIR"/llvm-build-cmake/ \
-			-DLLVM_DIR=$LLVM_DIR \
-			-DCMAKE_INSTALL_PREFIX=$PREFIX \
-			|| clean_and_exit 1 "git"
-	fi
-
-	(build && make install) || exit 1
-
-	# need slicer version
-	git rev-parse --short=8 HEAD > $PREFIX/LLVM_SLICER_VERSION
-	cd -
+#	cd "$SRCDIR/LLVMSlicer" || exitmsg "Cloning failed"
+#	if [ ! -d CMakeFiles ]; then
+#		cmake . \
+#			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.8.0/" \
+#			-DLLVM_BUILD_PATH="$ABS_RUNDIR"/llvm-build-cmake/ \
+#			-DLLVM_DIR=$LLVM_DIR \
+#			-DCMAKE_INSTALL_PREFIX=$PREFIX \
+#			|| clean_and_exit 1 "git"
+#	fi
+#
+#	(build && make install) || exit 1
+#
+#	# need slicer version
+#	git rev-parse --short=8 HEAD > $PREFIX/LLVM_SLICER_VERSION
+#	cd -
 
 	# download new slicer
 	cd "$SRCDIR/dg" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
+			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.8.0/" \
 			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
@@ -340,7 +342,7 @@ if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 
 	# configure llvm if not done yet
 	if [ ! -f config.log ]; then
-		../llvm-3.4/configure \
+		../llvm-3.8.0/configure \
 			--enable-optimized --enable-assertions \
 			--enable-targets=x86 --enable-docs=no \
 			--enable-timestamps=no || clean_and_exit 1
@@ -353,7 +355,7 @@ fi
 
 if [ $FROM -le 4 ]; then
 	# build klee
-	git_clone_or_pull git://github.com/staticafi/klee.git klee || exitmsg "Cloning failed"
+	git_clone_or_pull "-b symbiotic --single-branch git://github.com/rtrembecky/klee.git" klee || exitmsg "Cloning failed"
 
 	mkdir -p klee-build/
 	cd klee-build/
@@ -361,7 +363,7 @@ if [ $FROM -le 4 ]; then
 	if [ ! -f config.log ]; then
 	../klee/configure \
 		--prefix=$PREFIX \
-		--with-llvmsrc=`pwd`/../llvm-3.4 \
+		--with-llvmsrc=`pwd`/../llvm-3.8.0 \
 		--with-llvmobj=`pwd`/../llvm-build-configure \
 		--with-stp=$PREFIX || clean_and_exit 1 "git"
 	fi
@@ -443,7 +445,7 @@ if [ $FROM -le 6 ]; then
 	cd "$SRCDIR/svc15" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
+			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.8.0/" \
 			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
@@ -453,14 +455,13 @@ if [ $FROM -le 6 ]; then
 	(build && make install) || exit 1
 
 	git rev-parse --short=8 HEAD > $PREFIX/SVC_SCRIPTS_VERSION
-
 	cd -
 
 	cd "$SRCDIR/LLVMInstrumentation" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		./bootstrap-json.sh || exitmsg "Failed generating json files"
 		cmake . \
-			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
+			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.8.0/" \
 			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
@@ -495,11 +496,12 @@ if [ $FROM -le 7 ]; then
 	BINARIES="bin/clang bin/opt bin/klee bin/llvm-link bin/llvm-slicer"
 	LIBRARIES="\
 		lib/libLLVMdg.so lib/libPSS.so lib/libRD.so\
-		lib/LLVMSlicer.so lib/LLVMsvc15.so \
+		lib/LLVMsvc15.so \
 		lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		lib32/klee/runtime/kleeRuntimeIntrinsic.bc\
 		lib/klee/runtime/klee-libc.bc\
 		lib32/klee/runtime/klee-libc.bc"
+#		lib/LLVMSlicer.so
 	SCRIPTS="build-fix.sh path_to_ml.pl symbiotic"
 	INSTR="bin/LLVMinstr\
 	       instrumentation/null_deref/config.json\
@@ -532,7 +534,6 @@ if [ $FROM -le 7 ]; then
 		include/symbiotic.h \
 		lib.c \
 		memalloc.c \
-		LLVM_SLICER_VERSION \
 		LLVM_NEW_SLICER_VERSION \
 		MINISAT_VERSION \
 		SVC_SCRIPTS_VERSION \
@@ -540,6 +541,7 @@ if [ $FROM -le 7 ]; then
 		STP_VERSION	    \
 		KLEE_VERSION	\
 		LLVM_INSTRUMENTATION_VERSION
+		#LLVM_SLICER_VERSION \
 
 	git commit -m "Create Symbiotic distribution `date`"
 	# remove unnecessary files
