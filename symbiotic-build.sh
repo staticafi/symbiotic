@@ -27,8 +27,8 @@ usage()
 	echo -e "           present in build directory in folders"
 	echo -e "           llvm-build-cmake and llvm-build-configure)"
 	echo -e "update   - update repositories"
-	echo -e "with-cpa - downlad CPAchecker (due to witness checking)"
-	echo -e "with-ultimate-automizer - downlad UltimateAutmizer (due to witness checking)"
+	echo -e "with-cpa - download CPAchecker (due to witness checking)"
+	echo -e "with-ultimate-automizer - download UltimateAutmizer (due to witness checking)"
 	echo "" # new line
 	echo -e "slicer, scripts,"
 	echo -e "minisat, stp, klee, witness"
@@ -309,7 +309,7 @@ fi
 
 if [ $FROM -le 3 ]; then
 	git_clone_or_pull git://github.com/stp/stp.git stp
-	cd stp || exitmsg "Clonging failed"
+	cd stp || exitmsg "Cloning failed"
 	cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
 		-DCMAKE_CXX_FLAGS_RELEASE=-O2 \
 		-DCMAKE_C_FLAGS_RELEASE=-O2 \
@@ -440,7 +440,7 @@ if [ $FROM -le 6 ]; then
 	# download scripts
 	git_submodule_init
 
-	cd "$SRCDIR/svc15" || exitmsg "Clonging failed"
+	cd "$SRCDIR/svc15" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
 			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.4/" \
