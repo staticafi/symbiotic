@@ -535,8 +535,10 @@ class KleeWatch(ProcessWatch):
 
 def run_symexe(llvmfile, opts, timeout = 0):
     cmd = ['klee', '-halt-after-assert', '-write-paths',
-           '-solver-optimize-divides=false',
+           '-solver-optimize-divides=false', '-dump-states-on-halt=0',
+           '-output-stats=0',#'-only-output-states-covering-new=1',
            '-max-time={0}'.format(timeout), llvmfile]
+
     dbg(' '.join(cmd))
 
     global current_process
