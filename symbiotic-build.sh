@@ -220,12 +220,13 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	fi
 
 	# build llvm
-	ONLY_TOOLS='opt clang llvm-link llvm-dis' build
+	ONLY_TOOLS='opt clang llvm-link llvm-dis llvm-nm' build
 
 	# we need these binaries in symbiotic
 	cp bin/clang $PREFIX/bin/clang || exit 1
 	cp bin/opt $PREFIX/bin/opt || exit 1
 	cp bin/llvm-link $PREFIX/bin/llvm-link || exit 1
+	cp bin/llvm-nm $PREFIX/bin/llvm-nm || exit 1
 	cd -
 fi
 
@@ -493,7 +494,7 @@ if [ $FROM -le 7 ]; then
 
 	# create git repository and add all files that we need
 	# then remove the rest and create distribution
-	BINARIES="bin/clang bin/opt bin/klee bin/llvm-link bin/llvm-slicer"
+	BINARIES="bin/clang bin/opt bin/klee bin/llvm-link bin/llvm-nm bin/llvm-slicer"
 	LIBRARIES="\
 		lib/libLLVMdg.so lib/libPSS.so lib/libRD.so\
 		lib/LLVMsvc15.so \
