@@ -437,6 +437,24 @@ def compile_to_llvm(source, is32bit = False, output = None):
 
     return llvmfile
 
+def get_undefined(bitcode):
+    cmd = ['llvm-nm', '-undefined-only', '-just-symbol-name', bitcode]
+    dbg(' '.join(cmd))
+
+    global current_process
+    current_process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+
+    out, err = current_process.communicate()
+    assert err is None
+
+    ret = current_process.poll()
+    current_process = None
+
+    if ret != 0:
+        err('Failed getting undefined symbols')
+
+    return out.split()
+
 def get_libraries(opts, which=['lib', 'memalloc']):
     files = []
 
@@ -721,6 +739,18 @@ class Symbiotic(object):
 
         self.llvmfile = output
 
+    def link_undefined(self):
+        # get undefined functions from the bitcode
+        undefs = get_undefined(self.llvmfile)
+        tolink = []
+        for undef in undefs:
+            name = '{0}.c'.format(undef)
+            if os.path.isfile(name):
+                output_name = compile_to_llvm(name, self.options.is32bit)
+                tolink.append(output_name)
+
+        self.link(libs = tolink)
+
     def slicer(self, criterion):
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         if self.options.old_slicer:
@@ -810,6 +840,8 @@ class Symbiotic(object):
                 instrument_alloc = '-instrument-alloc-nf'
             else:
                 instrument_alloc = '-instrument-alloc'
+
+            self.link_undefined()
 
             # remove invaild function definitions and instrument our malloc
             self.prepare(passes = ['-prepare', instrument_alloc,
