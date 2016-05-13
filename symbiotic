@@ -410,7 +410,7 @@ def compile_to_llvm(source, is32bit = False, output = None):
     """
     symbiotic_dir = get_symbiotic_dir()
 
-    cmd = ['clang', '-g', '-c', '-emit-llvm']
+    cmd = ['clang', '-g', '-c', '-emit-llvm', '-include', 'symbiotic.h']
 
     global CFLAGS
     global CPPFLAGS
