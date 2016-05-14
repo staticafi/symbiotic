@@ -455,26 +455,13 @@ def get_undefined(bitcode):
 
     return out.split()
 
-def get_libraries(opts, which=['lib', 'memalloc']):
+def get_libraries(opts, which=['memalloc']):
     files = []
+    symbiotic_dir = get_symbiotic_dir()
 
     if not opts.no_lib:
-        symbiotic_dir = get_symbiotic_dir()
-
-        d = '{0}/lib'.format(symbiotic_dir)
-        if opts.is32bit:
-            d += '32'
-
-        if 'lib' in which:
-            libc = '{0}/lib.c'.format(symbiotic_dir)
-            llvmlibbc = compile_to_llvm(libc, opts.is32bit)
-            if llvmlibbc is None:
-                err('Failed compiling support library (lib.bc)')
-
-            files.append(llvmlibbc)
-
         if 'memalloc' in which:
-            libc = '{0}/memalloc.c'.format(symbiotic_dir)
+            libc = '{0}/lib/memalloc.c'.format(symbiotic_dir)
             llvmlibbc = compile_to_llvm(libc, opts.is32bit)
             if llvmlibbc is None:
                 err('Failed compiling support library (memalloc.bc)')
@@ -482,6 +469,10 @@ def get_libraries(opts, which=['lib', 'memalloc']):
             files.append(llvmlibbc)
 
     if opts.add_libc:
+        d = '{0}/lib'.format(symbiotic_dir)
+        if opts.is32bit:
+            d += '32'
+
         files.append('{0}/klee/runtime/klee-libc.bc'.format(d))
 
     return files
@@ -740,16 +731,24 @@ class Symbiotic(object):
         self.llvmfile = output
 
     def link_undefined(self):
+        if self.options.no_lib:
+            return
+
         # get undefined functions from the bitcode
         undefs = get_undefined(self.llvmfile)
         tolink = []
         for undef in undefs:
-            name = '{0}.c'.format(undef)
+            name = 'lib/{0}.c'.format(undef)
             if os.path.isfile(name):
                 output_name = compile_to_llvm(name, self.options.is32bit)
                 tolink.append(output_name)
 
-        self.link(libs = tolink)
+        if tolink:
+            self.link(libs = tolink)
+            # if we linked someting, try get undefined again,
+            # because the functions may have added some new undefined
+            # functions
+            self.link_undefined()
 
     def slicer(self, criterion):
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
@@ -862,14 +861,8 @@ class Symbiotic(object):
             # now instrument the code according to properties
             self.instrument()
 
-            # link with libraries (add our definitions)
-            if is_valid_free:
-                # link only lib in this case, otherwise we'll get multiple
-                # definitions to some functions
-                lib = get_libraries(self.options, ['lib'])
-                self.link(libs=lib)
-            else:
-                self.link()
+            # link with the rest of libraries
+            self.link()
 
             # slice the code
             if not self.options.noslice:
