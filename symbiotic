@@ -688,8 +688,11 @@ class Symbiotic(object):
         # we need to compile and link the state machines before the
         # instrumentation itself
 
-        tolink = compile_to_llvm(tolink, self.options.is32bit)
-        self.link(libs=[tolink])
+        tolinkbc = compile_to_llvm(tolink, self.options.is32bit)
+        if tolinkbc is None:
+            err('Failed compiling instrumentation bitcode: {0}'.format(tolink))
+
+        self.link(libs=[tolinkbc])
 
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['LLVMinstr', config, self.llvmfile, output]
@@ -727,7 +730,6 @@ class Symbiotic(object):
             cmd.append(self.llvmfile)
 
         run_checked(cmd, 'Failed linking llvm file with libraries', 'compile')
-
         self.llvmfile = output
 
     def link_undefined(self):
