@@ -455,7 +455,7 @@ def get_undefined(bitcode):
 
     return out.split()
 
-def get_libraries(opts, which=['memalloc']):
+def get_libraries(opts, which=[]):
     files = []
     symbiotic_dir = get_symbiotic_dir()
 
@@ -717,7 +717,7 @@ class Symbiotic(object):
 
     def link(self, output = None, libs = None):
         if libs is None:
-            libs = get_libraries(opts)
+            libs = get_libraries(self.options)
 
         if not libs:
             return
