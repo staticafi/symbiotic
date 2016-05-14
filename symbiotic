@@ -738,12 +738,15 @@ class Symbiotic(object):
 
         # get undefined functions from the bitcode
         undefs = get_undefined(self.llvmfile)
+        sd = get_symbiotic_dir()
         tolink = []
         for undef in undefs:
-            name = 'lib/{0}.c'.format(undef)
+            name = '{0}/lib/{1}.c'.format(sd, undef)
             if os.path.isfile(name):
                 output_name = compile_to_llvm(name, self.options.is32bit)
                 tolink.append(output_name)
+            else:
+                dbg('Did not find the definition of \'{0}\''.format(undef))
 
         if tolink:
             self.link(libs = tolink)
@@ -835,14 +838,14 @@ class Symbiotic(object):
             if not check_llvmfile(self.llvmfile):
                 err('Unsupported call (probably pthread API)')
 
+            self.link_undefined()
+
             # check if we should instrument the version of malloc
             # that never returns a NULL pointer
             if self.options.malloc_never_fails:
                 instrument_alloc = '-instrument-alloc-nf'
             else:
                 instrument_alloc = '-instrument-alloc'
-
-            self.link_undefined()
 
             # remove invaild function definitions and instrument our malloc
             self.prepare(passes = ['-prepare', instrument_alloc,
@@ -854,16 +857,16 @@ class Symbiotic(object):
             # in the case of valid-free property we want to
             # instrument even __VERIFIER_malloc functions,
             # so we need to link it before instrumenting
-            is_valid_free = ('VALID-FREE' in self.options.prp) or\
-                            ('MEM-TRACK' in self.options.prp)
-            if is_valid_free:
-                lib = get_libraries(self.options, ['memalloc'])
-                self.link(libs = lib)
+            #is_valid_free = ('VALID-FREE' in self.options.prp) or\
+            #                ('MEM-TRACK' in self.options.prp)
+            #if is_valid_free:
+            lib = get_libraries(self.options, ['memalloc'])
+            self.link(libs = lib)
 
             # now instrument the code according to properties
             self.instrument()
 
-            # link with the rest of libraries
+            # link with the rest of libraries if needed (klee-libc)
             self.link()
 
             # slice the code
