@@ -1,7 +1,7 @@
 #include <assert.h>
-int __VERIFIER_nondet_int();
 
-void klee_make_symbolic(void *, unsigned long size, const char *); 
+void klee_make_symbolic(void *, size_t, const char *);
+
 int main(void)
 {
   int n,l;
@@ -14,7 +14,7 @@ int main(void)
   if(l>1) {
     l--;
   }
-  assert(l != 0); 
+  assert(l != 0);
 
   return 0;
 }
