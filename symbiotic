@@ -442,16 +442,14 @@ def get_undefined(bitcode):
     dbg(' '.join(cmd))
 
     global current_process
-    current_process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+    current_process = Popen(cmd, stdout=PIPE, stderr=PIPE)
 
-    out, err = current_process.communicate()
-    assert err is None
-
+    out, errs = current_process.communicate()
     ret = current_process.poll()
     current_process = None
 
     if ret != 0:
-        err('Failed getting undefined symbols')
+        err('Failed getting undefined symbols: {0}'.format(errs))
 
     return out.split()
 
