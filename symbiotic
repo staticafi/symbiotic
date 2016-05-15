@@ -647,16 +647,6 @@ class Symbiotic(object):
         else:
             self.options = opts
 
-    def _build_fix(self):
-        """
-        Build fix. We use clang 3.4 that has some bugs regarding inlining.
-        """
-        sd = get_symbiotic_dir()
-        for source in self.sources:
-            cmd = ['/bin/sh', '-c', '{0}/build-fix.sh {1}'.format(sd, source)]
-            run_checked(cmd, 'Failed preprocessing the code')
-
-
     def prepare(self, passes = ['-prepare', '-delete-undefined']):
         if self.options.noprepare:
             return
@@ -801,20 +791,6 @@ class Symbiotic(object):
         last_time = time();
 
         try:
-            if not self.options.source_is_bc:
-                self._build_fix()
-
-            # set environ here, after instrumentaion,
-            # because in instrumentation we use
-            # grep and similar commands and in set_environ
-            # we reset PATH variable
-            # FIXME rewrite instrumentation to Python too,
-            # so that we can set and parse environ outside of _run(),
-            # this just don't belong to this place...
-            set_environ(opts.is32bit)
-            # set CFLAGS and CPPFLAGS for compilation
-            parse_environ()
-
             if self.options.source_is_bc:
                 self.llvmfile = sources[0]
             else:
@@ -1098,6 +1074,12 @@ if __name__ == "__main__":
                         patterns['EFREE'] = re.compile('.*memory error: invalid pointer: free.*')
         except KeyError as ke:
             err('Unknown or unsupported property: {0}'.format(ke.message))
+
+        # set environment. That is set PATH and LD_LIBRARY_PATH
+        # and so on
+        set_environ(opts.is32bit)
+        # set CFLAGS and CPPFLAGS for compilation
+        parse_environ()
 
         # let the show begin!
         symbiotic = Symbiotic(sources, opts)
