@@ -812,6 +812,9 @@ class Symbiotic(object):
             if not check_llvmfile(self.llvmfile):
                 err('Unsupported call (probably pthread API)')
 
+            # remove definitions of __VERIFIER_* that are not created by us
+            self.prepare(passes = ['-prepare'])
+
             self.link_undefined()
 
             # check if we should instrument the version of malloc
@@ -821,12 +824,11 @@ class Symbiotic(object):
             else:
                 instrument_alloc = '-instrument-alloc'
 
-            # remove invaild function definitions and instrument our malloc
-            self.prepare(passes = ['-prepare', instrument_alloc,
-                                   '-initialize-uninitialized'])
-
-            # delete undefined function calls
-            self.prepare(passes = ['-delete-undefined'])
+            # instrument our malloc and then delete undefined function calls
+            # and replace them by symbolic stuff
+            self.prepare(passes = [instrument_alloc,
+                                   '-initialize-uninitialized',
+                                   '-delete-undefined'])
 
             # in the case of valid-free property we want to
             # instrument even __VERIFIER_malloc functions,
