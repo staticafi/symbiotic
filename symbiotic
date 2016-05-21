@@ -724,6 +724,9 @@ class Symbiotic(object):
         if self.options.no_lib:
             return
 
+        if self.options.noprepare:
+            return
+
         # get undefined functions from the bitcode
         undefs = get_undefined(self.llvmfile)
         sd = get_symbiotic_dir()
@@ -836,8 +839,9 @@ class Symbiotic(object):
             #is_valid_free = ('VALID-FREE' in self.options.prp) or\
             #                ('MEM-TRACK' in self.options.prp)
             #if is_valid_free:
-            lib = get_libraries(self.options, ['memalloc'])
-            self.link(libs = lib)
+            if not self.options.noprepare:
+                lib = get_libraries(self.options, ['memalloc'])
+                self.link(libs = lib)
 
             # now instrument the code according to properties
             self.instrument()
