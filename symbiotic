@@ -605,6 +605,7 @@ class SymbioticOptions(object):
         self.noslice = noslice
         self.malloc_never_fails = False
         self.noprepare = False
+        self.nolinkundef = False
         self.timeout = 0
         self.add_libc = False
         self.no_lib = False
@@ -653,6 +654,9 @@ class Symbiotic(object):
         if self.options.noprepare:
             return
 
+        self._prepare(passes)
+
+    def _prepare(self, passes):
         output = '{0}-prep.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-load', 'LLVMsvc15.so', self.llvmfile, '-o', output] + passes
 
@@ -660,6 +664,9 @@ class Symbiotic(object):
             raise SymbioticException('Prepare phase failed')
 
         self.llvmfile = output
+
+    def old_slicer_find_init(self):
+        self._prepare(passes=['-find-init'])
 
     def _instrument(self, prp):
         prefix = '{0}/instrumentation/'.format(get_symbiotic_dir())
@@ -745,10 +752,7 @@ class Symbiotic(object):
         return self._link_undefined(self.options.link_files)
 
     def link_undefined(self):
-        if self.options.no_lib:
-            return
-
-        if self.options.noprepare:
+        if self.options.nolinkundef:
             return
 
         # get undefined functions from the bitcode
@@ -841,6 +845,9 @@ class Symbiotic(object):
             if not check_llvmfile(self.llvmfile):
                 err('Unsupported call (probably pthread API)')
 
+            if self.options.old_slicer:
+                self.old_slicer_find_init()
+
             # remove definitions of __VERIFIER_* that are not created by us
             self.prepare(passes = ['-prepare'])
 
@@ -897,6 +904,8 @@ class Symbiotic(object):
                 self.slicer(self.options.slicing_criterion)
                 print_elapsed_time('INFO: Total slicing time')
 
+                # new slicer removes unused itself, but for the old slicer
+                # we must do it manually (this calls the new slicer ;)
                 if self.options.old_slicer:
                     self.remove_unused_only()
 
@@ -976,7 +985,8 @@ def parse_command_line():
                                     'no-symexe', 'output=', 'witness=', 'bc',
                                     'optimize=', 'no-prepare', 'malloc-never-fails',
                                     'pta=', 'no-lib', 'slicing-criterion=',
-                                    'cflags=', 'cppflags=', 'link='])
+                                    'cflags=', 'cppflags=', 'link=',
+                                    'no-link-undefined'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -1009,6 +1019,9 @@ def parse_command_line():
         elif opt == '--no-prepare':
             dbg('Will not prepare code')
             options.noprepare = True
+        elif opt == '--no-link-undefined':
+            dbg('Will not try to find and link undefined functions')
+            options.nolinkundef = True
         elif opt == '--malloc-never-fails':
             dbg('Assuming malloc and calloc will never fail')
             options.malloc_never_fails = True
