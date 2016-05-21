@@ -618,6 +618,8 @@ class SymbioticOptions(object):
         self.optlevel = ["before", "after"]
         self.slicer_pta = 'old'
         self.slicing_criterion = '__assert_fail'
+        # these files will be linked unconditionally
+        self.link_files = []
 
 def run_checked(cmd, error_msg, dbg_domain = 'all'):
     """
@@ -720,15 +722,7 @@ class Symbiotic(object):
         run_checked(cmd, 'Failed linking llvm file with libraries', 'compile')
         self.llvmfile = output
 
-    def link_undefined(self):
-        if self.options.no_lib:
-            return
-
-        if self.options.noprepare:
-            return
-
-        # get undefined functions from the bitcode
-        undefs = get_undefined(self.llvmfile)
+    def _link_undefined(self, undefs):
         sd = get_symbiotic_dir()
         tolink = []
         for undef in undefs:
@@ -741,6 +735,25 @@ class Symbiotic(object):
 
         if tolink:
             self.link(libs = tolink)
+            return True
+
+        return False
+
+    def link_unconditional(self):
+        """ Link the files that we got on the command line """
+
+        return self._link_undefined(self.options.link_files)
+
+    def link_undefined(self):
+        if self.options.no_lib:
+            return
+
+        if self.options.noprepare:
+            return
+
+        # get undefined functions from the bitcode
+        undefs = get_undefined(self.llvmfile)
+        if self._link_undefined(undefs):
             # if we linked someting, try get undefined again,
             # because the functions may have added some new undefined
             # functions
@@ -831,6 +844,10 @@ class Symbiotic(object):
             # remove definitions of __VERIFIER_* that are not created by us
             self.prepare(passes = ['-prepare'])
 
+            # link the files that we got on the command line
+            self.link_unconditional()
+
+            # link undefined (no-op when prepare is turned off)
             self.link_undefined()
 
             # check if we should instrument the version of malloc
@@ -959,7 +976,7 @@ def parse_command_line():
                                     'no-symexe', 'output=', 'witness=', 'bc',
                                     'optimize=', 'no-prepare', 'malloc-never-fails',
                                     'pta=', 'no-lib', 'slicing-criterion=',
-                                    'cflags=', 'cppflags='])
+                                    'cflags=', 'cppflags=', 'link='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -1051,6 +1068,8 @@ def parse_command_line():
         elif opt == '--cppflags':
             global CPPFLAGS
             CPPFLAGS += arg.split()
+        elif opt == '--link':
+            options.link_files += arg.split(',')
 
     return options, args
 
