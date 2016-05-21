@@ -767,8 +767,8 @@ class Symbiotic(object):
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         if self.options.old_slicer:
             cmd = ['opt', '-load', 'LLVMSlicer.so',
-                   '-simplifycfg', '-create-hammock-cfg',
-                   '-slice-inter', '-simplifycfg', '-o', output, self.llvmfile]
+                   '-create-hammock-cfg', '-slice-inter',
+                   '-o', output, self.llvmfile]
         else:
             cmd = ['llvm-slicer', '-c', criterion]
             if self.options.slicer_pta in ['fi', 'fs']:
