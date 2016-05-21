@@ -768,6 +768,19 @@ class Symbiotic(object):
 
         self.llvmfile = output
 
+    def remove_unused_only(self):
+        output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+        cmd = ['llvm-slicer', '-remove-unused-only']
+        if 'slicer' in debug_opts:
+            cmd.append('-statistics')
+
+        cmd.append(self.llvmfile)
+
+        if run_and_watch(cmd, SlicerWatch()) != 0:
+            raise SymbioticException('Slicing failed')
+
+        self.llvmfile = output
+
     def optimize(self, passes = optimizations_O2):
         if self.options.no_optimize:
             return
@@ -866,6 +879,9 @@ class Symbiotic(object):
 
                 self.slicer(self.options.slicing_criterion)
                 print_elapsed_time('INFO: Total slicing time')
+
+                if self.options.old_slicer:
+                    self.remove_unused_only()
 
             # optimize the code before symbolic execution
             if "after" in self.options.optlevel:
