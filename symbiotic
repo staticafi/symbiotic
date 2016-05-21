@@ -845,9 +845,6 @@ class Symbiotic(object):
             if not check_llvmfile(self.llvmfile):
                 err('Unsupported call (probably pthread API)')
 
-            if self.options.old_slicer:
-                self.old_slicer_find_init()
-
             # remove definitions of __VERIFIER_* that are not created by us
             self.prepare(passes = ['-prepare'])
 
@@ -896,6 +893,13 @@ class Symbiotic(object):
                                           '-ipconstprop', '-argpromotion',
                                           '-instcombine', '-deadargelim',
                                           '-simplifycfg'])
+
+
+                # if this is old slicer run, we must find the starting functions
+                # (this adds the __ai_init_funs global variable to the module)
+                # NOTE: must be after the optimizations that could remove it
+                if self.options.old_slicer:
+                    self.old_slicer_find_init()
 
                 # print info about time
                 print_elapsed_time('INFO: Compilation, preparation and '\
