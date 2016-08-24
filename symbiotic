@@ -73,6 +73,8 @@ where OPTS can be following:
     --cflags=flags
     --cppflags=flags       Append extra CFLAGS and CPPFLAGS to use while compiling,
                            the environment CFLAGS and CPPFLAGS are used too
+    --slicer-params=STR    Pass parameters directly to slicer
+    --symexe-params=STR    Pass parameters directly to symbolic executor
     --help                 Show help message
     --version              Return version
 
@@ -545,7 +547,9 @@ def run_symexe(llvmfile, opts, timeout = 0):
     cmd = ['klee', '-exit-on-error-type=Assert', '-write-paths',
            '-solver-optimize-divides=false', '-dump-states-on-halt=0',
            '-output-stats=0',#'-only-output-states-covering-new=1',
-           '-max-time={0}'.format(timeout), llvmfile]
+           '-max-time={0}'.format(timeout)] + opts.symexe_params
+
+    cmd.append(llvmfile)
 
     dbg(' '.join(cmd))
 
@@ -623,6 +627,10 @@ class SymbioticOptions(object):
         self.repeat_slicing = 1
         # these files will be linked unconditionally
         self.link_files = []
+        # additional parameters that can be passed right
+        # to the slicer and symbolic executor
+        self.slicer_params = []
+        self.symexe_params = []
 
 def run_checked(cmd, error_msg, dbg_domain = 'all'):
     """
@@ -770,7 +778,7 @@ class Symbiotic(object):
         if self.options.old_slicer:
             cmd = ['opt', '-load', 'LLVMSlicer.so',
                    '-create-hammock-cfg', '-slice-inter',
-                   '-o', output, self.llvmfile]
+                   '-o', output] + self.options.slicer_params
         else:
             cmd = ['llvm-slicer', '-c', criterion]
             if self.options.slicer_pta in ['fi', 'fs']:
@@ -780,7 +788,10 @@ class Symbiotic(object):
             if 'slicer' in debug_opts:
                 cmd.append('-statistics')
 
-            cmd.append(self.llvmfile)
+            if self.options.slicer_params:
+                cmd += self.options.slicer_params
+
+        cmd.append(self.llvmfile)
 
         if run_and_watch(cmd, SlicerWatch()) != 0:
             raise SymbioticException('Slicing failed')
@@ -995,7 +1006,8 @@ def parse_command_line():
                                     'optimize=', 'no-prepare', 'malloc-never-fails',
                                     'pta=', 'no-lib', 'slicing-criterion=',
                                     'cflags=', 'cppflags=', 'link=',
-                                    'no-link-undefined', 'repeat-slicing='])
+                                    'no-link-undefined', 'repeat-slicing=',
+                                    'slicer-params=', 'symexe-params='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -1096,6 +1108,10 @@ def parse_command_line():
         elif opt == '--cppflags':
             global CPPFLAGS
             CPPFLAGS += arg.split()
+        elif opt == '--slicer-params':
+            options.slicer_params = arg.split()
+        elif opt == '--symexe-params':
+            options.symexe_params = arg.split()
         elif opt == '--link':
             options.link_files += arg.split(',')
 
