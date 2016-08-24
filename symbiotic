@@ -29,7 +29,7 @@ from subprocess import call, Popen, PIPE, STDOUT
 from time import time
 
 # FIXME print versions of components too
-VERSION='3.0.3-dev'
+VERSION='3.0.5-dev'
 
 usage_msg = """
 Usage: symbiotic OPTS sources
@@ -921,6 +921,13 @@ class Symbiotic(object):
                 for n in range(0, self.options.repeat_slicing):
                     dbg('Slicing the code for the {0}. time'.format(n + 1))
                     self.slicer(self.options.slicing_criterion)
+
+                    # optimize the code after slicing
+                    # -- when we slice more times, we wouldn't
+                    # slice anything in another passes without
+                    # the optimization
+                    if "after" in self.options.optlevel:
+                        self.optimize()
 
                 print_elapsed_time('INFO: Total slicing time')
 
