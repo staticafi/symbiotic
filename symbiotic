@@ -54,6 +54,7 @@ where OPTS can be following:
     --no-lib               Don't link lib.bc to the module
     --slicing-criterion=C  Slice to slicing criterion (function call-sites) 'C'
                            (default is '__assert_fail')
+    --repeat-slicing=N     Repeat slicing N times
     --prp=property         Specify property that should hold. It is either LTL formula
                            as specivied by SV-COMP, or one of following shortcuts:
                              null-deref   -- program is free of null-dereferences
@@ -541,7 +542,7 @@ class KleeWatch(ProcessWatch):
             dbg(line, 'all', False)
 
 def run_symexe(llvmfile, opts, timeout = 0):
-    cmd = ['klee', '-halt-after-assert', '-write-paths',
+    cmd = ['klee', '-exit-on-error-type=Assert', '-write-paths',
            '-solver-optimize-divides=false', '-dump-states-on-halt=0',
            '-output-stats=0',#'-only-output-states-covering-new=1',
            '-max-time={0}'.format(timeout), llvmfile]
@@ -619,6 +620,7 @@ class SymbioticOptions(object):
         self.optlevel = ["before", "after"]
         self.slicer_pta = 'old'
         self.slicing_criterion = '__assert_fail'
+        self.repeat_slicing = 1
         # these files will be linked unconditionally
         self.link_files = []
 
@@ -905,7 +907,10 @@ class Symbiotic(object):
                 print_elapsed_time('INFO: Compilation, preparation and '\
                                    'instrumentation time')
 
-                self.slicer(self.options.slicing_criterion)
+                for n in range(0, self.options.repeat_slicing):
+                    dbg('Slicing the code for the {0}. time'.format(n + 1))
+                    self.slicer(self.options.slicing_criterion)
+
                 print_elapsed_time('INFO: Total slicing time')
 
                 # new slicer removes unused itself, but for the old slicer
@@ -990,7 +995,7 @@ def parse_command_line():
                                     'optimize=', 'no-prepare', 'malloc-never-fails',
                                     'pta=', 'no-lib', 'slicing-criterion=',
                                     'cflags=', 'cppflags=', 'link=',
-                                    'no-link-undefined'])
+                                    'no-link-undefined', 'repeat-slicing='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -1067,6 +1072,12 @@ def parse_command_line():
         elif opt == '--slicing-criterion':
             options.slicing_criterion = arg
             dbg('Slicing criterion: {0}'.format(arg))
+        elif opt == '--repeat-slicing':
+            try:
+                options.repeat_slicing = int(arg)
+            except ValueError:
+                err('Invalid argument for --repeat-slicing')
+            dbg('Will repeat slicing {0} times'.format(arg))
         elif opt == '--timeout':
             options.timeout = int(arg)
             dbg('Timeout set to {0} sec'.format(arg))
