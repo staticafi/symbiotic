@@ -747,8 +747,8 @@ class Symbiotic(object):
             if os.path.isfile(name):
                 output_name = compile_to_llvm(name, self.options.is32bit)
                 tolink.append(output_name)
-            else:
-                dbg('Did not find the definition of \'{0}\''.format(undef))
+            #else:
+            #   dbg('Did not find the definition of \'{0}\''.format(undef))
 
         if tolink:
             self.link(libs = tolink)
