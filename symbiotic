@@ -36,47 +36,51 @@ Usage: symbiotic OPTS sources
 
 where OPTS can be following:
 
-    --bc                   Given file is a bytecode
-    --64                   Use 64-bit environment
-    --timeout=t            Set timeout to t seconds
-    --no-slice             Do not slice the code
-    --no-prepare           Do not prepare the code
-    --malloc-never-fails   Suppose malloc and calloc never return NULL
-    --require-slicer       Abort if slicing fails (default is to use the original file)
-    --no-symexe            Do not run symbolic execution (handy for debugging)
-    --optimize=TYPES       Run optimizations, TYPES can be: before, before-O2, after.
-                           before/after means before or/and after slicing. before-O2
-                           runs full optimizations before slicing (normally only some
-                           conservative optimizations are run before slicing).
-                           none disables optimizations (same as --no-optimize)
-    --no-optimize          Don't optimize the code (same as --optimize=none)
-    --libc=klee            Link klee-libc.bc to the module
-    --no-lib               Don't link lib.bc to the module
-    --slicing-criterion=C  Slice to slicing criterion (function call-sites) 'C'
-                           (default is '__assert_fail')
-    --repeat-slicing=N     Repeat slicing N times
-    --prp=property         Specify property that should hold. It is either LTL formula
-                           as specivied by SV-COMP, or one of following shortcuts:
-                             null-deref   -- program is free of null-dereferences
-                             valid-deref  -- all dereferences are valid
-                             valid-free   -- all free() calls are valid
-                           The string can be given on line or in a file.
-    --pta=[fs|fi|old]      Use flow-sensitive/flow-insensitive or old
-                           (flow-insensitive too) points-to analysis when slicing.
-                           Default is the old
-    --debug=what           Print debug messages, what can be comma separated list of:
-                           all, compile, prepare, slicer
-                           In that case you get verbose output. You can just use
-                           --debug= to print basic messages.
-    --output=FILE          Store the final code (that is to be run by symexe) to FILE
-    --witness=FILE         Store witness into FILE (default is witness.graphml)
+    --bc                      Given file is a bytecode
+    --64                      Use 64-bit environment
+    --timeout=t               Set timeout to t seconds
+    --no-slice                Do not slice the code
+    --no-prepare              Do not prepare the code
+    --explicit-symbolic       Do not make all memory symbolic (in prepare phase),
+                              but rely on calls to __VERIFIER_nondet_*
+    --undefined-retval-nosym  Do not make return value of undefined functions symbolic,
+                              but replace it with 0.
+    --malloc-never-fails      Suppose malloc and calloc never return NULL
+    --require-slicer          Abort if slicing fails (default is to use the original file)
+    --no-symexe               Do not run symbolic execution (handy for debugging)
+    --optimize=TYPES          Run optimizations, TYPES can be: before, before-O2, after.
+                              before/after means before or/and after slicing. before-O2
+                              runs full optimizations before slicing (normally only some
+                              conservative optimizations are run before slicing).
+                              none disables optimizations (same as --no-optimize)
+    --no-optimize             Don't optimize the code (same as --optimize=none)
+    --libc=klee               Link klee-libc.bc to the module
+    --no-lib                  Don't link lib.bc to the module
+    --slicing-criterion=C     Slice to slicing criterion (function call-sites) 'C'
+                              (default is '__assert_fail')
+    --repeat-slicing=N        Repeat slicing N times
+    --prp=property            Specify property that should hold. It is either LTL formula
+                              as specivied by SV-COMP, or one of following shortcuts:
+                                null-deref   -- program is free of null-dereferences
+                                valid-deref  -- all dereferences are valid
+                                valid-free   -- all free() calls are valid
+                              The string can be given on line or in a file.
+    --pta=[fs|fi|old]         Use flow-sensitive/flow-insensitive or old
+                              (flow-insensitive too) points-to analysis when slicing.
+                              Default is the old
+    --debug=what              Print debug messages, what can be comma separated list of:
+                              all, compile, prepare, slicer
+                              In that case you get verbose output. You can just use
+                              --debug= to print basic messages.
+    --output=FILE             Store the final code (that is to be run by symexe) to FILE
+    --witness=FILE            Store witness into FILE (default is witness.graphml)
     --cflags=flags
-    --cppflags=flags       Append extra CFLAGS and CPPFLAGS to use while compiling,
-                           the environment CFLAGS and CPPFLAGS are used too
-    --slicer-params=STR    Pass parameters directly to slicer
-    --symexe-params=STR    Pass parameters directly to symbolic executor
-    --help                 Show help message
-    --version              Return version
+    --cppflags=flags          Append extra CFLAGS and CPPFLAGS to use while compiling,
+                              the environment CFLAGS and CPPFLAGS are used too
+    --slicer-params=STR       Pass parameters directly to slicer
+    --symexe-params=STR       Pass parameters directly to symbolic executor
+    --help                    Show help message
+    --version                 Return version
 
     One (and only one) of the sources must contain 'main' function
 """
@@ -610,6 +614,8 @@ class SymbioticOptions(object):
         self.noslice = noslice
         self.malloc_never_fails = False
         self.noprepare = False
+        self.explicit_symbolic = False
+        self.undef_retval_nosym = False
         self.nolinkundef = False
         self.timeout = 0
         self.add_libc = False
@@ -877,11 +883,20 @@ class Symbiotic(object):
             else:
                 instrument_alloc = '-instrument-alloc'
 
-            # instrument our malloc and then delete undefined function calls
+            # instrument our malloc,
+            # make all memory symbolic (if desired)
+            # and then delete undefined function calls
             # and replace them by symbolic stuff
-            self.prepare(passes = [instrument_alloc,
-                                   '-initialize-uninitialized',
-                                   '-delete-undefined'])
+            passes = [instrument_alloc]
+            if not self.options.explicit_symbolic:
+                passes.append('-initialize-uninitialized')
+
+            if self.options.undef_retval_nosym:
+                passes.append('-delete-undefined-nosym')
+            else:
+                passes.append('-delete-undefined')
+
+            self.prepare(passes = passes)
 
             # in the case of valid-free property we want to
             # instrument even __VERIFIER_malloc functions,
@@ -1022,7 +1037,8 @@ def parse_command_line():
                                     'pta=', 'no-lib', 'slicing-criterion=',
                                     'cflags=', 'cppflags=', 'link=',
                                     'no-link-undefined', 'repeat-slicing=',
-                                    'slicer-params=', 'symexe-params='])
+                                    'slicer-params=', 'symexe-params=',
+                                    'explicit-symbolic', 'undefined-retval-nosym'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -1055,6 +1071,10 @@ def parse_command_line():
         elif opt == '--no-prepare':
             dbg('Will not prepare code')
             options.noprepare = True
+        elif opt == '--explicit-symbolic':
+            options.explicit_symbolic = True
+        elif opt == '--undefined-retval-nosym':
+            options.undef_retval_nosym = True
         elif opt == '--no-link-undefined':
             dbg('Will not try to find and link undefined functions')
             options.nolinkundef = True
