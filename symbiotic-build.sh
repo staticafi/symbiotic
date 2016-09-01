@@ -480,8 +480,9 @@ if [ $FROM -le 6 ]; then
 
 	cd -
 
-	# and also the symbiotic script
+	# and also the symbiotic scripts itself
 	cp $SRCDIR/symbiotic $PREFIX/ || exit 1
+	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
 
 	cd "$SRCDIR"
 	git rev-parse --short=8 HEAD > $PREFIX/SYMBIOTIC_VERSION
@@ -533,6 +534,7 @@ if [ $FROM -le 7 ]; then
 		$ULTIAUTO \
 		include/symbiotic.h \
 		lib/*.c \
+		lib/symbioticpy/*.py\
 		LLVM_NEW_SLICER_VERSION \
 		MINISAT_VERSION \
 		SVC_SCRIPTS_VERSION \
