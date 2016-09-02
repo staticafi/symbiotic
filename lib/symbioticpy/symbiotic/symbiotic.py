@@ -468,9 +468,6 @@ class Symbiotic(object):
         # link the files that we got on the command line
         self.link_unconditional()
 
-        # link undefined (no-op when prepare is turned off)
-        self.link_undefined()
-
         # check if we should instrument the version of malloc
         # that never returns a NULL pointer
         if self.options.malloc_never_fails:
@@ -486,12 +483,17 @@ class Symbiotic(object):
         if not self.options.explicit_symbolic:
             passes.append('-initialize-uninitialized')
 
-        if self.options.undef_retval_nosym:
-            passes.append('-delete-undefined-nosym')
-        else:
-            passes.append('-delete-undefined')
-
         self.prepare(passes = passes)
+
+        # link undefined (no-op when prepare is turned off)
+        self.link_undefined()
+
+        # remove/replace the rest of undefined functions
+        # for which we do not have a definition
+        if self.options.undef_retval_nosym:
+            self.prepare(['-delete-undefined-nosym'])
+        else:
+            self.prepare(['-delete-undefined'])
 
         # in the case of valid-free property we want to
         # instrument even __VERIFIER_malloc functions,
