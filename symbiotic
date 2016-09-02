@@ -114,7 +114,9 @@ patterns = {
     #'EGENERAL' : re.compile('.*now ignoring this error at this location.*'),
     'EMALLOC' : re.compile('.*found huge malloc, returning 0.*'),
     'ESKIPFORK' : re.compile('.*skipping fork.*'),
-    'EKILLSTATE' : re.compile('.*killing.*states (over memory cap).*')
+    'EKILLSTATE' : re.compile('.*killing.*states (over memory cap).*'),
+    'EMEMERROR'  : re.compile('.*memory error: out of bound pointer.*'),
+    'EFREE' : re.compile('.*memory error: invalid pointer: free.*')
 }
 
 supported_properties = {
@@ -1003,9 +1005,6 @@ if __name__ == "__main__":
                         # for now
                         dbg('Will not slice due to VALID-DEREF property')
                         opts.noslice = True
-
-                        patterns['EMEMERROR'] = re.compile('.*memory error: out of bound pointer.*')
-                        patterns['EFREE'] = re.compile('.*memory error: invalid pointer: free.*')
         except KeyError as ke:
             err('Unknown or unsupported property: {0}'.format(ke.message))
 
