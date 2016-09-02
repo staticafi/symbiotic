@@ -35,6 +35,9 @@ class SlicerWatch(ProcessWatch):
 class CompileWatch(ProcessWatch):
     """ Parse output of compilation """
 
+    def __init__(self):
+        ProcessWatch.__init__(self)
+
     def parse(self, line):
         if 'error' in line or 'ERROR' in line:
             sys.stderr.write('cc: {0}'.format(line))
@@ -45,6 +48,7 @@ class UnsuppWatch(ProcessWatch):
     unsupported_call = re.compile('.*call to .* is unsupported.*')
 
     def __init__(self):
+        ProcessWatch.__init__(self)
         self._ok = True
 
     def ok(self):
