@@ -31,13 +31,13 @@ pth = os.path.join(os.path.dirname(__file__), 'lib/symbioticpy')
 sys.path.append(os.path.abspath(pth))
 
 from symbiotic.utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
-from symbiotic.utils.utils import print_stdout
-from symbiotic.utils.watch import ProcessWatch, BufferedDbgWatch
+from symbiotic.utils.utils import print_stdout, print_stderr
+from symbiotic.utils.watch import ProcessWatch
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
-from symbiotic.utils.process import run_and_watch, run_checked
+from symbiotic.utils.process import ProcessRunner, run_checked
 from symbiotic import SymbioticException
 
-from subprocess import call, Popen, PIPE, STDOUT
+from subprocess import call
 
 # FIXME print versions of components too
 VERSION='3.0.5-dev'
@@ -157,6 +157,9 @@ CFLAGS = []
 CPPFLAGS = []
 
 class PrepareWatch(ProcessWatch):
+    def __init__(self, lines = 100):
+        ProcessWatch.__init__(self, lines)
+
     def parse(self, line):
         if 'removing' in line:
             sys.stdout.write(line)
@@ -164,12 +167,14 @@ class PrepareWatch(ProcessWatch):
             dbg(line, 'prepare', False)
 
 class SlicerWatch(ProcessWatch):
+    def __init__(self, lines = 100):
+        ProcessWatch.__init__(self, lines)
+
     def parse(self, line):
         if 'INFO' in line:
-            sys.stdout.write('slicer-')
-            sys.stdout.write(line)
+            dbg(line,      domain = 'slicer', print_nl = False)
         elif 'ERROR' in line or 'error' in line:
-            sys.stderr.write(line)
+            print_stderr(line)
         else:
             dbg(line, 'slicer', False)
 
@@ -180,7 +185,7 @@ class CompileWatch(ProcessWatch):
         if 'error' in line or 'ERROR' in line:
             sys.stderr.write('cc: {0}'.format(line))
         else:
-            dbg(line, 'compile', False)
+            dbg(line, 'compile', print_nl = False)
 
 def get_symbiotic_dir():
     # get real path (strip off links)
@@ -192,11 +197,11 @@ def get_include_paths():
     Find paths where standard headers are located
     """
     cmd = ['find', '/usr/lib', '-name', 'stddef.h']
-    watch = BufferedDbgWatch(None)
     paths = []
 
-    if run_and_watch(cmd, watch) == 0:
-        for line in watch.getLines():
+    pr = ProcessRunner(cmd, ProcessWatch(lines_limit = None))
+    if pr.run() == 0:
+        for line in pr.getOutput():
             if line.startswith('/usr/lib/'):
                 paths.append(os.path.dirname(line))
 
@@ -276,26 +281,19 @@ def compile_to_llvm(source, is32bit = False, output = None):
     cmd.append(llvmfile)
     cmd.append(source)
 
-    if run_and_watch(cmd, CompileWatch()) != 0:
+    if ProcessRunner(cmd, CompileWatch()).run() != 0:
         return None
 
     return llvmfile
 
 def get_undefined(bitcode):
     cmd = ['llvm-nm', '-undefined-only', '-just-symbol-name', bitcode]
-    dbg(' '.join(cmd))
-
-    global current_process
-    current_process = Popen(cmd, stdout=PIPE, stderr=PIPE)
-
-    out, errs = current_process.communicate()
-    ret = current_process.poll()
-    current_process = None
-
-    if ret != 0:
-        err('Failed getting undefined symbols: {0}'.format(errs))
-
-    return out.split()
+    pr = ProcessRunner(cmd, ProcessWatch(None))
+    pr.printOutput(sys.stderr)
+    if pr.run() != 0:
+        pr.printOutput(sys.stderr)
+        err('Failed getting undefined symbols')
+    return map (lambda s: s.strip(), pr.getOutput())
 
 def get_libraries(opts, which=[]):
     files = []
@@ -333,7 +331,7 @@ class UnsuppWatch(ProcessWatch):
 def check_llvmfile(llvmfile):
     cmd = ['opt', '-load', 'LLVMsvc15.so', '-check-unsupported',
            '-o', '/dev/null', llvmfile]
-    if run_and_watch(cmd, UnsuppWatch()) == -1:
+    if ProcessRunner(cmd, UnsuppWatch()).run() == -1:
         return False
 
     return True
@@ -355,19 +353,9 @@ def parse_klee_output(line, valid_deref = False):
 
 class KleeWatch(ProcessWatch):
     def __init__(self, valid_deref = False):
-        self._done = False
+        ProcessWatch.__init__(self)
         self._found = []
         self._valid_deref = valid_deref
-
-    # XXX don't kill klee after the assertion
-    # is found - we have a -halt-affter-assert
-    # switch in klee that will do that for us.
-    # If we don't klee the klee, we'll get how
-    # many paths we discovered
-    # def done(self):
-    #     return self._done
-    def done(self):
-        return False;
 
     def found(self):
         return ' '.join(self._found)
@@ -392,26 +380,12 @@ def run_symexe(llvmfile, opts, timeout = 0):
 
     cmd.append(llvmfile)
 
-    dbg(' '.join(cmd))
-
-    global current_process
-    current_process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
-
     watch = KleeWatch('VALID-DEREF' in opts.prp)
-    while True:
-        line = current_process.stdout.readline()
-        if line == '' and current_process.poll() is not None:
-            break
-
-        watch.parse(line)
-        if watch.done():
-            break
-
-    ret = current_process.wait()
-    current_process = None
+    pr = ProcessRunner(cmd, watch)
+    pr.run()
 
     found = watch.found()
-    if ret != 0:
+    if pr.exitStatus() != 0:
         found += ' EKLEEERROR'
 
     return found
@@ -499,7 +473,9 @@ class Symbiotic(object):
         output = '{0}-prep.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-load', 'LLVMsvc15.so', self.llvmfile, '-o', output] + passes
 
-        if run_and_watch(cmd, PrepareWatch()) != 0:
+        pr = ProcessRunner(cmd, PrepareWatch())
+        if pr.run() != 0:
+            pr.printOutput(sys.stderr)
             raise SymbioticException('Prepare phase failed')
 
         self.llvmfile = output
@@ -624,7 +600,9 @@ class Symbiotic(object):
 
         cmd.append(self.llvmfile)
 
-        if run_and_watch(cmd, SlicerWatch()) != 0:
+        pr = ProcessRunner(cmd, SlicerWatch())
+        if pr.run() != 0:
+            pr.printOutput(sys.stderr)
             raise SymbioticException('Slicing failed')
 
         self.llvmfile = output
@@ -636,7 +614,7 @@ class Symbiotic(object):
         cmd.append('-statistics')
         cmd.append(self.llvmfile)
 
-        if run_and_watch(cmd, SlicerWatch()) != 0:
+        if ProcessRunner(cmd, SlicerWatch()).run() != 0:
             raise SymbioticException('Slicing failed')
 
         self.llvmfile = output
@@ -806,7 +784,7 @@ def generate_graphml(path, saveto):
         saveto = '{0}.graphml'.format(os.path.basename(path))
         saveto = os.path.abspath(saveto)
 
-    dbg('Generating counterexample: {0}'.format(saveto))
+    dbg('Generating counterexample: {0}'.format(saveto), domain='witness')
     bindir = os.path.dirname(sys.argv[0])
     f = open('/dev/null', 'r')
     # FIXME: rewrite path_to_ml.pl to python, so that we can use it
@@ -814,7 +792,7 @@ def generate_graphml(path, saveto):
     ret = call(['{0}/path_to_ml.pl {1} > {2}'.format(bindir, path, saveto)],
                shell=True, stdout = f, stderr = f)
     if ret != 0:
-        dbg('Generating witness failed')
+        print_stderr('Generating witness failed!', color='RED')
 
 def generate_counterexample(bindir, saveto = None):
     abd = os.path.abspath(bindir)

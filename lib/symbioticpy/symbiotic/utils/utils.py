@@ -53,21 +53,24 @@ def err(msg, color = 'RED'):
     print_stderr(msg, 'ERROR: ', color=color)
     sys.exit(1)
 
-enable_debug = False
+debug_enabled = False
 debug_opts = []
 def enable_debug(d_opts):
-    global enable_debug
+    global debug_enabled
     global debug_opts
 
-    enable_debug = True
+    debug_enabled = True
     debug_opts = d_opts
 
-def dbg(msg, domain = 'all', print_nl = True):
-    global enable_debug
-    if enable_debug:
+def dbg(msg, domain = 'all', print_nl = True, prefix = 'DBG: '):
+    global debug_enabled
+
+    if debug_enabled:
         global debug_opts
-        if domain == 'all' or domain in debug_opts:
-            print_stderr(msg, 'DBG: ', print_nl)
+        should_print = 'all' in debug_opts or\
+                       domain in debug_opts
+        if should_print:
+            print_stderr(msg, prefix, print_nl)
 
 # variable used to measure elapsed time
 last_time = None
