@@ -30,7 +30,7 @@ from time import time
 pth = os.path.join(os.path.dirname(__file__), 'lib/symbioticpy')
 sys.path.append(os.path.abspath(pth))
 
-from symbiotic.utils import err, dbg, print_elapsed_time, restart_counting_time
+from symbiotic.utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
 from symbiotic.utils.utils import print_stdout
 from symbiotic.utils.watch import ProcessWatch, BufferedDbgWatch
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
@@ -145,8 +145,6 @@ optimizations_O2 = ['-simplifycfg', '-globalopt', '-globaldce', '-ipconstprop',
                     '-constmerge', '-ipsccp', '-deadargelim', '-die',
                     '-instcombine']
 
-global enable_debug
-debug_opts = []
 # this is global variable for currently running
 # klee process, so that we can kill it if we need
 # (e. g. on timeout)
@@ -614,8 +612,7 @@ class Symbiotic(object):
                 cmd.append('-pta')
                 cmd.append(self.options.slicer_pta)
 
-            if 'slicer' in debug_opts:
-                cmd.append('-statistics')
+            cmd.append('-statistics')
 
             if self.options.slicer_params:
                 cmd += self.options.slicer_params
@@ -633,9 +630,8 @@ class Symbiotic(object):
     def remove_unused_only(self):
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['llvm-slicer', '-remove-unused-only']
-        if 'slicer' in debug_opts:
-            cmd.append('-statistics')
 
+        cmd.append('-statistics')
         cmd.append(self.llvmfile)
 
         if run_and_watch(cmd, SlicerWatch()) != 0:
@@ -869,10 +865,7 @@ def parse_command_line():
             print(usage_msg)
             sys.exit(0)
         elif opt == '--debug':
-            global enable_debug
-            global debug_opts
-            enable_debug = True
-            debug_opts = arg.split(',')
+            enable_debug(arg.split(','))
         elif opt == '--libc':
              if arg == 'klee':
                  options.add_libc = True

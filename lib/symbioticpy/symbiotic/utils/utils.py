@@ -54,6 +54,14 @@ def err(msg, color = 'RED'):
     sys.exit(1)
 
 enable_debug = False
+debug_opts = []
+def enable_debug(d_opts):
+    global enable_debug
+    global debug_opts
+
+    enable_debug = True
+    debug_opts = d_opts
+
 def dbg(msg, domain = 'all', print_nl = True):
     global enable_debug
     if enable_debug:
