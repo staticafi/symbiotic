@@ -94,7 +94,7 @@ def parse_klee_output(line, valid_deref = False):
 
 class KleeWatch(ProcessWatch):
     def __init__(self, valid_deref = False):
-        ProcessWatch.__init__(self)
+        ProcessWatch.__init__(self, 100)
         self._found = []
         self._valid_deref = valid_deref
 
@@ -403,7 +403,7 @@ class Symbiotic(object):
 
     def run_symexe(self):
         cmd = ['klee', '-exit-on-error-type=Assert', '-write-paths',
-               '-dump-states-on-halt=0',
+               '-dump-states-on-halt=0', '-silent-klee-assume=1',
                '-output-stats=0',#'-only-output-states-covering-new=1',
                '-max-time={0}'.format(self.options.timeout)] + self.options.symexe_params
 
@@ -564,6 +564,7 @@ class Symbiotic(object):
                 raise SymbioticException(msg)
 
         if not self.options.no_symexe:
+            print('INFO: Starting verification')
             found = self.run_symexe()
         else:
             found = 'Did not run symbolic execution'
