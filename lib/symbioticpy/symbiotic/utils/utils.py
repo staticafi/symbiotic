@@ -1,6 +1,6 @@
 #/usr/bin/python
 
-import sys
+import sys, os
 from time import time
 
 COLORS = {
@@ -87,4 +87,9 @@ def print_elapsed_time(msg):
     print('{0}: {1}'.format(msg, tm))
     # set new starting point
     last_time = time()
+
+def get_symbiotic_dir():
+    # get real path (strip off links)
+    realpath = os.path.realpath(sys.argv[0])
+    return os.path.abspath(os.path.dirname(realpath))
 

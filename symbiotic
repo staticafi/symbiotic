@@ -22,7 +22,6 @@
 
 import sys
 import os
-import re
 import getopt
 from time import time
 
@@ -30,12 +29,14 @@ from time import time
 pth = os.path.join(os.path.dirname(__file__), 'lib/symbioticpy')
 sys.path.append(os.path.abspath(pth))
 
-from symbiotic.utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
-from symbiotic.utils.utils import print_stdout, print_stderr
+from symbiotic.utils import err, dbg, enable_debug
+from symbiotic.utils.utils import print_stdout, print_stderr, get_symbiotic_dir
 from symbiotic.utils.watch import ProcessWatch
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
-from symbiotic.utils.process import ProcessRunner, run_checked
-from symbiotic import SymbioticException
+from symbiotic.utils.process import ProcessRunner
+from symbiotic import SymbioticException, Symbiotic
+from symbiotic.options import SymbioticOptions
+from symbiotic.symbiotic import report_results
 
 from subprocess import call
 
@@ -96,29 +97,6 @@ where OPTS can be following:
     One (and only one) of the sources must contain 'main' function
 """
 
-# define and compile regular expressions for parsing klee's output
-patterns = {
-    'ASSERTIONFAILED' : re.compile('.*ASSERTION FAIL:.*'),
-    'ESTPTIMEOUT' : re.compile('.*query timed out (resolve).*'),
-    'EKLEETIMEOUT' : re.compile('.*HaltTimer invoked.*'),
-    'EEXTENCALL' : re.compile('.*failed external call.*'),
-    'ELOADSYM' : re.compile('.*ERROR: unable to load symbol.*'),
-    'EINVALINST' : re.compile('.*LLVM ERROR: Code generator does not support.*'),
-    'EKLEEASSERT' : re.compile('.*klee: .*Assertion .* failed.*'),
-    'EINITVALS' : re.compile('.*unable to compute initial values.*'),
-    'ESYMSOL' : re.compile('.*unable to get symbolic solution.*'),
-    'ESILENTLYCONCRETIZED' : re.compile('.*silently concretizing.*'),
-    'ECONCRETIZED' : re.compile('.* concretized symbolic size.*'),
-    'EEXTRAARGS' : re.compile('.*calling .* with extra arguments.*'),
-    'EABORT' : re.compile('.*abort failure.*'),
-    #'EGENERAL' : re.compile('.*now ignoring this error at this location.*'),
-    'EMALLOC' : re.compile('.*found huge malloc, returning 0.*'),
-    'ESKIPFORK' : re.compile('.*skipping fork.*'),
-    'EKILLSTATE' : re.compile('.*killing.*states (over memory cap).*'),
-    'EMEMERROR'  : re.compile('.*memory error: out of bound pointer.*'),
-    'EFREE' : re.compile('.*memory error: invalid pointer: free.*')
-}
-
 supported_properties = {
     'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )' : 'REACHCALL',
     'CHECK( init(main()), LTL(G valid-free) )'                 : 'VALID-FREE',
@@ -130,67 +108,6 @@ supported_properties = {
     'null-deref'                                               : 'NULL-DEREF',
 }
 
-unsupported_call = re.compile('.*call to .* is unsupported.*')
-
-# the list of optimizations is based on klee -optimize
-# option, but is adjusted for our needs (therefore
-# we don't use the -optimize option with klee)
-optimizations_O2 = ['-simplifycfg', '-globalopt', '-globaldce', '-ipconstprop',
-                    '-deadargelim', '-instcombine', '-simplifycfg', '-prune-eh',
-                    '-functionattrs', '-inline', '-argpromotion', '-instcombine',
-                    '-jump-threading', '-simplifycfg', '-gvn', '-scalarrepl',
-                    '-instcombine', '-tailcallelim', '-simplifycfg',
-                    '-reassociate', '-loop-rotate', '-licm', '-loop-unswitch',
-                    '-instcombine', '-indvars', '-loop-deletion', '-loop-unroll',
-                    '-instcombine', '-memcpyopt', '-sccp', '-instcombine',
-                    '-dse', '-adce', '-simplifycfg', '-strip-dead-prototypes',
-                    '-constmerge', '-ipsccp', '-deadargelim', '-die',
-                    '-instcombine']
-
-# this is global variable for currently running
-# klee process, so that we can kill it if we need
-# (e. g. on timeout)
-current_process = None
-
-# shared global flags for compilation
-CFLAGS = []
-CPPFLAGS = []
-
-class PrepareWatch(ProcessWatch):
-    def __init__(self, lines = 100):
-        ProcessWatch.__init__(self, lines)
-
-    def parse(self, line):
-        if 'removing' in line:
-            sys.stdout.write(line)
-        else:
-            dbg(line, 'prepare', False)
-
-class SlicerWatch(ProcessWatch):
-    def __init__(self, lines = 100):
-        ProcessWatch.__init__(self, lines)
-
-    def parse(self, line):
-        if 'INFO' in line:
-            dbg(line,      domain = 'slicer', print_nl = False)
-        elif 'ERROR' in line or 'error' in line:
-            print_stderr(line)
-        else:
-            dbg(line, 'slicer', False)
-
-class CompileWatch(ProcessWatch):
-    """ Parse output of compilation """
-
-    def parse(self, line):
-        if 'error' in line or 'ERROR' in line:
-            sys.stderr.write('cc: {0}'.format(line))
-        else:
-            dbg(line, 'compile', print_nl = False)
-
-def get_symbiotic_dir():
-    # get real path (strip off links)
-    realpath = os.path.realpath(sys.argv[0])
-    return os.path.abspath(os.path.dirname(realpath))
 
 def get_include_paths():
     """
@@ -236,548 +153,18 @@ def set_environ(is32bit = False):
     dbg('LD_LIBRARY_PATH={0}'.format(os.environ['LD_LIBRARY_PATH']))
     dbg('C_INCLUDE_DIR={0}'.format(os.environ['C_INCLUDE_DIR']))
 
-def parse_environ():
+def parse_environ(opts):
     """
     Parse environment variables of interest and
     change running options accordingly
     """
-
-    global CFLAGS
-    global CPPFLAGS
-
     for p in os.environ['C_INCLUDE_DIR'].split(':'):
-        CPPFLAGS.append('-I{0}'.format(p))
+        opts.CPPFLAGS.append('-I{0}'.format(p))
 
     if os.environ.has_key('CFLAGS'):
-        CFLAGS += os.environ['CFLAGS'].split(' ')
+        opts.CFLAGS += os.environ['CFLAGS'].split(' ')
     if os.environ.has_key('CPPFLAGS'):
-        CPPFLAGS += os.environ['CPPFLAGS'].split(' ')
-
-def compile_to_llvm(source, is32bit = False, output = None):
-    """
-    Compile given source to LLVM bytecode
-    """
-    symbiotic_dir = get_symbiotic_dir()
-
-    cmd = ['clang', '-g', '-c', '-emit-llvm', '-include', 'symbiotic.h']
-
-    global CFLAGS
-    global CPPFLAGS
-
-    if CFLAGS:
-        cmd += CFLAGS
-    if CPPFLAGS:
-        cmd += CPPFLAGS
-
-    if is32bit:
-        cmd.append('-m32')
-
-    cmd.append('-o')
-    if output is None:
-        llvmfile = '{0}.bc'.format(source[:source.rfind('.')])
-    else:
-        llvmfile = output
-
-    cmd.append(llvmfile)
-    cmd.append(source)
-
-    if ProcessRunner(cmd, CompileWatch()).run() != 0:
-        return None
-
-    return llvmfile
-
-def get_undefined(bitcode):
-    cmd = ['llvm-nm', '-undefined-only', '-just-symbol-name', bitcode]
-    pr = ProcessRunner(cmd, ProcessWatch(None))
-    pr.printOutput(sys.stderr)
-    if pr.run() != 0:
-        pr.printOutput(sys.stderr)
-        err('Failed getting undefined symbols')
-    return map (lambda s: s.strip(), pr.getOutput())
-
-def get_libraries(opts, which=[]):
-    files = []
-    symbiotic_dir = get_symbiotic_dir()
-
-    if not opts.no_lib:
-        if 'memalloc' in which:
-            libc = '{0}/lib/memalloc.c'.format(symbiotic_dir)
-            llvmlibbc = compile_to_llvm(libc, opts.is32bit)
-            if llvmlibbc is None:
-                err('Failed compiling support library (memalloc.bc)')
-
-            files.append(llvmlibbc)
-
-    if opts.add_libc:
-        d = '{0}/lib'.format(symbiotic_dir)
-        if opts.is32bit:
-            d += '32'
-
-        files.append('{0}/klee/runtime/klee-libc.bc'.format(d))
-
-    return files
-
-class UnsuppWatch(ProcessWatch):
-    def __init__(self):
-        self._ok = True
-
-    def ok(self):
-        return self._ok
-
-    def parse(self, line):
-        dbg(line, domain='prepare', print_nl = False)
-        self._ok = not unsupported_call.match(line)
-
-def check_llvmfile(llvmfile):
-    cmd = ['opt', '-load', 'LLVMsvc15.so', '-check-unsupported',
-           '-o', '/dev/null', llvmfile]
-    if ProcessRunner(cmd, UnsuppWatch()).run() == -1:
-        return False
-
-    return True
-
-def parse_klee_output(line, valid_deref = False):
-    for (key, pattern) in patterns.iteritems():
-        if pattern.match(line):
-            # return True so that we know we should terminate
-            if key == 'ASSERTIONFAILED':
-                return key
-            elif valid_deref and key == 'EMEMERROR':
-                return 'ASSERTIONFAILED (valid-deref)'
-            elif valid_deref and key == 'EFREE':
-                return 'ASSERTIONFAILED (valid-free)'
-            else:
-                return key
-
-    return None
-
-class KleeWatch(ProcessWatch):
-    def __init__(self, valid_deref = False):
-        ProcessWatch.__init__(self)
-        self._found = []
-        self._valid_deref = valid_deref
-
-    def found(self):
-        return ' '.join(self._found)
-
-    def parse(self, line):
-        found = parse_klee_output(line, self._valid_deref)
-        if found:
-            self._found.insert(0, found)
-
-        if 'ERROR' in line or 'WARN' in line or 'Assertion' in line:
-            sys.stdout.write(line)
-        elif 'error' in line:
-            sys.stderr.write(line)
-        else:
-            dbg(line, 'all', False)
-
-def run_symexe(llvmfile, opts, timeout = 0):
-    cmd = ['klee', '-exit-on-error-type=Assert', '-write-paths',
-           '-dump-states-on-halt=0',
-           '-output-stats=0',#'-only-output-states-covering-new=1',
-           '-max-time={0}'.format(timeout)] + opts.symexe_params
-
-    cmd.append(llvmfile)
-
-    watch = KleeWatch('VALID-DEREF' in opts.prp)
-    pr = ProcessRunner(cmd, watch)
-    pr.run()
-
-    found = watch.found()
-    if pr.exitStatus() != 0:
-        found += ' EKLEEERROR'
-
-    return found
-
-def report_results(res):
-    dbg(res)
-    result = res
-    color = 'BROWN'
-
-    if res.startswith('ASSERTIONFAILED'):
-        result = 'FALSE'
-        color = 'RED'
-    elif res == '':
-        result = 'TRUE'
-        color='GREEN'
-    elif res == 'TIMEOUT':
-        result = 'TIMEOUT'
-    elif 'EKLEEERROR' in res:
-        result = 'ERROR'
-        color='RED'
-    else:
-        result = 'UNKNOWN'
-
-    sys.stdout.flush()
-    print_stdout(result, color=color)
-
-    return result
-
-class SymbioticOptions(object):
-    def __init__(self, is32bit = True, noslice=False, timeout=0):
-        self.is32bit = is32bit
-        self.prp = []
-        self.noslice = noslice
-        self.malloc_never_fails = False
-        self.noprepare = False
-        self.explicit_symbolic = False
-        self.undef_retval_nosym = False
-        self.nolinkundef = False
-        self.timeout = 0
-        self.add_libc = False
-        self.no_lib = False
-        self.old_slicer = False
-        self.require_slicer = False
-        self.no_optimize = False
-        self.no_symexe = False
-        self.final_output = None
-        self.witness_output = 'witness.graphml'
-        self.source_is_bc = False
-        self.optlevel = ["before", "after"]
-        self.slicer_pta = 'old'
-        self.slicing_criterion = '__assert_fail'
-        self.repeat_slicing = 1
-        # these files will be linked unconditionally
-        self.link_files = []
-        # additional parameters that can be passed right
-        # to the slicer and symbolic executor
-        self.slicer_params = []
-        self.symexe_params = []
-
-class Symbiotic(object):
-    """
-    Instance of symbiotic tool. Instruments, prepares, compiles and runs
-    symbolic execution on given source(s)
-    """
-    def __init__(self, src, opts = None):
-        # source file
-        self.sources = src
-        # source compiled to llvm bytecode
-        self.llvmfile = None
-        # the file that will be used for symbolic execution
-        self.runfile = None
-
-        if opts is None:
-            self.options = SymbioticOptions()
-        else:
-            self.options = opts
-
-    def prepare(self, passes = ['-prepare', '-delete-undefined']):
-        if self.options.noprepare:
-            return
-
-        self._prepare(passes)
-
-    def _prepare(self, passes):
-        output = '{0}-prep.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['opt', '-load', 'LLVMsvc15.so', self.llvmfile, '-o', output] + passes
-
-        pr = ProcessRunner(cmd, PrepareWatch())
-        if pr.run() != 0:
-            pr.printOutput(sys.stderr)
-            raise SymbioticException('Prepare phase failed')
-
-        self.llvmfile = output
-
-    def old_slicer_find_init(self):
-        self._prepare(passes=['-find-init'])
-
-    def _instrument(self, prp):
-        prefix = '{0}/instrumentation/'.format(get_symbiotic_dir())
-        if prp == 'VALID-FREE':
-            config = prefix + 'double_free/config.json'
-            tolink = prefix + 'double_free/double_free.c'
-        elif prp == 'MEM-TRACK':
-            config = prefix + 'double_free/config-memtrack.json'
-            tolink = prefix + 'double_free/double_free.c'
-        elif prp == 'NULL-DEREF':
-            config = prefix + 'null_deref/config.json'
-            tolink = prefix + 'null_deref/null_deref.c'
-        else:
-            raise SymbioticException('BUG: Unhandled property')
-
-        # we need to compile and link the state machines before the
-        # instrumentation itself
-
-        tolinkbc = compile_to_llvm(tolink, self.options.is32bit)
-        if tolinkbc is None:
-            err('Failed compiling instrumentation bitcode: {0}'.format(tolink))
-
-        self.link(libs=[tolinkbc])
-
-        output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['LLVMinstr', config, self.llvmfile, output]
-
-        run_checked(cmd, 'Instrumenting the code failed', 'instrument')
-
-        self.llvmfile = output
-
-    def instrument(self):
-        """
-        Instrument the code.
-        """
-
-        # these options are exclusive
-        if 'MEM-TRACK' in self.options.prp:
-            self._instrument('MEM-TRACK')
-        elif 'VALID-FREE' in self.options.prp:
-            self._instrument('VALID-FREE')
-
-        if 'NULL-DEREF' in self.options.prp:
-            self._instrument('NULL-DEREF')
-
-    def link(self, output = None, libs = None):
-        if libs is None:
-            libs = get_libraries(self.options)
-
-        if not libs:
-            return
-
-        if output is None:
-            output = '{0}-lnkd.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-
-        cmd = ['llvm-link', '-o', output] + libs
-        if self.llvmfile:
-            cmd.append(self.llvmfile)
-
-        run_checked(cmd, 'Failed linking llvm file with libraries', 'compile')
-        self.llvmfile = output
-
-    def _link_undefined(self, undefs):
-        sd = get_symbiotic_dir()
-        tolink = []
-        for undef in undefs:
-            name = '{0}/lib/{1}.c'.format(sd, undef)
-            if os.path.isfile(name):
-                output_name = compile_to_llvm(name, self.options.is32bit)
-                tolink.append(output_name)
-            #else:
-            #   dbg('Did not find the definition of \'{0}\''.format(undef))
-
-        if tolink:
-            self.link(libs = tolink)
-            return True
-
-        return False
-
-    def link_unconditional(self):
-        """ Link the files that we got on the command line """
-
-        return self._link_undefined(self.options.link_files)
-
-    def link_undefined(self):
-        if self.options.nolinkundef:
-            return
-
-        # get undefined functions from the bitcode
-        undefs = get_undefined(self.llvmfile)
-        if self._link_undefined(undefs):
-            # if we linked someting, try get undefined again,
-            # because the functions may have added some new undefined
-            # functions
-            self.link_undefined()
-
-    def slicer(self, criterion, add_params = []):
-        output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        if self.options.old_slicer:
-            cmd = ['opt', '-load', 'LLVMSlicer.so',
-                   '-create-hammock-cfg', '-slice-inter',
-                   '-o', output] + self.options.slicer_params
-        else:
-            cmd = ['llvm-slicer', '-c', criterion]
-            if self.options.slicer_pta in ['fi', 'fs']:
-                cmd.append('-pta')
-                cmd.append(self.options.slicer_pta)
-
-            cmd.append('-statistics')
-
-            if self.options.slicer_params:
-                cmd += self.options.slicer_params
-
-            if add_params:
-                cmd += add_params
-
-        cmd.append(self.llvmfile)
-
-        pr = ProcessRunner(cmd, SlicerWatch())
-        if pr.run() != 0:
-            pr.printOutput(sys.stderr)
-            raise SymbioticException('Slicing failed')
-
-        self.llvmfile = output
-
-    def remove_unused_only(self):
-        output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['llvm-slicer', '-remove-unused-only']
-
-        cmd.append('-statistics')
-        cmd.append(self.llvmfile)
-
-        if ProcessRunner(cmd, SlicerWatch()).run() != 0:
-            raise SymbioticException('Slicing failed')
-
-        self.llvmfile = output
-
-    def optimize(self, passes = optimizations_O2):
-        if self.options.no_optimize:
-            return
-
-        output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['opt', '-o', output, self.llvmfile] + passes
-
-        run_checked(cmd, 'Optimizing the code failed', 'prepare')
-
-        self.llvmfile = output
-
-    def run(self, criterion = '__assert_fail'):
-        try:
-            return self._run(criterion);
-        except KeyboardInterrupt:
-            if current_process:
-                current_process.terminate()
-                current_process.kill()
-            print('Interrupted...')
-
-    def _run(self, criterion = '__assert_fail'):
-        restart_counting_time()
-
-        try:
-            if self.options.source_is_bc:
-                self.llvmfile = sources[0]
-            else:
-                # compile all sources
-                llvmsrc = []
-                for source in self.sources:
-                    llvms = compile_to_llvm(source, self.options.is32bit)
-                    if llvms is None:
-                        err('Failed compiling the source {0}'.format(source))
-
-                    llvmsrc.append(llvms)
-
-                # link all compiled sources to a one bytecode
-                # the result is stored to self.llvmfile
-                self.link('symbiotic_code.bc', llvmsrc)
-                if self.llvmfile is None:
-                    err('Failed linking compiled sources together')
-
-            if not check_llvmfile(self.llvmfile):
-                err('Unsupported call (probably pthread API)')
-
-            # remove definitions of __VERIFIER_* that are not created by us
-            self.prepare(passes = ['-prepare'])
-
-            # link the files that we got on the command line
-            self.link_unconditional()
-
-            # link undefined (no-op when prepare is turned off)
-            self.link_undefined()
-
-            # check if we should instrument the version of malloc
-            # that never returns a NULL pointer
-            if self.options.malloc_never_fails:
-                instrument_alloc = '-instrument-alloc-nf'
-            else:
-                instrument_alloc = '-instrument-alloc'
-
-            # instrument our malloc,
-            # make all memory symbolic (if desired)
-            # and then delete undefined function calls
-            # and replace them by symbolic stuff
-            passes = [instrument_alloc]
-            if not self.options.explicit_symbolic:
-                passes.append('-initialize-uninitialized')
-
-            if self.options.undef_retval_nosym:
-                passes.append('-delete-undefined-nosym')
-            else:
-                passes.append('-delete-undefined')
-
-            self.prepare(passes = passes)
-
-            # in the case of valid-free property we want to
-            # instrument even __VERIFIER_malloc functions,
-            # so we need to link it before instrumenting
-            #is_valid_free = ('VALID-FREE' in self.options.prp) or\
-            #                ('MEM-TRACK' in self.options.prp)
-            #if is_valid_free:
-            if not self.options.noprepare:
-                lib = get_libraries(self.options, ['memalloc'])
-                self.link(libs = lib)
-
-            # now instrument the code according to properties
-            self.instrument()
-
-            # link with the rest of libraries if needed (klee-libc)
-            self.link()
-
-            # slice the code
-            if not self.options.noslice:
-                # run optimizations that can make slicing more precise
-                if "before-O2" in self.options.optlevel:
-                    self.optimize(passes=optimizations_O2)
-                elif "before" in self.options.optlevel:
-                    self.optimize(passes=['-simplifycfg', '-constmerge', '-dce',
-                                          '-ipconstprop', '-argpromotion',
-                                          '-instcombine', '-deadargelim',
-                                          '-simplifycfg'])
-
-
-                # if this is old slicer run, we must find the starting functions
-                # (this adds the __ai_init_funs global variable to the module)
-                # NOTE: must be after the optimizations that could remove it
-                if self.options.old_slicer:
-                    self.old_slicer_find_init()
-
-                # print info about time
-                print_elapsed_time('INFO: Compilation, preparation and '\
-                                   'instrumentation time')
-
-                for n in range(0, self.options.repeat_slicing):
-                    dbg('Slicing the code for the {0}. time'.format(n + 1))
-                    add_params = []
-                    if n == 0 and self.options.repeat_slicing > 1:
-                        add_params = ['-pta-field-sensitive', '8',
-                                      '-rd-max-set-size', '3']
-
-                    self.slicer(self.options.slicing_criterion, add_params)
-
-                    # optimize the code after slicing
-                    # -- when we slice more times, we wouldn't
-                    # slice anything in another passes without
-                    # the optimization
-                    if "after" in self.options.optlevel:
-                        self.optimize()
-
-                print_elapsed_time('INFO: Total slicing time')
-
-                # new slicer removes unused itself, but for the old slicer
-                # we must do it manually (this calls the new slicer ;)
-                if self.options.old_slicer:
-                    self.remove_unused_only()
-
-            # optimize the code before symbolic execution
-            if "after" in self.options.optlevel:
-                self.optimize()
-
-        except SymbioticException as e:
-            # FIXME if we should not run further, do not run further
-            err('Failure >> {0}'.format(e.message))
-
-        if not self.options.final_output is None:
-            # copy the file to final_output
-            try:
-                os.rename(self.llvmfile, self.options.final_output)
-                self.llvmfile = self.options.final_output
-            except OSError as e:
-                err('Cannot create {0}: {1}'.format(self.options.final_output,
-                                                    e.message))
-        if not self.options.no_symexe:
-            found = run_symexe(self.llvmfile, opts = self.options)
-        else:
-            found = 'Did not run symbolic execution'
-
-        return report_results(found)
+        opts.CPPFLAGS += os.environ['CPPFLAGS'].split(' ')
 
 def generate_graphml(path, saveto):
     if saveto is None:
@@ -963,6 +350,8 @@ if __name__ == "__main__":
     if opts.timeout != 0:
         start_timeout(opts.timeout)
 
+    symbiotic = None
+
     try:
         try:
             # opts.prp now contain a list with keys (or None),
@@ -990,27 +379,32 @@ if __name__ == "__main__":
         # and so on
         set_environ(opts.is32bit)
         # set CFLAGS and CPPFLAGS for compilation
-        parse_environ()
+        parse_environ(opts)
 
         # let the show begin!
-        symbiotic = Symbiotic(sources, opts)
-        res = symbiotic.run()
+        try:
+            symbiotic = Symbiotic(sources, opts)
+            res = symbiotic.run()
+        except SymbioticException as e:
+            sys.stdout.flush()
+            sys.stderr.flush()
+
+            err(' == FAILURE ==\n{0}'.format(e.message))
 
         if res == 'FALSE' or res == 'ASSERTIONFAILED':
             srcdir = os.path.dirname(symbiotic.llvmfile)
             generate_counterexample(srcdir, opts.witness_output)
     except Timeout:
+        if symbiotic:
+            symbiotic.terminate()
+            symbiotic.kill()
+
         sys.stdout.flush()
         sys.stderr.flush()
-        if not current_process is None:
-            current_process.terminate()
-            current_process.kill()
 
         report_results('TIMEOUT')
     finally:
         stop_timeout()
-        sys.stderr.flush()
-        sys.stdout.flush()
 
     # print information about how long Symbiotic ran
     print('INFO: Total time elapsed: {0}'.format(time() - start_time))

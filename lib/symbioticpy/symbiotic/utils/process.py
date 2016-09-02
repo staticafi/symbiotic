@@ -44,6 +44,14 @@ class ProcessRunner(object):
 
         return self._process.wait()
 
+    def terminate(self):
+        if self._process:
+            self._process.terminate()
+
+    def kill(self):
+        if self._process:
+            self._process.kill()
+
     def exitStatus(self):
         assert self._process
 
@@ -52,9 +60,9 @@ class ProcessRunner(object):
     def getOutput(self):
         return self._watch.getLines()
 
-    def printOutput(self, stream = stdout):
+    def printOutput(self, stream = stdout, clr = None):
         for line in self._watch.getLines():
-            print_stream(line, stream, print_nl = False)
+            print_stream(line, stream, color = clr, print_nl = False)
 
 def run_checked(cmd, error_msg, dbg_domain = 'all'):
     """
