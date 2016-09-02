@@ -509,7 +509,10 @@ class Symbiotic(object):
         if not self.options.noslice:
             # run optimizations that can make slicing more precise
             if "before-O2" in self.options.optlevel:
-                self.optimize(passes=optimizations_O2)
+                if "opt-O2" in self.options.optlevel:
+                    self.optimize(passes=['-O2'])
+                else:
+                    self.optimize(passes=optimizations_O2)
             elif "before" in self.options.optlevel:
                 self.optimize(passes=['-simplifycfg', '-constmerge', '-dce',
                                       '-ipconstprop', '-argpromotion',
@@ -542,7 +545,10 @@ class Symbiotic(object):
                 # the optimization
                 if "after" in self.options.optlevel\
                     and self.options.repeat_slicing > 1:
-                    self.optimize()
+                    if "opt-O2" in self.options.optlevel:
+                        self.optimize(passes=['-O2'])
+                    else:
+                        self.optimize(passes=optimizations_O2)
 
             print_elapsed_time('INFO: Total slicing time')
 
@@ -553,7 +559,10 @@ class Symbiotic(object):
 
         # optimize the code before symbolic execution
         if "after" in self.options.optlevel:
-            self.optimize()
+            if "opt-O2" in self.options.optlevel:
+                self.optimize(passes=['-O2'])
+            else:
+                self.optimize(passes=optimizations_O2)
 
         if not self.options.final_output is None:
             # copy the file to final_output
