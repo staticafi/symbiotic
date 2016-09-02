@@ -218,7 +218,7 @@ class Symbiotic(object):
         self._prepare(passes)
 
     def _prepare(self, passes):
-        output = '{0}-prep.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+        output = '{0}-pr.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-load', 'LLVMsvc15.so', self.llvmfile, '-o', output] + passes
 
         self._run(cmd, PrepareWatch(), 'Prepare phase failed')
@@ -293,7 +293,7 @@ class Symbiotic(object):
             return
 
         if output is None:
-            output = '{0}-lnkd.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+            output = '{0}-ln.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
 
         cmd = ['llvm-link', '-o', output] + libs
         if self.llvmfile:
@@ -540,7 +540,8 @@ class Symbiotic(object):
                 # -- when we slice more times, we wouldn't
                 # slice anything in another passes without
                 # the optimization
-                if "after" in self.options.optlevel:
+                if "after" in self.options.optlevel\
+                    and self.options.repeat_slicing > 1:
                     self.optimize()
 
             print_elapsed_time('INFO: Total slicing time')
