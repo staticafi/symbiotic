@@ -37,6 +37,7 @@ from symbiotic.utils.process import ProcessRunner
 from symbiotic import SymbioticException, Symbiotic
 from symbiotic.options import SymbioticOptions
 from symbiotic.symbiotic import report_results
+from symbiotic.witnesses.witnesses import GraphMLWriter
 
 from subprocess import call
 
@@ -174,14 +175,9 @@ def generate_graphml(path, saveto):
         saveto = os.path.abspath(saveto)
 
     dbg('Generating counterexample: {0}'.format(saveto), domain='witness')
-    bindir = os.path.dirname(sys.argv[0])
-    f = open('/dev/null', 'r')
-    # FIXME: rewrite path_to_ml.pl to python, so that we can use it
-    # right from here
-    ret = call(['{0}/path_to_ml.pl {1} > {2}'.format(bindir, path, saveto)],
-               shell=True, stdout = f, stderr = f)
-    if ret != 0:
-        print_stderr('Generating witness failed!', color='RED')
+    gen = GraphMLWriter()
+    gen.parsePath(path)
+    gen.write(saveto)
 
 def generate_counterexample(bindir, saveto = None):
     abd = os.path.abspath(bindir)
