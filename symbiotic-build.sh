@@ -504,7 +504,6 @@ if [ $FROM -le 7 ]; then
 		lib/klee/runtime/klee-libc.bc\
 		lib32/klee/runtime/klee-libc.bc"
 #		lib/LLVMSlicer.so
-	SCRIPTS="build-fix.sh path_to_ml.pl symbiotic"
 	INSTR="bin/LLVMinstr\
 	       instrumentation/null_deref/config.json\
 	       instrumentation/null_deref/null_deref.c\
@@ -528,10 +527,10 @@ if [ $FROM -le 7 ]; then
 	git add \
 		$BINARIES \
 		$LIBRARIES \
-		$SCRIPTS \
 		$INSTR\
 		$CPACHECKER \
 		$ULTIAUTO \
+		symbiotic \
 		include/symbiotic.h \
 		lib/*.c \
 		lib/symbioticpy/*.py\
