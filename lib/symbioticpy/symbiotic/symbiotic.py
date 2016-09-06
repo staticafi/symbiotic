@@ -58,55 +58,56 @@ class UnsuppWatch(ProcessWatch):
         dbg(line, domain='prepare', print_nl = False)
         self._ok = not UnsuppWatch.unsupported_call.match(line)
 
-# define and compile regular expressions for parsing klee's output
-patterns = {
-    'ASSERTIONFAILED' : re.compile('.*ASSERTION FAIL:.*'),
-    'ESTPTIMEOUT' : re.compile('.*query timed out (resolve).*'),
-    'EKLEETIMEOUT' : re.compile('.*HaltTimer invoked.*'),
-    'EEXTENCALL' : re.compile('.*failed external call.*'),
-    'ELOADSYM' : re.compile('.*ERROR: unable to load symbol.*'),
-    'EINVALINST' : re.compile('.*LLVM ERROR: Code generator does not support.*'),
-    'EKLEEASSERT' : re.compile('.*klee: .*Assertion .* failed.*'),
-    'EINITVALS' : re.compile('.*unable to compute initial values.*'),
-    'ESYMSOL' : re.compile('.*unable to get symbolic solution.*'),
-    'ESILENTLYCONCRETIZED' : re.compile('.*silently concretizing.*'),
-    'ECONCRETIZED' : re.compile('.* concretized symbolic size.*'),
-    'EEXTRAARGS' : re.compile('.*calling .* with extra arguments.*'),
-    'EABORT' : re.compile('.*abort failure.*'),
-    #'EGENERAL' : re.compile('.*now ignoring this error at this location.*'),
-    'EMALLOC' : re.compile('.*found huge malloc, returning 0.*'),
-    'ESKIPFORK' : re.compile('.*skipping fork.*'),
-    'EKILLSTATE' : re.compile('.*killing.*states (over memory cap).*'),
-    'EMEMERROR'  : re.compile('.*memory error: out of bound pointer.*'),
-    'EFREE' : re.compile('.*memory error: invalid pointer: free.*')
-}
-
-def parse_klee_output(line, valid_deref = False):
-    for (key, pattern) in patterns.iteritems():
-        if pattern.match(line):
-            # return True so that we know we should terminate
-            if key == 'ASSERTIONFAILED':
-                return key
-            elif valid_deref and key == 'EMEMERROR':
-                return 'ASSERTIONFAILED (valid-deref)'
-            elif valid_deref and key == 'EFREE':
-                return 'ASSERTIONFAILED (valid-free)'
-            else:
-                return key
-
-    return None
-
 class KleeWatch(ProcessWatch):
+
     def __init__(self, valid_deref = False):
         ProcessWatch.__init__(self, 100)
         self._found = []
         self._valid_deref = valid_deref
 
+        # define and compile regular expressions for parsing klee's output
+        self._patterns = {
+            'ASSERTIONFAILED' : re.compile('.*ASSERTION FAIL:.*'),
+            'ESTPTIMEOUT' : re.compile('.*query timed out (resolve).*'),
+            'EKLEETIMEOUT' : re.compile('.*HaltTimer invoked.*'),
+            'EEXTENCALL' : re.compile('.*failed external call.*'),
+            'ELOADSYM' : re.compile('.*ERROR: unable to load symbol.*'),
+            'EINVALINST' : re.compile('.*LLVM ERROR: Code generator does not support.*'),
+            'EKLEEASSERT' : re.compile('.*klee: .*Assertion .* failed.*'),
+            'EINITVALS' : re.compile('.*unable to compute initial values.*'),
+            'ESYMSOL' : re.compile('.*unable to get symbolic solution.*'),
+            'ESILENTLYCONCRETIZED' : re.compile('.*silently concretizing.*'),
+            'ECONCRETIZED' : re.compile('.* concretized symbolic size.*'),
+            'EEXTRAARGS' : re.compile('.*calling .* with extra arguments.*'),
+            'EABORT' : re.compile('.*abort failure.*'),
+            #'EGENERAL' : re.compile('.*now ignoring this error at this location.*'),
+            'EMALLOC' : re.compile('.*found huge malloc, returning 0.*'),
+            'ESKIPFORK' : re.compile('.*skipping fork.*'),
+            'EKILLSTATE' : re.compile('.*killing.*states (over memory cap).*'),
+            'EMEMERROR'  : re.compile('.*memory error: out of bound pointer.*'),
+            'EFREE' : re.compile('.*memory error: invalid pointer: free.*')
+        }
+
     def found(self):
         return ' '.join(self._found)
 
+    def _parse_klee_output(self, line):
+        for (key, pattern) in self._patterns.iteritems():
+            if pattern.match(line):
+                # return True so that we know we should terminate
+                if key == 'ASSERTIONFAILED':
+                    return key
+                elif self._valid_deref and key == 'EMEMERROR':
+                    return 'ASSERTIONFAILED (valid-deref)'
+                elif self._valid_deref and key == 'EFREE':
+                    return 'ASSERTIONFAILED (valid-free)'
+                else:
+                    return key
+
+        return None
+
     def parse(self, line):
-        found = parse_klee_output(line, self._valid_deref)
+        found = self._parse_klee_output(line)
         if found:
             self._found.insert(0, found)
 
@@ -188,12 +189,15 @@ class Symbiotic(object):
 
         self.current_process = None
 
-    def _compile_to_llvm(self, source, output = None):
+    def _compile_to_llvm(self, source, output = None, with_g = True):
         """
         Compile given source to LLVM bytecode
         """
 
-        cmd = ['clang', '-g', '-c', '-emit-llvm', '-include', 'symbiotic.h']
+        cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h']
+
+        if with_g:
+            cmd.append('-g')
 
         if self.options.CFLAGS:
             cmd += self.options.CFLAGS
@@ -246,10 +250,9 @@ class Symbiotic(object):
         else:
             raise SymbioticException('BUG: Unhandled property')
 
-        # we need to compile and link the state machines before the
-        # instrumentation itself
-
-        tolinkbc = self._compile_to_llvm(tolink)
+        # we need to compile and link the state machines to the code
+        # before the actual instrumentation - LLVMinstr requires that
+        tolinkbc = self._compile_to_llvm(tolink, with_g = False)
         self.link(libs=[tolinkbc])
 
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
@@ -486,6 +489,22 @@ class Symbiotic(object):
 
         self.prepare(passes = passes)
 
+        # in the case of valid-free property we want to
+        # instrument even __VERIFIER_malloc functions,
+        # so we need to link it before instrumenting
+        is_valid_free = ('VALID-FREE' in self.options.prp) or\
+                        ('MEM-TRACK' in self.options.prp) or \
+                        ('VALID-DEREF' in self.options.prp)
+        if is_valid_free and not self.options.noprepare:
+            lib = self._get_libraries(['memalloc'])
+            self.link(libs = lib)
+
+        # now instrument the code according to properties
+        self.instrument()
+
+        # link with the rest of libraries if needed (klee-libc)
+        self.link()
+
         # link undefined (no-op when prepare is turned off)
         self.link_undefined()
 
@@ -495,22 +514,6 @@ class Symbiotic(object):
             self.prepare(['-delete-undefined-nosym'])
         else:
             self.prepare(['-delete-undefined'])
-
-        # in the case of valid-free property we want to
-        # instrument even __VERIFIER_malloc functions,
-        # so we need to link it before instrumenting
-        #is_valid_free = ('VALID-FREE' in self.options.prp) or\
-        #                ('MEM-TRACK' in self.options.prp)
-        #if is_valid_free:
-        if not self.options.noprepare:
-            lib = self._get_libraries(['memalloc'])
-            self.link(libs = lib)
-
-        # now instrument the code according to properties
-        self.instrument()
-
-        # link with the rest of libraries if needed (klee-libc)
-        self.link()
 
         # slice the code
         if not self.options.noslice:
