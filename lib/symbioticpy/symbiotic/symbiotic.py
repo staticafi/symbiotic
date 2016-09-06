@@ -152,7 +152,8 @@ def report_results(res):
         result = 'UNKNOWN'
 
     sys.stdout.flush()
-    print_stdout(result, color=color)
+    print_stdout(result, color=color, prefix='RESULT: ')
+    sys.stdout.flush()
 
     return result
 

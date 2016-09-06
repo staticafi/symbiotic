@@ -36,7 +36,6 @@ from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
 from symbiotic.utils.process import ProcessRunner
 from symbiotic import SymbioticException, Symbiotic
 from symbiotic.options import SymbioticOptions
-from symbiotic.symbiotic import report_results
 from symbiotic.witnesses.witnesses import GraphMLWriter
 
 from subprocess import call
@@ -384,6 +383,11 @@ if __name__ == "__main__":
             symbiotic = Symbiotic(sources, opts)
             res = symbiotic.run()
         except SymbioticException as e:
+            if e.message:
+                print('RESULT: ERROR ({0})'.format(e.message))
+            else:
+                print('RESULT: ERROR (unknown)')
+
             sys.stdout.flush()
             sys.stderr.flush()
 
@@ -400,7 +404,7 @@ if __name__ == "__main__":
         sys.stdout.flush()
         sys.stderr.flush()
 
-        report_results('TIMEOUT')
+        print('RESULT: TIMEOUT')
     finally:
         stop_timeout()
 

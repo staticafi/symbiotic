@@ -17,7 +17,7 @@ class GraphMLWriter(object):
         f = open(pathFile, 'r')
         last_id=1
 
-        ctrlelem = None
+        #ctrlelem = None
         for line in f:
             l = line.split()
             assert len(l) == 3
@@ -33,14 +33,17 @@ class GraphMLWriter(object):
                                     target=str(last_id))
             etree.SubElement(edge, 'data', key='startline').text = l[2]
             etree.SubElement(edge, 'data', key='originfile').text = l[1]
-            if int(l[0]) == 0:
-                # KLEE splits the true/false inverted for some reason
-                control = 'condition-true'
-            else:
-                control = 'condition-false'
+            # not all of the lines are branches and also not every
+            # branch evaluation corresponds to the same evaluation
+            # of the source code (e.g. optimizations may negate the condition)
+            # if int(l[0]) == 0:
+            #     # KLEE splits the true/false inverted for some reason
+            #     control = 'condition-true'
+            # else:
+            #     control = 'condition-false'
 
-            ctrlelem = etree.SubElement(edge, 'data', key='control')
-            ctrlelem.text = control
+            # ctrlelem = etree.SubElement(edge, 'data', key='control')
+            # ctrlelem.text = control
 
             last_id += 1
 
@@ -53,8 +56,8 @@ class GraphMLWriter(object):
                          target=str(last_id))
 
         # remove the control key from the last edge
-        if ctrlelem is not None:
-            ctrlelem.getparent().remove(ctrlelem)
+        # if ctrlelem is not None:
+        #     ctrlelem.getparent().remove(ctrlelem)
 
         f.close()
 
