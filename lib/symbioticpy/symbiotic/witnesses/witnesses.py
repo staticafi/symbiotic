@@ -13,15 +13,29 @@ class GraphMLWriter(object):
         self._entry = etree.SubElement(self._graph, 'node', id='0')
         etree.SubElement(self._entry, 'data', key='entry').text = 'true'
 
-    def parsePath(self, pathFile):
+    def parsePath(self, pathFile, filename = None):
+        """
+        Parse .path file from klee
+        \param pathFile     the .path file
+        \param filename     name of the file the symbiotic ran on
+                            -- in the case that we want to stick
+                            only to this file in the witness
+        """
+
         f = open(pathFile, 'r')
         last_id=1
 
         #ctrlelem = None
         for line in f:
             l = line.split()
-            assert len(l) == 3
-            #print(l)
+
+            # discard invalid records
+            if len(l) != 3:
+                continue
+
+            # the file name is l[1]
+            if filename and l[1] != filename:
+                continue
 
             # create new node
             etree.SubElement(self._graph, 'node', id=str(last_id))
