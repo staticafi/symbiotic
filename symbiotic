@@ -404,7 +404,7 @@ if __name__ == "__main__":
         sys.stdout.flush()
         sys.stderr.flush()
 
-        print('RESULT: TIMEOUT')
+        print('TIMEOUT')
     finally:
         stop_timeout()
 
