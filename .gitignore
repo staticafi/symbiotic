@@ -7,4 +7,8 @@ install
 minisat
 stp
 
+*.pyc
+*.swp
+*.bc
+
 tags
