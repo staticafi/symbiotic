@@ -238,11 +238,8 @@ class Symbiotic(object):
 
     def _instrument(self, prp):
         prefix = '{0}/instrumentation/'.format(self.symbiotic_dir)
-        if prp == 'VALID-FREE':
+        if prp == 'VALID-FREE' or prp == 'MEM-TRACK':
             config = prefix + 'double_free/config.json'
-            tolink = prefix + 'double_free/double_free.c'
-        elif prp == 'MEM-TRACK':
-            config = prefix + 'double_free/config-memtrack.json'
             tolink = prefix + 'double_free/double_free.c'
         elif prp == 'NULL-DEREF':
             config = prefix + 'null_deref/config.json'
