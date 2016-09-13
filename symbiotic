@@ -219,7 +219,8 @@ def parse_command_line():
                                     'cflags=', 'cppflags=', 'link=',
                                     'no-link-undefined', 'repeat-slicing=',
                                     'slicer-params=', 'symexe-params=',
-                                    'explicit-symbolic', 'undefined-retval-nosym'])
+                                    'explicit-symbolic', 'undefined-retval-nosym',
+                                    'preprocess-typedefs'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -327,6 +328,8 @@ def parse_command_line():
             options.symexe_params = arg.split()
         elif opt == '--link':
             options.link_files += arg.split(',')
+        elif opt == '--preprocess-typedefs':
+            options.preprocess_typedefs = True
 
     return options, args
 
@@ -344,8 +347,23 @@ if __name__ == "__main__":
     if opts.source_is_bc and len(sources) != 1:
         err('Bytecode must be only one file')
 
+    if opts.preprocess_typedefs and opts.source_is_bc:
+        err('--preprocess-replace has no meaning with .bc file')
+
     if opts.timeout != 0:
         start_timeout(opts.timeout)
+
+    if opts.preprocess_typedefs:
+        from symbiotic.filetransform import TypedefReplace
+        repl = TypedefReplace()
+        new_sources = []
+        for s in sources:
+            new_s = '{0}.i'.format(s)
+            repl.run(s, new_s)
+            new_sources.append(new_s)
+
+        assert(len(sources) == len(new_sources))
+        sources = new_sources
 
     symbiotic = None
 

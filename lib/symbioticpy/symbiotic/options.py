@@ -32,4 +32,5 @@ class SymbioticOptions(object):
         self.symexe_params = []
         self.CFLAGS = []
         self.CPPFLAGS = []
+        self.preprocess_typedefs = False
 
