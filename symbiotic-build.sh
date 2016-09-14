@@ -417,7 +417,7 @@ download_tar()
 get_cpa()
 {
 	if [ ! -d CPAchecker-1.4-unix ]; then
-		download_tar http://cpachecker.sosy-lab.org/CPAchecker-1.4-unix.tar.bz2
+		download_tar https://cpachecker.sosy-lab.org/CPAchecker-1.6.1-unix.tar.bz2
 	fi
 }
 
@@ -431,7 +431,7 @@ get_ultimize()
 if [ $FROM -le 5 ]; then
 	if [ $WITH_CPA -eq 1 ]; then
 		get_cpa
-		rsync -a CPAchecker-1.4-unix/ $PREFIX/CPAchecker/
+		rsync -a CPAchecker-1.6.1-unix/ $PREFIX/CPAchecker/
 	fi
 	if [ $WITH_ULTIMATEAUTOMIZER -eq 1 ]; then
 		get_ultimize
