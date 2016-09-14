@@ -531,6 +531,7 @@ if [ $FROM -le 7 ]; then
 		$ULTIAUTO \
 		symbiotic \
 		include/symbiotic.h \
+		include/symbiotic-size_t.h \
 		lib/*.c \
 		lib/symbioticpy/*.py\
 		LLVM_NEW_SLICER_VERSION \
