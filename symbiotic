@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 #
 #  -- Symbiotic tool --
-#
-#   Author: Marek Chalupa <mchqwerty@gmail.com>
-#           2015 - 2016
+#      2015 - 2016
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -40,7 +38,6 @@ from symbiotic.witnesses.witnesses import GraphMLWriter
 
 from subprocess import call
 
-# FIXME print versions of components too
 VERSION='3.0.5-dev'
 
 usage_msg = """
@@ -111,20 +108,20 @@ supported_properties = {
 }
 
 
-def get_include_paths():
-    """
-    Find paths where standard headers are located
-    """
-    cmd = ['find', '/usr/lib', '-name', 'stddef.h']
-    paths = []
-
-    pr = ProcessRunner(cmd, ProcessWatch(lines_limit = None))
-    if pr.run() == 0:
-        for line in pr.getOutput():
-            if line.startswith('/usr/lib/'):
-                paths.append(os.path.dirname(line))
-
-    return paths
+#def get_include_paths():
+#    """
+#    Find paths where standard headers are located
+#    """
+#    cmd = ['find', '/usr/lib', '-name', 'stddef.h']
+#    paths = []
+#
+#    pr = ProcessRunner(cmd, ProcessWatch(lines_limit = None))
+#    if pr.run() == 0:
+#        for line in pr.getOutput():
+#            if line.startswith('/usr/lib/'):
+#                paths.append(os.path.dirname(line))
+#
+#    return paths
 
 def set_environ(is32bit = False):
     def prepend(env, what):
@@ -136,9 +133,9 @@ def set_environ(is32bit = False):
         os.environ[env] = newenv
 
     # do this before we override PATH - we need 'find' utility
-    additional_paths = get_include_paths()
-    for p in additional_paths:
-        prepend('C_INCLUDE_DIR', p)
+    # additional_paths = get_include_paths()
+    # for p in additional_paths:
+    #     prepend('C_INCLUDE_DIR', p)
 
     symbiotic_dir = get_symbiotic_dir()
     # set path without preprending, we want to use only our stuff
@@ -402,9 +399,9 @@ if __name__ == "__main__":
             res = symbiotic.run()
         except SymbioticException as e:
             if e.message:
-                print('RESULT: ERROR ({0})'.format(e.message))
+                print('ERROR ({0})'.format(e.message))
             else:
-                print('RESULT: ERROR (unknown)')
+                print('ERROR (unknown)')
 
             sys.stdout.flush()
             sys.stderr.flush()
