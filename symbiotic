@@ -350,17 +350,18 @@ if __name__ == "__main__":
     if opts.timeout != 0:
         start_timeout(opts.timeout)
 
-    if opts.preprocess_typedefs:
-        from symbiotic.filetransform import TypedefReplace
-        repl = TypedefReplace()
-        new_sources = []
-        for s in sources:
-            new_s = '{0}.i'.format(s)
-            repl.run(s, new_s)
-            new_sources.append(new_s)
 
-        assert(len(sources) == len(new_sources))
-        sources = new_sources
+    # remove __inline from the source
+    from symbiotic.filetransform import InlineRemove
+    repl = InlineRemove()
+    new_sources = []
+    for s in sources:
+        new_s = '{0}.c'.format(s)
+        repl.run(s, new_s)
+        new_sources.append(new_s)
+
+    assert(len(sources) == len(new_sources))
+    sources = new_sources
 
     symbiotic = None
 
