@@ -108,20 +108,20 @@ supported_properties = {
 }
 
 
-#def get_include_paths():
-#    """
-#    Find paths where standard headers are located
-#    """
-#    cmd = ['find', '/usr/lib', '-name', 'stddef.h']
-#    paths = []
-#
-#    pr = ProcessRunner(cmd, ProcessWatch(lines_limit = None))
-#    if pr.run() == 0:
-#        for line in pr.getOutput():
-#            if line.startswith('/usr/lib/'):
-#                paths.append(os.path.dirname(line))
-#
-#    return paths
+def get_include_paths():
+    """
+    Find paths where standard headers are located
+    """
+    cmd = ['find', '/usr/lib', '-name', 'stddef.h']
+    paths = []
+
+    pr = ProcessRunner(cmd, ProcessWatch(lines_limit = None))
+    if pr.run() == 0:
+        for line in pr.getOutput():
+            if line.startswith('/usr/lib/'):
+                paths.append(os.path.dirname(line))
+
+    return paths
 
 def set_environ(is32bit = False):
     def prepend(env, what):
@@ -133,9 +133,9 @@ def set_environ(is32bit = False):
         os.environ[env] = newenv
 
     # do this before we override PATH - we need 'find' utility
-    # additional_paths = get_include_paths()
-    # for p in additional_paths:
-    #     prepend('C_INCLUDE_DIR', p)
+    additional_paths = get_include_paths()
+    for p in additional_paths:
+        prepend('C_INCLUDE_DIR', p)
 
     symbiotic_dir = get_symbiotic_dir()
     # set path without preprending, we want to use only our stuff
