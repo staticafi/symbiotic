@@ -57,13 +57,13 @@ where OPTS can be following:
     --malloc-never-fails      Suppose malloc and calloc never return NULL
     --require-slicer          Abort if slicing fails (default is to use the original file)
     --no-symexe               Do not run symbolic execution (handy for debugging)
-    --optimize=TYPES          Run optimizations, TYPES can be: before, before-O2, after.
-                              before/after means before or/and after slicing. before-O2
-                              runs full list of optimizations before slicing (normally only
-                              some conservative optimizations are run before slicing).
-                              none disables optimizations (same as --no-optimize).
-                              When opt-O2 is given, then opt is called with -O2
-                              switch instead of the list of our optimizations.
+    --optimize=opt1,...       Run optimizations, every item in the optimizations list
+                              is a string of type when-level, where when is 'before'
+                              or 'after' (slicing) and level in 'conservative', 'klee',
+                              'O2, 'O3'. A special value is 'none', which
+                              disables optimizations (same as --no-optimize).
+                              You can also pass optimizations directly to LLVM's opt,
+                              by providing a string when-opt-what, e.g. before-opt-iconstprop
     --no-optimize             Don't optimize the code (same as --optimize=none)
     --libc=klee               Link klee-libc.bc to the module
     --no-lib                  Don't link lib.bc to the module
@@ -287,8 +287,6 @@ def parse_command_line():
                     options.no_optimize = True
                     options.optlevel = []
                     break
-                if not o in ["before", "after", "before-O2", "none", "opt-O2"]:
-                    err('Unknown optimization level, try --help')
         elif opt == '--prp':
             options.prp = get_prp(arg)
             for prp in options.prp:

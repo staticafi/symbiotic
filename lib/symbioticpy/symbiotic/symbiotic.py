@@ -119,21 +119,6 @@ class KleeWatch(ProcessWatch):
         else:
             dbg(line, 'all', False)
 
-# the list of optimizations is based on klee -optimize
-# option, but is adjusted for our needs (therefore
-# we don't use the -optimize option with klee)
-optimizations_O2 = ['-simplifycfg', '-globalopt', '-globaldce', '-ipconstprop',
-                    '-deadargelim', '-instcombine', '-simplifycfg', '-prune-eh',
-                    '-functionattrs', '-inline', '-argpromotion', '-instcombine',
-                    '-jump-threading', '-simplifycfg', '-gvn', '-scalarrepl',
-                    '-instcombine', '-tailcallelim', '-simplifycfg',
-                    '-reassociate', '-loop-rotate', '-licm', '-loop-unswitch',
-                    '-instcombine', '-indvars', '-loop-deletion', '-loop-unroll',
-                    '-instcombine', '-memcpyopt', '-sccp', '-instcombine',
-                    '-dse', '-adce', '-simplifycfg', '-strip-dead-prototypes',
-                    '-constmerge', '-ipsccp', '-deadargelim', '-die',
-                    '-instcombine']
-
 def report_results(res):
     dbg(res)
     result = res
@@ -158,6 +143,38 @@ def report_results(res):
     sys.stdout.flush()
 
     return result
+
+def get_optlist_before(optlevel):
+    from optimizations import optimizations
+    lst = []
+    for opt in optlevel:
+        if not opt.startswith('before-'):
+            continue
+
+        o = opt[7:]
+        if o.startswith('opt-'):
+            lst.append(o[3:])
+        else:
+            if optimizations.has_key(o):
+                lst += optimizations[o]
+
+    return lst
+
+def get_optlist_after(optlevel):
+    from optimizations import optimizations
+    lst = []
+    for opt in optlevel:
+        if not opt.startswith('after-'):
+            continue
+
+        o = opt[6:]
+        if o.startswith('opt-'):
+            lst.append(o[3:])
+        else:
+            if optimizations.has_key(o):
+                lst += optimizations[o]
+
+    return lst
 
 class Symbiotic(object):
     """
@@ -386,7 +403,7 @@ class Symbiotic(object):
         self._run(cmd, SlicerWatch(), 'Slicing failed (removing unused only)')
         self.llvmfile = output
 
-    def optimize(self, passes = optimizations_O2):
+    def optimize(self, passes):
         if self.options.no_optimize:
             return
 
@@ -521,17 +538,9 @@ class Symbiotic(object):
         # slice the code
         if not self.options.noslice:
             # run optimizations that can make slicing more precise
-            if "before-O2" in self.options.optlevel:
-                if "opt-O2" in self.options.optlevel:
-                    self.optimize(passes=['-O2'])
-                else:
-                    self.optimize(passes=optimizations_O2)
-            elif "before" in self.options.optlevel:
-                self.optimize(passes=['-simplifycfg', '-constmerge', '-dce',
-                                      '-ipconstprop', '-argpromotion',
-                                      '-instcombine', '-deadargelim',
-                                      '-simplifycfg'])
-
+            opt = get_optlist_before(self.options.optlevel)
+            if opt:
+                self.optimize(passes=opt)
 
             # if this is old slicer run, we must find the starting functions
             # (this adds the __ai_init_funs global variable to the module)
@@ -552,16 +561,10 @@ class Symbiotic(object):
 
                 self.slicer(self.options.slicing_criterion, add_params)
 
-                # optimize the code after slicing
-                # -- when we slice more times, we wouldn't
-                # slice anything in another passes without
-                # the optimization
-                if "after" in self.options.optlevel\
-                    and self.options.repeat_slicing > 1:
-                    if "opt-O2" in self.options.optlevel:
-                        self.optimize(passes=['-O2'])
-                    else:
-                        self.optimize(passes=optimizations_O2)
+                if self.options.repeat_slicing > 1:
+                    opt = get_optlist_after(self.options.optlevel)
+                    if opt:
+                        self.optimize(passes=opt)
 
             print_elapsed_time('INFO: Total slicing time')
 
@@ -571,11 +574,9 @@ class Symbiotic(object):
                 self.remove_unused_only()
 
         # optimize the code before symbolic execution
-        if "after" in self.options.optlevel:
-            if "opt-O2" in self.options.optlevel:
-                self.optimize(passes=['-O2'])
-            else:
-                self.optimize(passes=optimizations_O2)
+        opt = get_optlist_after(self.options.optlevel)
+        if opt:
+            self.optimize(passes=opt)
 
         if not self.options.final_output is None:
             # copy the file to final_output

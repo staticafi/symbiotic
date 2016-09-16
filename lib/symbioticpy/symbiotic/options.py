@@ -20,7 +20,7 @@ class SymbioticOptions(object):
         self.final_output = None
         self.witness_output = 'witness.graphml'
         self.source_is_bc = False
-        self.optlevel = ["before", "after"]
+        self.optlevel = ["before-conservative", "after-O2"]
         self.slicer_pta = 'old'
         self.slicing_criterion = '__assert_fail'
         self.repeat_slicing = 1
