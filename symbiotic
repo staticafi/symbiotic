@@ -332,20 +332,21 @@ def parse_command_line():
             options.symexe_params = arg.split()
         elif opt == '--link':
             options.link_files += arg.split(',')
-        elif opt == '--preprocess-typedefs':
-            options.preprocess_typedefs = True
         elif opt == '--save-files':
             global save_files
             save_files = True
 
     return options, args
 
+def on_rm_error(func, pth, exc):
+    dbg('Failed removing tmp dir: {0})'.format(str(exc[1])))
+
 def rm_tmp_dir(d, force = False):
     if save_files and not force:
         return
 
     from shutil import rmtree
-    rmtree(d)
+    rmtree(d, onerror=on_rm_error)
 
 def copy_sources_to_tmp(sources):
     """
