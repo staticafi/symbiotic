@@ -224,7 +224,7 @@ def parse_command_line():
                                     'no-link-undefined', 'repeat-slicing=',
                                     'slicer-params=', 'symexe-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
-                                    'preprocess-typedefs', 'save-files'])
+                                    'save-files'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -391,9 +391,6 @@ if __name__ == "__main__":
     sources = args
     if opts.source_is_bc and len(sources) != 1:
         err('Bytecode must be only one file')
-
-    if opts.preprocess_typedefs and opts.source_is_bc:
-        err('--preprocess-replace has no meaning with .bc file')
 
     if opts.timeout != 0:
         start_timeout(opts.timeout)
