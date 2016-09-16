@@ -90,6 +90,8 @@ where OPTS can be following:
                               the environment CFLAGS and CPPFLAGS are used too
     --slicer-params=STR       Pass parameters directly to slicer
     --symexe-params=STR       Pass parameters directly to symbolic executor
+    --save-files              Do not remove working files after running.
+                              The files will be stored in the symbiotic_files directory.
     --help                    Show help message
     --version                 Return version
 
@@ -152,6 +154,8 @@ def set_environ(is32bit = False):
     dbg('LD_LIBRARY_PATH={0}'.format(os.environ['LD_LIBRARY_PATH']))
     dbg('C_INCLUDE_DIR={0}'.format(os.environ['C_INCLUDE_DIR']))
 
+    return symbiotic_dir
+
 def parse_environ(opts):
     """
     Parse environment variables of interest and
@@ -202,6 +206,9 @@ def get_prp(prp):
     # as LTL (there are spaces)
     return prp.split()
 
+# do not remove working files after running
+save_files = False
+
 def parse_command_line():
     options = SymbioticOptions()
 
@@ -217,7 +224,7 @@ def parse_command_line():
                                     'no-link-undefined', 'repeat-slicing=',
                                     'slicer-params=', 'symexe-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
-                                    'preprocess-typedefs'])
+                                    'preprocess-typedefs', 'save-files'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -327,8 +334,49 @@ def parse_command_line():
             options.link_files += arg.split(',')
         elif opt == '--preprocess-typedefs':
             options.preprocess_typedefs = True
+        elif opt == '--save-files':
+            global save_files
+            save_files = True
 
     return options, args
+
+def rm_tmp_dir(d, force = False):
+    if save_files and not force:
+        return
+
+    from shutil import rmtree
+    rmtree(d)
+
+def copy_sources_to_tmp(sources):
+    """
+    Create temporary directory and copy sources there.
+    Returns the new paths to sources
+    """
+
+    from tempfile import mkdtemp
+    from shutil import copy
+
+    if save_files:
+        tmpdir = 'symbiotic_files'
+        try:
+            os.mkdir(tmpdir)
+        except OSError:
+            rm_tmp_dir(tmpdir, True)
+            os.mkdir(tmpdir)
+    else:
+        tmpdir = mkdtemp(prefix='symbiotic.', dir='.')
+
+    for s in sources:
+        t = os.path.join(tmpdir, os.path.basename(s))
+        target = os.path.abspath(t)
+        try:
+            copy(s, target)
+        except IOError as e:
+            rm_tmp_dir(tmpdir, True)
+            err('Failed copying sources to a tmp directory: {0}'.format(str(e)))
+
+    return tmpdir
+
 
 if __name__ == "__main__":
     # store time when we have started, so that we can
@@ -350,22 +398,31 @@ if __name__ == "__main__":
     if opts.timeout != 0:
         start_timeout(opts.timeout)
 
-
-    # remove __inline from the source
-    from symbiotic.filetransform import InlineRemove
-    repl = InlineRemove()
-    new_sources = []
-    for s in sources:
-        new_s = '{0}.c'.format(s)
-        repl.run(s, new_s)
-        new_sources.append(new_s)
-
-    assert(len(sources) == len(new_sources))
-    sources = new_sources
-
-    symbiotic = None
-
     try:
+        # set environment. That is set PATH and LD_LIBRARY_PATH
+        # and so on
+        symbiotic_dir = set_environ(opts.is32bit)
+        # set CFLAGS and CPPFLAGS for compilation
+        parse_environ(opts)
+
+        working_dir = copy_sources_to_tmp(sources)
+        os.chdir(working_dir)
+        dbg('Working directory: {0}'.format(working_dir))
+
+        # remove __inline from the source
+        from symbiotic.filetransform import InlineRemove
+        repl = InlineRemove()
+        new_sources = []
+        for s in sources:
+            new_s = '{0}.c'.format(s)
+            repl.run(s, new_s)
+            new_sources.append(new_s)
+
+        assert(len(sources) == len(new_sources))
+        sources = new_sources
+
+        symbiotic = None
+
         try:
             # opts.prp now contain a list with keys (or None),
             # but we want the value from the map
@@ -388,15 +445,9 @@ if __name__ == "__main__":
         except KeyError as ke:
             err('Unknown or unsupported property: {0}'.format(ke.message))
 
-        # set environment. That is set PATH and LD_LIBRARY_PATH
-        # and so on
-        set_environ(opts.is32bit)
-        # set CFLAGS and CPPFLAGS for compilation
-        parse_environ(opts)
-
         # let the show begin!
         try:
-            symbiotic = Symbiotic(sources, opts)
+            symbiotic = Symbiotic(sources, opts, symbiotic_dir)
             res = symbiotic.run()
         except SymbioticException as e:
             if e.message:
@@ -423,6 +474,9 @@ if __name__ == "__main__":
         print('TIMEOUT')
     finally:
         stop_timeout()
+
+    os.chdir('..')
+    rm_tmp_dir(working_dir)
 
     # print information about how long Symbiotic ran
     print('INFO: Total time elapsed: {0}'.format(time() - start_time))

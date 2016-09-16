@@ -163,7 +163,7 @@ class Symbiotic(object):
     Instance of symbiotic tool. Instruments, prepares, compiles and runs
     symbolic execution on given source(s)
     """
-    def __init__(self, src, opts = None):
+    def __init__(self, src, opts = None, symb_dir = None):
         # source file
         self.sources = src
         # source compiled to llvm bytecode
@@ -173,7 +173,10 @@ class Symbiotic(object):
         # currently running process
         self.current_process = None
         # the directory that symbiotic script is located
-        self.symbiotic_dir = get_symbiotic_dir()
+        if symb_dir:
+            self.symbiotic_dir = symb_dir
+        else:
+            self.symbiotic_dir = get_symbiotic_dir()
 
         if opts is None:
             self.options = SymbioticOptions()
