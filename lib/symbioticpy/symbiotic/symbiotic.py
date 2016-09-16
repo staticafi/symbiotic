@@ -461,7 +461,7 @@ class Symbiotic(object):
 
             # link all compiled sources to a one bytecode
             # the result is stored to self.llvmfile
-            self.link('symbiotic_code.bc', llvmsrc)
+            self.link('code.bc', llvmsrc)
 
         if not self.check_llvmfile(self.llvmfile):
             dbg('Unsupported call (probably pthread API)')
