@@ -44,7 +44,7 @@ class InlineRemove(FileTransform):
     """
     def __init__(self):
         from re import compile
-        self._tdre = compile('^\s*__inline\s+(.*)$')
+        self._tdre = compile('^\s*(__inline|inline)\s+(.*)$')
 
     def run(self, inputfile, outputfile):
         infile = open(inputfile, 'r')
@@ -53,7 +53,7 @@ class InlineRemove(FileTransform):
         for l in infile:
             res = self._tdre.match(l)
             if res:
-                outfile.write('/*__inline */ {0}\n'.format(res.group(1)))
+                outfile.write('/*{0} */ {1}\n'.format(res.group(1), res.group(2)))
             else:
                 outfile.write(l)
 
