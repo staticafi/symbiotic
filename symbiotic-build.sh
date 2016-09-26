@@ -475,6 +475,7 @@ if [ $FROM -le 6 ]; then
 	mkdir -p $PREFIX/instrumentation
 	rsync -r null_deref $PREFIX/instrumentation
 	rsync -r double_free $PREFIX/instrumentation
+	rsync -r valid_deref $PREFIX/instrumentation
 
 	git rev-parse --short=8 HEAD > $PREFIX/LLVM_INSTRUMENTATION_VERSION
 
@@ -508,7 +509,9 @@ if [ $FROM -le 7 ]; then
 	       instrumentation/null_deref/config.json\
 	       instrumentation/null_deref/null_deref.c\
 	       instrumentation/double_free/config.json\
-	       instrumentation/double_free/double_free.c"
+	       instrumentation/double_free/double_free.c\
+	       instrumentation/valid_deref/config.json\
+	       instrumentation/valid_deref/valid_deref.c"
 
 	CPACHECKER=
 	ULTIAUTO=
