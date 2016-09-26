@@ -262,6 +262,9 @@ class Symbiotic(object):
         if prp == 'VALID-FREE' or prp == 'MEM-TRACK':
             config = prefix + 'double_free/config.json'
             tolink = prefix + 'double_free/double_free.c'
+        elif prp == 'VALID-DEREF':
+            config = prefix + 'valid_deref/config.json'
+            tolink = prefix + 'valid_deref/valid_deref.c'
         elif prp == 'NULL-DEREF':
             config = prefix + 'null_deref/config.json'
             tolink = prefix + 'null_deref/null_deref.c'
@@ -289,6 +292,9 @@ class Symbiotic(object):
             self._instrument('MEM-TRACK')
         elif 'VALID-FREE' in self.options.prp:
             self._instrument('VALID-FREE')
+
+        if 'VALID-DEREF' in self.options.prp:
+            self._instrument('VALID-DEREF')
 
         if 'NULL-DEREF' in self.options.prp:
             self._instrument('NULL-DEREF')
