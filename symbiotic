@@ -410,7 +410,7 @@ if __name__ == "__main__":
         repl = InlineRemove()
         new_sources = []
         for s in sources:
-            new_s = '{0}.c'.format(s)
+            new_s = '{0}.i'.format(s)
             repl.run(s, new_s)
             new_sources.append(new_s)
 
