@@ -439,10 +439,14 @@ class Symbiotic(object):
                '-output-stats=0',#'-only-output-states-covering-new=1',
                '-max-time={0}'.format(self.options.timeout)] + self.options.symexe_params
 
+        memsafety = 'VALID-DEREF' in self.options.prp
+        if memsafety:
+            cmd.append('-exit-on-error-type=Ptr')
+
         cmd.append(self.llvmfile)
 
         failed = False
-        watch = KleeWatch('VALID-DEREF' in self.options.prp)
+        watch = KleeWatch(memsafety)
 
         try:
             self._run(cmd, watch, 'Symbolic execution failed')
