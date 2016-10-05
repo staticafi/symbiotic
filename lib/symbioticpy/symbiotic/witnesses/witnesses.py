@@ -30,11 +30,11 @@ class GraphMLWriter(object):
             l = line.split()
 
             # discard invalid records
-            if len(l) != 3:
+            if len(l) != 4:
                 continue
 
-            # the file name is l[1]
-            if filename and l[1] != filename:
+            # the file name is l[2]
+            if filename and l[2] != filename:
                 continue
 
             # create new node
@@ -45,8 +45,8 @@ class GraphMLWriter(object):
             edge = etree.SubElement(self._graph, 'edge',
                                     source=str(last_id - 1),
                                     target=str(last_id))
-            etree.SubElement(edge, 'data', key='startline').text = l[2]
-            etree.SubElement(edge, 'data', key='originfile').text = l[1]
+            etree.SubElement(edge, 'data', key='startline').text = l[3]
+            etree.SubElement(edge, 'data', key='originfile').text = l[2]
             # not all of the lines are branches and also not every
             # branch evaluation corresponds to the same evaluation
             # of the source code (e.g. optimizations may negate the condition)
