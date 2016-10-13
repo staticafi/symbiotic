@@ -56,6 +56,7 @@ UPDATE=
 OPTS=
 WITH_CPA='0'
 WITH_ULTIMATEAUTOMIZER='0'
+LLVM_VERSION=3.8.1
 
 RUNDIR=`pwd`
 SRCDIR=`dirname $0`
@@ -190,17 +191,17 @@ build()
 
 # download llvm-3.8 and unpack
 if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
-	if [ ! -d 'llvm-3.8.0' ]; then
-		wget http://llvm.org/releases/3.8.0/llvm-3.8.0.src.tar.xz || exit 1
-		wget http://llvm.org/releases/3.8.0/cfe-3.8.0.src.tar.xz || exit 1
+	if [ ! -d "llvm-${LLVM_VERSION}" ]; then
+		wget http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz || exit 1
+		wget http://llvm.org/releases/${LLVM_VERSION}/cfe-${LLVM_VERSION}.src.tar.xz || exit 1
 
-		tar -xf llvm-3.8.0.src.tar.xz || exit 1
-		tar -xf cfe-3.8.0.src.tar.xz || exit 1
+		tar -xf llvm-${LLVM_VERSION}.src.tar.xz || exit 1
+		tar -xf cfe-${LLVM_VERSION}.src.tar.xz || exit 1
 
                 # rename llvm folder
-                mv llvm-3.8.0.src llvm-3.8.0
+                mv llvm-${LLVM_VERSION}.src llvm-${LLVM_VERSION}
 		# move clang to llvm/tools and rename to clang
-		mv cfe-3.8.0.src llvm-3.8.0/tools/clang
+		mv cfe-${LLVM_VERSION}.src llvm-${LLVM_VERSION}/tools/clang
 	fi
 
 	mkdir -p llvm-build-cmake
@@ -210,7 +211,7 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	if [ ! -d CMakeFiles ]; then
 		echo 'we should definitely build RelWithDebInfo here, no?'
 		echo 'N.B. we strip below anyway, so why not Release actually?'
-		cmake ../llvm-3.8.0 \
+		cmake ../llvm-${LLVM_VERSION} \
 			-DCMAKE_BUILD_TYPE=Release\
 			-DLLVM_INCLUDE_EXAMPLES=OFF \
 			-DLLVM_INCLUDE_TESTS=OFF \
@@ -234,8 +235,8 @@ fi
 
 export LLVM_DIR=$ABS_RUNDIR/llvm-build-cmake/share/llvm/cmake/
 
-rm -f llvm-3.8.0.src.tar.xz &>/dev/null || exit 1
-rm -f cfe-3.8.0.src.tar.xz &>/dev/null || exit 1
+rm -f llvm-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
+rm -f cfe-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
 
 git_clone_or_pull()
 {
@@ -269,7 +270,7 @@ if [ $FROM -le 1 ]; then
 #	cd "$SRCDIR/LLVMSlicer" || exitmsg "Cloning failed"
 #	if [ ! -d CMakeFiles ]; then
 #		cmake . \
-#			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.8.0/" \
+#			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-${LLVM_VERSION}/" \
 #			-DLLVM_BUILD_PATH="$ABS_RUNDIR"/llvm-build-cmake/ \
 #			-DLLVM_DIR=$LLVM_DIR \
 #			-DCMAKE_INSTALL_PREFIX=$PREFIX \
@@ -286,7 +287,7 @@ if [ $FROM -le 1 ]; then
 	cd "$SRCDIR/dg" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.8.0/" \
+			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-${LLVM_VERSION}/" \
 			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
@@ -346,8 +347,10 @@ if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 	fi
 
 	# configure llvm if not done yet
+	# it does not built with gcc-4, so use gcc-5 & g++-5
 	if [ ! -f config.log ]; then
-		../llvm-3.8.0/configure \
+		../llvm-${LLVM_VERSION}/configure \
+			CC=gcc-5 CXX=g++-5 \
 			--enable-optimized --enable-assertions \
 			--enable-targets=x86 --enable-docs=no \
 			--enable-timestamps=no || clean_and_exit 1
@@ -368,7 +371,7 @@ if [ $FROM -le 4 ]; then
 	if [ ! -f config.log ]; then
 	../klee/configure \
 		--prefix=$PREFIX \
-		--with-llvmsrc=`pwd`/../llvm-3.8.0 \
+		--with-llvmsrc=`pwd`/../llvm-${LLVM_VERSION} \
 		--with-llvmobj=`pwd`/../llvm-build-configure \
 		--with-stp=$PREFIX || clean_and_exit 1 "git"
 	fi
@@ -450,7 +453,7 @@ if [ $FROM -le 6 ]; then
 	cd "$SRCDIR/svc15" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.8.0/" \
+			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-${LLVM_VERSION}/" \
 			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
@@ -466,7 +469,7 @@ if [ $FROM -le 6 ]; then
 	if [ ! -d CMakeFiles ]; then
 		./bootstrap-json.sh || exitmsg "Failed generating json files"
 		cmake . \
-			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-3.8.0/" \
+			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-${LLVM_VERSION}/" \
 			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
