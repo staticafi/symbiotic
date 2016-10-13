@@ -315,12 +315,14 @@ fi
 if [ $FROM -le 3 ]; then
 	git_clone_or_pull git://github.com/stp/stp.git stp
 	cd stp || exitmsg "Cloning failed"
-	cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
-		-DCMAKE_CXX_FLAGS_RELEASE=-O2 \
-		-DCMAKE_C_FLAGS_RELEASE=-O2 \
-		-DCMAKE_BUILD_TYPE=Release \
-		-DBUILD_SHARED_LIBS:BOOL=OFF \
-		-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
+	if [ ! -d CMakeFiles ]; then
+		cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
+			-DCMAKE_CXX_FLAGS_RELEASE=-O2 \
+			-DCMAKE_C_FLAGS_RELEASE=-O2 \
+			-DCMAKE_BUILD_TYPE=Release \
+			-DBUILD_SHARED_LIBS:BOOL=OFF \
+			-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
+	fi
 
 	(build "OPTIMIZE=-O2 CFLAGS_M32=install" && make install) || exit 1
 
