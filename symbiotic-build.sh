@@ -47,12 +47,6 @@ export SYMBIOTIC_ENV=1
 
 export LD_LIBRARY_PATH="$PREFIX/lib:$LD_LIBRARY_PATH"
 
-# klee does not handle builts with abi::cxx11 yet, so we must
-# build llvm with the old abi too (if the compiler does
-# not support this, then it will ignore the definition
-export CPPFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0"
-
-
 FROM='0'
 NO_LLVM='0'
 UPDATE=
