@@ -31,6 +31,9 @@ usage()
 	echo -e "update   - update repositories"
 	echo -e "with-cpa - download CPAchecker (due to witness checking)"
 	echo -e "with-ultimate-automizer - download UltimateAutmizer (due to witness checking)"
+	echo -e "with-llvm=path     - use llvm from path"
+	echo -e "with-llvm-dir=path - use llvm from path"
+	echo -e "with-llvm-src=path - use llvm sources from path"
 	echo "" # new line
 	echo -e "slicer, scripts,"
 	echo -e "minisat, stp, klee, witness"
@@ -57,6 +60,9 @@ OPTS=
 WITH_CPA='0'
 WITH_ULTIMATEAUTOMIZER='0'
 LLVM_VERSION=3.8.1
+WITH_LLVM=
+WITH_LLVM_SRC=
+WITH_LLVM_DIR=
 
 RUNDIR=`pwd`
 SRCDIR=`dirname $0`
@@ -112,6 +118,15 @@ while [ $# -gt 0 ]; do
 		'with-ultimate-automizer')
 			WITH_ULTIMATEAUTOMIZER='1'
 		;;
+		with-llvm=*)
+			WITH_LLVM=${1##*=}
+		;;
+		with-llvm-src=*)
+			WITH_LLVM_SRC=${1##*=}
+		;;
+		with-llvm-dir=*)
+			WITH_LLVM_DIR=${1##*=}
+		;;
 		*)
 			if [ -z "$OPTS" ]; then
 				OPTS="$1"
@@ -132,37 +147,6 @@ mkdir -p $PREFIX/bin
 mkdir -p $PREFIX/lib
 mkdir -p $PREFIX/lib32
 mkdir -p $PREFIX/include
-
-check()
-{
-	if ! wget --version &>/dev/null; then
-		if ! curl --version &>/dev/null; then
-			echo "Need wget or curl to download files"
-			exit 1
-		fi
-
-		# try replace wget with curl
-		alias wget='curl -O'
-	fi
-
-	if ! python --version 2>&1 | grep -q 'Python 2'; then
-		echo "llvm-3.2 needs python 2 to build"
-		exit 1
-	fi
-
-	if ! bison --version &>/dev/null; then
-		echo "STP needs bison program"
-		exit 1
-	fi
-
-	if ! flex --version &>/dev/null; then
-		echo "STP needs flex program"
-		exit 1
-	fi
-}
-
-# check if we have everything we need
-check
 
 clean_and_exit()
 {
@@ -188,55 +172,6 @@ build()
 	make "$OPTS" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $@ || exit 1
 	return 0
 }
-
-# download llvm-3.8 and unpack
-if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
-	if [ ! -d "llvm-${LLVM_VERSION}" ]; then
-		wget http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz || exit 1
-		wget http://llvm.org/releases/${LLVM_VERSION}/cfe-${LLVM_VERSION}.src.tar.xz || exit 1
-
-		tar -xf llvm-${LLVM_VERSION}.src.tar.xz || exit 1
-		tar -xf cfe-${LLVM_VERSION}.src.tar.xz || exit 1
-
-                # rename llvm folder
-                mv llvm-${LLVM_VERSION}.src llvm-${LLVM_VERSION}
-		# move clang to llvm/tools and rename to clang
-		mv cfe-${LLVM_VERSION}.src llvm-${LLVM_VERSION}/tools/clang
-	fi
-
-	mkdir -p llvm-build-cmake
-	cd llvm-build-cmake || exitmsg "downloading failed"
-
-	# configure llvm
-	if [ ! -d CMakeFiles ]; then
-		echo 'we should definitely build RelWithDebInfo here, no?'
-		echo 'N.B. we strip below anyway, so why not Release actually?'
-		cmake ../llvm-${LLVM_VERSION} \
-			-DCMAKE_BUILD_TYPE=Release\
-			-DLLVM_INCLUDE_EXAMPLES=OFF \
-			-DLLVM_INCLUDE_TESTS=OFF \
-			-DLLVM_ENABLE_TIMESTAMPS=OFF \
-			-DLLVM_TARGETS_TO_BUILD="X86" \
-			-DLLVM_ENABLE_PIC=ON \
-			-DCMAKE_C_FLAGS_DEBUG="-O0 -g" \
-			-DCMAKE_CXX_FLAGS_DEBUG="-O0 -g" || clean_and_exit
-	fi
-
-	# build llvm
-	ONLY_TOOLS='opt clang llvm-link llvm-dis llvm-nm' build
-
-	# we need these binaries in symbiotic
-	cp bin/clang $PREFIX/bin/clang || exit 1
-	cp bin/opt $PREFIX/bin/opt || exit 1
-	cp bin/llvm-link $PREFIX/bin/llvm-link || exit 1
-	cp bin/llvm-nm $PREFIX/bin/llvm-nm || exit 1
-	cd -
-fi
-
-export LLVM_DIR=$ABS_RUNDIR/llvm-build-cmake/share/llvm/cmake/
-
-rm -f llvm-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
-rm -f cfe-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
 
 git_clone_or_pull()
 {
@@ -264,6 +199,138 @@ git_submodule_init()
 	cd -
 }
 
+check()
+{
+	if ! wget --version &>/dev/null; then
+		if ! curl --version &>/dev/null; then
+			echo "Need wget or curl to download files"
+			exit 1
+		fi
+
+		# try replace wget with curl
+		alias wget='curl -O'
+	fi
+
+	if ! python --version 2>&1 | grep -q 'Python 2'; then
+		echo "llvm-3.2 needs python 2 to build"
+		exit 1
+	fi
+
+	if ! bison --version &>/dev/null; then
+		echo "STP needs bison program"
+		exit 1
+	fi
+
+	if ! flex --version &>/dev/null; then
+		echo "STP needs flex program"
+		exit 1
+	fi
+
+	if [ "x$WITH_LLVM" != "x" ]; then
+		if [ ! -d "$WITH_LLVM" ]; then
+			exitmsg "Invalid LLVM directory given: $WITH_LLVM"
+		fi
+	fi
+	if [ "x$WITH_LLVM_SRC" != "x" ]; then
+		if [ ! -d "$WITH_LLVM_SRC" ]; then
+			exitmsg "Invalid LLVM src directory given: $WITH_LLVM_SRC"
+		fi
+	fi
+	if [ "x$WITH_LLVM_DIR" != "x" ]; then
+		if [ ! -d "$WITH_LLVM_DIR" ]; then
+			exitmsg "Invalid LLVM src directory given: $WITH_LLVM_DIR"
+		fi
+	fi
+
+}
+
+# check if we have everything we need
+check
+
+build_llvm()
+{
+	if [ ! -d "llvm-${LLVM_VERSION}" ]; then
+		wget http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz || exit 1
+		wget http://llvm.org/releases/${LLVM_VERSION}/cfe-${LLVM_VERSION}.src.tar.xz || exit 1
+
+		tar -xf llvm-${LLVM_VERSION}.src.tar.xz || exit 1
+		tar -xf cfe-${LLVM_VERSION}.src.tar.xz || exit 1
+
+                # rename llvm folder
+                mv llvm-${LLVM_VERSION}.src llvm-${LLVM_VERSION}
+		# move clang to llvm/tools and rename to clang
+		mv cfe-${LLVM_VERSION}.src llvm-${LLVM_VERSION}/tools/clang
+
+
+		rm -f llvm-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
+		rm -f cfe-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
+	fi
+
+	mkdir -p llvm-build-cmake
+	cd llvm-build-cmake || exitmsg "downloading failed"
+
+	# configure llvm
+	if [ ! -d CMakeFiles ]; then
+		echo 'we should definitely build RelWithDebInfo here, no?'
+		echo 'N.B. we strip below anyway, so why not Release actually?'
+		cmake ../llvm-${LLVM_VERSION} \
+			-DCMAKE_BUILD_TYPE=Release\
+			-DLLVM_INCLUDE_EXAMPLES=OFF \
+			-DLLVM_INCLUDE_TESTS=OFF \
+			-DLLVM_ENABLE_TIMESTAMPS=OFF \
+			-DLLVM_TARGETS_TO_BUILD="X86" \
+			-DLLVM_ENABLE_PIC=ON \
+			-DCMAKE_C_FLAGS_DEBUG="-O0 -g" \
+			-DCMAKE_CXX_FLAGS_DEBUG="-O0 -g" || clean_and_exit
+	fi
+
+	# build llvm
+	ONLY_TOOLS='opt clang llvm-link llvm-dis llvm-nm' build
+	cd -
+}
+
+######################################################################
+#   get LLVM either from user provided location or from the internet,
+#   bulding it
+######################################################################
+if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
+	if [ -z "$WITH_LLVM" ]; then
+		build_llvm
+		LLVM_LOCATION=llvm-build-cmake
+	else
+		LLVM_LOCATION=$WITH_LLVM
+	fi
+
+	# we need these binaries in symbiotic
+	cp $LLVM_LOCATION/bin/clang $PREFIX/bin/clang || exit 1
+	cp $LLVM_LOCATION/bin/opt $PREFIX/bin/opt || exit 1
+	cp $LLVM_LOCATION/bin/llvm-link $PREFIX/bin/llvm-link || exit 1
+	cp $LLVM_LOCATION/bin/llvm-nm $PREFIX/bin/llvm-nm || exit 1
+fi
+
+if [ -z "$WITH_LLVM" ]; then
+	export LLVM_DIR=$ABS_RUNDIR/llvm-build-cmake/share/llvm/cmake/
+	export LLVM_BUILD_PATH=$ABS_RUNDIR/llvm-build-cmake/
+else
+	export LLVM_DIR=$WITH_LLVM/share/llvm/cmake/
+	export LLVM_BUILD_PATH=$WITH_LLVM
+fi
+
+if [ -z "$WITH_LLVM_SRC" ]; then
+	export LLVM_SRC_PATH="$ABS_RUNDIR/llvm-${LLVM_VERSION}/"
+else
+	export LLVM_SRC_PATH="$WITH_LLVM_SRC"
+fi
+
+# do not do any funky nested ifs, just override the LLVM_DIR
+# in the case we are given that variable
+if [ ! -z "$WITH_LLVM_DIR" ]; then
+	LLVM_DIR=$WITH_LLVM_DIR
+fi
+
+######################################################################
+#   slicer
+######################################################################
 if [ $FROM -le 1 ]; then
 	git_submodule_init
 
@@ -287,8 +354,8 @@ if [ $FROM -le 1 ]; then
 	cd "$SRCDIR/dg" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-${LLVM_VERSION}/" \
-			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
+			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
+			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			|| clean_and_exit 1 "git"
@@ -301,6 +368,9 @@ if [ $FROM -le 1 ]; then
 	cd -
 fi
 
+######################################################################
+#   minisat
+######################################################################
 if [ $FROM -le 2 ]; then
 	git_clone_or_pull git://github.com/niklasso/minisat.git minisat
 	cd minisat
@@ -313,6 +383,9 @@ if [ $FROM -le 2 ]; then
 	cd -
 fi
 
+######################################################################
+#   STP
+######################################################################
 if [ $FROM -le 3 ]; then
 	git_clone_or_pull git://github.com/stp/stp.git stp
 	cd stp || exitmsg "Cloning failed"
@@ -333,6 +406,9 @@ if [ $FROM -le 3 ]; then
 	cd -
 fi
 
+######################################################################
+#   build LLVM using configure for KLEE
+######################################################################
 if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 	# we must build llvm once again with configure script (klee needs this)
 	mkdir -p llvm-build-configure || exitmsg "Creating building directory failed"
@@ -349,7 +425,7 @@ if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 	# configure llvm if not done yet
 	# it does not built with gcc-4, so use gcc-5 & g++-5
 	if [ ! -f config.log ]; then
-		../llvm-${LLVM_VERSION}/configure \
+		$LLVM_SRC_PATH/configure \
 			CC=gcc-5 CXX=g++-5 \
 			--enable-optimized --enable-assertions \
 			--enable-targets=x86 --enable-docs=no \
@@ -361,6 +437,9 @@ if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 fi
 
 
+######################################################################
+#   KLEE
+######################################################################
 if [ $FROM -le 4 ]; then
 	# build klee
 	git_clone_or_pull "-b 3.0.5 --single-branch git://github.com/staticafi/klee.git" klee || exitmsg "Cloning failed"
@@ -435,6 +514,9 @@ get_ultimize()
 	fi
 }
 
+######################################################################
+#   witness checkers
+######################################################################
 if [ $FROM -le 5 ]; then
 	if [ $WITH_CPA -eq 1 ]; then
 		get_cpa
@@ -446,6 +528,9 @@ if [ $FROM -le 5 ]; then
 	fi
 fi
 
+######################################################################
+#   instrumentation and scripts
+######################################################################
 if [ $FROM -le 6 ]; then
 	# download scripts
 	git_submodule_init
@@ -453,8 +538,8 @@ if [ $FROM -le 6 ]; then
 	cd "$SRCDIR/svc15" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
-			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-${LLVM_VERSION}/" \
-			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
+			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
+			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			|| clean_and_exit 1 "git"
@@ -469,8 +554,8 @@ if [ $FROM -le 6 ]; then
 	if [ ! -d CMakeFiles ]; then
 		./bootstrap-json.sh || exitmsg "Failed generating json files"
 		cmake . \
-			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-${LLVM_VERSION}/" \
-			-DLLVM_BUILD_PATH="$ABS_RUNDIR/llvm-build-cmake/" \
+			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
+			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			|| clean_and_exit 1 "git"
@@ -498,6 +583,9 @@ if [ $FROM -le 6 ]; then
 fi
 
 
+######################################################################
+#  create distribution
+######################################################################
 if [ $FROM -le 7 ]; then
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
 
