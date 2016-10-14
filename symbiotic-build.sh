@@ -372,7 +372,7 @@ fi
 #   minisat
 ######################################################################
 if [ $FROM -le 2 ]; then
-	git_clone_or_pull git://github.com/niklasso/minisat.git minisat
+	git_clone_or_pull git://github.com/stp/minisat.git minisat
 	cd minisat
 	(build lr && make prefix=$PREFIX install-headers) || exit 1
 	cp build/release/lib/libminisat.a $PREFIX/lib/ || exit 1
