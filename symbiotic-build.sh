@@ -417,10 +417,25 @@ if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 	fi
 
 	# configure llvm if not done yet
-	# it does not built with gcc-4, so use gcc-5 & g++-5
 	if [ ! -f config.log ]; then
+		# llvm does not built with gcc-4, so use gcc-5 & g++-5 if available
+		if gcc --version 2>&1 | grep -q '5\..*'; then
+			CC=gcc
+			CXX=g++
+		elif which gcc-5 2>&1; then
+			CC=gcc-5
+			CXX=gcc++-5
+		elif which clang 2>&1; then
+			CC=clang
+			CXX=clang++
+		else
+			# let's see what happens
+			CC=gcc
+			CXX=g++
+		fi
+
 		$LLVM_SRC_PATH/configure \
-			CC=gcc-5 CXX=g++-5 \
+			CC=$CC CXX=$CXX \
 			--enable-optimized --enable-assertions \
 			--enable-targets=x86 --enable-docs=no \
 			--enable-timestamps=no || clean_and_exit 1
