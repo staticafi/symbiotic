@@ -432,7 +432,7 @@ if __name__ == "__main__":
             # we changed directory to our tmpdir,
             # so now the sources have only basenames
             s = os.path.basename(s)
-            new_s = '{0}.i'.format(s)
+            new_s = '{0}.c'.format(s)
             repl.run(s, new_s)
             new_sources.append(new_s)
 
