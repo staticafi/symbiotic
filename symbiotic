@@ -429,6 +429,9 @@ if __name__ == "__main__":
         repl = InlineRemove()
         new_sources = []
         for s in sources:
+            # we changed directory to our tmpdir,
+            # so now the sources have only basenames
+            s = os.path.basename(s)
             new_s = '{0}.i'.format(s)
             repl.run(s, new_s)
             new_sources.append(new_s)
