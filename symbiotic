@@ -38,7 +38,13 @@ from symbiotic.witnesses.witnesses import GraphMLWriter
 
 from subprocess import call
 
-VERSION='3.0.5-dev'
+VERSION='3.0.7-dev'
+try:
+    from symbiotic.versions import versions
+except ImportError:
+    versions = {
+        'symbiotic' : VERSION
+    }
 
 usage_msg = """
 Usage: symbiotic OPTS sources
@@ -94,6 +100,7 @@ where OPTS can be following:
                               The files will be stored in the symbiotic_files directory.
     --help                    Show help message
     --version                 Return version
+    --version-short           Return version as one-line string
 
     One (and only one) of the sources must contain 'main' function
 """
@@ -224,7 +231,7 @@ def parse_command_line():
                                     'no-link-undefined', 'repeat-slicing=',
                                     'slicer-params=', 'symexe-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
-                                    'save-files'])
+                                    'save-files', 'version-short'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -245,8 +252,20 @@ def parse_command_line():
         elif opt == '--no-lib':
             dbg('Won\'t link lib.bc to the module')
             options.no_lib = True
+        elif opt == '--version-short':
+            vers = ''
+            n = 0
+            for (k, v) in versions.iteritems():
+                if n > 0:
+                    vers += '-'
+                vers += k + ':' + v[:8]
+                n += 1
+
+            print(vers)
+            sys.exit(0)
         elif opt == '--version':
-            print(VERSION)
+            for (k, v) in versions.iteritems():
+                print('{0:<20} -> {1}'.format(k, v))
             sys.exit(0)
         elif opt == '--no-slice':
             dbg('Will not slice')
