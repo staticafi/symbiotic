@@ -127,7 +127,8 @@ def get_include_paths():
     pr = ProcessRunner(cmd, ProcessWatch(lines_limit = None))
     if pr.run() == 0:
         for line in pr.getOutput():
-            if line.startswith('/usr/lib/'):
+            if line.startswith('/usr/lib/') and\
+                ('gcc' in line or 'llvm' in line):
                 paths.append(os.path.dirname(line))
 
     return paths
