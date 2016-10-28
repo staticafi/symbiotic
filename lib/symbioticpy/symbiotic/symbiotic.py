@@ -301,13 +301,6 @@ class Symbiotic(object):
 
     def _get_libraries(self, which=[]):
         files = []
-
-        if not self.options.no_lib:
-            if 'memalloc' in which:
-                libc = '{0}/lib/memalloc.c'.format(self.symbiotic_dir)
-                llvmlibbc = self._compile_to_llvm(libc)
-                files.append(llvmlibbc)
-
         if self.options.add_libc:
             d = '{0}/lib'.format(self.symbiotic_dir)
             if self.options.is32bit:
