@@ -20,8 +20,8 @@ class SymbioticOptions(object):
         self.final_output = None
         self.witness_output = 'witness.graphml'
         self.source_is_bc = False
-        self.optlevel = ["before-conservative", "after-O2"]
-        self.slicer_pta = 'old'
+        self.optlevel = ["before-O3", "after-O3"]
+        self.slicer_pta = 'fi'
         self.slicing_criterion = '__assert_fail'
         self.repeat_slicing = 1
         # these files will be linked unconditionally
@@ -32,5 +32,4 @@ class SymbioticOptions(object):
         self.symexe_params = []
         self.CFLAGS = []
         self.CPPFLAGS = []
-        self.preprocess_typedefs = False
 
