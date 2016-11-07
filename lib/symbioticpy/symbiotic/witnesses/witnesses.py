@@ -19,7 +19,6 @@ def get_sha1(source):
 
     f.close()
     return hsh.hexdigest()
- 
 
 class GraphMLWriter(object):
     def __init__(self, source, is32bit, is_correctness_wit):
@@ -87,7 +86,8 @@ class GraphMLWriter(object):
                                     source=str(last_id - 1),
                                     target=str(last_id))
             ET.SubElement(edge, 'data', key='startline').text = l[3]
-            ET.SubElement(edge, 'data', key='originfile').text = l[2]
+            #ET.SubElement(edge, 'data', key='originfile').text = l[2]
+
             # not all of the lines are branches and also not every
             # branch evaluation corresponds to the same evaluation
             # of the source code (e.g. optimizations may negate the condition)
