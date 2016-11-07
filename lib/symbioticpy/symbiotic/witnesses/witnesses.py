@@ -1,21 +1,29 @@
 #!/usr/bin/python
 
+no_lxml = False
 try:
-    from lxml import etree
+    from lxml import etree as ET
 except ImportError:
-    from xml import etree
+    no_lxml = True
+
+if no_lxml:
     # if this fails, then we're screwed, so let the script die
+    from xml.etree import ElementTree as ET
 
 class GraphMLWriter(object):
     def __init__(self):
 
-        ns = {None:'http://graphml.graphdrawing.org/xmlns/graphml'}
-        self._root = etree.Element('graphml', nsmap=ns)
-        self._graph = etree.SubElement(self._root, 'graph', edgedefault="directed")
+	if no_lxml:
+            self._root = ET.Element('graphml')
+	else:
+            ns = {None:'http://graphml.graphdrawing.org/xmlns/graphml'}
+            self._root = ET.Element('graphml', nsmap=ns)
+
+        self._graph = ET.SubElement(self._root, 'graph', edgedefault="directed")
 
         # create the entry node
-        self._entry = etree.SubElement(self._graph, 'node', id='0')
-        etree.SubElement(self._entry, 'data', key='entry').text = 'true'
+        self._entry = ET.SubElement(self._graph, 'node', id='0')
+        ET.SubElement(self._entry, 'data', key='entry').text = 'true'
 
     def parsePath(self, pathFile, filename = None):
         """
@@ -42,15 +50,15 @@ class GraphMLWriter(object):
                 continue
 
             # create new node
-            etree.SubElement(self._graph, 'node', id=str(last_id))
+            ET.SubElement(self._graph, 'node', id=str(last_id))
 
 
             # create new edge
-            edge = etree.SubElement(self._graph, 'edge',
+            edge = ET.SubElement(self._graph, 'edge',
                                     source=str(last_id - 1),
                                     target=str(last_id))
-            etree.SubElement(edge, 'data', key='startline').text = l[3]
-            etree.SubElement(edge, 'data', key='originfile').text = l[2]
+            ET.SubElement(edge, 'data', key='startline').text = l[3]
+            ET.SubElement(edge, 'data', key='originfile').text = l[2]
             # not all of the lines are branches and also not every
             # branch evaluation corresponds to the same evaluation
             # of the source code (e.g. optimizations may negate the condition)
@@ -60,16 +68,15 @@ class GraphMLWriter(object):
             # else:
             #     control = 'condition-false'
 
-            # ctrlelem = etree.SubElement(edge, 'data', key='control')
+            # ctrlelem = ET.SubElement(edge, 'data', key='control')
             # ctrlelem.text = control
 
             last_id += 1
 
         # create the violation
-        vl = etree.SubElement(self._graph, 'node', id=str(last_id))
-        etree.SubElement(vl, 'data', key='violation').text = 'true'
-
-        etree.SubElement(self._graph, 'edge',
+        vl = ET.SubElement(self._graph, 'node', id=str(last_id))
+        ET.SubElement(vl, 'data', key='violation').text = 'true'
+        ET.SubElement(self._graph, 'edge',
                          source=str(last_id - 1),
                          target=str(last_id))
 
@@ -80,12 +87,16 @@ class GraphMLWriter(object):
         f.close()
 
     def dump(self):
-        print(etree.tostring(self._root, pretty_print=True))
+        print(ET.tostring(self._root, pretty_print=True))
 
     def write(self, to):
-        et = etree.ElementTree(self._root)
-        et.write(to, encoding='UTF-8', method="xml",
-                 pretty_print=True, xml_declaration=True)
+        et = ET.ElementTree(self._root)
+	if no_lxml:
+            et.write(to, encoding='UTF-8', method="xml",
+                     xml_declaration=True)
+	else:
+            et.write(to, encoding='UTF-8', method="xml",
+                     pretty_print=True, xml_declaration=True)
 
 # my $output = IO::File->new(">-");
 # 
