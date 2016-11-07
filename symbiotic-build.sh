@@ -447,6 +447,7 @@ if [ $FROM -le 4 ]; then
 	if [ ! -f config.log ]; then
 	../klee/configure \
 		--prefix=$PREFIX \
+		--without-zlib \
 		--with-llvmsrc=$LLVM_SRC_PATH \
 		--with-llvmobj=`pwd`/../llvm-build-configure \
 		--with-stp=$PREFIX || clean_and_exit 1 "git"
