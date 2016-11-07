@@ -559,8 +559,7 @@ class Symbiotic(object):
                 dbg('Slicing the code for the {0}. time'.format(n + 1))
                 add_params = []
                 if n == 0 and self.options.repeat_slicing > 1:
-                    add_params = ['-pta-field-sensitive', '8',
-                                  '-rd-max-set-size', '3']
+                    add_params = ['-pta-field-sensitive=8']
 
                 self.slicer(self.options.slicing_criterion, add_params)
 
