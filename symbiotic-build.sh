@@ -658,7 +658,9 @@ if [ $FROM -le 7 ]; then
 		include/symbiotic.h \
 		include/symbiotic-size_t.h \
 		lib/*.c \
-		lib/symbioticpy/symbiotic/*.py
+		lib/symbioticpy/symbiotic/*.py \
+		lib/symbioticpy/symbiotic/utils/*.py \
+		lib/symbioticpy/symbiotic/witnesses/*.py
 
 	git commit -m "Create Symbiotic distribution `date`"
 	# remove unnecessary files
