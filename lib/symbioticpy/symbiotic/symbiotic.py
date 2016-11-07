@@ -511,17 +511,6 @@ class Symbiotic(object):
 
         self.prepare(passes = passes)
 
-        # in the case of valid-free property we want to
-        # instrument even __VERIFIER_malloc functions,
-        # so we need to link it before instrumenting
-        #is_valid_free = ('VALID-FREE' in self.options.prp) or\
-        #                ('MEM-TRACK' in self.options.prp) or \
-        #                ('VALID-DEREF' in self.options.prp)
-        #if is_valid_free and not self.options.noprepare:
-        if not self.options.noprepare:
-            lib = self._get_libraries(['memalloc'])
-            self.link(libs = lib)
-
         # now instrument the code according to properties
         self.instrument()
 
