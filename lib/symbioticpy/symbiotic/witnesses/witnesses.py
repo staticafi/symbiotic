@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from hashlib import sha1
 no_lxml = False
 try:
     from lxml import etree as ET
@@ -10,16 +11,41 @@ if no_lxml:
     # if this fails, then we're screwed, so let the script die
     from xml.etree import ElementTree as ET
 
-class GraphMLWriter(object):
-    def __init__(self):
+def get_sha1(source):
+    f = open(source, 'r')
+    hsh = sha1()
+    for l in f:
+        hsh.update(l)
 
-	if no_lxml:
+    f.close()
+    return hsh.digest()
+ 
+
+class GraphMLWriter(object):
+    def __init__(self, source, is32bit):
+        if no_lxml:
             self._root = ET.Element('graphml')
-	else:
+        else:
             ns = {None:'http://graphml.graphdrawing.org/xmlns/graphml'}
             self._root = ET.Element('graphml', nsmap=ns)
 
+        if is32bit:
+            arch = '32bit'
+        else:
+            arch = '64bit'
+
         self._graph = ET.SubElement(self._root, 'graph', edgedefault="directed")
+        # add the description
+        ET.SubElement(self._graph, 'data', key='witness-type').text = 'violation_witness'
+        ET.SubElement(self._graph, 'data', key='sourcecodelang').text = 'C'
+        ET.SubElement(self._graph, 'data', key='producer').text = 'Symbiotic'
+        # XXX: this may change in the future
+        ET.SubElement(self._graph, 'data', key='specification').text \
+            = 'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )'
+        ET.SubElement(self._graph, 'data', key='programfile').text = source.decode('utf-8')
+        ET.SubElement(self._graph, 'data', key='programhash').text = get_sha1(source).decode('utf-8')
+        ET.SubElement(self._graph, 'data', key='memorymodel').text = 'precise'
+        ET.SubElement(self._graph, 'data', key='architecture').text = arch
 
         # create the entry node
         self._entry = ET.SubElement(self._graph, 'node', id='0')
@@ -91,55 +117,10 @@ class GraphMLWriter(object):
 
     def write(self, to):
         et = ET.ElementTree(self._root)
-	if no_lxml:
+        if no_lxml:
             et.write(to, encoding='UTF-8', method="xml",
                      xml_declaration=True)
-	else:
+        else:
             et.write(to, encoding='UTF-8', method="xml",
                      pretty_print=True, xml_declaration=True)
 
-# my $output = IO::File->new(">-");
-# 
-# my $writer = XML::Writer->new(OUTPUT => $output);
-# 
-# $writer->xmlDecl("UTF-8", "no");
-# $writer->startTag("graphml", "xmlns:xsi" => "http://www.w3.org/2001/XMLSchema-instance", "xmlns" => "http://graphml.graphdrawing.org/xmlns");
-# $writer->startTag("graph");
-# 
-# $writer->startTag("node", "id" => "A0");
-# 	$writer->startTag("data", "key" => "entry");
-# 		$writer->characters("true");
-# 	$writer->endTag("data");
-# $writer->endTag("node");
-# 
-# my $nid = 0;
-# 
-# while (<>) {
-# 	chomp;
-# 	/^[01] .* ([0-9]+)$/;
-# 	my $line = $1;
-# 
-# 	$writer->startTag("node", "id" => "A" . ($nid + 1));
-# 	if (eof()) {
-# 		$writer->startTag("data", "key" => "violation");
-# 			$writer->characters("true");
-# 		$writer->endTag("data");
-# 	}
-# 	$writer->endTag("node");
-# 
-# 	$writer->startTag("edge", "source" => "A$nid",
-# 			"target" => "A" . ($nid + 1));
-# 		$writer->startTag("data", "key" => "startline");
-# 			$writer->characters($line);
-# 		$writer->endTag("data");
-# 	$writer->endTag("edge");
-# 
-# 	$nid++;
-# }
-# 
-# $writer->endTag("graph");
-# $writer->endTag("graphml");
-# $writer->end();
-# $output->close();
-# 
-# 1

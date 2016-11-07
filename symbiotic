@@ -177,22 +177,24 @@ def parse_environ(opts):
     if os.environ.has_key('CPPFLAGS'):
         opts.CPPFLAGS += os.environ['CPPFLAGS'].split(' ')
 
-def generate_graphml(path, saveto):
+def generate_graphml(path, source, is32bit, saveto):
     if saveto is None:
         saveto = '{0}.graphml'.format(os.path.basename(path))
         saveto = os.path.abspath(saveto)
 
     dbg('Generating counterexample: {0}'.format(saveto), domain='witness')
-    gen = GraphMLWriter()
+    gen = GraphMLWriter(source, is32bit)
     gen.parsePath(path)
+    gen.dump()
     gen.write(saveto)
 
-def generate_counterexample(bindir, saveto = None):
+def generate_counterexample(bindir, sources, is32bit, saveto = None):
+    assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
     abd = os.path.abspath(bindir)
     for path in os.listdir('{0}/klee-last'.format(abd)):
         if 'assert' in path:
             pth = os.path.abspath('{0}/klee-last/{1}.path'.format(abd, path[:-11]))
-            generate_graphml(pth, saveto)
+            generate_graphml(pth, sources[0], is32bit, saveto)
             break
 
 def get_prp(prp):
@@ -421,6 +423,11 @@ if __name__ == "__main__":
         # set CFLAGS and CPPFLAGS for compilation
         parse_environ(opts)
 
+	# save original sources for later use
+        original_sources = []
+        for s in sources:
+            original_sources.append(os.path.abspath(s))
+
         working_dir = copy_sources_to_tmp(sources)
         os.chdir(working_dir)
         dbg('Working directory: {0}'.format(working_dir))
@@ -494,7 +501,8 @@ if __name__ == "__main__":
 
         if res == 'FALSE' or res == 'ASSERTIONFAILED':
             srcdir = os.path.dirname(symbiotic.llvmfile)
-            generate_counterexample(srcdir, opts.witness_output)
+            generate_counterexample(srcdir, original_sources,
+	                            opts.is32bit, opts.witness_output)
     except Timeout:
         if symbiotic:
             symbiotic.terminate()
