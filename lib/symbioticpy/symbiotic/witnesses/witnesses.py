@@ -18,11 +18,11 @@ def get_sha1(source):
         hsh.update(l)
 
     f.close()
-    return hsh.digest()
+    return hsh.hexdigest()
  
 
 class GraphMLWriter(object):
-    def __init__(self, source, is32bit):
+    def __init__(self, source, is32bit, is_correctness_wit):
         if no_lxml:
             self._root = ET.Element('graphml')
         else:
@@ -36,7 +36,10 @@ class GraphMLWriter(object):
 
         self._graph = ET.SubElement(self._root, 'graph', edgedefault="directed")
         # add the description
-        ET.SubElement(self._graph, 'data', key='witness-type').text = 'violation_witness'
+	if is_correctness_wit:
+            ET.SubElement(self._graph, 'data', key='witness-type').text = 'correctness_witness'
+	else:
+            ET.SubElement(self._graph, 'data', key='witness-type').text = 'violation_witness'
         ET.SubElement(self._graph, 'data', key='sourcecodelang').text = 'C'
         ET.SubElement(self._graph, 'data', key='producer').text = 'Symbiotic'
         # XXX: this may change in the future
@@ -113,7 +116,10 @@ class GraphMLWriter(object):
         f.close()
 
     def dump(self):
-        print(ET.tostring(self._root, pretty_print=True))
+        if no_lxml:
+            print(ET.tostring(self._root))
+	else:
+            print(ET.tostring(self._root, pretty_print=True))
 
     def write(self, to):
         et = ET.ElementTree(self._root)
