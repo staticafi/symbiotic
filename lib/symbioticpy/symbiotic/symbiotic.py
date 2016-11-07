@@ -197,7 +197,7 @@ class Symbiotic(object):
             self.symbiotic_dir = get_symbiotic_dir()
 
         if opts is None:
-            self.options = SymbioticOptions()
+            self.options = SymbioticOptions(self.symbiotic_dir)
         else:
             self.options = opts
 
