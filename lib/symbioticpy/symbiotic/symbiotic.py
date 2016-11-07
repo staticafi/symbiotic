@@ -259,21 +259,43 @@ class Symbiotic(object):
 
     def _instrument(self, prp):
         prefix = '{0}/instrumentation/'.format(self.symbiotic_dir)
+	if self.options.is32bit:
+	    libdir = os.path.join(self.symbiotic_dir, 'lib32')
+	else:
+	    libdir = os.path.join(self.symbiotic_dir, 'lib')
+
+	tolinkbc = None
         if prp == 'VALID-FREE' or prp == 'MEM-TRACK':
             config = prefix + 'double_free/config.json'
-            tolink = prefix + 'double_free/double_free.c'
+	    # check wether we have this file precompiled
+	    # (this may be a distribution where we're trying to
+	    # avoid compilation of anything else than sources)
+            precompiled_bc = '{0}/double_free.bc'.format(libdir)
+	    if os.path.isfile(precompiled_bc):
+	        tolinkbc = precompiled_bc
+	    else:
+                tolink = prefix + 'double_free/double_free.c'
         elif prp == 'VALID-DEREF':
             config = prefix + 'valid_deref/config.json'
-            tolink = prefix + 'valid_deref/valid_deref.c'
+            precompiled_bc = '{0}/valid_deref.bc'.format(libdir)
+	    if os.path.isfile(precompiled_bc):
+	        tolinkbc = precompiled_bc
+	    else:
+                tolink = prefix + 'valid_deref/valid_deref.c'
         elif prp == 'NULL-DEREF':
             config = prefix + 'null_deref/config.json'
-            tolink = prefix + 'null_deref/null_deref.c'
+            precompiled_bc = '{0}/null_deref.bc'.format(libdir)
+	    if os.path.isfile(precompiled_bc):
+	        tolinkbc = precompiled_bc
+	    else:
+                tolink = prefix + 'null_deref/null_deref.c'
         else:
             raise SymbioticException('BUG: Unhandled property')
 
         # we need to compile and link the state machines to the code
         # before the actual instrumentation - LLVMinstr requires that
-        tolinkbc = self._compile_to_llvm(tolink, with_g = False)
+	if not tolinkbc:
+            tolinkbc = self._compile_to_llvm(tolink, with_g = False)
         self.link(libs=[tolinkbc])
 
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
