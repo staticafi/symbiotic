@@ -1,6 +1,10 @@
 #!/usr/bin/python
 
-from lxml import etree
+try:
+    from lxml import etree
+except ImportError:
+    from xml import etree
+    # if this fails, then we're screwed, so let the script die
 
 class GraphMLWriter(object):
     def __init__(self):
