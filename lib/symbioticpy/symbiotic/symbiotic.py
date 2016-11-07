@@ -60,13 +60,16 @@ class UnsuppWatch(ProcessWatch):
 
 class KleeWatch(ProcessWatch):
 
-    def __init__(self, valid_deref = False):
+    def __init__(self, memsafety  = False):
         ProcessWatch.__init__(self, 100)
         self._found = []
-        self._valid_deref = valid_deref
+        self._memsafety = memsafety
 
         # define and compile regular expressions for parsing klee's output
         self._patterns = {
+            'EDOUBLEFREE' : re.compile('.*ASSERTION FAIL: 0 && "double free".*'),
+            'EINVALFREE' : re.compile('.*ASSERTION FAIL: 0 && "free on non-allocated memory".*'),
+            'EMEMLEAK' : re.compile('.*ASSERTION FAIL: 0 && "memory leak detected".*'),
             'ASSERTIONFAILED' : re.compile('.*ASSERTION FAIL:.*'),
             'ESTPTIMEOUT' : re.compile('.*query timed out (resolve).*'),
             'EKLEETIMEOUT' : re.compile('.*HaltTimer invoked.*'),
@@ -97,13 +100,17 @@ class KleeWatch(ProcessWatch):
             if pattern.match(line):
                 # return True so that we know we should terminate
                 if key == 'ASSERTIONFAILED':
+                    if self._memsafety:
+                        key += ' (valid-deref)'
                     return key
-                elif self._valid_deref and key == 'EMEMERROR':
-                    return 'ASSERTIONFAILED (valid-deref)'
-                elif self._valid_deref and key == 'EFREE':
-                    return 'ASSERTIONFAILED (valid-free)'
-                else:
-                    return key
+                elif self._memsafety:
+		    if key == 'EMEMERROR':
+                        return 'ASSERTIONFAILED (valid-deref)'
+                    if key == 'EFREE' or key == 'EDOUBLEFREE' or key == 'EINVALFREE':
+                        return 'ASSERTIONFAILED (valid-free)'
+                    if key == 'EMEMLEAK':
+                        return 'ASSERTIONFAILED (valid-memtrack)'
+                return key
 
         return None
 
@@ -126,6 +133,9 @@ def report_results(res):
 
     if res.startswith('ASSERTIONFAILED'):
         result = 'FALSE'
+	info = res[15:].strip()
+	if info:
+	    result += ' ' + info
         color = 'RED'
     elif res == '':
         result = 'TRUE'
@@ -454,7 +464,9 @@ class Symbiotic(object):
                '-output-stats=0', '-disable-opt', #'-only-output-states-covering-new=1',
                '-max-time={0}'.format(self.options.timeout)] + self.options.symexe_params
 
-        memsafety = 'VALID-DEREF' in self.options.prp
+        memsafety = 'VALID-DEREF' in self.options.prp or \
+	            'VALID-FREE' in self.options.prp or \
+	            'VALID-MEMTRACK' in self.options.prp
         if memsafety:
             cmd.append('-exit-on-error-type=Ptr')
 
