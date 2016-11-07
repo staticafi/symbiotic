@@ -177,24 +177,30 @@ def parse_environ(opts):
     if os.environ.has_key('CPPFLAGS'):
         opts.CPPFLAGS += os.environ['CPPFLAGS'].split(' ')
 
-def generate_graphml(path, source, is32bit, saveto):
+def generate_graphml(path, source, is32bit, is_correctness_wit, saveto):
     if saveto is None:
         saveto = '{0}.graphml'.format(os.path.basename(path))
         saveto = os.path.abspath(saveto)
 
     dbg('Generating counterexample: {0}'.format(saveto), domain='witness')
-    gen = GraphMLWriter(source, is32bit)
-    gen.parsePath(path)
-    gen.dump()
+    gen = GraphMLWriter(source, is32bit, is_correctness_wit)
+    if not is_correctness_wit:
+        gen.parsePath(path)
+    else:
+        assert path is None
     gen.write(saveto)
 
-def generate_counterexample(bindir, sources, is32bit, saveto = None):
+def generate_counterexample(bindir, sources, is32bit, is_correctness_wit, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
+    if is_correctness_wit:
+        generate_graphml(None, sources[0], is32bit, is_correctness_wit, saveto)
+        return
+
     abd = os.path.abspath(bindir)
     for path in os.listdir('{0}/klee-last'.format(abd)):
         if 'assert' in path:
             pth = os.path.abspath('{0}/klee-last/{1}.path'.format(abd, path[:-11]))
-            generate_graphml(pth, sources[0], is32bit, saveto)
+            generate_graphml(pth, sources[0], is32bit, is_correctness_wit, saveto)
             break
 
 def get_prp(prp):
@@ -499,10 +505,13 @@ if __name__ == "__main__":
 
             err(' == FAILURE ==\n{0}'.format(e.message))
 
+        srcdir = os.path.dirname(symbiotic.llvmfile)
         if res == 'FALSE' or res == 'ASSERTIONFAILED':
-            srcdir = os.path.dirname(symbiotic.llvmfile)
             generate_counterexample(srcdir, original_sources,
-	                            opts.is32bit, opts.witness_output)
+	                            opts.is32bit, False, opts.witness_output)
+	elif res == 'TRUE':
+	    generate_counterexample(srcdir, original_sources,
+	                            opts.is32bit, True, opts.witness_output)
     except Timeout:
         if symbiotic:
             symbiotic.terminate()
