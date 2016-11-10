@@ -461,7 +461,7 @@ class Symbiotic(object):
     def run_symexe(self):
         cmd = ['klee', '-exit-on-error-type=Assert', '-write-paths',
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
-               '-output-stats=0', '-disable-opt', #'-only-output-states-covering-new=1',
+               '-output-stats=0', '-disable-opt', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self.options.timeout)] + self.options.symexe_params
 
         memsafety = 'VALID-DEREF' in self.options.prp or \
