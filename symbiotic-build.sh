@@ -621,7 +621,7 @@ if [ $FROM -le 7 ]; then
 	# then remove the rest and create distribution
 	BINARIES="bin/clang bin/opt bin/klee bin/llvm-link bin/llvm-nm bin/llvm-slicer"
 	LIBRARIES="\
-		lib/libLLVMdg.so lib/libPTA.so lib/libRD.so\
+		lib/libLLVMdg.so lib/libLLVMpta.so lib/libPTA.so lib/libRD.so\
 		lib/LLVMsvc15.so \
 		lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		lib32/klee/runtime/kleeRuntimeIntrinsic.bc\
