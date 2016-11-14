@@ -225,8 +225,7 @@ class Symbiotic(object):
         Compile given source to LLVM bytecode
         """
 
-        cmd = ['clang', '-c', '-emit-llvm']
-        # cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h']
+        cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h']
 
         if with_g:
             cmd.append('-g')
