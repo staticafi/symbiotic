@@ -41,8 +41,6 @@ class NondetSimplify(FileTransform):
         infile = open(inputfile, 'r')
         outfile = open(outputfile, 'w')
 
-        outfile.write('_Bool __VERIFIER_nondet__Bool(void);\n\n')
-
         for l in infile:
             res = self._re1.match(l)
             keyword = 'if'
@@ -51,7 +49,8 @@ class NondetSimplify(FileTransform):
                 keyword = 'while'
 
             if res:
-                outfile.write('{0}/* {1} -> bool */\n'.format(res.group(1), res.group(2)))
+                # we do not want to change numbers because of witnesses
+                # outfile.write('{0}/* {1} -> bool */\n'.format(res.group(1), res.group(2)))
                 outfile.write('{0}{1} (__VERIFIER_nondet__Bool()){2}\n'.format(res.group(1), keyword, res.group(3)))
             else:
                 outfile.write(l)
