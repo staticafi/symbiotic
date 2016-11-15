@@ -26,7 +26,7 @@ class SlicerWatch(ProcessWatch):
 
     def parse(self, line):
         if 'INFO' in line:
-            dbg(line,      domain = 'slicer', print_nl = False)
+            dbg(line, domain = 'slicer', print_nl = False)
         elif 'ERROR' in line or 'error' in line:
             print_stderr(line)
         else:
@@ -441,7 +441,7 @@ class Symbiotic(object):
         output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-o', output, self.llvmfile] + passes
 
-        self._run(cmd, DbgWatch('prepare'), 'Optimizing the code failed')
+        self._run(cmd, CompileWatch(), 'Optimizing the code failed')
         self.llvmfile = output
 
     def check_llvmfile(self, llvmfile):

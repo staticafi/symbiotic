@@ -341,7 +341,8 @@ def parse_command_line():
             options.final_output = arg
             dbg('Output will be stored to {0}'.format(arg))
         elif opt == '--witness':
-            options.witness_output = arg
+            options.witness_output = os.path.expanduser(arg)
+            options.witness_output = os.path.abspath(options.witness_output)
             dbg('Witness will be stored to {0}'.format(arg))
         elif opt == '--bc':
             options.source_is_bc = True
