@@ -564,7 +564,7 @@ if [ $FROM -le 6 ]; then
 	cd -
 
 	# and also the symbiotic scripts itself
-	cp $SRCDIR/symbiotic $PREFIX/ || exit 1
+	cp $SRCDIR/scripts/symbiotic $PREFIX/ || exit 1
 	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
 
 	cd "$SRCDIR"
@@ -580,9 +580,6 @@ if [ $FROM -le 7 ]; then
 	SYMBIOTIC_VERSION=`git rev-parse HEAD`
 	cd dg || exit 1
 	DG_VERSION=`git rev-parse HEAD`
-	cd -
-	cd svc15 || exit 1
-	SVC15_VERSION=`git rev-parse HEAD`
 	cd -
 	cd LLVMInstrumentation || exit 1
 	INSTRUMENTATION_VERSION=`git rev-parse HEAD`
@@ -604,7 +601,6 @@ if [ $FROM -le 7 ]; then
 	echo "versions = {" >> $VERSFILE
 	echo -e "\t'symbiotic' : '$SYMBIOTIC_VERSION'," >> $VERSFILE
 	echo -e "\t'dg' : '$DG_VERSION'," >> $VERSFILE
-	echo -e "\t'svc15' : '$SVC15_VERSION'," >> $VERSFILE
 	echo -e "\t'LLVMInstrumentation' : '$INSTRUMENTATION_VERSION'," >> $VERSFILE
 	echo -e "\t'minisat' : '$MINISAT_VERSION'," >> $VERSFILE
 	echo -e "\t'stp' : '$STP_VERSION'," >> $VERSFILE
