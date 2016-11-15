@@ -548,6 +548,7 @@ if [ $FROM -le 6 ]; then
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
+			-DDG_PATH=$ABS_SRCDIR/dg \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			|| clean_and_exit 1 "git"
 	fi
