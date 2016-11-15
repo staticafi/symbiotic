@@ -557,9 +557,9 @@ if [ $FROM -le 6 ]; then
 
 	# we need the config files and error checkers
 	mkdir -p $PREFIX/instrumentation
-	rsync -r null_deref $PREFIX/instrumentation
-	rsync -r double_free $PREFIX/instrumentation
-	rsync -r valid_deref $PREFIX/instrumentation
+	rsync -r instrumentations/null_deref $PREFIX/instrumentation
+	rsync -r instrumentations/double_free $PREFIX/instrumentation
+	rsync -r instrumentations/valid_deref $PREFIX/instrumentation
 
 	cd -
 
