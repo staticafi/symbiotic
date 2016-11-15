@@ -525,10 +525,8 @@ fi
 #   instrumentation and scripts
 ######################################################################
 if [ $FROM -le 6 ]; then
-	# download scripts
-	git_submodule_init
 
-	cd "$SRCDIR/svc15" || exitmsg "Cloning failed"
+	# build prepare and install lib and scripts
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
@@ -539,7 +537,9 @@ if [ $FROM -le 6 ]; then
 	fi
 
 	(build && make install) || exit 1
-	cd -
+
+	# download scripts
+	git_submodule_init
 
 	cd "$SRCDIR/LLVMInstrumentation" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
