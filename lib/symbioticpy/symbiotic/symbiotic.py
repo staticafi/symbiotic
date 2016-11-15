@@ -554,13 +554,6 @@ class Symbiotic(object):
         # link undefined (no-op when prepare is turned off)
         self.link_undefined()
 
-        # remove/replace the rest of undefined functions
-        # for which we do not have a definition
-        if self.options.undef_retval_nosym:
-            self.prepare(['-delete-undefined-nosym'])
-        else:
-            self.prepare(['-delete-undefined'])
-
         # slice the code
         if not self.options.noslice:
             # run optimizations that can make slicing more precise
@@ -607,6 +600,14 @@ class Symbiotic(object):
 	    opt = get_optlist_after(self.options.optlevel)
         if opt:
             self.optimize(passes=opt)
+
+        # remove/replace the rest of undefined functions
+        # for which we do not have a definition and
+	# that has not been removed
+        if self.options.undef_retval_nosym:
+            self.prepare(['-delete-undefined-nosym'])
+        else:
+            self.prepare(['-delete-undefined'])
 
         if not self.options.final_output is None:
             # copy the file to final_output
