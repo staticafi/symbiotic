@@ -592,12 +592,7 @@ class Symbiotic(object):
                 self.remove_unused_only()
 
         # optimize the code before symbolic execution
-	# but only iff we're not looking for memsafety
-	# (because the optimization could remove the errors)
-        if 'VALID-DEREF' in self.options.prp:
-	    opt = []
-        else:
-	    opt = get_optlist_after(self.options.optlevel)
+        opt = get_optlist_after(self.options.optlevel)
         if opt:
             self.optimize(passes=opt)
 

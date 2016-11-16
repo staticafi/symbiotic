@@ -482,12 +482,12 @@ if __name__ == "__main__":
 
                     # for some properties we need to modify
                     # parsing of the output
-                    if prp_key == 'VALID-DEREF':
-                        # we don't know to which locations
-                        # we should slice, so suspend the slicing
-                        # for now
-                        dbg('Will not slice due to VALID-DEREF property')
-                        opts.noslice = True
+                    # if prp_key == 'VALID-DEREF':
+                    #     # we don't know to which locations
+                    #     # we should slice, so suspend the slicing
+                    #     # for now
+                    #     dbg('Will not slice due to VALID-DEREF property')
+                    #     opts.noslice = True
         except KeyError as ke:
             err('Unknown or unsupported property: {0}'.format(ke.message))
 
