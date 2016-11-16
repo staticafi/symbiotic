@@ -95,6 +95,15 @@ bool CheckUnsupported::runOnFunction(Function &F) {
     "fmod",
     "fmodf",
     "fmodl",
+    "fmin",
+    "fminf",
+    "fminl",
+    "fmax",
+    "fmaxf",
+    "fmaxl",
+    "fdim",
+    "fdimf",
+    "fdiml",
     NULL
   };
 
