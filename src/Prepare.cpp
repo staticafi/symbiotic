@@ -83,6 +83,18 @@ bool CheckUnsupported::runOnFunction(Function &F) {
     "__signbit",
     "__signbitf",
     "fesetround",
+    "round",
+    "roundf",
+    "roundl",
+    "trunc",
+    "truncf",
+    "truncl",
+    "modf",
+    "modff",
+    "modfl",
+    "fmod",
+    "fmodf",
+    "fmodl",
     NULL
   };
 
