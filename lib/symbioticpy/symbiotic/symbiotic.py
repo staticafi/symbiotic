@@ -519,7 +519,7 @@ class Symbiotic(object):
             self.link('code.bc', llvmsrc)
 
         if not self.check_llvmfile(self.llvmfile, '-check-concurr'):
-            dbg('Unsupported call (pthread API)')
+            dbg('Unsupported call (probably pthread API)')
             return report_results('unsupported call')
 
         # remove definitions of __VERIFIER_* that are not created by us

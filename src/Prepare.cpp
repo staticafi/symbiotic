@@ -106,6 +106,9 @@ class CheckConcurrency : public FunctionPass
 bool CheckConcurrency::runOnFunction(Function &F) {
   static const char *unsupported_calls[] = {
     "pthread_create",
+    // we check this before too, since slicer will remove it for sure,
+    // making source code wrong
+    "fesetround",
     NULL
   };
 
