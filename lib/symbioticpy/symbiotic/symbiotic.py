@@ -444,12 +444,12 @@ class Symbiotic(object):
         self._run(cmd, CompileWatch(), 'Optimizing the code failed')
         self.llvmfile = output
 
-    def check_llvmfile(self, llvmfile):
+    def check_llvmfile(self, llvmfile, check='-check-unsupported'):
         """
         Check whether the bitcode does not contain anything
         that we do not support
         """
-        cmd = ['opt', '-load', 'LLVMsvc15.so', '-check-unsupported',
+        cmd = ['opt', '-load', 'LLVMsvc15.so', check,
                '-o', '/dev/null', llvmfile]
         try:
             self._run(cmd, UnsuppWatch(), 'Failed checking the code')
@@ -518,8 +518,8 @@ class Symbiotic(object):
             # the result is stored to self.llvmfile
             self.link('code.bc', llvmsrc)
 
-        if not self.check_llvmfile(self.llvmfile):
-            dbg('Unsupported call (probably pthread API)')
+        if not self.check_llvmfile(self.llvmfile, '-check-concurr'):
+            dbg('Unsupported call (pthread API)')
             return report_results('unsupported call')
 
         # remove definitions of __VERIFIER_* that are not created by us
@@ -600,6 +600,10 @@ class Symbiotic(object):
 	    opt = get_optlist_after(self.options.optlevel)
         if opt:
             self.optimize(passes=opt)
+
+        if not self.check_llvmfile(self.llvmfile):
+            dbg('Unsupported call (probably floating handling)')
+            return report_results('unsupported call')
 
         # remove/replace the rest of undefined functions
         # for which we do not have a definition and

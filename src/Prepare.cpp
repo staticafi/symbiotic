@@ -28,20 +28,6 @@
 
 using namespace llvm;
 
-class CheckUnsupported : public FunctionPass
-{
-  public:
-    static char ID;
-
-    CheckUnsupported() : FunctionPass(ID) {}
-
-    virtual bool runOnFunction(Function &F);
-};
-
-static RegisterPass<CheckUnsupported> CHCK("check-unsupported",
-                                           "check calls to unsupported functions for symbiotic");
-char CheckUnsupported::ID;
-
 static bool array_match(StringRef &name, const char **array)
 {
   for (const char **curr = array; *curr; curr++)
@@ -50,9 +36,43 @@ static bool array_match(StringRef &name, const char **array)
   return false;
 }
 
+// FIXME: use CommandLine
+void check_unsupported(Function& F, const char **unsupported_calls)
+{
+  for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
+    Instruction *ins = &*I;
+    ++I;
+    if (CallInst *CI = dyn_cast<CallInst>(ins)) {
+      if (CI->isInlineAsm())
+        continue;
+
+      const Value *val = CI->getCalledValue()->stripPointerCasts();
+      const Function *callee = dyn_cast<Function>(val);
+      if (!callee || callee->isIntrinsic())
+        continue;
+
+      assert(callee->hasName());
+      StringRef name = callee->getName();
+
+      if (array_match(name, unsupported_calls)) {
+        errs() << "CheckUnsupported: call to '" << name << "' is unsupported\n";
+        errs().flush();
+      }
+    }
+  }
+}
+
+class CheckUnsupported : public FunctionPass
+{
+  public:
+    static char ID;
+
+    CheckUnsupported() : FunctionPass(ID) {}
+    virtual bool runOnFunction(Function &F);
+};
+
 bool CheckUnsupported::runOnFunction(Function &F) {
   static const char *unsupported_calls[] = {
-    "pthread_create",
     "__isnan",
     "__isnanf",
     "__isinf",
@@ -66,30 +86,36 @@ bool CheckUnsupported::runOnFunction(Function &F) {
     NULL
   };
 
-  for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
-    Instruction *ins = &*I;
-    ++I;
-    if (CallInst *CI = dyn_cast<CallInst>(ins)) {
-      if (CI->isInlineAsm())
-        continue;
-
-      const Value *val = CI->getCalledValue()->stripPointerCasts();
-      const Function *callee = dyn_cast<Function>(val);
-      if (!callee || callee->isIntrinsic())
-	continue;
-
-      assert(callee->hasName());
-      StringRef name = callee->getName();
-
-      if (array_match(name, unsupported_calls)) {
-	errs() << "CheckUnsupported: call to '" << name << "' is unsupported\n";
-        errs().flush();
-      }
-    }
-  }
-
+  check_unsupported(F, unsupported_calls);
   return false;
 }
+
+static RegisterPass<CheckUnsupported> CHCK("check-unsupported",
+                                           "check calls to unsupported functions for symbiotic");
+char CheckUnsupported::ID;
+
+class CheckConcurrency : public FunctionPass
+{
+  public:
+    static char ID;
+
+    CheckConcurrency() : FunctionPass(ID) {}
+    virtual bool runOnFunction(Function &F);
+};
+
+bool CheckConcurrency::runOnFunction(Function &F) {
+  static const char *unsupported_calls[] = {
+    "pthread_create",
+    NULL
+  };
+
+  check_unsupported(F, unsupported_calls);
+  return false;
+}
+
+static RegisterPass<CheckConcurrency> CHCKC("check-concurr",
+                                            "check calls to pthread_create for symbiotic");
+char CheckConcurrency::ID;
 
 static const char *leave_calls[] = {
   "__assert_fail",
