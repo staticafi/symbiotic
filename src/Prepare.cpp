@@ -583,6 +583,124 @@ bool InitializeUninitialized::runOnFunction(Function &F)
   return modified;
 }
 
+namespace {
+
+class ReplaceUBSan : public FunctionPass {
+  public:
+    static char ID;
+
+    ReplaceUBSan() : FunctionPass(ID) {}
+
+    virtual bool runOnFunction(Function &F);
+};
+
+bool ReplaceUBSan::runOnFunction(Function &F)
+{
+  bool modified = false;
+  Module *M = F.getParent();
+  Function *ver_err = nullptr;
+
+  for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
+    Instruction *ins = &*I;
+    ++I;
+    if (CallInst *CI = dyn_cast<CallInst>(ins)) {
+      if (CI->isInlineAsm())
+        continue;
+
+      const Value *val = CI->getCalledValue()->stripPointerCasts();
+      const Function *callee = dyn_cast<Function>(val);
+      if (!callee || callee->isIntrinsic())
+        continue;
+
+      assert(callee->hasName());
+      StringRef name = callee->getName();
+
+      if (!name.startswith("__ubsan_handle"))
+        continue;
+
+      if (callee->isDeclaration()) {
+        if (!ver_err) {
+          LLVMContext& Ctx = M->getContext();
+          ver_err = cast<Function>(M->getOrInsertFunction("__VERIFIER_error",
+                                                          Type::getVoidTy(Ctx),
+                                                          nullptr));
+        }
+
+        auto CI2 = CallInst::Create(ver_err);
+        CI2->insertAfter(CI);
+        CI->eraseFromParent();
+
+        modified = true;
+      }
+    }
+  }
+  return modified;
+}
+
+} // namespace
+
+static RegisterPass<ReplaceUBSan> RUBS("replace-ubsan",
+                                       "Replace ubsan calls with calls to __VERIFIER_error");
+char ReplaceUBSan::ID;
+
+
+namespace {
+
+class RemoveErrorCalls : public FunctionPass {
+  public:
+    static char ID;
+
+    RemoveErrorCalls() : FunctionPass(ID) {}
+
+    virtual bool runOnFunction(Function &F);
+};
+
+bool RemoveErrorCalls::runOnFunction(Function &F)
+{
+  bool modified = false;
+  Module *M = F.getParent();
+  Function *ext = nullptr;
+
+  for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
+    Instruction *ins = &*I;
+    ++I;
+    if (CallInst *CI = dyn_cast<CallInst>(ins)) {
+      if (CI->isInlineAsm())
+        continue;
+
+      const Value *val = CI->getCalledValue()->stripPointerCasts();
+      const Function *callee = dyn_cast<Function>(val);
+      if (!callee || callee->isIntrinsic())
+        continue;
+
+      assert(callee->hasName());
+      StringRef name = callee->getName();
+
+      if (name.equals("__VERIFIER_error")) {
+        if (!ext) {
+          LLVMContext& Ctx = M->getContext();
+          ext = cast<Function>(M->getOrInsertFunction("exit",
+                                                       Type::getInt32Ty(Ctx),
+                                                       nullptr));
+        }
+
+        auto CI2 = CallInst::Create(ext);
+        CI2->insertAfter(CI);
+        CI->eraseFromParent();
+
+        modified = true;
+      }
+    }
+  }
+  return modified;
+}
+
+} // namespace
+
+static RegisterPass<RemoveErrorCalls> RERC("remove-error-calls",
+                                           "Remove calls to __VERIFIER_error");
+char RemoveErrorCalls::ID;
+
 // needed for the old slicer
 namespace {
   class FindInit : public ModulePass {

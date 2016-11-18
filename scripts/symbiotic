@@ -114,6 +114,7 @@ supported_properties = {
     'valid-free'                                               : 'VALID-FREE',
     'valid-memtrack'                                           : 'MEM-TRACK',
     'null-deref'                                               : 'NULL-DEREF',
+    'undefined-behavior'                                       : 'UNDEF-BEHAVIOR',
 }
 
 

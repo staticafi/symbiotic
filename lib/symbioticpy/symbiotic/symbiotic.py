@@ -220,12 +220,12 @@ class Symbiotic(object):
 
         self.current_process = None
 
-    def _compile_to_llvm(self, source, output = None, with_g = True):
+    def _compile_to_llvm(self, source, output = None, with_g = True, opts = []):
         """
         Compile given source to LLVM bytecode
         """
 
-        cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h']
+        cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h'] + opts
 
         if with_g:
             cmd.append('-g')
@@ -511,7 +511,12 @@ class Symbiotic(object):
             # compile all sources
             llvmsrc = []
             for source in self.sources:
-                llvms = self._compile_to_llvm(source)
+                if 'UNDEF-BEHAVIOR' in self.options.prp:
+                    opts = ['-fsanitize=undefined']
+                else:
+                    opts = []
+
+                llvms = self._compile_to_llvm(source, opts=opts)
                 llvmsrc.append(llvms)
 
             # link all compiled sources to a one bytecode
@@ -534,6 +539,11 @@ class Symbiotic(object):
             instrument_alloc = '-instrument-alloc-nf'
         else:
             instrument_alloc = '-instrument-alloc'
+
+        if 'UNDEF-BEHAVIOR' in self.options.prp:
+            # remove the original calls to __VERIFIER_error and put there
+            # new on places where the code exhibits an undefined behavior
+            self.prepare(passes = ['-remove-error-calls', '-replace-ubsan'])
 
         # instrument our malloc,
         # make all memory symbolic (if desired)
