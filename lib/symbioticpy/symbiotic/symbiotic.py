@@ -364,8 +364,10 @@ class Symbiotic(object):
         for undef in undefs:
             name = '{0}/lib/{1}.c'.format(self.symbiotic_dir, undef)
             if os.path.isfile(name):
-                output_name = self._compile_to_llvm(name)
-                tolink.append(output_name)
+	        output = os.path.join(os.getcwd(), os.path.basename(name))
+                output = '{0}.bc'.format(output[:output.rfind('.')])
+		self._compile_to_llvm(name, output)
+                tolink.append(output)
             #else:
             #   dbg('Did not find the definition of \'{0}\''.format(undef))
 
