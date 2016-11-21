@@ -689,6 +689,9 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
         CI->eraseFromParent();
 
         modified = true;
+      } else if (name.equals("__VERIFIER_assert")) {
+        CI->eraseFromParent();
+        modified = true;
       }
     }
   }
