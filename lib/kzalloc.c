@@ -1,8 +1,9 @@
 #include "symbiotic-size_t.h"
 
-void *kzalloc(int size, int gfp)
+void *kzalloc(int size, int)
 {
-	(void) gfp;
 	extern void *malloc(size_t size);
-	return malloc(size);
+	void *mem = malloc(size);
+	memset(mem, 0, size);
+	return mem;
 }

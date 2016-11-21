@@ -342,8 +342,6 @@ char Prepare::ID;
 
 bool Prepare::runOnModule(Module &M) {
   static const char *del_body[] = {
-    "kzalloc",
-    "nondet_int",
     "__VERIFIER_assume",
     "__VERIFIER_error",
     "__VERIFIER_assert",
