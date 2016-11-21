@@ -344,7 +344,6 @@ bool Prepare::runOnModule(Module &M) {
   static const char *del_body[] = {
     "__VERIFIER_assume",
     "__VERIFIER_error",
-    "__VERIFIER_assert",
     "__VERIFIER_nondet_pointer",
     "__VERIFIER_nondet_pchar",
     "__VERIFIER_nondet_char",
@@ -362,7 +361,7 @@ bool Prepare::runOnModule(Module &M) {
     "__VERIFIER_nondet_bool",
     "__VERIFIER_nondet__Bool",
     "__VERIFIER_nondet_size_t",
-    NULL
+    nullptr
   };
   LLVMContext &C = M.getContext();
 
@@ -373,6 +372,11 @@ bool Prepare::runOnModule(Module &M) {
       toDel->deleteBody();
     }
   }
+
+  // prevent __VERIFIER_assert from inlining, it introduces
+  // a weakness in our control dependence algorithm in some cases
+  if (Function *F = M.getFunction("__VERIFIER_assert"))
+    F->addFnAttr(Attribute::NoInline);
 
   for (Module::global_iterator I = M.global_begin(), E = M.global_end();
       I != E; ++I) {

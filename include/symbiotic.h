@@ -11,7 +11,6 @@ extern "C" {
 
 /* declarations that we need to have in the code */
 extern void __VERIFIER_error(void) __attribute__((noreturn));
-extern void __VERIFIER_assert(int);
 extern _Bool __VERIFIER_nondet__Bool(void);
 
 extern void __assert_fail (__const char *__assertion, __const char *__file,
