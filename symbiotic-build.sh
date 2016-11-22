@@ -326,7 +326,9 @@ fi
 #   slicer
 ######################################################################
 if [ $FROM -le 1 ]; then
-	git_submodule_init
+	if [ -z "$(ls -A $SRCDIR/dg)" ]; then
+		git_submodule_init
+	fi
 
 #	cd "$SRCDIR/LLVMSlicer" || exitmsg "Cloning failed"
 #	if [ ! -d CMakeFiles ]; then
@@ -539,7 +541,9 @@ if [ $FROM -le 6 ]; then
 	(build && make install) || exit 1
 
 	# download scripts
-	git_submodule_init
+	if [ -z "$(ls -A $SRCDIR/LLVMInstrumentation)" ]; then
+		git_submodule_init
+	fi
 
 	cd "$SRCDIR/LLVMInstrumentation" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
