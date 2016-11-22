@@ -513,10 +513,12 @@ class Symbiotic(object):
             # compile all sources
             llvmsrc = []
             for source in self.sources:
+                opts = []
                 if 'UNDEF-BEHAVIOR' in self.options.prp:
-                    opts = ['-fsanitize=undefined']
-                else:
-                    opts = []
+                    opts.append('-fsanitize=undefined')
+                    opts.append('-fno-sanitize=unsigned-integer-overflow')
+                elif 'SIGNED-OVERFLOW' in self.options.prp:
+                    opts.append('-fsanitize=signed-integer-overflow')
 
                 llvms = self._compile_to_llvm(source, opts=opts)
                 llvmsrc.append(llvms)
@@ -546,6 +548,10 @@ class Symbiotic(object):
             # remove the original calls to __VERIFIER_error and put there
             # new on places where the code exhibits an undefined behavior
             self.prepare(passes = ['-remove-error-calls', '-replace-ubsan'])
+        elif 'SIGNED-OVERFLOW' in self.options.prp:
+            # we instrumented the code with ub sanitizer,
+            # so make the calls errors
+            self.prepare(passes = ['-replace-ubsan'])
 
         # instrument our malloc,
         # make all memory symbolic (if desired)

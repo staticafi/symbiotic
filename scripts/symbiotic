@@ -110,11 +110,13 @@ supported_properties = {
     'CHECK( init(main()), LTL(G valid-free) )'                 : 'VALID-FREE',
     'CHECK( init(main()), LTL(G valid-deref) )'                : 'VALID-DEREF',
     'CHECK( init(main()), LTL(G valid-memtrack) )'             : 'MEM-TRACK',
+    'CHECK( init(main()), LTL(G ! overflow) )'                 : 'SIGNED-OVERFLOW',
     'valid-deref'                                              : 'VALID-DEREF',
     'valid-free'                                               : 'VALID-FREE',
     'valid-memtrack'                                           : 'MEM-TRACK',
     'null-deref'                                               : 'NULL-DEREF',
     'undefined-behavior'                                       : 'UNDEF-BEHAVIOR',
+    'signed-overflow'                                          : 'SIGNED-OVERFLOW',
 }
 
 
