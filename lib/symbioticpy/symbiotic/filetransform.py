@@ -55,3 +55,34 @@ class NondetSimplify(FileTransform):
             else:
                 outfile.write(l)
 
+class InfiniteLoopsRemover(FileTransform):
+    """
+    Remove from the code the loops of the form while(1) in favor of
+    loops with some end (like int i = 1; while(i))
+    """
+    def __init__(self):
+        from re import compile
+        self._regexes = [ compile('^(\s*)while\s*\(\s*1\s*\)(.*)$'),
+                          compile('^(\s*)while\s*\(\s*true\s*\)(.*)$'),
+                          compile('^(\s*)while\s*\(\s*TRUE\s*\)(.*)$')]
+
+    def run(self, inputfile, outputfile):
+        infile = open(inputfile, 'r')
+        outfile = open(outputfile, 'w')
+
+        lines = 0
+        for l in infile:
+            found = False
+            for r in self._regexes:
+                res = r.match(l)
+                if res:
+                    # we do not want to change numbers because of witnesses
+                    # outfile.write('{0}/* {1} -> bool */\n'.format(res.group(1), res.group(2)))
+                    outfile.write('{0}volatile _Bool inf_true{1} = 1; while(inf_true{1}){2}\n'.format(res.group(1), lines, res.group(2)))
+                    found = True
+                    break
+
+            if not found:
+                outfile.write(l)
+            lines += 1
+

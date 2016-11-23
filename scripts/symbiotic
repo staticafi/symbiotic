@@ -427,6 +427,8 @@ if __name__ == "__main__":
         start_timeout(opts.timeout)
 
     try:
+        symbiotic = None
+
         # set environment. That is set PATH and LD_LIBRARY_PATH
         # and so on
         symbiotic_dir = set_environ(opts.is32bit)
@@ -470,7 +472,19 @@ if __name__ == "__main__":
         assert(len(sources) == len(new_sources))
         sources = new_sources
 
-        symbiotic = None
+
+        from symbiotic.filetransform import InfiniteLoopsRemover
+        repl = InfiniteLoopsRemover()
+        new_sources = []
+        for s in sources:
+            s = os.path.basename(s)
+            new_s = '{0}.c'.format(s)
+            repl.run(s, new_s)
+            new_sources.append(new_s)
+
+        assert(len(sources) == len(new_sources))
+        sources = new_sources
+
 
         try:
             # opts.prp now contain a list with keys (or None),
