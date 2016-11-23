@@ -1,7 +1,7 @@
 extern void __assert_fail (__const char *__assertion, __const char *__file,
 			   unsigned int __line, __const char *__function) __attribute__((noreturn));
 
-void __VERIFIER_error(void) __attribute__((noreturn));
+void __VERIFIER_error(void) __attribute__((noreturn,always_inline));
 void __VERIFIER_error(void)
 {
 	/* FILE and LINE will be wrong, but that doesn't matter, klee will
