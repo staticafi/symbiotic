@@ -517,16 +517,15 @@ if __name__ == "__main__":
 	    generate_counterexample(srcdir, original_sources,
 	                            opts.is32bit, True, opts.witness_output)
     except Timeout:
-        if symbiotic:
-            symbiotic.terminate()
-            symbiotic.kill()
-
         sys.stdout.flush()
         sys.stderr.flush()
 
         print('TIMEOUT')
     finally:
         stop_timeout()
+        if symbiotic:
+            symbiotic.terminate()
+            symbiotic.kill()
 
     os.chdir('..')
     rm_tmp_dir(working_dir)
