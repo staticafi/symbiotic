@@ -661,7 +661,7 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
 {
   bool modified = false;
   Module *M = F.getParent();
-  Function *ext = nullptr;
+  std::unique_ptr<CallInst> ext;
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
     Instruction *ins = &*I;
@@ -681,12 +681,17 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
       if (name.equals("__VERIFIER_error")) {
         if (!ext) {
           LLVMContext& Ctx = M->getContext();
-          ext = cast<Function>(M->getOrInsertFunction("exit",
-                                                       Type::getInt32Ty(Ctx),
-                                                       nullptr));
+          Type *argTy = Type::getInt32Ty(Ctx);
+          Function *extF
+            = cast<Function>(M->getOrInsertFunction("exit",
+                                                    Type::getVoidTy(Ctx),
+                                                    argTy, nullptr));
+
+          std::vector<Value *> args = { ConstantInt::get(argTy, 0) };
+          ext = std::unique_ptr<CallInst>(CallInst::Create(extF, args));
         }
 
-        auto CI2 = CallInst::Create(ext);
+        auto CI2 = ext->clone();
         CI2->insertAfter(CI);
         CI->eraseFromParent();
 
