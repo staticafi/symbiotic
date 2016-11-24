@@ -91,10 +91,11 @@ GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::M
     return it->second;
 
   LLVMContext& Ctx = M->getContext();
-  Constant *name = ConstantDataArray::getString(Ctx, "nondet");
-  GlobalVariable *G = new GlobalVariable(*M, Ty, true,
+  GlobalVariable *G = new GlobalVariable(*M, Ty, false /* constant */,
                                          GlobalValue::PrivateLinkage,
-                                         name);
+                                         /* initializer */
+                                         Constant::getNullValue(Ty),
+                                         "nondet_gl");
 
   added_globals.emplace(Ty, G);
 
@@ -110,7 +111,11 @@ GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::M
 
   args.push_back(CastI);
   args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
-  args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
+  Constant *name = ConstantDataArray::getString(Ctx, "nondet");
+  GlobalVariable *nameG = new GlobalVariable(*M, name->getType(), true /*constant */,
+                                             GlobalVariable::PrivateLinkage, name);
+  args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
+  //args.push_back(ConstantPointerNull::get(Type::getInt8PtrTy(Ctx)));
   CallInst *CI = CallInst::Create(kms, args);
 
   Function *main = M->getFunction("main");
@@ -124,8 +129,6 @@ GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::M
 
   return G;
 }
-
-
 
 // no hard analysis, just check wether the alloca is initialized
 // in the same block. (we could do an O(n) analysis that would
@@ -229,24 +232,13 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             MulI->insertAfter(CastI);
             CI->insertAfter(MulI);
         } else {
-            // when this is not an array allocation, create new symbolic memory and
-            // store it into the allocated memory using normal StoreInst.
+            // when this is not an array allocation,
+            // store the symbolic value into the allocated memory using normal StoreInst.
             // That will allow slice away more unneeded allocations
-            newAlloca = new AllocaInst(Ty, "alloca_uninitial");
-            CastI = CastInst::CreatePointerCast(newAlloca, Type::getInt8PtrTy(Ctx));
-
-            args.push_back(CastI);
-            args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
-            args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
-            CI = CallInst::Create(C, args);
-
-            LI = new LoadInst(newAlloca);
+            LI = new LoadInst(getGlobalNondet(Ty, M));
             SI = new StoreInst(LI, AI);
 
-            newAlloca->insertAfter(AI);
-            CastI->insertAfter(newAlloca);
-            CI->insertAfter(CastI);
-            LI->insertAfter(CI);
+            LI->insertAfter(AI);
             SI->insertAfter(LI);
         }
 
