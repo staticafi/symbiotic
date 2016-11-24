@@ -41,6 +41,11 @@ char InitializeUninitialized::ID;
 
 bool InitializeUninitialized::runOnFunction(Function &F)
 {
+  // do not run the initializer on __VERIFIER and __INSTR functions
+  const auto& fname = F.getName();
+  if (fname.startswith("__VERIFIER_") || fname.startswith("__INSTR_"))
+    return false;
+
   bool modified = false;
   Module *M = F.getParent();
   LLVMContext& Ctx = M->getContext();

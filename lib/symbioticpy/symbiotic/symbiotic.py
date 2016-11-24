@@ -538,13 +538,6 @@ class Symbiotic(object):
         # link the files that we got on the command line
         self.link_unconditional()
 
-        # check if we should instrument the version of malloc
-        # that never returns a NULL pointer
-        if self.options.malloc_never_fails:
-            instrument_alloc = '-instrument-alloc-nf'
-        else:
-            instrument_alloc = '-instrument-alloc'
-
         if 'UNDEF-BEHAVIOR' in self.options.prp:
             # remove the original calls to __VERIFIER_error and put there
             # new on places where the code exhibits an undefined behavior
@@ -554,7 +547,16 @@ class Symbiotic(object):
             # so make the calls errors
             self.prepare(passes = ['-replace-ubsan'])
 
-        # instrument our malloc,
+        # now instrument the code according to properties
+        self.instrument()
+
+        # instrument our malloc -- either the version that can fail,
+        # or the version that can not fail.
+        if self.options.malloc_never_fails:
+            instrument_alloc = '-instrument-alloc-nf'
+        else:
+            instrument_alloc = '-instrument-alloc'
+
         # make all memory symbolic (if desired)
         # and then delete undefined function calls
         # and replace them by symbolic stuff
@@ -563,9 +565,6 @@ class Symbiotic(object):
             passes.append('-initialize-uninitialized')
 
         self.prepare(passes = passes)
-
-        # now instrument the code according to properties
-        self.instrument()
 
         # link with the rest of libraries if needed (klee-libc)
         self.link()
