@@ -2,6 +2,7 @@
 #include "symbiotic-size_t.h"
 
 extern void *malloc(size_t);
+extern void klee_make_symbolic(void *, size_t, const char *);
 
 /* this versions never return NULL */
 void *__VERIFIER_malloc0(size_t size)

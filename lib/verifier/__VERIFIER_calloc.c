@@ -3,7 +3,8 @@
 #include "symbiotic-size_t.h"
 
 extern void *malloc(size_t);
-void *memset(void *s, int c, size_t n);
+extern void klee_make_symbolic(void *, size_t, const char *);
+extern void *memset(void *s, int c, size_t n);
 
 void *__VERIFIER_calloc(size_t nmem, size_t size)
 {
