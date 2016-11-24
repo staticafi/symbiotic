@@ -553,18 +553,15 @@ class Symbiotic(object):
         # instrument our malloc -- either the version that can fail,
         # or the version that can not fail.
         if self.options.malloc_never_fails:
-            instrument_alloc = '-instrument-alloc-nf'
+            self.prepare(passes = ['-instrument-alloc-nf'])
         else:
-            instrument_alloc = '-instrument-alloc'
+            self.prepare(passes = ['-instrument-alloc'])
 
         # make all memory symbolic (if desired)
         # and then delete undefined function calls
         # and replace them by symbolic stuff
-        passes = [instrument_alloc]
         if not self.options.explicit_symbolic:
-            passes.append('-initialize-uninitialized')
-
-        self.prepare(passes = passes)
+            self.prepare(['-initialize-uninitialized'])
 
         # link with the rest of libraries if needed (klee-libc)
         self.link()

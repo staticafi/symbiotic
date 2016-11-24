@@ -336,6 +336,11 @@ static void replace_calloc(Module *M, CallInst *CI, bool never_fails)
 
 static bool instrument_alloc(Function &F, bool never_fails)
 {
+  // do not run the initializer on __VERIFIER and __INSTR functions
+  const auto& fname = F.getName();
+  if (fname.startswith("__VERIFIER_") || fname.startswith("__INSTR_"))
+    return false;
+
   bool modified = false;
   Module *M = F.getParent();
 
