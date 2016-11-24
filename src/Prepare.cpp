@@ -3,8 +3,7 @@
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 
-#include <assert.h>
-#include <cstring>
+#include <cassert>
 #include <vector>
 #include <set>
 
@@ -35,140 +34,6 @@ static bool array_match(StringRef &name, const char **array)
       return true;
   return false;
 }
-
-// FIXME: use CommandLine
-void check_unsupported(Function& F, const char **unsupported_calls)
-{
-  for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
-    Instruction *ins = &*I;
-    ++I;
-    if (CallInst *CI = dyn_cast<CallInst>(ins)) {
-      if (CI->isInlineAsm())
-        continue;
-
-      const Value *val = CI->getCalledValue()->stripPointerCasts();
-      const Function *callee = dyn_cast<Function>(val);
-      if (!callee || callee->isIntrinsic())
-        continue;
-
-      assert(callee->hasName());
-      StringRef name = callee->getName();
-
-      if (array_match(name, unsupported_calls)) {
-        errs() << "CheckUnsupported: call to '" << name << "' is unsupported\n";
-        errs().flush();
-      }
-    }
-  }
-}
-
-class CheckUnsupported : public FunctionPass
-{
-  public:
-    static char ID;
-
-    CheckUnsupported() : FunctionPass(ID) {}
-    virtual bool runOnFunction(Function &F);
-};
-
-bool CheckUnsupported::runOnFunction(Function &F) {
-  static const char *unsupported_calls[] = {
-    "__isnan",
-    "__isnanf",
-    "__isinf",
-    "__isinff",
-    "__isinfl",
-    "__fpclassify",
-    "__fpclassifyf",
-    "__signbit",
-    "__signbitf",
-    "fesetround",
-    "round",
-    "roundf",
-    "roundl",
-    "trunc",
-    "truncf",
-    "truncl",
-    "modf",
-    "modff",
-    "modfl",
-    "fmod",
-    "fmodf",
-    "fmodl",
-    "fmin",
-    "fminf",
-    "fminl",
-    "fmax",
-    "fmaxf",
-    "fmaxl",
-    "fdim",
-    "fdimf",
-    "fdiml",
-    NULL
-  };
-
-  check_unsupported(F, unsupported_calls);
-  return false;
-}
-
-static RegisterPass<CheckUnsupported> CHCK("check-unsupported",
-                                           "check calls to unsupported functions for symbiotic");
-char CheckUnsupported::ID;
-
-class CheckConcurrency : public FunctionPass
-{
-  public:
-    static char ID;
-
-    CheckConcurrency() : FunctionPass(ID) {}
-    virtual bool runOnFunction(Function &F);
-};
-
-bool CheckConcurrency::runOnFunction(Function &F) {
-  static const char *unsupported_calls[] = {
-    "pthread_create",
-    // we check this before too, since slicer will remove it for sure,
-    // making source code wrong
-    "fesetround",
-    NULL
-  };
-
-  check_unsupported(F, unsupported_calls);
-  return false;
-}
-
-static RegisterPass<CheckConcurrency> CHCKC("check-concurr",
-                                            "check calls to pthread_create for symbiotic");
-char CheckConcurrency::ID;
-
-static const char *leave_calls[] = {
-  "__assert_fail",
-  "abort",
-  "klee_make_symbolic",
-  "klee_assume",
-  "klee_abort",
-  "klee_silent_exit",
-  "klee_report_error",
-  "klee_warning_once",
-  "exit",
-  "_exit",
-/*
-  "sprintf",
-  "snprintf",
-  "swprintf",
-*/
-  "malloc",
-  "calloc",
-  "realloc",
-  "free",
-  "memset",
-  "memcmp",
-  "memcpy",
-  "memmove",
-  "kzalloc",
-  "__errno_location",
-  NULL
-};
 
 // FIXME: don't duplicate the code with -instrument-alloca
 // replace CallInst with alloca with nondeterministic value
@@ -222,6 +87,30 @@ static void replaceCall(CallInst *CI, Module *M)
 
   CI->replaceAllUsesWith(LI);
 }
+
+static const char *leave_calls[] = {
+  "__assert_fail",
+  "abort",
+  "klee_make_symbolic",
+  "klee_assume",
+  "klee_abort",
+  "klee_silent_exit",
+  "klee_report_error",
+  "klee_warning_once",
+  "exit",
+  "_exit",
+  "malloc",
+  "calloc",
+  "realloc",
+  "free",
+  "memset",
+  "memcmp",
+  "memcpy",
+  "memmove",
+  "kzalloc",
+  "__errno_location",
+  NULL
+};
 
 static bool deleteUndefined(Function &F, bool nosym = false)
 {
@@ -485,104 +374,6 @@ bool InstrumentAlloc::runOnFunction(Function &F)
 bool InstrumentAllocNeverFails::runOnFunction(Function &F)
 {
     return instrument_alloc(F, true /* never fails */);
-}
-
-class InitializeUninitialized : public FunctionPass {
-  public:
-    static char ID;
-
-    InitializeUninitialized() : FunctionPass(ID) {}
-
-    virtual bool runOnFunction(Function &F);
-};
-
-
-static RegisterPass<InitializeUninitialized> INIUNINI("initialize-uninitialized",
-                                                      "initialize all uninitialized variables to non-deterministic value");
-char InitializeUninitialized::ID;
-
-bool InitializeUninitialized::runOnFunction(Function &F)
-{
-  bool modified = false;
-  Module *M = F.getParent();
-  LLVMContext& Ctx = M->getContext();
-  DataLayout *DL = new DataLayout(M->getDataLayout());
-  Constant *name_init = ConstantDataArray::getString(Ctx, "nondet");
-  GlobalVariable *name = new GlobalVariable(*M, name_init->getType(), true, GlobalValue::PrivateLinkage, name_init);
-  Type *size_t_Ty;
-
-  if (DL->getPointerSizeInBits() > 32)
-    size_t_Ty = Type::getInt64Ty(Ctx);
-  else
-    size_t_Ty = Type::getInt32Ty(Ctx);
-
-  //void klee_make_symbolic(void *addr, size_t nbytes, const char *name);
-  Constant *C = M->getOrInsertFunction("klee_make_symbolic",
-                                       Type::getVoidTy(Ctx),
-                                       Type::getInt8PtrTy(Ctx), // addr
-                                       size_t_Ty,   // nbytes
-                                       Type::getInt8PtrTy(Ctx), // name
-                                       NULL);
-
-
-  for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
-    Instruction *ins = &*I;
-    ++I;
-
-    if (AllocaInst *AI = dyn_cast<AllocaInst>(ins)) {
-      Type *Ty = AI->getAllocatedType();
-      AllocaInst *newAlloca = NULL;
-      CallInst *CI = NULL;
-      CastInst *CastI = NULL;
-      StoreInst *SI = NULL;
-      LoadInst *LI = NULL;
-
-      std::vector<Value *> args;
-
-      // create new allocainst, declare it symbolic and store it
-      // to the original alloca. This way slicer will slice this
-      // initialization away if program initialize it manually later
-      if (Ty->isSized()) {
-        // if this is an array allocation, just call klee_make_symbolic on it,
-        // since storing whole symbolic array into it would have soo huge overhead
-        if (Ty->isArrayTy()) {
-            CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(Ctx));
-            args.push_back(CastI);
-            args.push_back(ConstantInt::get(size_t_Ty, DL->getTypeAllocSize(Ty)));
-            args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
-
-            CI = CallInst::Create(C, args);
-            CastI->insertAfter(AI);
-            CI->insertAfter(CastI);
-        } else {
-            // when this is not an array allocation, create new symbolic memory and
-            // store it into the allocated memory using normal StoreInst.
-            // That will allow slice away more unneeded allocations
-            newAlloca = new AllocaInst(Ty, "alloca_uninitial");
-            CastI = CastInst::CreatePointerCast(newAlloca, Type::getInt8PtrTy(Ctx));
-
-            args.push_back(CastI);
-            args.push_back(ConstantInt::get(size_t_Ty, DL->getTypeAllocSize(Ty)));
-            args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
-            CI = CallInst::Create(C, args);
-
-            LI = new LoadInst(newAlloca);
-            SI = new StoreInst(LI, AI);
-
-            newAlloca->insertAfter(AI);
-            CastI->insertAfter(newAlloca);
-            CI->insertAfter(CastI);
-            LI->insertAfter(CI);
-            SI->insertAfter(LI);
-        }
-
-        modified = true;
-      }
-    }
-  }
-
-  delete DL;
-  return modified;
 }
 
 namespace {
