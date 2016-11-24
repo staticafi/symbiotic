@@ -39,6 +39,44 @@ static RegisterPass<InitializeUninitialized> INIUNINI("initialize-uninitialized"
                                                       "initialize all uninitialized variables to non-deterministic value");
 char InitializeUninitialized::ID;
 
+// no hard analysis, just check wether the alloca is initialized
+// in the same block. (we could do an O(n) analysis that would
+// do DFS and if the alloca would be initialized on every path
+// before reaching some backedge, then it must be initialized),
+// for all allocas the running time would be O(n^2) and it could
+// probably be decreased (without pointers)
+static bool mayBeUnititialized(const llvm::AllocaInst *AI)
+{
+    using namespace llvm;
+
+	Type *AITy = AI->getAllocatedType();
+	if(!AITy->isSized())
+		return true;
+
+    const BasicBlock *block = AI->getParent();
+    auto I = block->begin();
+    auto E = block->end();
+    // shift to AI
+    while (I != E && (&*I) != AI)
+        ++I;
+
+    if (I == E)
+        return true;
+
+    // iterate over instructions after AI in this block
+    for (++I /* shift after AI */; I != E; ++I) {
+        if (const StoreInst *SI = dyn_cast<StoreInst>(&*I)) {
+            // we store into AI and we store the same type
+            // (that is, we overwrite the whole memory?)
+            if (SI->getPointerOperand() == AI &&
+                SI->getValueOperand()->getType() == AITy)
+                return false;
+        }
+    }
+
+    return true;
+}
+
 bool InitializeUninitialized::runOnFunction(Function &F)
 {
   // do not run the initializer on __VERIFIER and __INSTR functions
@@ -51,7 +89,9 @@ bool InitializeUninitialized::runOnFunction(Function &F)
   LLVMContext& Ctx = M->getContext();
   DataLayout *DL = new DataLayout(M->getDataLayout());
   Constant *name_init = ConstantDataArray::getString(Ctx, "nondet");
-  GlobalVariable *name = new GlobalVariable(*M, name_init->getType(), true, GlobalValue::PrivateLinkage, name_init);
+  GlobalVariable *name = new GlobalVariable(*M, name_init->getType(), true,
+                                            GlobalValue::PrivateLinkage,
+                                            name_init);
   Type *size_t_Ty;
 
   if (DL->getPointerSizeInBits() > 32)
@@ -73,12 +113,15 @@ bool InitializeUninitialized::runOnFunction(Function &F)
     ++I;
 
     if (AllocaInst *AI = dyn_cast<AllocaInst>(ins)) {
+      if (!mayBeUnititialized(AI))
+        continue;
+
       Type *Ty = AI->getAllocatedType();
-      AllocaInst *newAlloca = NULL;
-      CallInst *CI = NULL;
-      CastInst *CastI = NULL;
-      StoreInst *SI = NULL;
-      LoadInst *LI = NULL;
+      AllocaInst *newAlloca = nullptr;
+      CallInst *CI = nullptr;
+      CastInst *CastI = nullptr;
+      StoreInst *SI = nullptr;
+      LoadInst *LI = nullptr;
 
       std::vector<Value *> args;
 
