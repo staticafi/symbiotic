@@ -3,7 +3,9 @@
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 
+#include <cassert>
 #include <vector>
+#include <unordered_map>
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/BasicBlock.h"
@@ -26,11 +28,19 @@
 using namespace llvm;
 
 class InitializeUninitialized : public FunctionPass {
+    Function *_kms = nullptr; // klee_make_symbolic function
+    Type *_size_t_Ty = nullptr; // type of size_t
+
+    std::unordered_map<llvm::Type *, llvm::GlobalVariable *> added_globals;
+
+    // add global of given type and initialize it in may as nondeterministic
+    GlobalVariable *getGlobalNondet(llvm::Type *, llvm::Module *);
+    Function *get_klee_make_symbolic(llvm::Module *);
+    Type *get_size_t(llvm::Module *);
   public:
     static char ID;
 
     InitializeUninitialized() : FunctionPass(ID) {}
-
     virtual bool runOnFunction(Function &F);
 };
 
@@ -38,6 +48,84 @@ class InitializeUninitialized : public FunctionPass {
 static RegisterPass<InitializeUninitialized> INIUNINI("initialize-uninitialized",
                                                       "initialize all uninitialized variables to non-deterministic value");
 char InitializeUninitialized::ID;
+
+Function *InitializeUninitialized::get_klee_make_symbolic(llvm::Module *M)
+{
+  if (_kms)
+    return _kms;
+
+  LLVMContext& Ctx = M->getContext();
+  //void klee_make_symbolic(void *addr, size_t nbytes, const char *name);
+  Constant *C = M->getOrInsertFunction("klee_make_symbolic",
+                                       Type::getVoidTy(Ctx),
+                                       Type::getInt8PtrTy(Ctx), // addr
+                                       get_size_t(M),   // nbytes
+                                       Type::getInt8PtrTy(Ctx), // name
+                                       nullptr);
+  _kms = cast<Function>(C);
+  return _kms;
+}
+
+Type *InitializeUninitialized::get_size_t(llvm::Module *M)
+{
+  if (_size_t_Ty)
+    return _size_t_Ty;
+
+  std::unique_ptr<DataLayout> DL
+    = std::unique_ptr<DataLayout>(new DataLayout(M->getDataLayout()));
+  LLVMContext& Ctx = M->getContext();
+
+  if (DL->getPointerSizeInBits() > 32)
+    _size_t_Ty = Type::getInt64Ty(Ctx);
+  else
+    _size_t_Ty = Type::getInt32Ty(Ctx);
+
+  return _size_t_Ty;
+}
+
+// add global of given type and initialize it in may as nondeterministic
+GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::Module *M)
+{
+  auto it = added_globals.find(Ty);
+  if (it != added_globals.end())
+    return it->second;
+
+  LLVMContext& Ctx = M->getContext();
+  Constant *name = ConstantDataArray::getString(Ctx, "nondet");
+  GlobalVariable *G = new GlobalVariable(*M, Ty, true,
+                                         GlobalValue::PrivateLinkage,
+                                         name);
+
+  added_globals.emplace(Ty, G);
+
+  // insert initialization of the new global variable
+  // at the beginning of main
+  Function *kms = get_klee_make_symbolic(M);
+  CastInst *CastI = CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Ctx));
+
+  std::vector<Value *> args;
+  //XXX: we should not build the new DL every time
+  std::unique_ptr<DataLayout> DL
+    = std::unique_ptr<DataLayout>(new DataLayout(M->getDataLayout()));
+
+  args.push_back(CastI);
+  args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
+  args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
+  CallInst *CI = CallInst::Create(kms, args);
+
+  Function *main = M->getFunction("main");
+  assert(main && "Do not have main");
+  BasicBlock& block = main->getBasicBlockList().front();
+  // there must be some instruction, otherwise we would not be calling
+  // this function
+  Instruction& I = *(block.begin());
+  CastI->insertBefore(&I);
+  CI->insertBefore(&I);
+
+  return G;
+}
+
+
 
 // no hard analysis, just check wether the alloca is initialized
 // in the same block. (we could do an O(n) analysis that would
@@ -47,8 +135,6 @@ char InitializeUninitialized::ID;
 // probably be decreased (without pointers)
 static bool mayBeUnititialized(const llvm::AllocaInst *AI)
 {
-    using namespace llvm;
-
 	Type *AITy = AI->getAllocatedType();
 	if(!AITy->isSized())
 		return true;
@@ -92,21 +178,8 @@ bool InitializeUninitialized::runOnFunction(Function &F)
   GlobalVariable *name = new GlobalVariable(*M, name_init->getType(), true,
                                             GlobalValue::PrivateLinkage,
                                             name_init);
-  Type *size_t_Ty;
 
-  if (DL->getPointerSizeInBits() > 32)
-    size_t_Ty = Type::getInt64Ty(Ctx);
-  else
-    size_t_Ty = Type::getInt32Ty(Ctx);
-
-  //void klee_make_symbolic(void *addr, size_t nbytes, const char *name);
-  Constant *C = M->getOrInsertFunction("klee_make_symbolic",
-                                       Type::getVoidTy(Ctx),
-                                       Type::getInt8PtrTy(Ctx), // addr
-                                       size_t_Ty,   // nbytes
-                                       Type::getInt8PtrTy(Ctx), // name
-                                       NULL);
-
+  Function *C = get_klee_make_symbolic(M);
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
     Instruction *ins = &*I;
@@ -135,7 +208,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
         if (Ty->isArrayTy()) {
             CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(Ctx));
             args.push_back(CastI);
-            args.push_back(ConstantInt::get(size_t_Ty, DL->getTypeAllocSize(Ty)));
+            args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
             args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
 
             CI = CallInst::Create(C, args);
@@ -144,7 +217,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
         } else if (AI->isArrayAllocation()) {
             CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(Ctx));
             MulI = BinaryOperator::CreateMul(AI->getArraySize(),
-                                             ConstantInt::get(size_t_Ty,
+                                             ConstantInt::get(get_size_t(M),
                                                               DL->getTypeAllocSize(Ty)),
                                              "val_size");
             args.push_back(CastI);
@@ -163,7 +236,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             CastI = CastInst::CreatePointerCast(newAlloca, Type::getInt8PtrTy(Ctx));
 
             args.push_back(CastI);
-            args.push_back(ConstantInt::get(size_t_Ty, DL->getTypeAllocSize(Ty)));
+            args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
             args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
             CI = CallInst::Create(C, args);
 
