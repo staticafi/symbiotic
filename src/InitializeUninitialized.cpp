@@ -122,6 +122,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
       CastInst *CastI = nullptr;
       StoreInst *SI = nullptr;
       LoadInst *LI = nullptr;
+      BinaryOperator *MulI = nullptr;
 
       std::vector<Value *> args;
 
@@ -140,6 +141,20 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             CI = CallInst::Create(C, args);
             CastI->insertAfter(AI);
             CI->insertAfter(CastI);
+        } else if (AI->isArrayAllocation()) {
+            CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(Ctx));
+            MulI = BinaryOperator::CreateMul(AI->getArraySize(),
+                                             ConstantInt::get(size_t_Ty,
+                                                              DL->getTypeAllocSize(Ty)),
+                                             "val_size");
+            args.push_back(CastI);
+            args.push_back(MulI);
+            args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
+
+            CI = CallInst::Create(C, args);
+            CastI->insertAfter(AI);
+            MulI->insertAfter(CastI);
+            CI->insertAfter(MulI);
         } else {
             // when this is not an array allocation, create new symbolic memory and
             // store it into the allocated memory using normal StoreInst.
