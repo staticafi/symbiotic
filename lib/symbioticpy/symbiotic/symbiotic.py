@@ -361,15 +361,16 @@ class Symbiotic(object):
 
     def _link_undefined(self, undefs):
         tolink = []
-        for undef in undefs:
-            name = '{0}/lib/{1}.c'.format(self.symbiotic_dir, undef)
-            if os.path.isfile(name):
-	        output = os.path.join(os.getcwd(), os.path.basename(name))
-                output = '{0}.bc'.format(output[:output.rfind('.')])
-		self._compile_to_llvm(name, output)
-                tolink.append(output)
-            #else:
-            #   dbg('Did not find the definition of \'{0}\''.format(undef))
+        for ty in self.options.linkundef:
+            for undef in undefs:
+                name = '{0}/lib/{1}/{2}.c'.format(self.symbiotic_dir, ty, undef)
+                if os.path.isfile(name):
+	            output = os.path.join(os.getcwd(), os.path.basename(name))
+                    output = '{0}.bc'.format(output[:output.rfind('.')])
+	            self._compile_to_llvm(name, output)
+                    tolink.append(output)
+                #else:
+                #   dbg('Did not find the definition of \'{0}\''.format(undef))
 
         if tolink:
             self.link(libs = tolink)
@@ -390,7 +391,7 @@ class Symbiotic(object):
         return map (lambda s: s.strip(), watch.getLines())
 
     def link_undefined(self):
-        if self.options.nolinkundef:
+        if not self.options.linkundef:
             return
 
         # get undefined functions from the bitcode

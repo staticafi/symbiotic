@@ -1,51 +1,60 @@
+# verifer functions
 install(FILES
-		strlen.c
-		strdup.c
-		kzalloc.c
-		__kfree.c
-		__kmalloc.c
-		__memcpy.c
-		kfree.c
-		kmalloc.c
-		memcmp.c
-		memcpy.c
-		memchr.c
-		memrchr.c
-		strchr.c
-		strcmp.c
-		strcpy.c
-		strncmp.c
-		strncpy.c
-		__ctype_b_loc.c
-		__errno_location.c
-		__VERIFIER_calloc.c
-		__VERIFIER_calloc0.c
-		__VERIFIER_malloc.c
-		__VERIFIER_malloc0.c
-		__VERIFIER_error.c
-		__VERIFIER_assert.c
-		__VERIFIER_assume.c
-		__VERIFIER_nondet__Bool.c
-		__VERIFIER_nondet_bool.c
-		__VERIFIER_nondet_char.c
-		__VERIFIER_nondet_double.c
-		__VERIFIER_nondet_float.c
-		__VERIFIER_nondet_int.c
-		__VERIFIER_nondet_long.c
-		__VERIFIER_nondet_pchar.c
-		__VERIFIER_nondet_pointer.c
-		__VERIFIER_nondet_short.c
-		__VERIFIER_nondet_uchar.c
-		__VERIFIER_nondet_uint.c
-		__VERIFIER_nondet_ulong.c
-		__VERIFIER_nondet_unsigned.c
-		__VERIFIER_nondet_ushort.c
-		__VERIFIER_nondet_u16.c
-		__VERIFIER_nondet_u32.c
-		__VERIFIER_nondet_u8.c
-		__VERIFIER_nondet_U16.c
-		__VERIFIER_nondet_U32.c
-		__VERIFIER_nondet_U8.c
-		__VERIFIER_nondet_size_t.c
-	DESTINATION ${INSTALL_DATA_DIR}/lib)
+		verifier/__VERIFIER_calloc.c
+		verifier/__VERIFIER_calloc0.c
+		verifier/__VERIFIER_malloc.c
+		verifier/__VERIFIER_malloc0.c
+		verifier/__VERIFIER_error.c
+		verifier/__VERIFIER_assert.c
+		verifier/__VERIFIER_assume.c
+		verifier/__VERIFIER_nondet__Bool.c
+		verifier/__VERIFIER_nondet_bool.c
+		verifier/__VERIFIER_nondet_char.c
+		verifier/__VERIFIER_nondet_double.c
+		verifier/__VERIFIER_nondet_float.c
+		verifier/__VERIFIER_nondet_int.c
+		verifier/__VERIFIER_nondet_long.c
+		verifier/__VERIFIER_nondet_pchar.c
+		verifier/__VERIFIER_nondet_pointer.c
+		verifier/__VERIFIER_nondet_short.c
+		verifier/__VERIFIER_nondet_uchar.c
+		verifier/__VERIFIER_nondet_uint.c
+		verifier/__VERIFIER_nondet_ulong.c
+		verifier/__VERIFIER_nondet_unsigned.c
+		verifier/__VERIFIER_nondet_ushort.c
+		verifier/__VERIFIER_nondet_u16.c
+		verifier/__VERIFIER_nondet_u32.c
+		verifier/__VERIFIER_nondet_u8.c
+		verifier/__VERIFIER_nondet_U16.c
+		verifier/__VERIFIER_nondet_U32.c
+		verifier/__VERIFIER_nondet_U8.c
+		verifier/__VERIFIER_nondet_size_t.c
+	DESTINATION ${INSTALL_DATA_DIR}/lib/verifier)
+
+# std and posix functions
+install(FILES
+		posix/strlen.c
+		posix/strdup.c
+		posix/__memcpy.c
+		posix/memcmp.c
+		posix/memcpy.c
+		posix/memchr.c
+		posix/memrchr.c
+		posix/strchr.c
+		posix/strcmp.c
+		posix/strcpy.c
+		posix/strncmp.c
+		posix/strncpy.c
+		posix/__ctype_b_loc.c
+		posix/__errno_location.c
+	DESTINATION ${INSTALL_DATA_DIR}/lib/posix)
+
+# linux kernel functions
+install(FILES
+		kernel/kzalloc.c
+		kernel/__kfree.c
+		kernel/__kmalloc.c
+		kernel/kfree.c
+		kernel/kmalloc.c
+	DESTINATION ${INSTALL_DATA_DIR}/lib/kernel)
 

@@ -38,7 +38,7 @@ from symbiotic.witnesses.witnesses import GraphMLWriter
 
 from subprocess import call
 
-VERSION='3.0.7-dev'
+VERSION='4.0.0-dev'
 try:
     from symbiotic.versions import versions
 except ImportError:
@@ -98,6 +98,11 @@ where OPTS can be following:
     --symexe-params=STR       Pass parameters directly to symbolic executor
     --save-files              Do not remove working files after running.
                               The files will be stored in the symbiotic_files directory.
+    --no-posix                Do not link missing posix and standard library functions
+                              for which we have definition (default=off).
+    --no-kernel               Do not link missing kernel functions for which we have
+                              definition (default=off)
+    --no-verifeir-funs        Do not link __VERIFIER_* function definitions (default=off)
     --help                    Show help message
     --version                 Return version
     --version-short           Return version as one-line string
@@ -243,10 +248,17 @@ def parse_command_line():
                                     'no-link-undefined', 'repeat-slicing=',
                                     'slicer-params=', 'symexe-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
-                                    'save-files', 'version-short'])
+                                    'save-files', 'version-short', 'no-posix',
+                                    'no-kernel', 'no-verifier-funs' ])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
+
+    def remove_linkundef(options, what):
+        try:
+            options.linkundef.remove(what)
+        except ValueError:
+            pass
 
     for opt, arg in opts:
         if opt == '--help':
@@ -365,6 +377,12 @@ def parse_command_line():
         elif opt == '--save-files':
             global save_files
             save_files = True
+        elif opt == '--no-posix':
+            remove_linkundef(options, 'posix')
+        elif opt == '--no-kernel':
+            remove_linkundef(options, 'kernel')
+        elif opt == '--no-verifier-funs':
+            remove_linkundef(options, 'verifier')
 
     return options, args
 
