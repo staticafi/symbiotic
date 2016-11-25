@@ -7,6 +7,7 @@ install(FILES
 		verifier/__VERIFIER_error.c
 		verifier/__VERIFIER_assert.c
 		verifier/__VERIFIER_assume.c
+		verifier/__VERIFIER_make_symbolic.c
 		verifier/__VERIFIER_nondet__Bool.c
 		verifier/__VERIFIER_nondet_bool.c
 		verifier/__VERIFIER_nondet_char.c
