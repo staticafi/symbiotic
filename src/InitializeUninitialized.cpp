@@ -28,14 +28,14 @@
 using namespace llvm;
 
 class InitializeUninitialized : public FunctionPass {
-    Function *_kms = nullptr; // klee_make_symbolic function
+    Function *_vms = nullptr; // verifier_make_symbolic function
     Type *_size_t_Ty = nullptr; // type of size_t
 
     std::unordered_map<llvm::Type *, llvm::GlobalVariable *> added_globals;
 
     // add global of given type and initialize it in may as nondeterministic
     GlobalVariable *getGlobalNondet(llvm::Type *, llvm::Module *);
-    Function *get_klee_make_symbolic(llvm::Module *);
+    Function *get_verifier_make_symbolic(llvm::Module *);
     Type *get_size_t(llvm::Module *);
   public:
     static char ID;
@@ -49,21 +49,21 @@ static RegisterPass<InitializeUninitialized> INIUNINI("initialize-uninitialized"
                                                       "initialize all uninitialized variables to non-deterministic value");
 char InitializeUninitialized::ID;
 
-Function *InitializeUninitialized::get_klee_make_symbolic(llvm::Module *M)
+Function *InitializeUninitialized::get_verifier_make_symbolic(llvm::Module *M)
 {
-  if (_kms)
-    return _kms;
+  if (_vms)
+    return _vms;
 
   LLVMContext& Ctx = M->getContext();
-  //void klee_make_symbolic(void *addr, size_t nbytes, const char *name);
-  Constant *C = M->getOrInsertFunction("klee_make_symbolic",
+  //void verifier_make_symbolic(void *addr, size_t nbytes, const char *name);
+  Constant *C = M->getOrInsertFunction("__VERIFIER_make_symbolic",
                                        Type::getVoidTy(Ctx),
                                        Type::getInt8PtrTy(Ctx), // addr
                                        get_size_t(M),   // nbytes
                                        Type::getInt8PtrTy(Ctx), // name
                                        nullptr);
-  _kms = cast<Function>(C);
-  return _kms;
+  _vms = cast<Function>(C);
+  return _vms;
 }
 
 Type *InitializeUninitialized::get_size_t(llvm::Module *M)
@@ -101,7 +101,7 @@ GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::M
 
   // insert initialization of the new global variable
   // at the beginning of main
-  Function *kms = get_klee_make_symbolic(M);
+  Function *vms = get_verifier_make_symbolic(M);
   CastInst *CastI = CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Ctx));
 
   std::vector<Value *> args;
@@ -116,7 +116,7 @@ GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::M
                                              GlobalVariable::PrivateLinkage, name);
   args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
   //args.push_back(ConstantPointerNull::get(Type::getInt8PtrTy(Ctx)));
-  CallInst *CI = CallInst::Create(kms, args);
+  CallInst *CI = CallInst::Create(vms, args);
 
   Function *main = M->getFunction("main");
   assert(main && "Do not have main");
@@ -190,7 +190,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
                                             GlobalValue::PrivateLinkage,
                                             name_init);
 
-  Function *C = get_klee_make_symbolic(M);
+  Function *C = get_verifier_make_symbolic(M);
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
     Instruction *ins = &*I;
@@ -214,7 +214,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
       // to the original alloca. This way slicer will slice this
       // initialization away if program initialize it manually later
       if (Ty->isSized()) {
-        // if this is an array allocation, just call klee_make_symbolic on it,
+        // if this is an array allocation, just call verifier_make_symbolic on it,
         // since storing whole symbolic array into it would have soo huge overhead
         if (Ty->isArrayTy()) {
             CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(Ctx));
@@ -234,7 +234,6 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             args.push_back(CastI);
             args.push_back(MulI);
             args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
-
             CI = CallInst::Create(C, args);
             CastI->insertAfter(AI);
             MulI->insertAfter(CastI);
