@@ -88,6 +88,7 @@ class KleeWatch(ProcessWatch):
             'ESKIPFORK' : re.compile('.*skipping fork.*'),
             'EKILLSTATE' : re.compile('.*killing.*states (over memory cap).*'),
             'EMEMERROR'  : re.compile('.*memory error: out of bound pointer.*'),
+            'EMAKESYMBOLIC' : re.compile('.*memory error: invalid pointer: make_symbolic.*'),
             'EVECTORUNSUP' : re.compile('.*XXX vector instructions unhandled.*'),
             'EFREE' : re.compile('.*memory error: invalid pointer: free.*')
         }
