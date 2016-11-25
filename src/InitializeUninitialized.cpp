@@ -154,12 +154,20 @@ static bool mayBeUnititialized(const llvm::AllocaInst *AI)
 
     // iterate over instructions after AI in this block
     for (++I /* shift after AI */; I != E; ++I) {
-        if (const StoreInst *SI = dyn_cast<StoreInst>(&*I)) {
+        if (const LoadInst *LI = dyn_cast<LoadInst>(&*I)) {
+            if (LI->getPointerOperand() == AI)
+                return true;
+        } else if (const StoreInst *SI = dyn_cast<StoreInst>(&*I)) {
             // we store into AI and we store the same type
             // (that is, we overwrite the whole memory?)
             if (SI->getPointerOperand() == AI &&
                 SI->getValueOperand()->getType() == AITy)
                 return false;
+            else if (SI->getValueOperand() == AI)
+                // if we store this address to some pointer,
+                // we just bail out, since we do not perform
+                // any points-to analysis
+                return true;
         }
     }
 
