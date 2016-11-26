@@ -564,6 +564,14 @@ class Symbiotic(object):
         if not self.options.explicit_symbolic:
             self.prepare(['-initialize-uninitialized'])
 
+        # remove/replace the rest of undefined functions
+        # for which we do not have a definition and
+	# that has not been removed
+        if self.options.undef_retval_nosym:
+            self.prepare(['-delete-undefined-nosym'])
+        else:
+            self.prepare(['-delete-undefined'])
+
         # link with the rest of libraries if needed (klee-libc)
         self.link()
 
@@ -616,13 +624,8 @@ class Symbiotic(object):
             dbg('Unsupported call (probably floating handling)')
             return report_results('unsupported call')
 
-        # remove/replace the rest of undefined functions
-        # for which we do not have a definition and
-	# that has not been removed
-        if self.options.undef_retval_nosym:
-            self.prepare(['-delete-undefined-nosym', '-remove-infinite-loops'])
-        else:
-            self.prepare(['-delete-undefined', '-remove-infinite-loops'])
+        # there may have been created new loops
+        self.prepare(['-remove-infinite-loops'])
 
         if not self.options.final_output is None:
             # copy the file to final_output

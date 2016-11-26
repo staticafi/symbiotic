@@ -6,6 +6,7 @@
 #include <cassert>
 #include <vector>
 #include <set>
+#include <unordered_map>
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/BasicBlock.h"
@@ -24,8 +25,52 @@
 #endif
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include <llvm/IR/DebugInfoMetadata.h>
 
 using namespace llvm;
+
+class DeleteUndefined : public FunctionPass {
+  Function *_vms = nullptr; // verifier_make_symbolic function
+  Type *_size_t_Ty = nullptr; // type of size_t
+  bool _nosym; // do not use symbolic values when replacing
+
+  std::unordered_map<llvm::Type *, llvm::GlobalVariable *> added_globals;
+
+  // add global of given type and initialize it in may as nondeterministic
+  GlobalVariable *getGlobalNondet(llvm::Type *, llvm::Module *);
+  Function *get_verifier_make_symbolic(llvm::Module *);
+  Type *get_size_t(llvm::Module *);
+
+  void replaceCall(CallInst *CI, Module *M);
+protected:
+  DeleteUndefined(char id) : FunctionPass(id), _nosym(true) {}
+
+public:
+  static char ID;
+
+  DeleteUndefined() : FunctionPass(ID), _nosym(false) {}
+
+  virtual bool runOnFunction(Function &F);
+};
+
+static RegisterPass<DeleteUndefined> DLTU("delete-undefined",
+                                          "delete calls to undefined functions, "
+                                          "possible return value is made symbolic");
+char DeleteUndefined::ID;
+
+class DeleteUndefinedNoSym : public DeleteUndefined {
+  public:
+    static char ID;
+
+    DeleteUndefinedNoSym() : DeleteUndefined(ID) {}
+};
+
+static RegisterPass<DeleteUndefinedNoSym> DLTUNS("delete-undefined-nosym",
+                                          "delete calls to undefined functions, "
+                                          "possible return value is made 0");
+char DeleteUndefinedNoSym::ID;
+
+
 
 static bool array_match(StringRef &name, const char **array)
 {
@@ -35,30 +80,129 @@ static bool array_match(StringRef &name, const char **array)
   return false;
 }
 
-// FIXME: don't duplicate the code with -instrument-alloca
-// replace CallInst with alloca with nondeterministic value
-// TODO: what about pointers it takes as parameters?
-static void replaceCall(CallInst *CI, Module *M)
+/** Clone metadata from one instruction to another
+ * @param i1 the first instruction
+ * @param i2 the second instruction without any metadata
+*/
+static void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2)
 {
+    if (!i1->hasMetadata())
+        return;
+
+    assert(!i2->hasMetadata());
+    llvm::SmallVector< std::pair< unsigned, llvm::MDNode * >, 2> mds;
+    i1->getAllMetadata(mds);
+
+    for (const auto& it : mds) {
+        i2->setMetadata(it.first, it.second->clone().release());
+    }
+}
+
+static void CallAddMetadata(CallInst *CI, Instruction *I)
+{
+  if (const DISubprogram *DS = I->getParent()->getParent()->getSubprogram()) {
+    // no metadata? then it is going to be the instrumentation
+    // of alloca or such at the beggining of function,
+    // so just add debug loc of the beginning of the function
+    CI->setDebugLoc(DebugLoc::get(DS->getLine(), 0, DS));
+  }
+}
+
+Function *DeleteUndefined::get_verifier_make_symbolic(llvm::Module *M)
+{
+  if (_vms)
+    return _vms;
+
   LLVMContext& Ctx = M->getContext();
-  DataLayout *DL = new DataLayout(M->getDataLayout());
-  Constant *name_init = ConstantDataArray::getString(Ctx, "nondet_from_undef");
-  GlobalVariable *name = new GlobalVariable(*M, name_init->getType(), true, GlobalValue::PrivateLinkage, name_init);
-  Type *size_t_Ty;
-
-  if (DL->getPointerSizeInBits() > 32)
-    size_t_Ty = Type::getInt64Ty(Ctx);
-  else
-    size_t_Ty = Type::getInt32Ty(Ctx);
-
-  //void klee_make_symbolic(void *addr, size_t nbytes, const char *name);
-  Constant *C = M->getOrInsertFunction("klee_make_symbolic",
+  //void verifier_make_symbolic(void *addr, size_t nbytes, const char *name);
+  Constant *C = M->getOrInsertFunction("__VERIFIER_make_symbolic",
                                        Type::getVoidTy(Ctx),
                                        Type::getInt8PtrTy(Ctx), // addr
-                                       size_t_Ty,   // nbytes
+                                       get_size_t(M),   // nbytes
                                        Type::getInt8PtrTy(Ctx), // name
-                                       NULL);
+                                       nullptr);
+  _vms = cast<Function>(C);
+  return _vms;
+}
 
+Type *DeleteUndefined::get_size_t(llvm::Module *M)
+{
+  if (_size_t_Ty)
+    return _size_t_Ty;
+
+  std::unique_ptr<DataLayout> DL
+    = std::unique_ptr<DataLayout>(new DataLayout(M->getDataLayout()));
+  LLVMContext& Ctx = M->getContext();
+
+  if (DL->getPointerSizeInBits() > 32)
+    _size_t_Ty = Type::getInt64Ty(Ctx);
+  else
+    _size_t_Ty = Type::getInt32Ty(Ctx);
+
+  return _size_t_Ty;
+}
+
+// add global of given type and initialize it in may as nondeterministic
+// FIXME: use the same variables as in InitializeUninitialized
+GlobalVariable *DeleteUndefined::getGlobalNondet(llvm::Type *Ty, llvm::Module *M)
+{
+  auto it = added_globals.find(Ty);
+  if (it != added_globals.end())
+    return it->second;
+
+  LLVMContext& Ctx = M->getContext();
+  GlobalVariable *G = new GlobalVariable(*M, Ty, false /* constant */,
+                                         GlobalValue::PrivateLinkage,
+                                         /* initializer */
+                                         Constant::getNullValue(Ty),
+                                         "nondet_gl_undef");
+
+  added_globals.emplace(Ty, G);
+
+  // insert initialization of the new global variable
+  // at the beginning of main
+  Function *vms = get_verifier_make_symbolic(M);
+  CastInst *CastI = CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Ctx));
+
+  std::vector<Value *> args;
+  //XXX: we should not build the new DL every time
+  std::unique_ptr<DataLayout> DL
+    = std::unique_ptr<DataLayout>(new DataLayout(M->getDataLayout()));
+
+  args.push_back(CastI);
+  args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
+  Constant *name = ConstantDataArray::getString(Ctx, "nondet");
+  GlobalVariable *nameG = new GlobalVariable(*M, name->getType(), true /*constant */,
+                                             GlobalVariable::PrivateLinkage, name);
+  args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
+  CallInst *CI = CallInst::Create(vms, args);
+
+  Function *main = M->getFunction("main");
+  assert(main && "Do not have main");
+  BasicBlock& block = main->getBasicBlockList().front();
+  // there must be some instruction, otherwise we would not be calling
+  // this function
+  Instruction& I = *(block.begin());
+  CastI->insertBefore(&I);
+  CI->insertBefore(&I);
+
+  // add metadata due to the inliner pass
+  CallAddMetadata(CI, &I);
+  //CloneMetadata(&I, CastI);
+
+  return G;
+}
+
+
+void DeleteUndefined::replaceCall(CallInst *CI, Module *M)
+{
+  bool modified = false;
+  LLVMContext& Ctx = M->getContext();
+  DataLayout *DL = new DataLayout(M->getDataLayout());
+  Constant *name_init = ConstantDataArray::getString(Ctx, "nondet");
+  GlobalVariable *name = new GlobalVariable(*M, name_init->getType(), true,
+                                            GlobalValue::PrivateLinkage,
+                                            name_init);
 
   Type *Ty = CI->getType();
   // we checked for this before
@@ -66,26 +210,11 @@ static void replaceCall(CallInst *CI, Module *M)
   // what to do in this case?
   assert(Ty->isSized());
 
-  AllocaInst *AI = new AllocaInst(Ty, "alloca_from_undef");
-  LoadInst *LI = new LoadInst(AI);
-  CallInst *newCI = NULL;
-  CastInst *CastI = NULL;
-
-  std::vector<Value *> args;
-  CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(Ctx));
-
-  args.push_back(CastI);
-  args.push_back(ConstantInt::get(size_t_Ty, DL->getTypeAllocSize(Ty)));
-  args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
-  newCI = CallInst::Create(C, args);
-
-
-  AI->insertAfter(CI);
-  CastI->insertAfter(AI);
-  newCI->insertAfter(CastI);
-  LI->insertAfter(newCI);
-
+  LoadInst *LI = new LoadInst(getGlobalNondet(Ty, M));
+  LI->insertBefore(CI);
   CI->replaceAllUsesWith(LI);
+
+  delete DL;
 }
 
 static const char *leave_calls[] = {
@@ -112,7 +241,7 @@ static const char *leave_calls[] = {
   NULL
 };
 
-static bool deleteUndefined(Function &F, bool nosym = false)
+bool DeleteUndefined::runOnFunction(Function &F)
 {
   // static set for the calls that we removed, so that
   // we can print those call only once
@@ -150,7 +279,7 @@ static bool deleteUndefined(Function &F, bool nosym = false)
           // print only once
           errs() << "Prepare: removed calls to '" << name << "' (function is undefined";
           if (!CI->getType()->isVoidTy()) {
-            if (nosym)
+            if (_nosym)
                 errs() << ", retval set to 0)\n";
             else
                 errs() << ", retval made symbolic)\n";
@@ -159,7 +288,7 @@ static bool deleteUndefined(Function &F, bool nosym = false)
         }
 
         if (!CI->getType()->isVoidTy()) {
-          if (nosym) {
+          if (_nosym) {
             // replace the return value with 0, since we don't want
             // to use the symbolic value
             CI->replaceAllUsesWith(Constant::getNullValue(CI->getType()));
@@ -175,42 +304,4 @@ static bool deleteUndefined(Function &F, bool nosym = false)
   }
   return modified;
 }
-
-namespace {
-  class DeleteUndefined : public FunctionPass {
-    public:
-      static char ID;
-
-      DeleteUndefined() : FunctionPass(ID) {}
-
-      virtual bool runOnFunction(Function &F)
-      {
-        return deleteUndefined(F);
-      }
-  };
-}
-
-static RegisterPass<DeleteUndefined> DLTU("delete-undefined",
-                                          "delete calls to undefined functions, "
-                                          "possible return value is made symbolic");
-char DeleteUndefined::ID;
-
-namespace {
-  class DeleteUndefinedNoSym : public FunctionPass {
-    public:
-      static char ID;
-
-      DeleteUndefinedNoSym() : FunctionPass(ID) {}
-
-      virtual bool runOnFunction(Function &F)
-      {
-        return deleteUndefined(F, true /* no symbolic retval */);
-      }
-  };
-}
-
-static RegisterPass<DeleteUndefinedNoSym> DLTUNS("delete-undefined-nosym",
-                                          "delete calls to undefined functions, "
-                                          "possible return value is made 0");
-char DeleteUndefinedNoSym::ID;
 
