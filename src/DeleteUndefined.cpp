@@ -271,7 +271,7 @@ bool DeleteUndefined::runOnFunction(Function &F)
 
       // if this is __VERIFIER_something call different that to nondet,
       // keep it
-      if (name.startswith("__VERIFIER") && !name.startswith("__VERIFIER_nondet"))
+      if (name.startswith("__VERIFIER_"))
         continue;
 
       if (callee->isDeclaration()) {

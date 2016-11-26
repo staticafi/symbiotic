@@ -564,6 +564,9 @@ class Symbiotic(object):
         if not self.options.explicit_symbolic:
             self.prepare(['-initialize-uninitialized'])
 
+        # link with the rest of libraries if needed (klee-libc)
+        self.link()
+
         # remove/replace the rest of undefined functions
         # for which we do not have a definition and
 	# that has not been removed
@@ -571,9 +574,6 @@ class Symbiotic(object):
             self.prepare(['-delete-undefined-nosym'])
         else:
             self.prepare(['-delete-undefined'])
-
-        # link with the rest of libraries if needed (klee-libc)
-        self.link()
 
         # link undefined (no-op when prepare is turned off)
         self.link_undefined()
