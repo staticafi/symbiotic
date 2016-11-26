@@ -198,11 +198,6 @@ static bool mayBeUnititialized(const llvm::AllocaInst *AI)
             if (SI->getPointerOperand() == AI &&
                 SI->getValueOperand()->getType() == AITy)
                 return false;
-            else if (SI->getValueOperand() == AI)
-                // if we store this address to some pointer,
-                // we just bail out, since we do not perform
-                // any points-to analysis
-                return true;
         }
     }
 
