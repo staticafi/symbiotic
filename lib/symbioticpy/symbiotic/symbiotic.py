@@ -534,7 +534,7 @@ class Symbiotic(object):
             return report_results('unsupported call')
 
         # remove definitions of __VERIFIER_* that are not created by us
-        self.prepare(passes = ['-prepare'])
+        self.prepare(passes = ['-prepare', '-remove-infinite-loops'])
 
         # link the files that we got on the command line
         self.link_unconditional()
@@ -620,9 +620,9 @@ class Symbiotic(object):
         # for which we do not have a definition and
 	# that has not been removed
         if self.options.undef_retval_nosym:
-            self.prepare(['-delete-undefined-nosym'])
+            self.prepare(['-delete-undefined-nosym', '-remove-infinite-loops'])
         else:
-            self.prepare(['-delete-undefined'])
+            self.prepare(['-delete-undefined', '-remove-infinite-loops'])
 
         if not self.options.final_output is None:
             # copy the file to final_output

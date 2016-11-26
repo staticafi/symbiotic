@@ -5,4 +5,5 @@ endif()
 add_llvm_loadable_module(LLVMsvc15
 				Prepare.cpp
 				InitializeUninitialized.cpp
+				RemoveInfiniteLoops.cpp
 				CheckUnsupported.cpp)
