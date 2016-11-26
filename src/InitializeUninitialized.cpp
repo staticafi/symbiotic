@@ -24,8 +24,40 @@
 #endif
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include <llvm/IR/DebugInfoMetadata.h>
 
 using namespace llvm;
+
+/** Clone metadata from one instruction to another
+ * @param i1 the first instruction
+ * @param i2 the second instruction without any metadata
+*/
+static void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2)
+{
+    if (!i1->hasMetadata())
+        return;
+
+    assert(!i2->hasMetadata());
+    llvm::SmallVector< std::pair< unsigned, llvm::MDNode * >, 2> mds;
+    i1->getAllMetadata(mds);
+
+    for (const auto& it : mds) {
+        i2->setMetadata(it.first, it.second->clone().release());
+    }
+}
+
+static void CallAddMetadata(CallInst *CI, Instruction *I)
+{
+  /*
+  if (I->hasMetadata()) {
+    CloneMetadata(I, CI);
+  } else*/ if (const DISubprogram *DS = I->getParent()->getParent()->getSubprogram()) {
+    // no metadata? then it is going to be the instrumentation
+    // of alloca or such at the beggining of function,
+    // so just add debug loc of the beginning of the function
+    CI->setDebugLoc(DebugLoc::get(DS->getLine(), 0, DS));
+  }
+}
 
 class InitializeUninitialized : public FunctionPass {
     Function *_vms = nullptr; // verifier_make_symbolic function
@@ -115,7 +147,6 @@ GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::M
   GlobalVariable *nameG = new GlobalVariable(*M, name->getType(), true /*constant */,
                                              GlobalVariable::PrivateLinkage, name);
   args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
-  //args.push_back(ConstantPointerNull::get(Type::getInt8PtrTy(Ctx)));
   CallInst *CI = CallInst::Create(vms, args);
 
   Function *main = M->getFunction("main");
@@ -126,6 +157,10 @@ GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::M
   Instruction& I = *(block.begin());
   CastI->insertBefore(&I);
   CI->insertBefore(&I);
+
+  // add metadata due to the inliner pass
+  CallAddMetadata(CI, &I);
+  //CloneMetadata(&I, CastI);
 
   return G;
 }
@@ -225,6 +260,11 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             CI = CallInst::Create(C, args);
             CastI->insertAfter(AI);
             CI->insertAfter(CastI);
+
+            // we must add these metadata due to the inliner pass, that
+            // corrupts the code when metada are missing
+            //CloneMetadata(AI, CastI);
+	        CallAddMetadata(CI, AI);
         } else if (AI->isArrayAllocation()) {
             CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(Ctx));
             MulI = BinaryOperator::CreateMul(AI->getArraySize(),
@@ -238,6 +278,10 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             CastI->insertAfter(AI);
             MulI->insertAfter(CastI);
             CI->insertAfter(MulI);
+
+            //CloneMetadata(AI, CastI);
+            //CloneMetadata(AI, MulI);
+	        CallAddMetadata(CI, AI);
         } else {
             // when this is not an array allocation,
             // store the symbolic value into the allocated memory using normal StoreInst.
@@ -247,6 +291,9 @@ bool InitializeUninitialized::runOnFunction(Function &F)
 
             LI->insertAfter(AI);
             SI->insertAfter(LI);
+
+	        //CloneMetadata(AI, LI);
+            //CloneMetadata(AI, LI);
         }
 
         modified = true;

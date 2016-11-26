@@ -46,6 +46,8 @@ export PREFIX=`pwd`/install
 export SYMBIOTIC_ENV=1
 
 export LD_LIBRARY_PATH="$PREFIX/lib:$LD_LIBRARY_PATH"
+export C_INCLUDE_PATH="$PREFIX/include:$C_INCLUDE_PATH"
+export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/share/pkgconfig:$PKG_CONFIG_PATH"
 
 FROM='0'
 NO_LLVM='0'
@@ -326,7 +328,7 @@ fi
 #   slicer
 ######################################################################
 if [ $FROM -le 1 ]; then
-	if [ -z "$(ls -A $SRCDIR/dg)" ]; then
+	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/dg)" ]; then
 		git_submodule_init
 	fi
 
@@ -365,6 +367,7 @@ fi
 if [ $FROM -le 2 ]; then
 	git_clone_or_pull git://github.com/stp/minisat.git minisat
 	cd minisat
+	export CPPFLAGS="$CPPFLAGS `pkg-config --cflags zlib`"
 	(build lr && make prefix=$PREFIX install-headers) || exit 1
 	cp build/release/lib/libminisat.a $PREFIX/lib/ || exit 1
 
@@ -541,7 +544,7 @@ if [ $FROM -le 6 ]; then
 	(build && make install) || exit 1
 
 	# download scripts
-	if [ -z "$(ls -A $SRCDIR/LLVMInstrumentation)" ]; then
+	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/LLVMInstrumentation)" ]; then
 		git_submodule_init
 	fi
 
