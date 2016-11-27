@@ -612,6 +612,12 @@ class Symbiotic(object):
             # we must do it manually (this calls the new slicer ;)
             if self.options.old_slicer:
                 self.remove_unused_only()
+        else:
+            print_elapsed_time('INFO: Compilation, preparation and '\
+                               'instrumentation time')
+
+        # start a new time era
+        restart_counting_time()
 
         # optimize the code before symbolic execution
         opt = get_optlist_after(self.options.optlevel)
@@ -637,6 +643,7 @@ class Symbiotic(object):
         self.link_undefined(only_func = '__VERIFIER_make_symbolic');
 
         # XXX: we could optimize the code again here...
+        print_elapsed_time('INFO: After-slicing optimizations and preparation time')
 
         if not self.options.final_output is None:
             # copy the file to final_output
