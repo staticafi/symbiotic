@@ -391,17 +391,23 @@ class Symbiotic(object):
         self._run(cmd, watch, 'Failed getting undefined symbols from bitcode')
         return map (lambda s: s.strip(), watch.getLines())
 
-    def link_undefined(self):
+    def link_undefined(self, only_func = None):
         if not self.options.linkundef:
             return
 
         # get undefined functions from the bitcode
         undefs = self._get_undefined(self.llvmfile)
+        if not only_func is None:
+            if only_func in undefs:
+                undefs = [only_func]
+            else:
+                undefs = []
         if self._link_undefined(undefs):
             # if we linked someting, try get undefined again,
             # because the functions may have added some new undefined
             # functions
-            self.link_undefined()
+            if only_func is None:
+                self.link_undefined()
 
     def slicer(self, criterion, add_params = []):
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
@@ -567,14 +573,6 @@ class Symbiotic(object):
         # link with the rest of libraries if needed (klee-libc)
         self.link()
 
-        # remove/replace the rest of undefined functions
-        # for which we do not have a definition and
-	# that has not been removed
-        if self.options.undef_retval_nosym:
-            self.prepare(['-delete-undefined-nosym'])
-        else:
-            self.prepare(['-delete-undefined'])
-
         # link undefined (no-op when prepare is turned off)
         self.link_undefined()
 
@@ -626,6 +624,19 @@ class Symbiotic(object):
 
         # there may have been created new loops
         self.prepare(['-remove-infinite-loops'])
+
+        # remove/replace the rest of undefined functions
+        # for which we do not have a definition and
+	# that has not been removed
+        if self.options.undef_retval_nosym:
+            self.prepare(['-delete-undefined-nosym'])
+        else:
+            self.prepare(['-delete-undefined'])
+
+        # delete-undefined inserts __VERIFIER_make_symbolic
+        # OK, we do it by unconditional linking
+        # self.link_undefined(only_func = '__VERIFIER_make_symbolic');
+        # XXX: we could optimize the code again here...
 
         if not self.options.final_output is None:
             # copy the file to final_output

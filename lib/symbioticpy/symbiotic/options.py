@@ -30,7 +30,9 @@ class SymbioticOptions(object):
         self.slicing_criterion = '__assert_fail'
         self.repeat_slicing = 1
         # these files will be linked unconditionally
-        self.link_files = []
+        # we need __VERIFER_make_symbolic, otherwise we would need to
+        # link it also after delete-undefined
+        self.link_files = ['__VERIFIER_make_symbolic']
         # additional parameters that can be passed right
         # to the slicer and symbolic executor
         self.slicer_params = []
