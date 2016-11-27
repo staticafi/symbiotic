@@ -15,7 +15,7 @@ class PrepareWatch(ProcessWatch):
         ProcessWatch.__init__(self, lines)
 
     def parse(self, line):
-        if 'removing' in line:
+        if 'removed' in line:
             sys.stdout.write(line)
         else:
             dbg(line, 'prepare', False)
@@ -634,8 +634,8 @@ class Symbiotic(object):
             self.prepare(['-delete-undefined'])
 
         # delete-undefined inserts __VERIFIER_make_symbolic
-        # OK, we do it by unconditional linking
-        # self.link_undefined(only_func = '__VERIFIER_make_symbolic');
+        self.link_undefined(only_func = '__VERIFIER_make_symbolic');
+
         # XXX: we could optimize the code again here...
 
         if not self.options.final_output is None:
