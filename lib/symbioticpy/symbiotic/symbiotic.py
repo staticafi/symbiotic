@@ -269,14 +269,24 @@ class Symbiotic(object):
         self._prepare(passes=['-find-init'])
 
     def _instrument(self, prp):
-        prefix = '{0}/instrumentation/'.format(self.symbiotic_dir)
+        prefix = '{0}/instrumentations/'.format(self.symbiotic_dir)
 	if self.options.is32bit:
 	    libdir = os.path.join(self.symbiotic_dir, 'lib32')
 	else:
 	    libdir = os.path.join(self.symbiotic_dir, 'lib')
 
 	tolinkbc = None
-        if prp == 'VALID-FREE' or prp == 'MEM-TRACK':
+        if prp == 'MEMSAFETY':
+            config = prefix + 'memsafety/config.json'
+	    # check wether we have this file precompiled
+	    # (this may be a distribution where we're trying to
+	    # avoid compilation of anything else than sources)
+            precompiled_bc = '{0}/memsafety.bc'.format(libdir)
+	    if os.path.isfile(precompiled_bc):
+	        tolinkbc = precompiled_bc
+	    else:
+                tolink = prefix + 'memsafety/memsafety.c'
+        elif prp == 'VALID-FREE' or prp == 'MEM-TRACK':
             config = prefix + 'double_free/config.json'
 	    # check wether we have this file precompiled
 	    # (this may be a distribution where we're trying to
@@ -320,17 +330,26 @@ class Symbiotic(object):
         Instrument the code.
         """
 
-        # these options are exclusive
-        if 'MEM-TRACK' in self.options.prp:
-            self._instrument('MEM-TRACK')
-        elif 'VALID-FREE' in self.options.prp:
-            self._instrument('VALID-FREE')
+        # FIXME: do not compare the strings all the time...
 
-        if 'VALID-DEREF' in self.options.prp:
-            self._instrument('VALID-DEREF')
+        if 'MEMSAFETY' in self.options.prp:
+            self._instrument('MEMSAFETY')
+        elif 'MEM-TRACK' in self.options.prp and\
+             'VALID-DEREF' in self.options.prp and\
+             'VALID-FREE' in self.options.prp:
+            self._instrument('MEMSAFETY')
+        else:
+            # these two are mutually exclusive
+            if 'MEM-TRACK' in self.options.prp:
+                self._instrument('MEM-TRACK')
+            elif 'VALID-FREE' in self.options.prp:
+                self._instrument('VALID-FREE')
 
-        if 'NULL-DEREF' in self.options.prp:
-            self._instrument('NULL-DEREF')
+            if 'VALID-DEREF' in self.options.prp:
+                self._instrument('VALID-DEREF')
+
+            if 'NULL-DEREF' in self.options.prp:
+                self._instrument('NULL-DEREF')
 
     def _get_libraries(self, which=[]):
         files = []

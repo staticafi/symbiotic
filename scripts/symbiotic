@@ -78,9 +78,14 @@ where OPTS can be following:
     --repeat-slicing=N        Repeat slicing N times
     --prp=property            Specify property that should hold. It is either LTL formula
                               as specivied by SV-COMP, or one of following shortcuts:
-                                null-deref   -- program is free of null-dereferences
-                                valid-deref  -- all dereferences are valid
-                                valid-free   -- all free() calls are valid
+                                null-deref      -- program is free of null-dereferences
+                                valid-deref     -- all dereferences are valid
+                                valid-free      -- all free() calls are valid
+                                valid-memtrack  -- all memory is freed
+                                memsafety       -- valid-deref + valid-free
+                                                   + valid-memtrack
+                                undefined-behavior -- check for undefined behaviour
+                                signed-overflow -- check for signed integer overflow
                               The string can be given on line or in a file.
     --pta=[fs|fi|old]         Use flow-sensitive/flow-insensitive or old
                               (flow-insensitive too) points-to analysis when slicing.
@@ -122,6 +127,7 @@ supported_properties = {
     'null-deref'                                               : 'NULL-DEREF',
     'undefined-behavior'                                       : 'UNDEF-BEHAVIOR',
     'signed-overflow'                                          : 'SIGNED-OVERFLOW',
+    'memsafety'                                                : 'MEMSAFETY',
 }
 
 

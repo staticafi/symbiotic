@@ -563,10 +563,8 @@ if [ $FROM -le 6 ]; then
 	(build && make install) || exit 1
 
 	# we need the config files and error checkers
-	mkdir -p $PREFIX/instrumentation
-	rsync -r instrumentations/null_deref $PREFIX/instrumentation
-	rsync -r instrumentations/double_free $PREFIX/instrumentation
-	rsync -r instrumentations/valid_deref $PREFIX/instrumentation
+	mkdir -p $PREFIX
+	rsync -ra instrumentations/ $PREFIX/instrumentations
 
 	cd -
 
@@ -632,13 +630,9 @@ if [ $FROM -le 7 ]; then
 		lib/klee/runtime/klee-libc.bc\
 		lib32/klee/runtime/klee-libc.bc"
 #		lib/LLVMSlicer.so
-	INSTR="bin/LLVMinstr\
-	       instrumentation/null_deref/config.json\
-	       instrumentation/null_deref/null_deref.c\
-	       instrumentation/double_free/config.json\
-	       instrumentation/double_free/double_free.c\
-	       instrumentation/valid_deref/config.json\
-	       instrumentation/valid_deref/valid_deref.c"
+	INSTR="bin/LLVMinstr \
+	       instrumentations/*.c \
+	       instrumentations/*.json"
 
 	CPACHECKER=
 	ULTIAUTO=
