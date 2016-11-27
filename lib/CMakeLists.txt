@@ -36,7 +36,6 @@ install(FILES
 install(FILES
 		posix/strlen.c
 		posix/strdup.c
-		posix/__memcpy.c
 		posix/memcmp.c
 		posix/memcpy.c
 		posix/memchr.c
@@ -57,5 +56,8 @@ install(FILES
 		kernel/__kmalloc.c
 		kernel/kfree.c
 		kernel/kmalloc.c
+		kernel/__memcpy.c
+		kernel/__memset.c
+		kernel/_ctype.c
 	DESTINATION ${INSTALL_DATA_DIR}/lib/kernel)
 
