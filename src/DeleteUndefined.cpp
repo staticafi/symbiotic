@@ -29,7 +29,7 @@
 
 using namespace llvm;
 
-class DeleteUndefined : public FunctionPass {
+class DeleteUndefined : public ModulePass {
   Function *_vms = nullptr; // verifier_make_symbolic function
   Type *_size_t_Ty = nullptr; // type of size_t
   bool _nosym; // do not use symbolic values when replacing
@@ -41,16 +41,18 @@ class DeleteUndefined : public FunctionPass {
   Function *get_verifier_make_symbolic(llvm::Module *);
   Type *get_size_t(llvm::Module *);
 
-  void replaceCall(CallInst *CI, Module *M);
+  //void replaceCall(CallInst *CI, Module *M);
+  void defineFunction(Module *M, Function *F);
 protected:
-  DeleteUndefined(char id) : FunctionPass(id), _nosym(true) {}
+  DeleteUndefined(char id) : ModulePass(id), _nosym(true) {}
 
 public:
   static char ID;
 
-  DeleteUndefined() : FunctionPass(ID), _nosym(false) {}
+  DeleteUndefined() : ModulePass(ID), _nosym(false) {}
 
-  virtual bool runOnFunction(Function &F);
+  virtual bool runOnModule(Module& M) override;
+  bool runOnFunction(Function &F);
 };
 
 static RegisterPass<DeleteUndefined> DLTU("delete-undefined",
@@ -70,14 +72,48 @@ static RegisterPass<DeleteUndefinedNoSym> DLTUNS("delete-undefined-nosym",
                                           "possible return value is made 0");
 char DeleteUndefinedNoSym::ID;
 
+static const char *leave_calls[] = {
+  "__assert_fail",
+  "abort",
+  "klee_make_symbolic",
+  "klee_assume",
+  "klee_abort",
+  "klee_silent_exit",
+  "klee_report_error",
+  "klee_warning_once",
+  "klee_int",
+  "exit",
+  "_exit",
+  "malloc",
+  "calloc",
+  "realloc",
+  "free",
+  "memset",
+  "memcmp",
+  "memcpy",
+  "memmove",
+  "kzalloc",
+  "__errno_location",
+  NULL
+};
 
-
-static bool array_match(StringRef &name, const char **array)
+static bool array_match(const StringRef &name, const char **array)
 {
   for (const char **curr = array; *curr; curr++)
     if (name.equals(*curr))
       return true;
   return false;
+}
+
+bool DeleteUndefined::runOnModule(Module& M) {
+    M.materializeAll();
+
+    // delete/replace the calls in the rest of functions
+    bool modified = false;
+    for (auto& F : M.getFunctionList())
+      modified |= runOnFunction(F);
+
+    return modified;
 }
 
 /** Clone metadata from one instruction to another
@@ -193,17 +229,10 @@ GlobalVariable *DeleteUndefined::getGlobalNondet(llvm::Type *Ty, llvm::Module *M
   return G;
 }
 
-
+/*
 void DeleteUndefined::replaceCall(CallInst *CI, Module *M)
 {
-  bool modified = false;
   LLVMContext& Ctx = M->getContext();
-  DataLayout *DL = new DataLayout(M->getDataLayout());
-  Constant *name_init = ConstantDataArray::getString(Ctx, "nondet");
-  GlobalVariable *name = new GlobalVariable(*M, name_init->getType(), true,
-                                            GlobalValue::PrivateLinkage,
-                                            name_init);
-
   Type *Ty = CI->getType();
   // we checked for this before
   assert(!Ty->isVoidTy());
@@ -213,42 +242,56 @@ void DeleteUndefined::replaceCall(CallInst *CI, Module *M)
   LoadInst *LI = new LoadInst(getGlobalNondet(Ty, M));
   LI->insertBefore(CI);
   CI->replaceAllUsesWith(LI);
-
-  delete DL;
 }
+*/
 
-static const char *leave_calls[] = {
-  "__assert_fail",
-  "abort",
-  "klee_make_symbolic",
-  "klee_assume",
-  "klee_abort",
-  "klee_silent_exit",
-  "klee_report_error",
-  "klee_warning_once",
-  "exit",
-  "_exit",
-  "malloc",
-  "calloc",
-  "realloc",
-  "free",
-  "memset",
-  "memcmp",
-  "memcpy",
-  "memmove",
-  "kzalloc",
-  "__errno_location",
-  NULL
-};
+void DeleteUndefined::defineFunction(Module *M, Function *F)
+{
+  assert(F->size() == 0);
+  assert(!F->getReturnType()->isVoidTy());
+
+  LLVMContext& Ctx = M->getContext();
+  BasicBlock *block = BasicBlock::Create(Ctx, "entry", F);
+  if (_nosym) {
+    // replace the return value with 0, since we don't want
+    // to use the symbolic value
+    ReturnInst::Create(Ctx, Constant::getNullValue(F->getReturnType()), block);
+  } else {
+    LoadInst *LI = new LoadInst(getGlobalNondet(F->getReturnType(), M),
+                                "ret_from_undef", block);
+    ReturnInst::Create(Ctx, LI, block);
+  }
+
+  F->setLinkage(GlobalValue::LinkageTypes::InternalLinkage);
+}
 
 bool DeleteUndefined::runOnFunction(Function &F)
 {
   // static set for the calls that we removed, so that
   // we can print those call only once
   static std::set<const llvm::Value *> removed_calls;
-  bool modified = false;
   Module *M = F.getParent();
 
+  if (F.getName().startswith("__VERIFIER_"))
+    return false;
+
+  if (array_match(F.getName(), leave_calls))
+    return false;
+
+  if (F.empty() && !F.getReturnType()->isVoidTy()) {
+    errs() << "Defining function " << F.getName() << " as symbolic\n";
+    defineFunction(M, &F);
+    return true;
+  }
+
+  // nothing to do here...
+  if (F.empty())
+    return false;
+
+  // if the function is defined, just delete the calls to undefined
+  // functions that does not return anything (if it does return anything,
+  // it was/will be fixed in defineFunction()
+  bool modified = false;
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
     Instruction *ins = &*I;
     ++I;
@@ -256,47 +299,38 @@ bool DeleteUndefined::runOnFunction(Function &F)
       if (CI->isInlineAsm())
         continue;
 
-      const Value *val = CI->getCalledValue()->stripPointerCasts();
-      const Function *callee = dyn_cast<Function>(val);
+      Value *val = CI->getCalledValue()->stripPointerCasts();
+      Function *callee = dyn_cast<Function>(val);
+      // if this is intrinsic call or a call via a function pointer,
+      // let it be
+      // XXX: do we handle the function pointers correctly? What if there
+      // is only a declaration of a function and it is taken to pointer
+      // and then called? We do not define it in this case...
       if (!callee || callee->isIntrinsic())
+        continue;
+
+      // here we continue only with undefined function that return nothing,
+      // becuase the functions that return something were/will be
+      // defined in defineFunction()
+      if (!callee->getReturnType()->isVoidTy())
         continue;
 
       assert(callee->hasName());
       StringRef name = callee->getName();
 
-      if (name.equals("nondet_int") ||
-          name.equals("klee_int") || array_match(name, leave_calls)) {
-        continue;
-      }
-
-      // if this is __VERIFIER_something call different that to nondet,
-      // keep it
+      // if this is __VERIFIER_* call, keep it
       if (name.startswith("__VERIFIER_"))
         continue;
 
+      if (array_match(name, leave_calls))
+        continue;
+
       if (callee->isDeclaration()) {
-        if (removed_calls.insert(callee).second) {
-          // print only once
-          errs() << "Prepare: removed calls to '" << name << "' (function is undefined";
-          if (!CI->getType()->isVoidTy()) {
-            if (_nosym)
-                errs() << ", retval set to 0)\n";
-            else
-                errs() << ", retval made symbolic)\n";
-          } else
-            errs() << ")\n";
-        }
+        if (removed_calls.insert(callee).second)
+            errs() << "Removed calls to '" << name << "' (function is undefined)\n";
 
-        if (!CI->getType()->isVoidTy()) {
-          if (_nosym) {
-            // replace the return value with 0, since we don't want
-            // to use the symbolic value
-            CI->replaceAllUsesWith(Constant::getNullValue(CI->getType()));
-          } else
-            // replace the return value with symbolic value
-            replaceCall(CI, M);
-        }
-
+        // remove the call
+        assert(CI->getType()->isVoidTy());
         CI->eraseFromParent();
         modified = true;
       }

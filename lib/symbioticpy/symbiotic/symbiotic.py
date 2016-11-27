@@ -15,7 +15,7 @@ class PrepareWatch(ProcessWatch):
         ProcessWatch.__init__(self, lines)
 
     def parse(self, line):
-        if 'removed' in line:
+        if 'Removed' in line or 'Defining':
             sys.stdout.write(line)
         else:
             dbg(line, 'prepare', False)
