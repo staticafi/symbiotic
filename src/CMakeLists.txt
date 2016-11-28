@@ -7,4 +7,5 @@ add_llvm_loadable_module(LLVMsvc15
 				InitializeUninitialized.cpp
 				RemoveInfiniteLoops.cpp
 				DeleteUndefined.cpp
+				ReplaceUBSan.cpp
 				CheckUnsupported.cpp)
