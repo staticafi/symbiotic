@@ -24,10 +24,21 @@
 #endif
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include <llvm/IR/DebugInfoMetadata.h>
 
 using namespace llvm;
 
 namespace {
+
+static void CallAddMetadata(CallInst *CI, Instruction *I)
+{
+  if (const DISubprogram *DS = I->getParent()->getParent()->getSubprogram()) {
+    // no metadata? then it is going to be the instrumentation
+    // of alloca or such at the beggining of function,
+    // so just add debug loc of the beginning of the function
+    CI->setDebugLoc(DebugLoc::get(DS->getLine(), 0, DS));
+  }
+}
 
 class ReplaceUBSan : public FunctionPass {
   public:
@@ -71,6 +82,8 @@ bool ReplaceUBSan::runOnFunction(Function &F)
         }
 
         auto CI2 = CallInst::Create(ver_err);
+        CallAddMetadata(CI2, CI);
+
         CI2->insertAfter(CI);
         CI->eraseFromParent();
 
