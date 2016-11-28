@@ -110,8 +110,12 @@ bool DeleteUndefined::runOnModule(Module& M) {
 
     // delete/replace the calls in the rest of functions
     bool modified = false;
-    for (auto& F : M.getFunctionList())
+    for (auto& F : M.getFunctionList()) {
+      if (F.isIntrinsic())
+        continue;
+
       modified |= runOnFunction(F);
+    }
 
     return modified;
 }
