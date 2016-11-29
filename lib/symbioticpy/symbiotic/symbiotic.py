@@ -212,6 +212,9 @@ class Symbiotic(object):
         else:
             self.options = opts
 
+        # definitions of our functions that we linked
+        self._linked_functions = []
+
     def _run(self, cmd, watch, err_msg):
         self.current_process = ProcessRunner(cmd, watch)
         if self.current_process.run() != 0:
@@ -389,8 +392,9 @@ class Symbiotic(object):
                     output = '{0}.bc'.format(output[:output.rfind('.')])
 	            self._compile_to_llvm(name, output)
                     tolink.append(output)
-                #else:
-                #   dbg('Did not find the definition of \'{0}\''.format(undef))
+
+                    # for debugging
+                    self._linked_functions.append(undef)
 
         if tolink:
             self.link(libs = tolink)
@@ -660,6 +664,12 @@ class Symbiotic(object):
 
         # delete-undefined inserts __VERIFIER_make_symbolic
         self.link_undefined(only_func = '__VERIFIER_make_symbolic');
+
+        if self._linked_functions:
+            print('Linked our definitions to these undefined functions:')
+            for f in self._linked_functions:
+                print_stdout('  ', print_nl = False)
+                print_stdout(f)
 
         # XXX: we could optimize the code again here...
         print_elapsed_time('INFO: After-slicing optimizations and preparation time')
