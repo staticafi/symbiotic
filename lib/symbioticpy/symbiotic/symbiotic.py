@@ -498,15 +498,13 @@ class Symbiotic(object):
                '-output-stats=0', '-disable-opt', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self.options.timeout)] + self.options.symexe_params
 
-        memsafety = 'VALID-DEREF' in self.options.prp or \
-	            'VALID-FREE' in self.options.prp or \
-	            'VALID-MEMTRACK' in self.options.prp
-        if memsafety:
-            cmd.append('-exit-on-error-type=Ptr')
-
         cmd.append(self.llvmfile)
 
         failed = False
+        memsafety = 'VALID-DEREF' in self.options.prp or \
+	            'VALID-FREE' in self.options.prp or \
+	            'VALID-MEMTRACK' in self.options.prp or \
+	            'MEMSAFETY' in self.options.prp
         watch = KleeWatch(memsafety)
 
         try:
