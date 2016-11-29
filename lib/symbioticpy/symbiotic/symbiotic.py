@@ -105,9 +105,10 @@ class KleeWatch(ProcessWatch):
                         key += ' (valid-deref)'
                     return key
                 elif self._memsafety:
-		    if key == 'EMEMERROR':
-                        return 'ASSERTIONFAILED (valid-deref)'
-                    if key == 'EFREE' or key == 'EDOUBLEFREE' or key == 'EINVALFREE':
+		    #if key == 'EMEMERROR':
+                    #   return 'ASSERTIONFAILED (valid-deref)'
+                    #if key == 'EFREE' or key == 'EDOUBLEFREE' or key == 'EINVALFREE':
+                    if key == 'EDOUBLEFREE' or key == 'EINVALFREE':
                         return 'ASSERTIONFAILED (valid-free)'
                     if key == 'EMEMLEAK':
                         return 'ASSERTIONFAILED (valid-memtrack)'
