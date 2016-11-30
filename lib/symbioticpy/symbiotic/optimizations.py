@@ -35,8 +35,18 @@ optimizations = {
      '-sroa', '-early-cse', '-lazy-value-info', '-jump-threading',
      '-correlated-propagation', '-simplifycfg', '-basicaa', '-aa', '-domtree',
      '-instcombine', '-tailcallelim', '-simplifycfg', '-reassociate', '-domtree',
-     '-loops', '-loop-simplify', '-lcssa', '-loop-rotate', '-basicaa', '-aa',
-     '-licm', '-loop-unswitch', '-simplifycfg', '-basicaa', '-aa', '-domtree',
+     '-loops', '-loop-simplify', '-lcssa',
+    # TODO
+    # loop-rotate here makes use to incorrectly answer
+    # SpamAssassin-loop_true-unreach-call_false-termination.i benchmark
+    # I do not know where is the problem (maybe also in the benchmark?)
+    # but moving loop-rotate after loop-unswitch fixes it. Do not have time
+    # to look into that now (so I won't probably do that ever)
+    # '-loop-rotate',
+     '-basicaa', '-aa',
+     '-licm', '-loop-unswitch',
+     '-loop-rotate',
+     '-simplifycfg', '-basicaa', '-aa', '-domtree',
      '-instcombine', '-loops', '-scalar-evolution', '-loop-simplify', '-lcssa',
      '-indvars', '-aa', '-loop-idiom', '-loop-deletion', '-loop-unroll',
      '-basicaa', '-aa', '-mldst-motion', '-aa', '-memdep', '-gvn', '-basicaa',
