@@ -412,7 +412,7 @@ if [ $FROM -le 4 -a $NO_LLVM -ne 1 ]; then
 	# configure llvm if not done yet
 	if [ ! -f config.log ]; then
 		# llvm does not built with gcc-4, so use gcc-5 & g++-5 if available
-		if gcc --version 2>&1 | grep -q '5\..*'; then
+		if gcc --version 2>&1 | grep -q '[5-9]\..*'; then
 			CC=gcc
 			CXX=g++
 		elif which gcc-5 2>&1; then
