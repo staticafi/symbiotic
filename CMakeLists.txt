@@ -41,3 +41,6 @@ endif(LLVM_BUILD_PATH)
 add_subdirectory(src)
 add_subdirectory(lib)
 add_subdirectory(include)
+
+install(FILES scripts/symbiotic
+	DESTINATION bin)

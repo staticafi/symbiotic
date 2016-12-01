@@ -571,7 +571,7 @@ if [ $FROM -le 6 ]; then
 	cd -
 
 	# and also the symbiotic scripts itself
-	cp $SRCDIR/scripts/symbiotic $PREFIX/ || exit 1
+	ln -sf bin/symbiotic $PREFIX/symbiotic || exit 1
 	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
 
 	cd "$SRCDIR"
