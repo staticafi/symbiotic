@@ -42,5 +42,5 @@ add_subdirectory(src)
 add_subdirectory(lib)
 add_subdirectory(include)
 
-install(FILES scripts/symbiotic
+install(PROGRAMS scripts/symbiotic
 	DESTINATION bin)
