@@ -567,14 +567,26 @@ class Symbiotic(object):
         # link the files that we got on the command line
         self.link_unconditional()
 
-        if 'UNDEF-BEHAVIOR' in self.options.prp:
+
+        memsafety = 'VALID-DEREF' in self.options.prp or \
+	            'VALID-FREE' in self.options.prp or \
+	            'VALID-MEMTRACK' in self.options.prp or \
+	            'MEMSAFETY' in self.options.prp
+        passes = []
+        if memsafety:
+            # remove error calls, we'll put there our own
+            passes = ['-remove-error-calls']
+        elif 'UNDEF-BEHAVIOR' in self.options.prp:
             # remove the original calls to __VERIFIER_error and put there
             # new on places where the code exhibits an undefined behavior
-            self.prepare(passes = ['-remove-error-calls', '-replace-ubsan'])
+            passes = ['-remove-error-calls', '-replace-ubsan']
         elif 'SIGNED-OVERFLOW' in self.options.prp:
             # we instrumented the code with ub sanitizer,
             # so make the calls errors
-            self.prepare(passes = ['-replace-ubsan'])
+           passes = ['-replace-ubsan']
+
+        if passes:
+            self.prepare(passes = passes)
 
         # now instrument the code according to properties
         self.instrument()
