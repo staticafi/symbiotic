@@ -65,7 +65,6 @@ bool Prepare::runOnModule(Module &M) {
     "__VERIFIER_nondet_size_t",
     nullptr
   };
-  LLVMContext &C = M.getContext();
 
   for (const char **curr = del_body; *curr; curr++) {
     Function *toDel = M.getFunction(*curr);

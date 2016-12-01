@@ -120,6 +120,7 @@ bool DeleteUndefined::runOnModule(Module& M) {
     return modified;
 }
 
+#if 0
 /** Clone metadata from one instruction to another
  * @param i1 the first instruction
  * @param i2 the second instruction without any metadata
@@ -137,6 +138,7 @@ static void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2)
         i2->setMetadata(it.first, it.second->clone().release());
     }
 }
+#endif
 
 static void CallAddMetadata(CallInst *CI, Instruction *I)
 {
