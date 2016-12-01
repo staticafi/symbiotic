@@ -79,15 +79,6 @@ bool Prepare::runOnModule(Module &M) {
   if (Function *F = M.getFunction("__VERIFIER_assert"))
     F->addFnAttr(Attribute::NoInline);
 
-  for (Module::global_iterator I = M.global_begin(), E = M.global_end();
-      I != E; ++I) {
-    GlobalVariable *GV = &*I;
-    if (GV->isConstant() || GV->hasInitializer())
-      continue;
-    GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
-    errs() << "making " << GV->getName() << " non-extern\n";
-  }
-
   return true;
 }
 

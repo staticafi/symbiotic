@@ -28,32 +28,11 @@
 
 using namespace llvm;
 
-#if 0
-/** Clone metadata from one instruction to another
- * @param i1 the first instruction
- * @param i2 the second instruction without any metadata
-*/
-static void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2)
-{
-    if (!i1->hasMetadata())
-        return;
-
-    assert(!i2->hasMetadata());
-    llvm::SmallVector< std::pair< unsigned, llvm::MDNode * >, 2> mds;
-    i1->getAllMetadata(mds);
-
-    for (const auto& it : mds) {
-        i2->setMetadata(it.first, it.second->clone().release());
-    }
-}
-#endif
-
 static void CallAddMetadata(CallInst *CI, Instruction *I)
 {
-  /*
-  if (I->hasMetadata()) {
-    CloneMetadata(I, CI);
-  } else*/ if (const DISubprogram *DS = I->getParent()->getParent()->getSubprogram()) {
+  // FIXME: this is just a quick hack, it just makes inliner work,
+  // but it gives some spurious lines in witnesses
+  if (const DISubprogram *DS = I->getParent()->getParent()->getSubprogram()) {
     // no metadata? then it is going to be the instrumentation
     // of alloca or such at the beggining of function,
     // so just add debug loc of the beginning of the function
@@ -61,27 +40,89 @@ static void CallAddMetadata(CallInst *CI, Instruction *I)
   }
 }
 
-class InitializeUninitialized : public FunctionPass {
+class InitializeUninitialized : public ModulePass {
     Function *_vms = nullptr; // verifier_make_symbolic function
     Type *_size_t_Ty = nullptr; // type of size_t
 
-    std::unordered_map<llvm::Type *, llvm::GlobalVariable *> added_globals;
+    std::unordered_map<Type *, GlobalVariable *> added_globals;
+    std::unique_ptr<DataLayout> DL;
 
     // add global of given type and initialize it in may as nondeterministic
-    GlobalVariable *getGlobalNondet(llvm::Type *, llvm::Module *);
-    Function *get_verifier_make_symbolic(llvm::Module *);
-    Type *get_size_t(llvm::Module *);
+    GlobalVariable *getGlobalNondet(Type *, Module *);
+    Function *get_verifier_make_symbolic(Module *);
+    Type *get_size_t(Module *);
+    bool initializeExternalGlobals(Module&);
   public:
     static char ID;
 
-    InitializeUninitialized() : FunctionPass(ID) {}
-    virtual bool runOnFunction(Function &F);
+    InitializeUninitialized() : ModulePass(ID) {}
+    bool runOnFunction(Function &F);
+
+    bool runOnModule(Module& M) override {
+      DL = std::unique_ptr<DataLayout>(new DataLayout(M.getDataLayout()));
+      bool modified = initializeExternalGlobals(M);
+
+      for (Function& F : M)
+        modified |= runOnFunction(F);
+
+      return modified;
+    }
 };
 
 
 static RegisterPass<InitializeUninitialized> INIUNINI("initialize-uninitialized",
                                                       "initialize all uninitialized variables to non-deterministic value");
 char InitializeUninitialized::ID;
+
+bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
+  bool modified = false;
+  LLVMContext& Ctx = M.getContext();
+
+  for (Module::global_iterator I = M.global_begin(),
+                               E = M.global_end(); I != E; ++I) {
+    GlobalVariable *GV = &*I;
+    if (GV->isConstant() || GV->hasInitializer())
+      continue;
+    // we need to set some initializer
+    GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
+    GV->setExternallyInitialized(false);
+    errs() << "Making global variable '" << GV->getName() << "' non-extern\n";
+
+    // and now make the global symbolic at the beginning of main
+
+    // insert initialization of the new global variable
+    // at the beginning of main
+    Function *vms = get_verifier_make_symbolic(&M);
+    CastInst *CastI = CastInst::CreatePointerCast(GV, Type::getInt8PtrTy(Ctx));
+    // GV is a pointer to some memory, we want the size of the memory
+    Type *Ty = GV->getType()->getContainedType(0);
+
+    std::vector<Value *> args;
+    args.push_back(CastI);
+    args.push_back(ConstantInt::get(get_size_t(&M), DL->getTypeAllocSize(Ty)));
+    Constant *name = ConstantDataArray::getString(Ctx, "extern_nondet");
+    GlobalVariable *nameG = new GlobalVariable(M, name->getType(), true /*constant */,
+                                               GlobalVariable::PrivateLinkage, name);
+    args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
+    CallInst *CI = CallInst::Create(vms, args);
+
+    Function *main = M.getFunction("main");
+    assert(main && "Do not have main");
+    BasicBlock& block = main->getBasicBlockList().front();
+    // there must be some instruction, otherwise we would not be calling
+    // this function
+    Instruction& Inst = *(block.begin());
+    CastI->insertBefore(&Inst);
+    CI->insertBefore(&Inst);
+
+    // add metadata due to the inliner pass
+    CallAddMetadata(CI, &Inst);
+
+    modified = true;
+  }
+
+  return modified;
+}
 
 Function *InitializeUninitialized::get_verifier_make_symbolic(llvm::Module *M)
 {
@@ -105,8 +146,6 @@ Type *InitializeUninitialized::get_size_t(llvm::Module *M)
   if (_size_t_Ty)
     return _size_t_Ty;
 
-  std::unique_ptr<DataLayout> DL
-    = std::unique_ptr<DataLayout>(new DataLayout(M->getDataLayout()));
   LLVMContext& Ctx = M->getContext();
 
   if (DL->getPointerSizeInBits() > 32)
@@ -139,10 +178,6 @@ GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::M
   CastInst *CastI = CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Ctx));
 
   std::vector<Value *> args;
-  //XXX: we should not build the new DL every time
-  std::unique_ptr<DataLayout> DL
-    = std::unique_ptr<DataLayout>(new DataLayout(M->getDataLayout()));
-
   args.push_back(CastI);
   args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
   Constant *name = ConstantDataArray::getString(Ctx, "nondet");
@@ -216,7 +251,6 @@ bool InitializeUninitialized::runOnFunction(Function &F)
   bool modified = false;
   Module *M = F.getParent();
   LLVMContext& Ctx = M->getContext();
-  DataLayout *DL = new DataLayout(M->getDataLayout());
   Constant *name_init = ConstantDataArray::getString(Ctx, "nondet");
   GlobalVariable *name = new GlobalVariable(*M, name_init->getType(), true,
                                             GlobalValue::PrivateLinkage,
@@ -297,7 +331,6 @@ bool InitializeUninitialized::runOnFunction(Function &F)
     }
   }
 
-  delete DL;
   return modified;
 }
 
