@@ -1,5 +1,6 @@
-if (NOT ${LLVM_PACKAGE_VERSION} VERSION_GREATER "3.4")
-  set(LLVM_LINK_COMPONENTS core engine)
+# We need all the symbols with dynamic libs. With static libs, we get errors.
+if (BUILD_SHARED_LIBS)
+	set(LLVM_LINK_COMPONENTS analysis core support)
 endif()
 
 add_llvm_loadable_module(LLVMsvc15
