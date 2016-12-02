@@ -526,12 +526,12 @@ if [ $FROM -le 6 ]; then
 
 	# we need the config files and error checkers
 	mkdir -p $PREFIX
-	rsync -ra instrumentations/ $PREFIX/instrumentations
+	ln -sf share/llvm-instrumentation/ $PREFIX/instrumentations
 
 	cd -
 
 	# and also the symbiotic scripts itself
-	ln -sf bin/symbiotic $PREFIX/symbiotic || exit 1
+	mv $PREFIX/bin/symbiotic $PREFIX || exit 1
 	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
 
 	cd "$SRCDIR"
@@ -593,8 +593,9 @@ if [ $FROM -le 7 ]; then
 		lib32/klee/runtime/klee-libc.bc"
 #		lib/LLVMSlicer.so
 	INSTR="bin/LLVMinstr \
-	       instrumentations/*.c \
-	       instrumentations/*.json"
+	       instrumentations \
+	       share/llvm-instrumentation/*/*.c \
+	       share/llvm-instrumentation/*/*.json"
 
 	CPACHECKER=
 	ULTIAUTO=
