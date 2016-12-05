@@ -30,6 +30,7 @@ install(FILES
 		verifier/__VERIFIER_nondet_U32.c
 		verifier/__VERIFIER_nondet_U8.c
 		verifier/__VERIFIER_nondet_size_t.c
+		verifier/__VERIFIER_nondet_loff_t.c
 	DESTINATION ${INSTALL_DATA_DIR}/lib/verifier)
 
 # std and posix functions
