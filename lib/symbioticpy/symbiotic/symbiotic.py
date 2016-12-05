@@ -623,6 +623,10 @@ class Symbiotic(object):
             if self.options.old_slicer:
                 self.old_slicer_find_init()
 
+            # break the infinite loops just before slicing
+            # so that the optimizations won't make them syntactically infinite again
+            self.prepare(['-break-infinite-loops', '-remove-infinite-loops'])
+
             # print info about time
             print_elapsed_time('INFO: Compilation, preparation and '\
                                'instrumentation time')
@@ -639,6 +643,7 @@ class Symbiotic(object):
                     opt = get_optlist_after(self.options.optlevel)
                     if opt:
                         self.optimize(passes=opt)
+                        self.prepare(['-break-infinite-loops', '-remove-infinite-loops'])
 
             print_elapsed_time('INFO: Total slicing time')
 
