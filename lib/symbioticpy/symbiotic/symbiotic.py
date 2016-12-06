@@ -80,7 +80,6 @@ class KleeWatch(ProcessWatch):
             'EINITVALS' : re.compile('.*unable to compute initial values.*'),
             'ESYMSOL' : re.compile('.*unable to get symbolic solution.*'),
             'ESILENTLYCONCRETIZED' : re.compile('.*silently concretizing.*'),
-            'ECONCRETIZED' : re.compile('.* concretized symbolic size.*'),
             'EEXTRAARGS' : re.compile('.*calling .* with extra arguments.*'),
             'EABORT' : re.compile('.*abort failure.*'),
             #'EGENERAL' : re.compile('.*now ignoring this error at this location.*'),
@@ -92,6 +91,12 @@ class KleeWatch(ProcessWatch):
             'EVECTORUNSUP' : re.compile('.*XXX vector instructions unhandled.*'),
             'EFREE' : re.compile('.*memory error: invalid pointer: free.*')
         }
+
+        if not memsafety:
+            # we do not want this pattern to be found in memsafety benchmarks,
+            # because we insert our own check that do not care about what KLEE
+            # really allocated underneath
+            self._patterns['ECONCRETIZED'] = re.compile('.* concretized symbolic size.*'),
 
     def found(self):
         return ' '.join(self._found)
