@@ -96,7 +96,7 @@ class KleeWatch(ProcessWatch):
             # we do not want this pattern to be found in memsafety benchmarks,
             # because we insert our own check that do not care about what KLEE
             # really allocated underneath
-            self._patterns['ECONCRETIZED'] = re.compile('.* concretized symbolic size.*'),
+            self._patterns['ECONCRETIZED'] = re.compile('.* concretized symbolic size.*')
 
     def found(self):
         return ' '.join(self._found)
