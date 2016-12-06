@@ -70,22 +70,42 @@ class BreakInfiniteLoops : public LoopPass {
         BasicBlock *header = L->getHeader();
         Module *M = header->getParent()->getParent();
         LLVMContext& Ctx = M->getContext();
-
         TerminatorInst *headerTI = header->getTerminator();
 
-        // add a new block to which we jump from the header and in
-        // this new block we always jump to the original successor,
-        // but we also jump outside of the loop (which will never
-        // occur during runtime)
+        // we will change predecessors of the header - instead of making them jump
+        // on the header, make them jump on the new block.
+        // First gather the jumps to the header block (to a new container,
+        // so that we do not corrupt the iterator). We must do it here,
+        // before we make the new block jumping to the header
+        std::vector<std::pair<BasicBlock *, unsigned>> to_change;
+        for (auto I = pred_begin(header), E = pred_end(header); I != E; ++I) {
+          TerminatorInst *TI = (*I)->getTerminator();
+          for (int i = 0, e = TI->getNumSuccessors(); i < e; ++i) {
+            if (TI->getSuccessor(i) == header)
+              to_change.emplace_back(*I, i);
+          }
+        }
+
+        // add a new block from which we conditionally jump to the header.
+        // The condition will be always true, so the program won't change,
+        // except there will be an edge exiting the loop, which is what
+        // we need.
         BasicBlock *exitBB = getExitBB(header->getParent());
         BasicBlock *nb = BasicBlock::Create(Ctx, "break.inf.loop");
         LoadInst *LI = new LoadInst(getConstantTrueGV(*M), "always_true", nb);
-        BranchInst *BI = BranchInst::Create(headerTI->getSuccessor(0), exitBB, LI, nb);
-        nb->insertInto(header->getParent(), headerTI->getSuccessor(0));
-        headerTI->setSuccessor(0, nb);
+        BranchInst *BI = BranchInst::Create(header, exitBB, LI, nb);
+        // insert the new block before header
+        nb->insertInto(header->getParent(), header);
 
-        // update the LoopPass
+        // now change the jump instructions
+        for (auto& pr : to_change) {
+          TerminatorInst *TI = pr.first->getTerminator();
+          TI->setSuccessor(pr.second, nb);
+        }
+
+        // update the LoopPass - add the new block and make it a header
         L->addBlockEntry(nb);
+        L->moveToHeader(nb);
         return true;
     }
 
