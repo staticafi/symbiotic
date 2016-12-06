@@ -410,7 +410,7 @@ if [ $FROM -le 4 ]; then
 			-DCMAKE_BUILD_TYPE=Release \
 			-DKLEE_RUNTIME_BUILD_TYPE=Release+Asserts \
 			-DENABLE_SOLVER_STP=ON \
-			-DSTP_DIR=`pwd`/../stp
+			-DSTP_DIR=`pwd`/../stp \
 			-DLLVM_CONFIG_BINARY=`pwd`/../llvm-build-cmake/bin/llvm-config \
 			-DENABLE_UNIT_TESTS=OFF \
 		|| clean_and_exit 1 "git"
