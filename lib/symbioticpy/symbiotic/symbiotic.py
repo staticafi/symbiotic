@@ -121,9 +121,8 @@ class KleeWatch(ProcessWatch):
         if found:
             self._found.insert(0, found)
 
-        if 'ERROR' in line or 'WARN' in line or 'Assertion' in line:
-            sys.stdout.write(line)
-        elif 'error' in line:
+        if 'ERROR' in line or 'WARN' in line or 'Assertion' in line\
+           or 'error' in line or 'undefined reference' in line:
             sys.stderr.write(line)
         else:
             dbg(line, 'all', False)
