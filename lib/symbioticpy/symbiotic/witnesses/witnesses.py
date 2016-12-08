@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from os.path import basename
 from hashlib import sha1
 no_lxml = False
 try:
@@ -62,6 +63,11 @@ class GraphMLWriter(object):
                             only to this file in the witness
         """
 
+        if filename:
+            filenm = basename(filename)
+        else:
+            filenm = None
+
         f = open(pathFile, 'r')
         last_id=1
 
@@ -74,19 +80,19 @@ class GraphMLWriter(object):
                 continue
 
             # the file name is l[2]
-            if filename and l[2] != filename:
+            originfile = basename(l[2])
+            if filenm and filenm != originfile:
                 continue
 
             # create new node
             ET.SubElement(self._graph, 'node', id=str(last_id))
-
 
             # create new edge
             edge = ET.SubElement(self._graph, 'edge',
                                     source=str(last_id - 1),
                                     target=str(last_id))
             ET.SubElement(edge, 'data', key='startline').text = l[3]
-            #ET.SubElement(edge, 'data', key='originfile').text = l[2]
+            ET.SubElement(edge, 'data', key='originfile').text = originfile
 
             # not all of the lines are branches and also not every
             # branch evaluation corresponds to the same evaluation
