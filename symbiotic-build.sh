@@ -30,7 +30,7 @@ usage()
 	echo -e "           llvm-build-cmake and llvm-build-configure)"
 	echo -e "update   - update repositories"
 	echo -e "with-cpa - download CPAchecker (due to witness checking)"
-	echo -e "with-ultimate-automizer - download UltimateAutmizer (due to witness checking)"
+	echo -e "with-ultimate-automizer - download UltimateAutomizer (due to witness checking)"
 	echo -e "with-llvm=path     - use llvm from path"
 	echo -e "with-llvm-dir=path - use llvm from path"
 	echo -e "with-llvm-src=path - use llvm sources from path"
@@ -459,6 +459,14 @@ download_tar()
 	rm -f "BASENAME"
 }
 
+download_zip()
+{
+	wget "$1" || exit 1
+	BASENAME="`basename $1`"
+	unzip "$BASENAME" || exit 1
+	rm -f "BASENAME"
+}
+
 get_cpa()
 {
 	if [ ! -d CPAchecker-1.4-unix ]; then
@@ -469,7 +477,7 @@ get_cpa()
 get_ultimize()
 {
 	if [ ! -d UltimateAutomizer ]; then
-		download_tar http://www.sosy-lab.org/~dbeyer/cpa-witnesses/ultimateautomizer.tar.gz
+		download_zip https://ultimate.informatik.uni-freiburg.de/downloads/svcomp2017/UltimateAutomizer-linux.zip
 	fi
 }
 
@@ -483,6 +491,7 @@ if [ $FROM -le 5 ]; then
 	fi
 	if [ $WITH_ULTIMATEAUTOMIZER -eq 1 ]; then
 		get_ultimize
+		mv UAutomizer-linux UltimateAutomizer
 		rsync -a UltimateAutomizer $PREFIX/
 	fi
 fi
