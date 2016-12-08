@@ -480,6 +480,7 @@ if __name__ == "__main__":
         transformations = [InlineRemove(), NondetSimplify(), InfiniteLoopsRemover()]
         for trans in transformations:
             # remove __inline from the source
+            new_sources = []
             for s in sources:
                 # we changed directory to our tmpdir,
                 # so now the sources have only basenames
@@ -488,6 +489,12 @@ if __name__ == "__main__":
                 trans.run(s, new_s)
                 # move the temporary file to the original file
                 os.rename(new_s, s)
+                # we renamed the sources to be in the temporary directory,
+                # so we must update the names
+                new_sources.append(s)
+
+            assert len(sources) == len(new_sources)
+            sources = new_sources
 
         try:
             # opts.prp now contain a list with keys (or None),
