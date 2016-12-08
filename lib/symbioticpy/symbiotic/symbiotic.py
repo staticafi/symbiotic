@@ -66,43 +66,43 @@ class KleeWatch(ProcessWatch):
         self._memsafety = memsafety
 
         # define and compile regular expressions for parsing klee's output
-        self._patterns = {
-            'EDOUBLEFREE' : re.compile('.*ASSERTION FAIL: 0 && "double free".*'),
-            'EINVALFREE' : re.compile('.*ASSERTION FAIL: 0 && "free on non-allocated memory".*'),
-            'EMEMLEAK' : re.compile('.*ASSERTION FAIL: 0 && "memory leak detected".*'),
-            'ASSERTIONFAILED' : re.compile('.*ASSERTION FAIL:.*'),
-            'ESTPTIMEOUT' : re.compile('.*query timed out (resolve).*'),
-            'EKLEETIMEOUT' : re.compile('.*HaltTimer invoked.*'),
-            'EEXTENCALL' : re.compile('.*failed external call.*'),
-            'ELOADSYM' : re.compile('.*ERROR: unable to load symbol.*'),
-            'EINVALINST' : re.compile('.*LLVM ERROR: Code generator does not support.*'),
-            'EKLEEASSERT' : re.compile('.*klee: .*Assertion .* failed.*'),
-            'EINITVALS' : re.compile('.*unable to compute initial values.*'),
-            'ESYMSOL' : re.compile('.*unable to get symbolic solution.*'),
-            'ESILENTLYCONCRETIZED' : re.compile('.*silently concretizing.*'),
-            'EEXTRAARGS' : re.compile('.*calling .* with extra arguments.*'),
-            'EABORT' : re.compile('.*abort failure.*'),
-            #'EGENERAL' : re.compile('.*now ignoring this error at this location.*'),
-            'EMALLOC' : re.compile('.*found huge malloc, returning 0.*'),
-            'ESKIPFORK' : re.compile('.*skipping fork.*'),
-            'EKILLSTATE' : re.compile('.*killing.*states (over memory cap).*'),
-            'EMEMERROR'  : re.compile('.*memory error: out of bound pointer.*'),
-            'EMAKESYMBOLIC' : re.compile('.*memory error: invalid pointer: make_symbolic.*'),
-            'EVECTORUNSUP' : re.compile('.*XXX vector instructions unhandled.*'),
-            'EFREE' : re.compile('.*memory error: invalid pointer: free.*')
-        }
+        self._patterns = [
+           ('EDOUBLEFREE' , re.compile('.*ASSERTION FAIL: 0 && "double free".*')),
+           ('EINVALFREE' , re.compile('.*ASSERTION FAIL: 0 && "free on non-allocated memory".*')),
+           ('EMEMLEAK' , re.compile('.*ASSERTION FAIL: 0 && "memory leak detected".*')),
+           ('ASSERTIONFAILED' , re.compile('.*ASSERTION FAIL:.*')),
+           ('ESTPTIMEOUT' , re.compile('.*query timed out (resolve).*')),
+           ('EKLEETIMEOUT' , re.compile('.*HaltTimer invoked.*')),
+           ('EEXTENCALL' , re.compile('.*failed external call.*')),
+           ('ELOADSYM' , re.compile('.*ERROR: unable to load symbol.*')),
+           ('EINVALINST' , re.compile('.*LLVM ERROR: Code generator does not support.*')),
+           ('EKLEEASSERT' , re.compile('.*klee: .*Assertion .* failed.*')),
+           ('EINITVALS' , re.compile('.*unable to compute initial values.*')),
+           ('ESYMSOL' , re.compile('.*unable to get symbolic solution.*')),
+           ('ESILENTLYCONCRETIZED' , re.compile('.*silently concretizing.*')),
+           ('EEXTRAARGS' , re.compile('.*calling .* with extra arguments.*')),
+           ('EABORT' , re.compile('.*abort failure.*')),
+           #('EGENERAL' , re.compile('.*now ignoring this error at this location.*')),
+           ('EMALLOC' , re.compile('.*found huge malloc, returning 0.*')),
+           ('ESKIPFORK' , re.compile('.*skipping fork.*')),
+           ('EKILLSTATE' , re.compile('.*killing.*states (over memory cap).*')),
+           ('EMEMERROR'  , re.compile('.*memory error: out of bound pointer.*')),
+           ('EMAKESYMBOLIC' , re.compile('.*memory error: invalid pointer: make_symbolic.*')),
+           ('EVECTORUNSUP' , re.compile('.*XXX vector instructions unhandled.*')),
+           ('EFREE' , re.compile('.*memory error: invalid pointer: free.*'))
+        ]
 
         if not memsafety:
             # we do not want this pattern to be found in memsafety benchmarks,
             # because we insert our own check that do not care about what KLEE
             # really allocated underneath
-            self._patterns['ECONCRETIZED'] = re.compile('.* concretized symbolic size.*')
+            self._patterns.append(('ECONCRETIZED', re.compile('.* concretized symbolic size.*')))
 
     def found(self):
         return ' '.join(self._found)
 
     def _parse_klee_output(self, line):
-        for (key, pattern) in self._patterns.iteritems():
+        for (key, pattern) in self._patterns:
             if pattern.match(line):
                 # return True so that we know we should terminate
                 if key == 'ASSERTIONFAILED':
