@@ -12,7 +12,11 @@ optimizations = {
     'klee':
      ['-simplifycfg', '-globalopt', '-globaldce', '-ipconstprop',
        '-deadargelim', '-instcombine', '-simplifycfg', '-prune-eh',
-       '-functionattrs', '-inline', '-argpromotion', '-instcombine',
+       '-functionattrs',
+       # if we inline too much, then the analysis take too long and
+       # witnesses are useless (default is 255)
+       '-inline-threshold=70',
+       '-inline', '-argpromotion', '-instcombine',
        '-jump-threading', '-simplifycfg', '-gvn', '-scalarrepl',
        '-instcombine', '-tailcallelim', '-simplifycfg',
        '-reassociate', '-loop-rotate', '-licm', '-loop-unswitch',
@@ -31,7 +35,11 @@ optimizations = {
      '-assumption-cache-tracker', '-forceattrs', '-inferattrs', '-ipsccp',
      '-globalopt', '-domtree', '-mem2reg', '-deadargelim', '-basicaa', '-aa',
      '-domtree', '-instcombine', '-simplifycfg', '-basiccg', '-globals-aa',
-     '-prune-eh', '-inline', '-functionattrs', '-argpromotion', '-domtree',
+     '-prune-eh',
+     # if we inline too much, then the analysis take too long and
+     # witnesses are useless (default is 255)
+     '-inline-threshold=70',
+     '-inline', '-functionattrs', '-argpromotion', '-domtree',
      '-sroa', '-early-cse', '-lazy-value-info', '-jump-threading',
      '-correlated-propagation', '-simplifycfg', '-basicaa', '-aa', '-domtree',
      '-instcombine', '-tailcallelim', '-simplifycfg', '-reassociate', '-domtree',
