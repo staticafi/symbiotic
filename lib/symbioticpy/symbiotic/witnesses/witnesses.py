@@ -22,7 +22,7 @@ def get_sha1(source):
     return hsh.hexdigest()
 
 class GraphMLWriter(object):
-    def __init__(self, source, is32bit, is_correctness_wit):
+    def __init__(self, source, is32bit, is_correctness_wit, with_source_lines = False):
         if no_lxml:
             self._root = ET.Element('graphml')
         else:
@@ -33,6 +33,8 @@ class GraphMLWriter(object):
             arch = '32bit'
         else:
             arch = '64bit'
+
+        self._with_source_lines = with_source_lines
 
         self._graph = ET.SubElement(self._root, 'graph', edgedefault="directed")
         # add the description
@@ -62,14 +64,20 @@ class GraphMLWriter(object):
                             -- in the case that we want to stick
                             only to this file in the witness
         """
-
         if filename:
             filenm = basename(filename)
         else:
             filenm = None
 
+        dump_source_lines = self._with_source_lines and filename
+        if dump_source_lines:
+            fl = open(filename, 'r')
+            lines = fl.readlines()
+            fl.close()
+
         f = open(pathFile, 'r')
         last_id=1
+        last_node = None
 
         #ctrlelem = None
         for line in f:
@@ -85,7 +93,7 @@ class GraphMLWriter(object):
                 continue
 
             # create new node
-            ET.SubElement(self._graph, 'node', id=str(last_id))
+            last_node = ET.SubElement(self._graph, 'node', id=str(last_id))
 
             # create new edge
             edge = ET.SubElement(self._graph, 'edge',
@@ -93,6 +101,10 @@ class GraphMLWriter(object):
                                     target=str(last_id))
             ET.SubElement(edge, 'data', key='startline').text = l[3]
             ET.SubElement(edge, 'data', key='originfile').text = originfile
+
+            if dump_source_lines:
+                ET.SubElement(edge, 'data', key='sourcecode').text\
+                    = lines[int(l[3]) - 1].strip().encode('utf-8')
 
             # not all of the lines are branches and also not every
             # branch evaluation corresponds to the same evaluation
@@ -108,12 +120,14 @@ class GraphMLWriter(object):
 
             last_id += 1
 
-        # create the violation
-        vl = ET.SubElement(self._graph, 'node', id=str(last_id))
-        ET.SubElement(vl, 'data', key='violation').text = 'true'
-        ET.SubElement(self._graph, 'edge',
-                         source=str(last_id - 1),
-                         target=str(last_id))
+        # create the violation - it is the last node in our graph
+        if last_node is None:
+            last_node = ET.SubElement(self._graph, 'node', id=str(last_id))
+            ET.SubElement(self._graph, 'edge',
+                             source=str(last_id - 1),
+                             target=str(last_id))
+
+        ET.SubElement(last_node, 'data', key='violation').text = 'true'
 
         # remove the control key from the last edge
         # if ctrlelem is not None:

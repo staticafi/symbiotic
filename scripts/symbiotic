@@ -96,6 +96,8 @@ where OPTS can be following:
                               --debug= to print basic messages.
     --output=FILE             Store the final code (that is to be run by symexe) to FILE
     --witness=FILE            Store witness into FILE (default is witness.graphml)
+    --witness-with-source-lines
+                              Store source lines into the witness (may have memory overhead).
     --cflags=flags
     --cppflags=flags          Append extra CFLAGS and CPPFLAGS to use while compiling,
                               the environment CFLAGS and CPPFLAGS are used too
@@ -130,6 +132,8 @@ supported_properties = {
     'memsafety'                                                : 'MEMSAFETY',
 }
 
+# whether to dump source lines into the witness
+witness_with_source_lines = False
 
 def get_include_paths():
     """
@@ -197,9 +201,9 @@ def generate_graphml(path, source, is32bit, is_correctness_wit, saveto):
         saveto = os.path.abspath(saveto)
 
     dbg('Generating counterexample: {0}'.format(saveto), domain='witness')
-    gen = GraphMLWriter(source, is32bit, is_correctness_wit)
+    gen = GraphMLWriter(source, is32bit, is_correctness_wit, witness_with_source_lines)
     if not is_correctness_wit:
-        gen.parsePath(path)
+        gen.parsePath(path, source)
     else:
         assert path is None
     gen.write(saveto)
@@ -255,7 +259,8 @@ def parse_command_line():
                                     'slicer-params=', 'symexe-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
                                     'save-files', 'version-short', 'no-posix',
-                                    'no-kernel', 'no-verifier-funs' ])
+                                    'no-kernel', 'no-verifier-funs',
+                                    'witness-with-source-lines'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -389,6 +394,9 @@ def parse_command_line():
             remove_linkundef(options, 'kernel')
         elif opt == '--no-verifier-funs':
             remove_linkundef(options, 'verifier')
+        elif opt == '--witness-with-source-lines':
+            global witness_with_source_lines
+            witness_with_source_lines = True
 
     return options, args
 
