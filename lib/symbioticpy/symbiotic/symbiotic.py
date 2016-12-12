@@ -497,10 +497,13 @@ class Symbiotic(object):
         return True
 
     def run_symexe(self):
-        cmd = ['klee', '-exit-on-error-type=Assert', '-write-paths',
+        cmd = ['klee', '-write-paths',
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
                '-output-stats=0', '-disable-opt', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self.options.timeout)] + self.options.symexe_params
+
+        if not self.options.dont_exit_on_error:
+            cmd.append('-exit-on-error-type=Assert')
 
         cmd.append(self.llvmfile)
 

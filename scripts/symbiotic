@@ -110,6 +110,8 @@ where OPTS can be following:
     --no-kernel               Do not link missing kernel functions for which we have
                               definition (default=off)
     --no-verifeir-funs        Do not link __VERIFIER_* function definitions (default=off)
+    --dont-exit-on-error      Do not exit when the property violation is reached,
+                              but continue searching
     --help                    Show help message
     --version                 Return version
     --version-short           Return version as one-line string
@@ -260,7 +262,7 @@ def parse_command_line():
                                     'explicit-symbolic', 'undefined-retval-nosym',
                                     'save-files', 'version-short', 'no-posix',
                                     'no-kernel', 'no-verifier-funs',
-                                    'witness-with-source-lines'])
+                                    'witness-with-source-lines', 'dont-exit-on-error'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -397,6 +399,8 @@ def parse_command_line():
         elif opt == '--witness-with-source-lines':
             global witness_with_source_lines
             witness_with_source_lines = True
+        elif opt == '--dont-exit-on-error':
+            options.dont_exit_on_error = True
 
     return options, args
 
