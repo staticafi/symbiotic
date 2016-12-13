@@ -53,7 +53,7 @@ bool ReplaceUBSan::runOnFunction(Function &F)
 {
   bool modified = false;
   Module *M = F.getParent();
-  Function *ver_err = nullptr;
+  Constant *ver_err = nullptr;
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
     Instruction *ins = &*I;
@@ -76,9 +76,9 @@ bool ReplaceUBSan::runOnFunction(Function &F)
       if (callee->isDeclaration()) {
         if (!ver_err) {
           LLVMContext& Ctx = M->getContext();
-          ver_err = cast<Function>(M->getOrInsertFunction("__VERIFIER_error",
-                                                          Type::getVoidTy(Ctx),
-                                                          nullptr));
+          ver_err = M->getOrInsertFunction("__VERIFIER_error",
+                                           Type::getVoidTy(Ctx),
+                                           nullptr);
         }
 
         auto CI2 = CallInst::Create(ver_err);
@@ -137,10 +137,9 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
         if (!ext) {
           LLVMContext& Ctx = M->getContext();
           Type *argTy = Type::getInt32Ty(Ctx);
-          Function *extF
-            = cast<Function>(M->getOrInsertFunction("exit",
-                                                    Type::getVoidTy(Ctx),
-                                                    argTy, nullptr));
+          Constant *extF
+            = M->getOrInsertFunction("exit", Type::getVoidTy(Ctx),
+                                     argTy, nullptr);
 
           std::vector<Value *> args = { ConstantInt::get(argTy, 0) };
           ext = std::unique_ptr<CallInst>(CallInst::Create(extF, args));
