@@ -9,7 +9,10 @@ class SymbioticOptions(object):
         self.is32bit = True
         self.prp = []
         self.noslice = False
-        self.malloc_never_fails = False
+        # FIXME: make it False, this is just a temporary
+        # switch for SV-COMP, since I do not want to send another
+        # PR to change switches
+        self.malloc_never_fails = True
         self.noprepare = False
         self.explicit_symbolic = False
         self.undef_retval_nosym = False
