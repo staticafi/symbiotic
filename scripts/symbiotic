@@ -202,7 +202,6 @@ def generate_graphml(path, source, is32bit, is_correctness_wit, saveto):
         saveto = '{0}.graphml'.format(os.path.basename(path))
         saveto = os.path.abspath(saveto)
 
-    dbg('Generating counterexample: {0}'.format(saveto), domain='witness')
     gen = GraphMLWriter(source, is32bit, is_correctness_wit, witness_with_source_lines)
     if not is_correctness_wit:
         gen.parsePath(path, source)
@@ -212,6 +211,7 @@ def generate_graphml(path, source, is32bit, is_correctness_wit, saveto):
 
 def generate_counterexample(bindir, sources, is32bit, is_correctness_wit, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
+    print('Generating witness: {0}'.format(saveto))
     if is_correctness_wit:
         generate_graphml(None, sources[0], is32bit, is_correctness_wit, saveto)
         return
