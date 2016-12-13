@@ -49,7 +49,7 @@ class GraphMLWriter(object):
             = 'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )'
         ET.SubElement(self._graph, 'data', key='programfile').text = source.decode('utf-8')
         ET.SubElement(self._graph, 'data', key='programhash').text = get_sha1(source).decode('utf-8')
-        ET.SubElement(self._graph, 'data', key='memorymodel').text = 'precise'
+        #ET.SubElement(self._graph, 'data', key='memorymodel').text = 'precise'
         ET.SubElement(self._graph, 'data', key='architecture').text = arch
 
         # create the entry node
