@@ -634,7 +634,8 @@ class Symbiotic(object):
 
             # break the infinite loops just before slicing
             # so that the optimizations won't make them syntactically infinite again
-            self.prepare(['-break-infinite-loops', '-remove-infinite-loops'])
+            self.prepare(['-reg2mem', '-break-infinite-loops',
+                          '-remove-infinite-loops', '-mem2reg'])
 
             # print info about time
             print_elapsed_time('INFO: Compilation, preparation and '\
