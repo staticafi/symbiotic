@@ -96,6 +96,11 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
     CastInst *CastI = CastInst::CreatePointerCast(GV, Type::getInt8PtrTy(Ctx));
     // GV is a pointer to some memory, we want the size of the memory
     Type *Ty = GV->getType()->getContainedType(0);
+    if (!Ty->isSized()) {
+      GV->dump();
+      llvm::errs() << "WARNING: failed making global variable symbolic (type is unsized)\n";
+      continue;
+    }
 
     std::vector<Value *> args;
     args.push_back(CastI);
