@@ -85,7 +85,7 @@ class KleeWatch(ProcessWatch):
            #('EGENERAL' , re.compile('.*now ignoring this error at this location.*')),
            ('EMALLOC' , re.compile('.*found huge malloc, returning 0.*')),
            ('ESKIPFORK' , re.compile('.*skipping fork.*')),
-           ('EKILLSTATE' , re.compile('.*killing.*states (over memory cap).*')),
+           ('EKILLSTATE' , re.compile('.*killing.*states \(over memory cap\).*')),
            ('EMEMERROR'  , re.compile('.*memory error: out of bound pointer.*')),
            ('EMAKESYMBOLIC' , re.compile('.*memory error: invalid pointer: make_symbolic.*')),
            ('EVECTORUNSUP' , re.compile('.*XXX vector instructions unhandled.*')),
@@ -246,6 +246,7 @@ class Symbiotic(object):
 
         if self.options.is32bit:
             cmd.append('-m32')
+
 
         cmd.append('-o')
         if output is None:
@@ -550,7 +551,8 @@ class Symbiotic(object):
             # compile all sources
             llvmsrc = []
             for source in self.sources:
-                opts = []
+                opts = ['-Wno-unused-parameter', '-Wno-unused-attribute',
+                        '-Wno-unused-label', '-Wno-unknown-pragmas']
                 if 'UNDEF-BEHAVIOR' in self.options.prp:
                     opts.append('-fsanitize=undefined')
                     opts.append('-fno-sanitize=unsigned-integer-overflow')
