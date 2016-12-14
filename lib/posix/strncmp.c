@@ -2,15 +2,14 @@
 
 int strncmp(const char *s1, const char *s2, size_t n)
 {
-	while(*s1 == *s2) {
-		if (*s1 == '\0' /* => *s2 == '\0' */)
-			return 0;
-		++s1;
-		++s2;
+	size_t i;
+	for (i = 0; i < n; ++i) {
+		if (s1[i] != s2[i])
+			return s1[i] < s2[i] ? -1 : 1;
 
-		if (--n == 0)
+		if (s1[i] == '\0' /* => s2[i] == '\0' */)
 			return 0;
 	}
 
-	return ((*s1 < *s2) ? -1 : 1);
+	return 0;
 }
