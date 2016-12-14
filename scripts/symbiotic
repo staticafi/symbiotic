@@ -366,7 +366,10 @@ def parse_command_line():
                 err('Invalid argument for --repeat-slicing')
             dbg('Will repeat slicing {0} times'.format(arg))
         elif opt == '--timeout':
-            options.timeout = int(arg)
+            try:
+                options.timeout = int(arg)
+            except ValueError:
+                err('Invalid numerical argument for timeout: {0}'.format(arg))
             dbg('Timeout set to {0} sec'.format(arg))
         elif opt == '--output':
             options.final_output = arg
