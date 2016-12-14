@@ -532,7 +532,9 @@ if __name__ == "__main__":
             err(' == FAILURE ==\n{0}'.format(e.message))
 
         srcdir = os.path.dirname(symbiotic.llvmfile)
-        if res.startswith('FALSE') or res == 'ASSERTIONFAILED':
+        if res is None:
+            pass
+        elif res.startswith('FALSE') or res == 'ASSERTIONFAILED':
             generate_counterexample(srcdir, original_sources,
 	                            opts.is32bit, False, opts.witness_output)
 	elif res == 'TRUE':
