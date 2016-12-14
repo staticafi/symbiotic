@@ -484,7 +484,8 @@ if __name__ == "__main__":
         dbg('Working directory: {0}'.format(working_dir))
 
         from symbiotic.filetransform import InlineRemove, NondetSimplify, InfiniteLoopsRemover
-        transformations = [InlineRemove(), NondetSimplify(), InfiniteLoopsRemover()]
+        #transformations = [InlineRemove(), NondetSimplify(), InfiniteLoopsRemover()]
+        transformations = [InlineRemove()]
         for trans in transformations:
             # remove __inline from the source
             new_sources = []
@@ -532,7 +533,7 @@ if __name__ == "__main__":
             err(' == FAILURE ==\n{0}'.format(e.message))
 
         srcdir = os.path.dirname(symbiotic.llvmfile)
-        if res == 'FALSE' or res == 'ASSERTIONFAILED':
+        if res.startswith('FALSE') or res == 'ASSERTIONFAILED':
             generate_counterexample(srcdir, original_sources,
 	                            opts.is32bit, False, opts.witness_output)
 	elif res == 'TRUE':
