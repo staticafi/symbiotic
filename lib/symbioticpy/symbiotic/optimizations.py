@@ -53,7 +53,9 @@ optimizations = {
     # '-loop-rotate',
      '-basicaa', '-aa',
      '-licm', '-loop-unswitch',
-     '-loop-rotate',
+    # OK, do not use loop-rotate at all, it transforms the loops in the way
+    # that we can not handle because we use the Ferrante's CD algorithm
+    #'-loop-rotate',
      '-simplifycfg', '-basicaa', '-aa', '-domtree',
      '-instcombine', '-loops', '-scalar-evolution', '-loop-simplify', '-lcssa',
      '-indvars', '-aa', '-loop-idiom', '-loop-deletion', '-loop-unroll',
@@ -65,12 +67,17 @@ optimizations = {
      '-licm', '-adce', '-simplifycfg', '-basicaa', '-aa', '-domtree',
      '-instcombine', '-barrier', '-basiccg', '-rpo-functionattrs',
      '-elim-avail-extern', '-basiccg', '-globals-aa', '-float2int', '-domtree',
-     '-loops', '-loop-simplify', '-lcssa', '-loop-rotate', '-branch-prob',
+     '-loops',
+     '-loop-simplify', '-lcssa',
+    # loop-rotate here leads to loops that we can not slice correctly because
+    # we use the Ferrante's control dependencies
+    # '-loop-rotate',
+     '-branch-prob',
      '-block-freq', '-scalar-evolution', '-basicaa', '-aa', '-loop-accesses',
      '-demanded-bits',
-     #'-loop'-vectorize',
+#    #'-loop'-vectorize',
      '-instcombine', '-scalar-evolution', '-aa',
-     # '-slp-vectorizer',
+#    # '-slp-vectorizer',
      '-simplifycfg', '-basicaa', '-aa', '-domtree', '-instcombine', '-loops',
      '-loop-simplify', '-lcssa', '-scalar-evolution', '-loop-unroll', '-basicaa',
      '-aa', '-instcombine', '-loop-simplify', '-lcssa', '-aa', '-licm',
