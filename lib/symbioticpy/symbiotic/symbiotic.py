@@ -536,6 +536,18 @@ class Symbiotic(object):
         if self.current_process:
             self.current_process.kill()
 
+    def kill_wait(self):
+        if self.current_process and self.current_process.exitStatus() is None:
+            from time import sleep
+            while self.current_process.exitStatus() is None:
+                self.current_process.kill()
+
+                print('Waiting for the child process to terminate')
+                sleep(0.5)
+
+            print('Killed the child process')
+
+
     def run(self, criterion = '__assert_fail'):
         try:
             return self._run_symbiotic(criterion);

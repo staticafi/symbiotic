@@ -550,6 +550,7 @@ if __name__ == "__main__":
         if symbiotic:
             symbiotic.terminate()
             symbiotic.kill()
+            symbiotic.kill_wait()
 
     os.chdir('..')
     rm_tmp_dir(working_dir)
