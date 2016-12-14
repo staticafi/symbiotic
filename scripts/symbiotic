@@ -484,8 +484,7 @@ if __name__ == "__main__":
         dbg('Working directory: {0}'.format(working_dir))
 
         from symbiotic.filetransform import InlineRemove, NondetSimplify, InfiniteLoopsRemover
-        #transformations = [InlineRemove(), NondetSimplify(), InfiniteLoopsRemover()]
-        transformations = [InlineRemove()]
+        transformations = [InlineRemove(), NondetSimplify(), InfiniteLoopsRemover()]
         for trans in transformations:
             # remove __inline from the source
             new_sources = []
