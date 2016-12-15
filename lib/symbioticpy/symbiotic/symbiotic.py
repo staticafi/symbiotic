@@ -584,32 +584,30 @@ class Symbiotic(object):
             dbg('Unsupported call (probably pthread API)')
             return report_results('unsupported call')
 
-        # remove definitions of __VERIFIER_* that are not created by us
-        self.prepare(passes = ['-prepare', '-remove-infinite-loops'])
-
         # link the files that we got on the command line
         self.link_unconditional()
 
+        # remove definitions of __VERIFIER_* that are not created by us
+        # and syntactically infinite loops
+        passes = ['-prepare', '-remove-infinite-loops']
 
         memsafety = 'VALID-DEREF' in self.options.prp or \
 	            'VALID-FREE' in self.options.prp or \
 	            'VALID-MEMTRACK' in self.options.prp or \
 	            'MEMSAFETY' in self.options.prp
-        passes = []
-        if memsafety:
+        if memsafety or 'SIGNED-OVERFLOW' in self.options.prp:
             # remove error calls, we'll put there our own
-            passes = ['-remove-error-calls']
+            passes.append('-remove-error-calls')
         elif 'UNDEF-BEHAVIOR' in self.options.prp:
             # remove the original calls to __VERIFIER_error and put there
             # new on places where the code exhibits an undefined behavior
-            passes = ['-remove-error-calls', '-replace-ubsan']
+            passes += ['-remove-error-calls', '-replace-ubsan']
         elif 'SIGNED-OVERFLOW' in self.options.prp:
             # we instrumented the code with ub sanitizer,
             # so make the calls errors
-           passes = ['-replace-ubsan']
+           passes.append('-replace-ubsan')
 
-        if passes:
-            self.prepare(passes = passes)
+        self.prepare(passes = passes)
 
         # now instrument the code according to properties
         self.instrument()
@@ -617,15 +615,17 @@ class Symbiotic(object):
         # instrument our malloc -- either the version that can fail,
         # or the version that can not fail.
         if self.options.malloc_never_fails:
-            self.prepare(passes = ['-instrument-alloc-nf'])
+            passes = ['-instrument-alloc-nf']
         else:
-            self.prepare(passes = ['-instrument-alloc'])
+            passes = ['-instrument-alloc']
 
         # make all memory symbolic (if desired)
         # and then delete undefined function calls
         # and replace them by symbolic stuff
         if not self.options.explicit_symbolic:
-            self.prepare(['-initialize-uninitialized'])
+            passes.append('-initialize-uninitialized')
+
+        self.prepare(passes)
 
         # link with the rest of libraries if needed (klee-libc)
         self.link()
@@ -658,8 +658,8 @@ class Symbiotic(object):
             for n in range(0, self.options.repeat_slicing):
                 dbg('Slicing the code for the {0}. time'.format(n + 1))
                 add_params = []
-                if n == 0 and self.options.repeat_slicing > 1:
-                    add_params = ['-pta-field-sensitive=8']
+                #if n == 0 and self.options.repeat_slicing > 1:
+                #    add_params = ['-pta-field-sensitive=8']
 
                 self.slicer(self.options.slicing_criterion, add_params)
 
@@ -692,15 +692,17 @@ class Symbiotic(object):
             return report_results('unsupported call')
 
         # there may have been created new loops
-        self.prepare(['-remove-infinite-loops'])
+        passes = ['-remove-infinite-loops']
 
         # remove/replace the rest of undefined functions
         # for which we do not have a definition and
 	# that has not been removed
         if self.options.undef_retval_nosym:
-            self.prepare(['-delete-undefined-nosym'])
+            passes.append('-delete-undefined-nosym')
         else:
-            self.prepare(['-delete-undefined'])
+            passes.append('-delete-undefined')
+
+        self.prepare(passes)
 
         # delete-undefined inserts __VERIFIER_make_symbolic
         self.link_undefined(only_func = '__VERIFIER_make_symbolic');
