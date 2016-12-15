@@ -138,7 +138,7 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
           LLVMContext& Ctx = M->getContext();
           Type *argTy = Type::getInt32Ty(Ctx);
           Constant *extF
-            = M->getOrInsertFunction("exit", Type::getVoidTy(Ctx),
+            = M->getOrInsertFunction("__VERIFIER_exit", Type::getVoidTy(Ctx),
                                      argTy, nullptr);
 
           std::vector<Value *> args = { ConstantInt::get(argTy, 0) };
@@ -149,9 +149,6 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
         CI2->insertAfter(CI);
         CI->eraseFromParent();
 
-        modified = true;
-      } else if (name.equals("__VERIFIER_assert")) {
-        CI->eraseFromParent();
         modified = true;
       }
     }

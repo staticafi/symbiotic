@@ -5,6 +5,7 @@ install(FILES
 		verifier/__VERIFIER_malloc.c
 		verifier/__VERIFIER_malloc0.c
 		verifier/__VERIFIER_error.c
+		verifier/__VERIFIER_exit.c
 		verifier/__VERIFIER_assert.c
 		verifier/__VERIFIER_assume.c
 		verifier/__VERIFIER_make_symbolic.c
