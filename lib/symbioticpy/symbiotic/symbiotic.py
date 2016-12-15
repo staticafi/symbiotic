@@ -595,17 +595,14 @@ class Symbiotic(object):
 	            'VALID-FREE' in self.options.prp or \
 	            'VALID-MEMTRACK' in self.options.prp or \
 	            'MEMSAFETY' in self.options.prp
-        if memsafety or 'SIGNED-OVERFLOW' in self.options.prp:
+        if memsafety:
             # remove error calls, we'll put there our own
             passes.append('-remove-error-calls')
-        elif 'UNDEF-BEHAVIOR' in self.options.prp:
+        elif 'UNDEF-BEHAVIOR' in self.options.prp or\
+             'SIGNED-OVERFLOW' in self.options.prp:
             # remove the original calls to __VERIFIER_error and put there
             # new on places where the code exhibits an undefined behavior
             passes += ['-remove-error-calls', '-replace-ubsan']
-        elif 'SIGNED-OVERFLOW' in self.options.prp:
-            # we instrumented the code with ub sanitizer,
-            # so make the calls errors
-           passes.append('-replace-ubsan')
 
         self.prepare(passes = passes)
 
