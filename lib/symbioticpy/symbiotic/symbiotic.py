@@ -62,10 +62,15 @@ class UnsuppWatch(ProcessWatch):
 
 class KleeWatch(ProcessWatch):
 
-    def __init__(self, memsafety  = False):
+    def __init__(self, prp = None):
         ProcessWatch.__init__(self, 100)
         self._found = []
-        self._memsafety = memsafety
+        self._memsafety = False
+        self._overflow = False
+        if prp == 'memsafety':
+            self._memsafety = True
+        elif prp == 'overflow':
+            self._overflow = True
 
         # define and compile regular expressions for parsing klee's output
         self._patterns = [
@@ -94,7 +99,7 @@ class KleeWatch(ProcessWatch):
            ('EFREE' , re.compile('.*memory error: invalid pointer: free.*'))
         ]
 
-        if not memsafety:
+        if not self._memsafety:
             # we do not want this pattern to be found in memsafety benchmarks,
             # because we insert our own check that do not care about what KLEE
             # really allocated underneath
@@ -110,6 +115,8 @@ class KleeWatch(ProcessWatch):
                 if key == 'ASSERTIONFAILED':
                     if self._memsafety:
                         key += ' (valid-deref)'
+                    elif self._overflow:
+                        key += ' (overflow)'
                     return key
                 elif self._memsafety:
 		    #if key == 'EMEMERROR':
@@ -515,7 +522,15 @@ class Symbiotic(object):
 	            'VALID-FREE' in self.options.prp or \
 	            'VALID-MEMTRACK' in self.options.prp or \
 	            'MEMSAFETY' in self.options.prp
-        watch = KleeWatch(memsafety)
+        overflow = 'SIGNED-OVERFLOW' in self.options.prp
+        assert not (memsafety and overflow)
+        if memsafety:
+            prp = 'memsafety'
+        elif overflow:
+            prp = 'overflow'
+        else:
+            prp = None
+        watch = KleeWatch(prp)
 
         try:
             self._run(cmd, watch, 'Symbolic execution failed')
