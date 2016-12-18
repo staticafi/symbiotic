@@ -46,7 +46,7 @@ class BreakInfiniteLoops : public LoopPass {
 
     LLVMContext& Ctx = F->getParent()->getContext();
     BasicBlock *exitBB = BasicBlock::Create(Ctx, "inf.loop.exit", F);
-    UnreachableInst *UI = new UnreachableInst(Ctx, exitBB);
+    new UnreachableInst(Ctx, exitBB);
 
     _exitBBs.emplace(F, exitBB);
     return exitBB;
@@ -70,7 +70,6 @@ class BreakInfiniteLoops : public LoopPass {
         BasicBlock *header = L->getHeader();
         Module *M = header->getParent()->getParent();
         LLVMContext& Ctx = M->getContext();
-        TerminatorInst *headerTI = header->getTerminator();
 
         // we will change predecessors of the header - instead of making them jump
         // on the header, make them jump on the new block.
@@ -93,7 +92,7 @@ class BreakInfiniteLoops : public LoopPass {
         BasicBlock *exitBB = getExitBB(header->getParent());
         BasicBlock *nb = BasicBlock::Create(Ctx, "break.inf.loop");
         LoadInst *LI = new LoadInst(getConstantTrueGV(*M), "always_true", nb);
-        BranchInst *BI = BranchInst::Create(header, exitBB, LI, nb);
+        BranchInst::Create(header, exitBB, LI, nb);
         // insert the new block before header
         nb->insertInto(header->getParent(), header);
 
