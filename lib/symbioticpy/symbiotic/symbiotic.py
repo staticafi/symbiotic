@@ -287,7 +287,7 @@ class Symbiotic(object):
         self._prepare(passes=['-find-init'])
 
     def _instrument(self, prp):
-        prefix = '{0}/instrumentations/'.format(self.symbiotic_dir)
+        prefix = '{0}/share/llvm-instrumentation/'.format(self.symbiotic_dir)
 	if self.options.is32bit:
 	    libdir = os.path.join(self.symbiotic_dir, 'lib32')
 	else:

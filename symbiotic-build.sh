@@ -532,11 +532,6 @@ if [ $FROM -le 6 ]; then
 	fi
 
 	(build && make install) || exit 1
-
-	# we need the config files and error checkers
-	mkdir -p $PREFIX
-	ln -sf share/llvm-instrumentation/ $PREFIX/instrumentations
-
 	cd -
 
 	# and also the symbiotic scripts itself
@@ -544,7 +539,6 @@ if [ $FROM -le 6 ]; then
 	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
 
 	cd "$SRCDIR"
-
 fi
 
 
@@ -596,13 +590,13 @@ if [ $FROM -le 7 ]; then
 	LIBRARIES="\
 		lib/libLLVMdg.so lib/libLLVMpta.so lib/libPTA.so lib/libRD.so\
 		lib/LLVMsvc15.so \
+		lib/libPoints_to_plugin.so \
 		lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		lib32/klee/runtime/kleeRuntimeIntrinsic.bc\
 		lib/klee/runtime/klee-libc.bc\
 		lib32/klee/runtime/klee-libc.bc"
 #		lib/LLVMSlicer.so
 	INSTR="bin/LLVMinstr \
-	       instrumentations \
 	       share/llvm-instrumentation/*/*.c \
 	       share/llvm-instrumentation/*/*.json"
 
