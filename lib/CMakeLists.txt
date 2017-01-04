@@ -49,6 +49,10 @@ install(FILES
 		posix/strcpy.c
 		posix/strncmp.c
 		posix/strncpy.c
+		posix/strtoul.c
+		posix/atoi.c
+		posix/strerror.c
+		posix/localtime.c
 		posix/__ctype_b_loc.c
 		posix/__errno_location.c
 	DESTINATION ${INSTALL_DATA_DIR}/lib/posix)
