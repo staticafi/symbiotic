@@ -44,6 +44,7 @@ install(FILES
 		posix/memchr.c
 		posix/memrchr.c
 		posix/strchr.c
+		posix/strrchr.c
 		posix/strcmp.c
 		posix/strcpy.c
 		posix/strncmp.c
