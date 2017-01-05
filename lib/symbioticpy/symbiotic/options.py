@@ -39,6 +39,8 @@ class SymbioticOptions(object):
         # to the slicer and symbolic executor
         self.slicer_params = []
         self.symexe_params = []
+        # these llvm passes will not be run in the optimization phase
+        self.disabled_optimizations = []
         self.CFLAGS = []
         self.CPPFLAGS = []
 

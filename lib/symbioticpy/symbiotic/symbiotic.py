@@ -436,7 +436,7 @@ class Symbiotic(object):
         # get undefined functions from the bitcode
         undefs = self._get_undefined(self.llvmfile)
         if only_func:
-            undefs = filter(set(undefs).__contains__, only_func)
+            undefs = filter(set(only_func).__contains__, undefs)
 
         if self._link_undefined(undefs):
             # if we linked someting, try get undefined again,
@@ -480,9 +480,13 @@ class Symbiotic(object):
         self._run(cmd, SlicerWatch(), 'Slicing failed (removing unused only)')
         self.llvmfile = output
 
-    def optimize(self, passes):
+    def optimize(self, passes, disable = []):
         if self.options.no_optimize:
             return
+
+        disable += self.options.disabled_optimizations
+        if disable:
+            passes = filter(set(disable).__contains__, passes)
 
         output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-o', output, self.llvmfile] + passes
@@ -585,6 +589,8 @@ class Symbiotic(object):
                     opts.append('-fno-sanitize=unsigned-integer-overflow')
                 elif 'SIGNED-OVERFLOW' in self.options.prp:
                     opts.append('-fsanitize=signed-integer-overflow')
+                    # XXX: remove once we have better CD algorithm
+                    self.options.disabled_optimizations = ['-instcombine']
 
                 llvms = self._compile_to_llvm(source, opts=opts)
                 llvmsrc.append(llvms)
