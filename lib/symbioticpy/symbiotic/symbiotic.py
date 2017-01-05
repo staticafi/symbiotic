@@ -429,17 +429,16 @@ class Symbiotic(object):
         self._run(cmd, watch, 'Failed getting undefined symbols from bitcode')
         return map (lambda s: s.strip(), watch.getLines())
 
-    def link_undefined(self, only_func = None):
+    def link_undefined(self, only_func = []):
         if not self.options.linkundef:
             return
 
         # get undefined functions from the bitcode
         undefs = self._get_undefined(self.llvmfile)
-        if not only_func is None:
-            if only_func in undefs:
-                undefs = [only_func]
-            else:
-                undefs = []
+        if only_func:
+            undefs = filter(set(undefs).__contains__, only_func)
+        print(undefs)
+
         if self._link_undefined(undefs):
             # if we linked someting, try get undefined again,
             # because the functions may have added some new undefined
@@ -621,6 +620,14 @@ class Symbiotic(object):
 
         self.prepare(passes = passes)
 
+        # we want to link these functions before instrumentation,
+        # because in those we need to check for invalid dereferences
+        # XXX: do it only with memsafety? But definitions of these
+        # functions may help slicing (without these definitions, slicer
+        # must assume that the memory is modified inside the functions
+        # - that is why we try to link also the mem* functions)
+        self.link_undefined(['strrchr', 'strchr', 'strlen', 'strcmp', 'strncmp',
+                             'strdup', 'memchr', 'memrchr', 'memcmp'])
         # now instrument the code according to properties
         self.instrument()
 
@@ -717,7 +724,7 @@ class Symbiotic(object):
         self.prepare(passes)
 
         # delete-undefined inserts __VERIFIER_make_symbolic
-        self.link_undefined(only_func = '__VERIFIER_make_symbolic');
+        self.link_undefined(only_func = ['__VERIFIER_make_symbolic']);
 
         if self._linked_functions:
             print('Linked our definitions to these undefined functions:')
