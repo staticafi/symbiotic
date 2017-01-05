@@ -81,7 +81,7 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
   for (Module::global_iterator I = M.global_begin(),
                                E = M.global_end(); I != E; ++I) {
     GlobalVariable *GV = &*I;
-    if (GV->isConstant() || GV->hasInitializer())
+    if (GV->hasInitializer())
       continue;
     // we need to set some initializer
     GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
