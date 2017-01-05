@@ -437,7 +437,6 @@ class Symbiotic(object):
         undefs = self._get_undefined(self.llvmfile)
         if only_func:
             undefs = filter(set(undefs).__contains__, only_func)
-        print(undefs)
 
         if self._link_undefined(undefs):
             # if we linked someting, try get undefined again,
