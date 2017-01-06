@@ -627,13 +627,9 @@ class Symbiotic(object):
 
         # we want to link these functions before instrumentation,
         # because in those we need to check for invalid dereferences
-        # XXX: do it only with memsafety? But definitions of these
-        # functions may help slicing (without these definitions, slicer
-        # must assume that the memory is modified inside the functions
-        # - that is why we try to link also the mem* functions)
-        self.link_undefined(['strrchr', 'strchr', 'strlen', 'strcmp', 'strncmp',
-                             'strdup', 'strcpy', 'strncpy', 'memchr', 'memrchr',
-                             'memcmp'])
+        if memsafety:
+            self.link_undefined()
+
         # now instrument the code according to properties
         self.instrument()
 
@@ -656,6 +652,8 @@ class Symbiotic(object):
         self.link()
 
         # link undefined (no-op when prepare is turned off)
+        # (this still can have an effect even in memsafety, since we
+        # can link __VERIFIER_malloc0.c or similar)
         self.link_undefined()
 
         # slice the code
