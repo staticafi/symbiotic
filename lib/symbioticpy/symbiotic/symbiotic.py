@@ -632,7 +632,8 @@ class Symbiotic(object):
         # must assume that the memory is modified inside the functions
         # - that is why we try to link also the mem* functions)
         self.link_undefined(['strrchr', 'strchr', 'strlen', 'strcmp', 'strncmp',
-                             'strdup', 'memchr', 'memrchr', 'memcmp'])
+                             'strdup', 'strcpy', 'strncpy', 'memchr', 'memrchr',
+                             'memcmp'])
         # now instrument the code according to properties
         self.instrument()
 
