@@ -38,7 +38,6 @@ install(FILES
 # std and posix functions
 install(FILES
 		posix/strlen.c
-		posix/strdup.c
 		posix/memcmp.c
 		posix/memcpy.c
 		posix/memchr.c
