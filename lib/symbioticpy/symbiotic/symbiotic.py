@@ -727,8 +727,9 @@ class Symbiotic(object):
 
         self.prepare(passes)
 
-        # delete-undefined inserts __VERIFIER_make_symbolic
-        self.link_undefined(only_func = ['__VERIFIER_make_symbolic']);
+        # delete-undefined may insert __VERIFIER_make_symbolic
+        # and also other funs like __errno_location may be included
+        self.link_undefined();
 
         if self._linked_functions:
             print('Linked our definitions to these undefined functions:')
