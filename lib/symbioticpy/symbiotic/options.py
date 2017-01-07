@@ -34,7 +34,7 @@ class SymbioticOptions(object):
         self.repeat_slicing = 1
         self.dont_exit_on_error = False
         # these files will be linked unconditionally
-        self.link_files = []
+        self.link_files = ['__ctype_b_loc', '__errno_location']
         # additional parameters that can be passed right
         # to the slicer and symbolic executor
         self.slicer_params = []
