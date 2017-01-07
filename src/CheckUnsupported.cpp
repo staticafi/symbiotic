@@ -102,6 +102,8 @@ bool CheckUnsupported::runOnFunction(Function &F) {
     "fdim",
     "fdimf",
     "fdiml",
+    // we still are not good in string -> double
+    "strtod",
     NULL
   };
 
