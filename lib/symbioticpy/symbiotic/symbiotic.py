@@ -628,6 +628,8 @@ class Symbiotic(object):
         # we want to link these functions before instrumentation,
         # because in those we need to check for invalid dereferences
         if memsafety:
+            #self._link_undefined(['__ctype_b_loc', '__errno_location'])
+            self.link_undefined()
             self.link_undefined()
 
         # now instrument the code according to properties
