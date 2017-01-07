@@ -38,7 +38,7 @@ from symbiotic.witnesses.witnesses import GraphMLWriter
 
 from subprocess import call
 
-VERSION='4.0.0-dev'
+VERSION='4.0.0'
 try:
     from symbiotic.versions import versions
 except ImportError:
@@ -450,6 +450,19 @@ def copy_sources_to_tmp(sources):
 
     return tmpdir
 
+def dump_error(bindir):
+    abd = os.path.abspath(bindir)
+    pth = os.path.abspath('{0}/klee-last/test000001.assert.err'.format(abd))
+    try:
+        f = open(pth, 'r')
+        print('\n --- Error trace ---\n')
+        for line in f:
+            print_stdout(line, print_nl = False)
+        print('\n --- ----------- ---')
+    except OSError:
+        # this dumping is just for convenience,
+        # so do not return any error
+        dbg('Failed dumping the error')
 
 if __name__ == "__main__":
     # store time when we have started, so that we can
@@ -542,6 +555,7 @@ if __name__ == "__main__":
         elif res.startswith('FALSE') or res == 'ASSERTIONFAILED':
             generate_counterexample(srcdir, original_sources,
 	                            opts.is32bit, False, opts.witness_output)
+            dump_error(srcdir)
 	elif res == 'TRUE':
 	    generate_counterexample(srcdir, original_sources,
 	                            opts.is32bit, True, opts.witness_output)
