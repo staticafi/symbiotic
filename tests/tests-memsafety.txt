@@ -1,0 +1,2 @@
+FALSE --prp=valid-free --malloc-never-fails double_free.c
+TRUE  --prp=memsafety --malloc-never-fails realloc-true.c
