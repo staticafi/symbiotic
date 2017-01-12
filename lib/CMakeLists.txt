@@ -62,6 +62,10 @@ install(FILES
 		libc/__errno_location.c
 	DESTINATION ${INSTALL_DATA_DIR}/lib/libc)
 
+install(FILES
+		posix/strdup.c
+	DESTINATION ${INSTALL_DATA_DIR}/lib/posix)
+
 # linux kernel functions
 install(FILES
 		kernel/kzalloc.c
