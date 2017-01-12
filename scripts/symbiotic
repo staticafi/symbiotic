@@ -72,7 +72,6 @@ where OPTS can be following:
                               by providing a string when-opt-what, e.g. before-opt-iconstprop
     --no-optimize             Don't optimize the code (same as --optimize=none)
     --libc=klee               Link klee-libc.bc to the module
-    --no-lib                  Don't link lib.bc to the module
     --slicing-criterion=C     Slice to slicing criterion (function call-sites) 'C'
                               (default is '__assert_fail')
     --repeat-slicing=N        Repeat slicing N times
@@ -106,7 +105,8 @@ where OPTS can be following:
     --symexe-params=STR       Pass parameters directly to symbolic executor
     --save-files              Do not remove working files after running.
                               The files will be stored in the symbiotic_files directory.
-    --no-posix                Do not link missing posix and standard library functions
+    --no-libc                 Do not link missing functions from libc to the module
+    --no-posix                Do not link missing posix functions
                               for which we have definition (default=off).
     --no-kernel               Do not link missing kernel functions for which we have
                               definition (default=off)
@@ -258,7 +258,7 @@ def parse_command_line():
                                     'libc=', 'old-slicer', 'require-slicer',
                                     'no-symexe', 'output=', 'witness=', 'bc',
                                     'optimize=', 'no-prepare', 'malloc-never-fails',
-                                    'pta=', 'no-lib', 'slicing-criterion=',
+                                    'pta=', 'no-libc', 'slicing-criterion=',
                                     'cflags=', 'cppflags=', 'link=',
                                     'no-link-undefined', 'repeat-slicing=',
                                     'slicer-params=', 'symexe-params=',
@@ -288,10 +288,6 @@ def parse_command_line():
              else:
                  print('Unknown libc')
                  sys.exit(0)
-
-        elif opt == '--no-lib':
-            dbg('Won\'t link lib.bc to the module')
-            options.no_lib = True
         elif opt == '--version-short':
             vers = ''
             n = 0
@@ -402,6 +398,8 @@ def parse_command_line():
             remove_linkundef(options, 'kernel')
         elif opt == '--no-verifier-funs':
             remove_linkundef(options, 'verifier')
+        elif opt == '--no-libc':
+            remove_linkundef(options, 'libc')
         elif opt == '--witness-with-source-lines':
             global witness_with_source_lines
             witness_with_source_lines = True

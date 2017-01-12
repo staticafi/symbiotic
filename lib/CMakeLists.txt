@@ -35,32 +35,32 @@ install(FILES
 		verifier/__VERIFIER_nondet_sector_t.c
 	DESTINATION ${INSTALL_DATA_DIR}/lib/verifier)
 
-# std and posix functions
+# std functions
 install(FILES
-		posix/strlen.c
-		posix/memcmp.c
-		posix/memcpy.c
-		posix/memchr.c
-		posix/memrchr.c
-		posix/memmove.c
-		posix/strchr.c
-		posix/strrchr.c
-		posix/strcmp.c
-		posix/strcpy.c
-		posix/strncmp.c
-		posix/strncpy.c
-		posix/strtoul.c
-		posix/strtoull.c
-		posix/strtod.c
-		posix/atoi.c
-		posix/strerror.c
-		posix/localtime.c
-		posix/strspn.c
-		posix/strcspn.c
-		posix/getenv.c
-		posix/__ctype_b_loc.c
-		posix/__errno_location.c
-	DESTINATION ${INSTALL_DATA_DIR}/lib/posix)
+		libc/strlen.c
+		libc/memcmp.c
+		libc/memcpy.c
+		libc/memchr.c
+		libc/memrchr.c
+		libc/memmove.c
+		libc/strchr.c
+		libc/strrchr.c
+		libc/strcmp.c
+		libc/strcpy.c
+		libc/strncmp.c
+		libc/strncpy.c
+		libc/strtoul.c
+		libc/strtoull.c
+		libc/strtod.c
+		libc/atoi.c
+		libc/strerror.c
+		libc/localtime.c
+		libc/strspn.c
+		libc/strcspn.c
+		libc/getenv.c
+		libc/__ctype_b_loc.c
+		libc/__errno_location.c
+	DESTINATION ${INSTALL_DATA_DIR}/lib/libc)
 
 # linux kernel functions
 install(FILES
