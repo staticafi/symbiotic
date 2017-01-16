@@ -34,6 +34,7 @@ usage()
 	echo -e "with-llvm=path     - use llvm from path"
 	echo -e "with-llvm-dir=path - use llvm from path"
 	echo -e "with-llvm-src=path - use llvm sources from path"
+	echo -e "llvm-version=ver   - use this version of llvm"
 	echo "" # new line
 	echo -e "slicer, scripts,"
 	echo -e "minisat, stp, klee, witness"
@@ -122,6 +123,9 @@ while [ $# -gt 0 ]; do
 		;;
 		with-llvm-dir=*)
 			WITH_LLVM_DIR=${1##*=}
+		;;
+		llvm-version=*)
+			LLVM_VERSION=${1##*=}
 		;;
 		*)
 			if [ -z "$OPTS" ]; then
