@@ -252,18 +252,21 @@ build_llvm()
 	if [ ! -d "llvm-${LLVM_VERSION}" ]; then
 		wget http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz || exit 1
 		wget http://llvm.org/releases/${LLVM_VERSION}/cfe-${LLVM_VERSION}.src.tar.xz || exit 1
+		wget http://llvm.org/releases/${LLVM_VERSION}/compiler-rt-${LLVM_VERSION}.src.tar.xz || exit 1
 
 		tar -xf llvm-${LLVM_VERSION}.src.tar.xz || exit 1
 		tar -xf cfe-${LLVM_VERSION}.src.tar.xz || exit 1
+		tar -xf compiler-rt-${LLVM_VERSION}.src.tar.xz || exit 1
 
                 # rename llvm folder
                 mv llvm-${LLVM_VERSION}.src llvm-${LLVM_VERSION}
 		# move clang to llvm/tools and rename to clang
 		mv cfe-${LLVM_VERSION}.src llvm-${LLVM_VERSION}/tools/clang
-
+		mv compiler-rt-${LLVM_VERSION}.src llvm-${LLVM_VERSION}/tools/clang/runtime/compiler-rt
 
 		rm -f llvm-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
 		rm -f cfe-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
+		rm -f compiler-rt-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
 	fi
 
 	mkdir -p llvm-build-cmake
