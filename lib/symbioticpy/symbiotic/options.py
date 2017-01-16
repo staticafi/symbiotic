@@ -24,7 +24,7 @@ class SymbioticOptions(object):
         self.old_slicer = False
         self.require_slicer = False
         self.no_optimize = False
-        self.no_symexe = False
+        self.no_verification = False
         self.final_output = None
         self.witness_output = '{0}/witness.graphml'.format(symbiotic_dir)
         self.source_is_bc = False
@@ -38,7 +38,7 @@ class SymbioticOptions(object):
         # additional parameters that can be passed right
         # to the slicer and symbolic executor
         self.slicer_params = []
-        self.symexe_params = []
+        self.tool_params = []
         # these llvm passes will not be run in the optimization phase
         self.disabled_optimizations = []
         self.CFLAGS = []

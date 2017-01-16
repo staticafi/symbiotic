@@ -60,114 +60,40 @@ class UnsuppWatch(ProcessWatch):
         dbg(line, domain='prepare', print_nl = False)
         self._ok = not UnsuppWatch.unsupported_call.match(line)
 
-class KleeWatch(ProcessWatch):
-
-    def __init__(self, prp = None):
-        ProcessWatch.__init__(self, 100)
-        self._found = []
-        self._memsafety = False
-        self._overflow = False
-        if prp == 'memsafety':
-            self._memsafety = True
-        elif prp == 'overflow':
-            self._overflow = True
-
-        # define and compile regular expressions for parsing klee's output
-        self._patterns = [
-           ('EDOUBLEFREE' , re.compile('.*ASSERTION FAIL: 0 && "double free".*')),
-           ('EINVALFREE' , re.compile('.*ASSERTION FAIL: 0 && "free on non-allocated memory".*')),
-           ('EMEMLEAK' , re.compile('.*ASSERTION FAIL: 0 && "memory leak detected".*')),
-           ('ASSERTIONFAILED' , re.compile('.*ASSERTION FAIL:.*')),
-           ('ESTPTIMEOUT' , re.compile('.*query timed out (resolve).*')),
-           ('EKLEETIMEOUT' , re.compile('.*HaltTimer invoked.*')),
-           ('EEXTENCALL' , re.compile('.*failed external call.*')),
-           ('ELOADSYM' , re.compile('.*ERROR: unable to load symbol.*')),
-           ('EINVALINST' , re.compile('.*LLVM ERROR: Code generator does not support.*')),
-           ('EKLEEASSERT' , re.compile('.*klee: .*Assertion .* failed.*')),
-           ('EINITVALS' , re.compile('.*unable to compute initial values.*')),
-           ('ESYMSOL' , re.compile('.*unable to get symbolic solution.*')),
-           ('ESILENTLYCONCRETIZED' , re.compile('.*silently concretizing.*')),
-           ('EEXTRAARGS' , re.compile('.*calling .* with extra arguments.*')),
-           ('EABORT' , re.compile('.*abort failure.*')),
-           #('EGENERAL' , re.compile('.*now ignoring this error at this location.*')),
-           ('EMALLOC' , re.compile('.*found huge malloc, returning 0.*')),
-           ('ESKIPFORK' , re.compile('.*skipping fork.*')),
-           ('EKILLSTATE' , re.compile('.*killing.*states \(over memory cap\).*')),
-           ('EMEMERROR'  , re.compile('.*memory error: out of bound pointer.*')),
-           ('EMAKESYMBOLIC' , re.compile('.*memory error: invalid pointer: make_symbolic.*')),
-           ('EVECTORUNSUP' , re.compile('.*XXX vector instructions unhandled.*')),
-           ('EFREE' , re.compile('.*memory error: invalid pointer: free.*'))
-        ]
-
-        if not self._memsafety:
-            # we do not want this pattern to be found in memsafety benchmarks,
-            # because we insert our own check that do not care about what KLEE
-            # really allocated underneath
-            self._patterns.append(('ECONCRETIZED', re.compile('.* concretized symbolic size.*')))
-
-    def found(self):
-        return ' '.join(self._found)
-
-    def _parse_klee_output(self, line):
-        for (key, pattern) in self._patterns:
-            if pattern.match(line):
-                # return True so that we know we should terminate
-                if key == 'ASSERTIONFAILED':
-                    if self._memsafety:
-                        key += ' (valid-deref)'
-                    elif self._overflow:
-                        key += ' (overflow)'
-                    return key
-                elif self._memsafety:
-		    #if key == 'EMEMERROR':
-                    #   return 'ASSERTIONFAILED (valid-deref)'
-                    #if key == 'EFREE' or key == 'EDOUBLEFREE' or key == 'EINVALFREE':
-                    if key == 'EDOUBLEFREE' or key == 'EINVALFREE':
-                        return 'ASSERTIONFAILED (valid-free)'
-                    if key == 'EMEMLEAK':
-                        return 'ASSERTIONFAILED (valid-memtrack)'
-                return key
-
-        return None
+class ToolWatch(ProcessWatch):
+    def __init__(self, tool):
+        # store the whole output of a tool
+        ProcessWatch.__init__(self, None)
+        self._tool = tool
 
     def parse(self, line):
-        found = self._parse_klee_output(line)
-        if found:
-            self._found.insert(0, found)
-
-        if 'ERROR' in line or 'WARN' in line or 'Assertion' in line\
-           or 'error' in line or 'undefined reference' in line:
-            sys.stderr.write(line)
-        else:
-            dbg(line, 'all', False)
+       if 'ERROR' in line or 'WARN' in line or 'Assertion' in line\
+          or 'error' in line or 'warn' in line:
+           sys.stderr.write(line)
+       else:
+           dbg(line, 'all', False)
 
 def report_results(res):
     dbg(res)
-    result = res
     color = 'BROWN'
 
-    if res.startswith('ASSERTIONFAILED'):
-        result = 'FALSE'
-	info = res[15:].strip()
-	if info:
-	    result += ' ' + info
+    if res.startswith('false'):
         color = 'RED'
-    elif res == '':
-        result = 'TRUE'
+    elif res == 'true':
         color='GREEN'
-    elif res == 'TIMEOUT':
-        result = 'TIMEOUT'
-    elif 'EKLEEERROR' in res:
-        result = 'ERROR'
+    #elif res == 'timeout':
+    elif res.startswith('error') or\
+         res.startswith('ERROR'):
         color='RED'
     else:
-        result = 'UNKNOWN'
+        result = 'unknown'
 
     sys.stdout.flush()
-    print_stdout(result, color=color)
+    print_stdout('RESULT: ', print_nl=False)
+    print_stdout(res, color=color)
     sys.stdout.flush()
 
-    return result
+    return res
 
 def get_optlist_before(optlevel):
     from optimizations import optimizations
@@ -206,7 +132,7 @@ class Symbiotic(object):
     Instance of symbiotic tool. Instruments, prepares, compiles and runs
     symbolic execution on given source(s)
     """
-    def __init__(self, src, opts = None, symb_dir = None):
+    def __init__(self, tool, src, opts = None, symb_dir = None):
         # source file
         self.sources = src
         # source compiled to llvm bytecode
@@ -228,6 +154,9 @@ class Symbiotic(object):
 
         # definitions of our functions that we linked
         self._linked_functions = []
+
+        # tool to use
+        self._tool = tool
 
     def _run(self, cmd, watch, err_msg):
         self.current_process = ProcessRunner(cmd, watch)
@@ -255,7 +184,6 @@ class Symbiotic(object):
 
         if self.options.is32bit:
             cmd.append('-m32')
-
 
         cmd.append('-o')
         if output is None:
@@ -508,42 +436,20 @@ class Symbiotic(object):
 
         return True
 
-    def run_symexe(self):
-        cmd = ['klee', '-write-paths',
-               '-dump-states-on-halt=0', '-silent-klee-assume=1',
-               '-output-stats=0', '-disable-opt', '-only-output-states-covering-new=1',
-               '-max-time={0}'.format(self.options.timeout)] + self.options.symexe_params
+    def run_verification(self):
+        cmd = self._tool.cmdline(self._tool.executable(),
+                                 self.options.tool_params, [self.llvmfile])
 
-        if not self.options.dont_exit_on_error:
-            cmd.append('-exit-on-error-type=Assert')
-
-        cmd.append(self.llvmfile)
-
-        failed = False
-        memsafety = 'VALID-DEREF' in self.options.prp or \
-	            'VALID-FREE' in self.options.prp or \
-	            'VALID-MEMTRACK' in self.options.prp or \
-	            'MEMSAFETY' in self.options.prp
-        overflow = 'SIGNED-OVERFLOW' in self.options.prp
-        assert not (memsafety and overflow)
-        if memsafety:
-            prp = 'memsafety'
-        elif overflow:
-            prp = 'overflow'
-        else:
-            prp = None
-        watch = KleeWatch(prp)
-
+        returncode = 0
+        watch = ToolWatch(self._tool)
         try:
             self._run(cmd, watch, 'Symbolic execution failed')
-        except SymbioticException:
-            failed = True
+        except SymbioticException as e:
+            print_stderr(e.message, color='RED')
+            returncode = 1
 
-        found = watch.found()
-        if failed:
-            found += ' EKLEEERROR'
-
-        return found
+        return self._tool.determine_result(returncode, 0,
+                                           watch.getLines(), False)
 
     def terminate(self):
         if self.current_process:
@@ -564,7 +470,6 @@ class Symbiotic(object):
 
             print('Killed the child process')
 
-
     def run(self, criterion = '__assert_fail'):
         try:
             return self._run_symbiotic(criterion);
@@ -573,37 +478,42 @@ class Symbiotic(object):
             self.kill()
             print('Interrupted...')
 
+    def _compile_sources(self):
+        llvmsrc = []
+        for source in self.sources:
+            opts = ['-Wno-unused-parameter', '-Wno-unused-attribute',
+                    '-Wno-unused-label', '-Wno-unknown-pragmas']
+            if 'UNDEF-BEHAVIOR' in self.options.prp:
+                opts.append('-fsanitize=undefined')
+                opts.append('-fno-sanitize=unsigned-integer-overflow')
+            elif 'SIGNED-OVERFLOW' in self.options.prp:
+                opts.append('-fsanitize=signed-integer-overflow')
+                # XXX: remove once we have better CD algorithm
+                self.options.disabled_optimizations = ['-instcombine']
+
+            llvms = self._compile_to_llvm(source, opts=opts)
+            llvmsrc.append(llvms)
+
+        # link all compiled sources to a one bytecode
+        # the result is stored to self.llvmfile
+        self.link('code.bc', llvmsrc)
+
     def _run_symbiotic(self, criterion = '__assert_fail'):
         restart_counting_time()
 
+        # compile all sources if the file is not given
+        # as a .bc file
         if self.options.source_is_bc:
             self.llvmfile = sources[0]
         else:
-            # compile all sources
-            llvmsrc = []
-            for source in self.sources:
-                opts = ['-Wno-unused-parameter', '-Wno-unused-attribute',
-                        '-Wno-unused-label', '-Wno-unknown-pragmas']
-                if 'UNDEF-BEHAVIOR' in self.options.prp:
-                    opts.append('-fsanitize=undefined')
-                    opts.append('-fno-sanitize=unsigned-integer-overflow')
-                elif 'SIGNED-OVERFLOW' in self.options.prp:
-                    opts.append('-fsanitize=signed-integer-overflow')
-                    # XXX: remove once we have better CD algorithm
-                    self.options.disabled_optimizations = ['-instcombine']
-
-                llvms = self._compile_to_llvm(source, opts=opts)
-                llvmsrc.append(llvms)
-
-            # link all compiled sources to a one bytecode
-            # the result is stored to self.llvmfile
-            self.link('code.bc', llvmsrc)
+            self._compile_sources()
 
         if not self.check_llvmfile(self.llvmfile, '-check-concurr'):
             dbg('Unsupported call (probably pthread API)')
             return report_results('unsupported call')
 
         # link the files that we got on the command line
+        # and that we are required to link in on any circumstances
         self.link_unconditional()
 
         # remove definitions of __VERIFIER_* that are not created by us
@@ -628,7 +538,6 @@ class Symbiotic(object):
         # we want to link these functions before instrumentation,
         # because in those we need to check for invalid dereferences
         if memsafety:
-            #self._link_undefined(['__ctype_b_loc', '__errno_location'])
             self.link_undefined()
             self.link_undefined()
 
@@ -751,11 +660,11 @@ class Symbiotic(object):
                 msg = 'Cannot create {0}: {1}'.format(self.options.final_output, e.message)
                 raise SymbioticException(msg)
 
-        if not self.options.no_symexe:
+        if not self.options.no_verification:
             print('INFO: Starting verification')
-            found = self.run_symexe()
+            found = self.run_verification()
         else:
-            found = 'Did not run symbolic execution'
+            found = 'Did not run verification'
 
         return report_results(found)
 

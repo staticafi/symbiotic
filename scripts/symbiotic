@@ -62,7 +62,7 @@ where OPTS can be following:
                               but replace it with 0.
     --malloc-never-fails      Suppose malloc and calloc never return NULL
     --require-slicer          Abort if slicing fails (default is to use the original file)
-    --no-symexe               Do not run symbolic execution (handy for debugging)
+    --no-verification         Do not run verification phase (handy for debugging)
     --optimize=opt1,...       Run optimizations, every item in the optimizations list
                               is a string of type when-level, where when is 'before'
                               or 'after' (slicing) and level in 'conservative', 'klee',
@@ -94,7 +94,7 @@ where OPTS can be following:
                               all, compile, prepare, slicer
                               In that case you get verbose output. You can just use
                               --debug= to print basic messages.
-    --output=FILE             Store the final code (that is to be run by symexe) to FILE
+    --output=FILE             Store the final code (that is to be run by a tool) to FILE
     --witness=FILE            Store witness into FILE (default is witness.graphml)
     --witness-with-source-lines
                               Store source lines into the witness (may have memory overhead).
@@ -102,7 +102,7 @@ where OPTS can be following:
     --cppflags=flags          Append extra CFLAGS and CPPFLAGS to use while compiling,
                               the environment CFLAGS and CPPFLAGS are used too
     --slicer-params=STR       Pass parameters directly to slicer
-    --symexe-params=STR       Pass parameters directly to symbolic executor
+    --tool-params=STR         Pass parameters directly to the tool 
     --save-files              Do not remove working files after running.
                               The files will be stored in the symbiotic_files directory.
     --no-libc                 Do not link missing functions from libc to the module
@@ -256,12 +256,12 @@ def parse_command_line():
                                    ['no-slice', '64', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=', 'version', 'help',
                                     'libc=', 'old-slicer', 'require-slicer',
-                                    'no-symexe', 'output=', 'witness=', 'bc',
+                                    'no-verification', 'output=', 'witness=', 'bc',
                                     'optimize=', 'no-prepare', 'malloc-never-fails',
                                     'pta=', 'no-libc', 'slicing-criterion=',
                                     'cflags=', 'cppflags=', 'link=',
                                     'no-link-undefined', 'repeat-slicing=',
-                                    'slicer-params=', 'symexe-params=',
+                                    'slicer-params=', 'tool-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
                                     'save-files', 'version-short', 'no-posix',
                                     'no-kernel', 'no-verifier-funs',
@@ -319,9 +319,9 @@ def parse_command_line():
         elif opt == '--malloc-never-fails':
             dbg('Assuming malloc and calloc will never fail')
             options.malloc_never_fails = True
-        elif opt == '--no-symexe':
-            dbg('Will not run symbolic execution')
-            options.no_symexe = True
+        elif opt == '--no-verification':
+            dbg('Will not run verification phase')
+            options.no_verification = True
         elif opt == '--require-slicer':
             options.require_slicer = True
         elif opt == '--old-slicer':
@@ -385,8 +385,8 @@ def parse_command_line():
             CPPFLAGS += arg.split()
         elif opt == '--slicer-params':
             options.slicer_params = arg.split()
-        elif opt == '--symexe-params':
-            options.symexe_params = arg.split()
+        elif opt == '--tool-params':
+            options.tool_params = arg.split()
         elif opt == '--link':
             options.link_files += arg.split(',')
         elif opt == '--save-files':
@@ -462,6 +462,10 @@ def dump_error(bindir):
         # so do not return any error
         dbg('Failed dumping the error')
 
+def get_tool(tool_name, opts):
+    from tools.klee import Tool()
+    return Tool(opts)
+
 if __name__ == "__main__":
     # store time when we have started, so that we can
     # measure how long Symbiotic ran
@@ -534,7 +538,7 @@ if __name__ == "__main__":
 
         # let the show begin!
         try:
-            symbiotic = Symbiotic(sources, opts, symbiotic_dir)
+            symbiotic = Symbiotic(sources, tool, opts, symbiotic_dir)
             res = symbiotic.run()
         except SymbioticException as e:
             if e.message:

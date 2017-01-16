@@ -13,14 +13,14 @@ class ProcessWatch(object):
         the lines of output maximally up to \param buffer_lines,
         or will store everything when \param buffer_lines is None
         """
-        self.maxlines = lines_limit
+        self._maxlines = lines_limit
 
         if self.isBuffering():
             from collections import deque
             self.buff = deque(maxlen = lines_limit)
 
     def isBuffering(self):
-        return self.maxlines is None or self.maxlines > 0
+        return self._maxlines is None or self._maxlines > 0
 
     def putLine(self, line):
         """
