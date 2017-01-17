@@ -19,7 +19,6 @@ if (NOT ${LLVM_PACKAGE_VERSION} VERSION_GREATER "3.4")
 endif()
 
 set(INSTALL_BIN_DIR ${CMAKE_INSTALL_PREFIX} CACHE PATH "Installation directory for executables")
-set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for executables")
 set(INSTALL_INC_DIR include CACHE PATH "Installation directory for headers")
 set(INSTALL_DATA_DIR ${CMAKE_INSTALL_PREFIX} CACHE PATH "Installation directory for data files")
 

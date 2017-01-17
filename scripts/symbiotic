@@ -24,7 +24,7 @@ import getopt
 from time import time
 
 # set path to our package
-pth = os.path.join(os.path.dirname(__file__), 'lib/symbioticpy')
+pth = os.path.join(os.path.dirname(__file__), '../lib/symbioticpy')
 sys.path.append(os.path.abspath(pth))
 
 from symbiotic.utils import err, dbg, enable_debug
@@ -172,14 +172,23 @@ def set_environ(is32bit = False):
 
     symbiotic_dir = get_symbiotic_dir()
     # set path without preprending, we want to use only our stuff
-    os.environ['PATH'] = '{0}/bin'.format(symbiotic_dir)
+    llvm_version='3.8.1'
+
+    os.environ['PATH'] = '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version)
+
+    prepend('LD_LIBRARY_PATH', '{0}/llvm-{1}/lib'.format(symbiotic_dir, llvm_version))
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
+
+    prepend('C_INCLUDE_DIR', '{0}/llvm-{1}/include'.format(symbiotic_dir, llvm_version))
     prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
 
+    # FIXME: do this only for klee
     if is32bit:
-        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] = '{0}/lib32/klee/runtime'.format(symbiotic_dir)
+        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] \
+            = '{0}/llvm-{1}/lib32/klee/runtime'.format(symbiotic_dir, llvm_version)
     else:
-        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] = '{0}/lib/klee/runtime'.format(symbiotic_dir)
+        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] \
+            = '{0}/llvm-{1}/lib/klee/runtime'.format(symbiotic_dir, llvm_version)
 
     dbg('PATH={0}'.format(os.environ['PATH']))
     dbg('LD_LIBRARY_PATH={0}'.format(os.environ['LD_LIBRARY_PATH']))
@@ -435,7 +444,7 @@ def copy_sources_to_tmp(sources):
             rm_tmp_dir(tmpdir, True)
             os.mkdir(tmpdir)
     else:
-        tmpdir = mkdtemp(prefix='symbiotic.', dir='.')
+        tmpdir = mkdtemp(prefix='/tmp/symbiotic.', dir='.')
 
     for s in sources:
         t = os.path.join(tmpdir, os.path.basename(s))
@@ -463,7 +472,7 @@ def dump_error(bindir):
         dbg('Failed dumping the error')
 
 def get_tool(tool_name, opts):
-    from tools.klee import Tool()
+    from symbiotic.tools.klee import Tool
     return Tool(opts)
 
 if __name__ == "__main__":
@@ -483,6 +492,7 @@ if __name__ == "__main__":
     if opts.timeout != 0:
         start_timeout(opts.timeout)
 
+    tool = get_tool('klee', opts)
     try:
         symbiotic = None
 
@@ -533,12 +543,12 @@ if __name__ == "__main__":
                     opts.prp.append(prp_key)
         except KeyError as ke:
             print('Unknown or unsupported property: {0}'.format(ke.message))
-            print('UNKNOWN')
+            print('unknown')
             sys.exit(0)
 
         # let the show begin!
         try:
-            symbiotic = Symbiotic(sources, tool, opts, symbiotic_dir)
+            symbiotic = Symbiotic(tool, sources, opts, symbiotic_dir)
             res = symbiotic.run()
         except SymbioticException as e:
             if e.message:
@@ -554,18 +564,18 @@ if __name__ == "__main__":
         srcdir = os.path.dirname(symbiotic.llvmfile)
         if res is None:
             pass
-        elif res.startswith('FALSE') or res == 'ASSERTIONFAILED':
+        elif res.startswith('false'):
             generate_counterexample(srcdir, original_sources,
 	                            opts.is32bit, False, opts.witness_output)
             dump_error(srcdir)
-	elif res == 'TRUE':
+	elif res == 'true':
 	    generate_counterexample(srcdir, original_sources,
 	                            opts.is32bit, True, opts.witness_output)
     except Timeout:
         sys.stdout.flush()
         sys.stderr.flush()
 
-        print('TIMEOUT')
+        print('timeout')
     finally:
         stop_timeout()
         if symbiotic:

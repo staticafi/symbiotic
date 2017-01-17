@@ -12,3 +12,4 @@ add_llvm_loadable_module(LLVMsvc15
 				InstrumentAlloc.cpp
 				FindInit.cpp
 				CheckUnsupported.cpp)
+install(TARGETS LLVMsvc15 DESTINATION ${CMAKE_INSTALL_LIBDIR})

@@ -90,6 +90,6 @@ def print_elapsed_time(msg):
 
 def get_symbiotic_dir():
     # get real path (strip off links)
-    realpath = os.path.realpath(sys.argv[0])
+    realpath = os.path.realpath(os.path.join(sys.argv[0], '..'))
     return os.path.abspath(os.path.dirname(realpath))
 

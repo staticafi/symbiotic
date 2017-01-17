@@ -61,6 +61,8 @@ WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
 
+export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
+
 RUNDIR=`pwd`
 SRCDIR=`dirname $0`
 ABS_RUNDIR=`readlink -f $RUNDIR`
@@ -126,6 +128,7 @@ while [ $# -gt 0 ]; do
 		;;
 		llvm-version=*)
 			LLVM_VERSION=${1##*=}
+			LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 		;;
 		*)
 			if [ -z "$OPTS" ]; then
@@ -305,10 +308,11 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	fi
 
 	# we need these binaries in symbiotic
-	cp $LLVM_LOCATION/bin/clang $PREFIX/bin/clang || exit 1
-	cp $LLVM_LOCATION/bin/opt $PREFIX/bin/opt || exit 1
-	cp $LLVM_LOCATION/bin/llvm-link $PREFIX/bin/llvm-link || exit 1
-	cp $LLVM_LOCATION/bin/llvm-nm $PREFIX/bin/llvm-nm || exit 1
+	mkdir -p $LLVM_PREFIX/bin
+	cp $LLVM_LOCATION/bin/clang $LLVM_PREFIX/bin/clang || exit 1
+	cp $LLVM_LOCATION/bin/opt $LLVM_PREFIX/bin/opt || exit 1
+	cp $LLVM_LOCATION/bin/llvm-link $LLVM_PREFIX/bin/llvm-link || exit 1
+	cp $LLVM_LOCATION/bin/llvm-nm $LLVM_PREFIX/bin/llvm-nm || exit 1
 fi
 
 if [ -z "$WITH_LLVM" ]; then
@@ -361,7 +365,7 @@ if [ $FROM -le 1 ]; then
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
-			-DCMAKE_INSTALL_PREFIX=$PREFIX \
+			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			|| clean_and_exit 1 "git"
 	fi
 
@@ -375,9 +379,21 @@ fi
 if [ $FROM -le 2 ]; then
 	git_clone_or_pull git://github.com/stp/minisat.git minisat
 	cd minisat
-	export CPPFLAGS="$CPPFLAGS `pkg-config --cflags zlib`"
-	(build lr && make prefix=$PREFIX install-headers) || exit 1
-	cp build/release/lib/libminisat.a $PREFIX/lib/ || exit 1
+	mkdir -p build
+
+	if [ ! -d CMakeFiles ]; then
+		cd build || exit 1
+		cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX \
+			-DSTATICCOMPILE=ON \
+			-DZLIB_LIBRARY="-L/home/xchalup4/symbiotic/install/lib -lz"\
+			-DZLIB_INCLUDE_DIR="/home/xchalup4/symbiotic/install/include"
+	fi
+
+	cd build
+
+	(make -j2 && make install) || exit 1
+	# (build lr && make prefix=$PREFIX install-headers) || exit 1
+	# cp build/release/lib/libminisat.a $PREFIX/lib/ || exit 1
 
 	cd -
 fi
@@ -395,6 +411,8 @@ if [ $FROM -le 3 ]; then
 			-DCMAKE_C_FLAGS_RELEASE=-O2 \
 			-DCMAKE_BUILD_TYPE=Release \
 			-DBUILD_SHARED_LIBS:BOOL=OFF \
+			-DZLIB_LIBRARY="-L/home/xchalup4/symbiotic/install/lib -lz"\
+			-DZLIB_INCLUDE_DIR="/home/xchalup4/symbiotic/install/include"\
 			-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
 	fi
 
@@ -413,12 +431,14 @@ if [ $FROM -le 4 ]; then
 	cd klee-build/
 
 	if [ ! -d CMakeFiles ]; then
-		cmake ../klee -DCMAKE_INSTALL_PREFIX=$PREFIX \
+		cmake ../klee -DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_BUILD_TYPE=Release \
 			-DKLEE_RUNTIME_BUILD_TYPE=Release+Asserts \
 			-DENABLE_SOLVER_STP=ON \
 			-DSTP_DIR=`pwd`/../stp \
 			-DLLVM_CONFIG_BINARY=`pwd`/../llvm-build-cmake/bin/llvm-config \
+			-DZLIB_LIBRARY="-L/home/xchalup4/symbiotic/install/lib -lz"\
+			-DZLIB_INCLUDE_DIR="/home/xchalup4/symbiotic/install/include"\
 			-DENABLE_UNIT_TESTS=OFF \
 		|| clean_and_exit 1 "git"
 	fi
@@ -432,8 +452,8 @@ if [ $FROM -le 4 ]; then
 	pwd
 	(build && make install) || exit 1
 
-	mv $PREFIX/lib64/klee $PREFIX/lib/klee
-	rmdir $PREFIX/lib64
+	mv $LLVM_PREFIX/lib64/klee $LLVM_PREFIX/lib/klee
+	rmdir $LLVM_PREFIX/lib64
 
 	# clean 64-bit build and build 32-bit version of runtime library
 	make -C runtime -f Makefile.cmake.bitcode clean \
@@ -446,12 +466,12 @@ if [ $FROM -le 4 ]; then
 		|| exitmsg "Failed building 32-bit klee runtime library"
 
 	# copy 32-bit library version to prefix
-	mkdir -p $PREFIX/lib32/klee/runtime
+	mkdir -p $LLVM_PREFIX/lib32/klee/runtime
 	cp Release+Asserts/lib/kleeRuntimeIntrinsic.bc \
-		$PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
+		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
 	cp Release+Asserts/lib/klee-libc.bc \
-		$PREFIX/lib32/klee/runtime/klee-libc.bc \
+		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
 
 
@@ -515,6 +535,7 @@ if [ $FROM -le 6 ]; then
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
+			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
 			|| clean_and_exit 1 "git"
 	fi
 
@@ -530,19 +551,19 @@ if [ $FROM -le 6 ]; then
 		./bootstrap-json.sh || exitmsg "Failed generating json files"
 		cmake . \
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
+			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$PREFIX/share \
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DDG_PATH=$ABS_SRCDIR/dg \
-			-DCMAKE_INSTALL_PREFIX=$PREFIX \
+			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			|| clean_and_exit 1 "git"
 	fi
 
 	(build && make install) || exit 1
 	cd -
 
-	# and also the symbiotic scripts itself
-	mv $PREFIX/bin/symbiotic $PREFIX || exit 1
+	# and also the symbiotic libraries
 	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
 
 	cd "$SRCDIR"
@@ -593,17 +614,19 @@ if [ $FROM -le 7 ]; then
 
 	# create git repository and add all files that we need
 	# then remove the rest and create distribution
-	BINARIES="bin/clang bin/opt bin/klee bin/llvm-link bin/llvm-nm bin/llvm-slicer"
+	BINARIES="$LLVM_PREFIX/bin/clang $LLVM_PREFIX/bin/opt \
+		  $LLVM_PREFIX/bin/klee $LLVM_PREFIX/bin/llvm-link \
+		  $LLVM_PREFIX/bin/llvm-nm $LLVM_PREFIX/bin/llvm-slicer"
 	LIBRARIES="\
-		lib/libLLVMdg.so lib/libLLVMpta.so lib/libPTA.so lib/libRD.so\
-		lib/LLVMsvc15.so \
-		lib/libPoints_to_plugin.so \
-		lib/klee/runtime/kleeRuntimeIntrinsic.bc \
-		lib32/klee/runtime/kleeRuntimeIntrinsic.bc\
-		lib/klee/runtime/klee-libc.bc\
-		lib32/klee/runtime/klee-libc.bc"
-#		lib/LLVMSlicer.so
-	INSTR="bin/LLVMinstr \
+		$LLVM_PREFIX/lib/libLLVMdg.so $LLVM_PREFIX/lib/libLLVMpta.so \
+		$LLVM_PREFIX/lib/libPTA.so $LLVM_PREFIX/lib/libRD.so \
+		$LLVM_PREFIX/lib/LLVMsvc15.so \
+		$LLVM_PREFIX/lib/libPoints_to_plugin.so \
+		$LLVM_PREFIX/lib/klee/runtime/kleeRuntimeIntrinsic.bc \
+		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
+		$LLVM_PREFIX/lib/klee/runtime/klee-libc.bc \
+		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc"
+	INSTR="$LLVM_PREFIX/bin/LLVMinstr \
 	       share/llvm-instrumentation/*/*.c \
 	       share/llvm-instrumentation/*/*.json"
 
@@ -624,17 +647,17 @@ if [ $FROM -le 7 ]; then
 		$BINARIES \
 		$LIBRARIES \
 		$INSTR\
-		$CPACHECKER \
-		$ULTIAUTO \
-		symbiotic \
+		bin/symbiotic \
 		include/symbiotic.h \
 		include/symbiotic-size_t.h \
 		lib/*.c \
 		lib/symbioticpy/benchexec/*.py \
 		lib/symbioticpy/symbiotic/*.py \
 		lib/symbioticpy/symbiotic/utils/*.py \
-		lib/symbioticpy/symbiotic/witnesses/*.py
-		lib/symbioticpy/symbiotic/tools/*.py
+		lib/symbioticpy/symbiotic/witnesses/*.py \
+		lib/symbioticpy/symbiotic/tools/*.py \
+		$CPACHECKER \
+		$ULTIAUTO
 
 	git commit -m "Create Symbiotic distribution `date`"
 	# remove unnecessary files
