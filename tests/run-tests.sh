@@ -24,7 +24,7 @@ errmsg()
 }
 
 DIR=`dirname $0`
-SYMBIOTIC=`readlink -f $DIR/../install/symbiotic`
+SYMBIOTIC=`readlink -f $DIR/../install/bin/symbiotic`
 
 if [ ! -f $SYMBIOTIC ]; then
 	errmsg "Couldn't find compiled symbiotic"
@@ -41,10 +41,10 @@ cat $TESTS | while read DESIRED ARGS; do
 	echo -n "$ARGS ... "
 
 	if [ "$DESIRED" = "FALSE" ]; then
-		echo "$OUTPUT" | grep -q FALSE || fail "FAILED"
+		echo "$OUTPUT" | grep -q "RESULT: false" || fail "FAILED"
 		echo "OK"
 	elif [ "$DESIRED" = "TRUE" ]; then
-		echo "$OUTPUT" | grep -q TRUE || fail "FAILED"
+		echo "$OUTPUT" | grep -q "RESULT: true" || fail "FAILED"
 		echo "OK"
 	else
 		errmsg  "Wrong syntax in tests.txt"

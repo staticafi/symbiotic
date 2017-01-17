@@ -173,24 +173,33 @@ def set_environ(tool, is32bit = False):
         prepend('C_INCLUDE_DIR', p)
 
     symbiotic_dir = get_symbiotic_dir()
-    # set path without preprending, we want to use only our stuff
     llvm_version=tool.llvm_version()
 
-    os.environ['PATH'] = '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version)
-
-    prepend('LD_LIBRARY_PATH', '{0}/llvm-{1}/lib'.format(symbiotic_dir, llvm_version))
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
+    prepend('LD_LIBRARY_PATH', '{0}/llvm-{1}/lib'.format(symbiotic_dir, llvm_version))
 
-    prepend('C_INCLUDE_DIR', '{0}/llvm-{1}/include'.format(symbiotic_dir, llvm_version))
     prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
+    prepend('C_INCLUDE_DIR', '{0}/llvm-{1}/include'.format(symbiotic_dir, llvm_version))
 
     if tool.name() == 'klee':
+        # set path without preprending, we want to use only our stuff
+        os.environ['PATH'] = '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version)
+
         if is32bit:
             os.environ['KLEE_RUNTIME_LIBRARY_PATH'] \
                 = '{0}/llvm-{1}/lib32/klee/runtime'.format(symbiotic_dir, llvm_version)
         else:
             os.environ['KLEE_RUNTIME_LIBRARY_PATH'] \
                 = '{0}/llvm-{1}/lib/klee/runtime'.format(symbiotic_dir, llvm_version)
+    elif tool.name() == 'skink':
+        prepend('LD_LIBRARY_PATH', '{0}/skink-v2.0/lib'.format(symbiotic_dir, llvm_version))
+        prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
+        prepend('PATH', '{0}/skink-v2.0/bin'.format(symbiotic_dir, llvm_version))
+    elif tool.name() == 'SMACK+Corral':
+        prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
+        prepend('PATH', '{0}/smack-1.7.1-64/'.format(symbiotic_dir))
+    else:
+        prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
 
     dbg('PATH={0}'.format(os.environ['PATH']))
     dbg('LD_LIBRARY_PATH={0}'.format(os.environ['LD_LIBRARY_PATH']))
@@ -249,12 +258,12 @@ def get_prp(prp):
             if line:
                 prp_list.append(line)
         f.close()
-        return prp_list
+        return (prp_list, os.path.abspath(epath))
 
     # it is not a file, so it is given as a string
     # FIXME: this does not work for properties given
     # as LTL (there are spaces)
-    return prp.split()
+    return (prp.split(), None)
 
 # do not remove working files after running
 save_files = False
@@ -280,12 +289,6 @@ def parse_command_line():
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
-
-    def remove_linkundef(options, what):
-        try:
-            options.linkundef.remove(what)
-        except ValueError:
-            pass
 
     for opt, arg in opts:
         if opt == '--help':
@@ -356,7 +359,7 @@ def parse_command_line():
                     options.optlevel = []
                     break
         elif opt == '--prp':
-            options.prp = get_prp(arg)
+            options.prp, options.prpfile = get_prp(arg)
             for prp in options.prp:
                 dbg('Property: {0}'.format(prp))
         elif opt == '--pta':
@@ -475,10 +478,32 @@ def dump_error(bindir):
         # so do not return any error
         dbg('Failed dumping the error')
 
-def get_tool(opts):
+def remove_linkundef(options, what):
+    try:
+        options.linkundef.remove(what)
+    except ValueError:
+        pass
+
+
+def initialize_tool(opts):
     if opts.tool_name == 'klee':
         from symbiotic.tools.klee import Tool
         return Tool(opts)
+    elif opts.tool_name == 'ceagle':
+        from symbiotic.tools.ceagle import Tool
+        opts.slicing_criterion = '__VERIFIER_error'
+        remove_linkundef(opts, 'verifier')
+        return Tool()
+    elif opts.tool_name == 'skink':
+        from symbiotic.tools.skink import Tool
+        opts.slicing_criterion = '__VERIFIER_error'
+        remove_linkundef(opts, 'verifier')
+        return Tool()
+    elif opts.tool_name == 'smack':
+        from symbiotic.tools.smack import Tool
+        opts.slicing_criterion = '__VERIFIER_error'
+        remove_linkundef(opts, 'verifier')
+        return Tool()
     else:
         raise SymbioticException('Unknown tool: {0}'.format(opts.tool_name))
 
@@ -492,6 +517,21 @@ if __name__ == "__main__":
         print(usage_msg)
         sys.exit(1)
 
+    try:
+        # opts.prp now contain a list with keys (or None),
+        # but we want the value from the map
+        if opts.prp:
+            prps = opts.prp[:] # make copy of properties
+            opts.prp = []
+
+            for prp in prps:
+                prp_key = supported_properties[prp]
+                opts.prp.append(prp_key)
+    except KeyError as ke:
+        print('Unknown or unsupported property: {0}'.format(ke.message))
+        print('RESULT: unknown')
+        sys.exit(0)
+
     sources = args
     if opts.source_is_bc and len(sources) != 1:
         err('Bytecode must be only one file')
@@ -499,7 +539,7 @@ if __name__ == "__main__":
     if opts.timeout != 0:
         start_timeout(opts.timeout)
 
-    tool = get_tool(opts)
+    tool = initialize_tool(opts)
 
     try:
         symbiotic = None
@@ -539,21 +579,6 @@ if __name__ == "__main__":
             assert len(sources) == len(new_sources)
             sources = new_sources
 
-        try:
-            # opts.prp now contain a list with keys (or None),
-            # but we want the value from the map
-            if opts.prp:
-                prps = opts.prp[:] # make copy of properties
-                opts.prp = []
-
-                for prp in prps:
-                    prp_key = supported_properties[prp]
-                    opts.prp.append(prp_key)
-        except KeyError as ke:
-            print('Unknown or unsupported property: {0}'.format(ke.message))
-            print('unknown')
-            sys.exit(0)
-
         # let the show begin!
         try:
             symbiotic = Symbiotic(tool, sources, opts, symbiotic_dir)
@@ -570,7 +595,7 @@ if __name__ == "__main__":
             err(' == FAILURE ==\n{0}'.format(e.message))
 
         srcdir = os.path.dirname(symbiotic.llvmfile)
-        if res is None:
+        if res is None or tool.name() != 'klee':
             pass
         elif res.startswith('false'):
             generate_counterexample(srcdir, original_sources,

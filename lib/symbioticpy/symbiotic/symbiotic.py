@@ -198,13 +198,10 @@ class Symbiotic(object):
 
         return llvmfile
 
-    def prepare(self, passes = ['-prepare', '-delete-undefined']):
-        if self.options.noprepare:
-            return
+    def run_opt(self, passes):
+        self._run_opt(passes)
 
-        self._prepare(passes)
-
-    def _prepare(self, passes):
+    def _run_opt(self, passes):
         output = '{0}-pr.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-load', 'LLVMsvc15.so', self.llvmfile, '-o', output] + passes
 
@@ -212,7 +209,7 @@ class Symbiotic(object):
         self.llvmfile = output
 
     def old_slicer_find_init(self):
-        self._prepare(passes=['-find-init'])
+        self._run_opt(passes=['-find-init'])
 
     def _instrument(self, prp):
         prefix = '{0}/share/llvm-instrumentation/'.format(self.symbiotic_dir)
@@ -414,7 +411,8 @@ class Symbiotic(object):
 
         disable += self.options.disabled_optimizations
         if disable:
-            passes = filter(set(disable).__contains__, passes)
+            ds = set(disable)
+            passes = filter(lambda x: not ds.__contains__(x), passes)
 
         output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-o', output, self.llvmfile] + passes
@@ -436,14 +434,27 @@ class Symbiotic(object):
 
         return True
 
+    def preprocess_llvm(self):
+        """
+        Run a command that proprocesses a llvm code
+        for a particular tool
+        """
+        cmd, output = self._tool.preprocess_llvm(self.llvmfile)
+        if not cmd:
+            return
+
+        self._run(cmd, DbgWatch('compile'), 'Failed preprocessing the llvm code')
+        self.llvmfile = output
+
     def run_verification(self):
         cmd = self._tool.cmdline(self._tool.executable(),
-                                 self.options.tool_params, [self.llvmfile])
+                                 self.options.tool_params, [self.llvmfile],
+                                 self.options.prpfile, [])
 
         returncode = 0
         watch = ToolWatch(self._tool)
         try:
-            self._run(cmd, watch, 'Symbolic execution failed')
+            self._run(cmd, watch, 'Running the verifier failed')
         except SymbioticException as e:
             print_stderr(e.message, color='RED')
             returncode = 1
@@ -470,9 +481,9 @@ class Symbiotic(object):
 
             print('Killed the child process')
 
-    def run(self, criterion = '__assert_fail'):
+    def run(self):
         try:
-            return self._run_symbiotic(criterion);
+            return self._run_symbiotic();
         except KeyboardInterrupt:
             self.terminate()
             self.kill()
@@ -498,8 +509,58 @@ class Symbiotic(object):
         # the result is stored to self.llvmfile
         self.link('code.bc', llvmsrc)
 
-    def _run_symbiotic(self, criterion = '__assert_fail'):
+    def perform_slicing(self):
+        # run optimizations that can make slicing more precise
+        opt = get_optlist_before(self.options.optlevel)
+        if opt:
+            self.optimize(passes=opt)
+
+        # if this is old slicer run, we must find the starting functions
+        # (this adds the __ai_init_funs global variable to the module)
+        # NOTE: must be after the optimizations that could remove it
+        if self.options.old_slicer:
+            self.old_slicer_find_init()
+
+        # break the infinite loops just before slicing
+        # so that the optimizations won't make them syntactically infinite again
+        self.run_opt(['-reg2mem', '-break-infinite-loops', '-remove-infinite-loops',
+                      # this somehow break the bitcode
+                      #'-mem2reg'
+                      ])
+
+        # print info about time
+        print_elapsed_time('INFO: Compilation, preparation and '\
+                           'instrumentation time')
+
+        for n in range(0, self.options.repeat_slicing):
+            dbg('Slicing the code for the {0}. time'.format(n + 1))
+            add_params = []
+            #if n == 0 and self.options.repeat_slicing > 1:
+            #    add_params = ['-pta-field-sensitive=8']
+
+            self.slicer(self.options.slicing_criterion, add_params)
+
+            if self.options.repeat_slicing > 1:
+                opt = get_optlist_after(self.options.optlevel)
+                if opt:
+                    self.optimize(passes=opt)
+                    self.run_opt(['-break-infinite-loops', '-remove-infinite-loops'])
+
+        print_elapsed_time('INFO: Total slicing time')
+
+        # new slicer removes unused itself, but for the old slicer
+        # we must do it manually (this calls the new slicer ;)
+        if self.options.old_slicer:
+            self.remove_unused_only()
+
+    def _run_symbiotic(self):
         restart_counting_time()
+
+        # disable these optimizations, since LLVM 3.7 does
+        # not have them
+        self.options.disabled_optimizations = ['-aa', '-demanded-bits',
+                                               '-globals-aa', '-forceattrs',
+                                               '-inferattrs', '-rpo-functionattrs']
 
         # compile all sources if the file is not given
         # as a .bc file
@@ -533,7 +594,7 @@ class Symbiotic(object):
             # new on places where the code exhibits an undefined behavior
             passes += ['-remove-error-calls', '-replace-ubsan']
 
-        self.prepare(passes = passes)
+        self.run_opt(passes = passes)
 
         # we want to link these functions before instrumentation,
         # because in those we need to check for invalid dereferences
@@ -544,20 +605,9 @@ class Symbiotic(object):
         # now instrument the code according to properties
         self.instrument()
 
-        # instrument our malloc -- either the version that can fail,
-        # or the version that can not fail.
-        if self.options.malloc_never_fails:
-            passes = ['-instrument-alloc-nf']
-        else:
-            passes = ['-instrument-alloc']
-
-        # make all memory symbolic (if desired)
-        # and then delete undefined function calls
-        # and replace them by symbolic stuff
-        if not self.options.explicit_symbolic:
-            passes.append('-initialize-uninitialized')
-
-        self.prepare(passes)
+        passes = self._tool.prepare()
+        if passes:
+            self.run_opt(passes)
 
         # link with the rest of libraries if needed (klee-libc)
         self.link()
@@ -569,46 +619,7 @@ class Symbiotic(object):
 
         # slice the code
         if not self.options.noslice:
-            # run optimizations that can make slicing more precise
-            opt = get_optlist_before(self.options.optlevel)
-            if opt:
-                self.optimize(passes=opt)
-
-            # if this is old slicer run, we must find the starting functions
-            # (this adds the __ai_init_funs global variable to the module)
-            # NOTE: must be after the optimizations that could remove it
-            if self.options.old_slicer:
-                self.old_slicer_find_init()
-
-            # break the infinite loops just before slicing
-            # so that the optimizations won't make them syntactically infinite again
-            self.prepare(['-reg2mem', '-break-infinite-loops',
-                          '-remove-infinite-loops', '-mem2reg'])
-
-            # print info about time
-            print_elapsed_time('INFO: Compilation, preparation and '\
-                               'instrumentation time')
-
-            for n in range(0, self.options.repeat_slicing):
-                dbg('Slicing the code for the {0}. time'.format(n + 1))
-                add_params = []
-                #if n == 0 and self.options.repeat_slicing > 1:
-                #    add_params = ['-pta-field-sensitive=8']
-
-                self.slicer(self.options.slicing_criterion, add_params)
-
-                if self.options.repeat_slicing > 1:
-                    opt = get_optlist_after(self.options.optlevel)
-                    if opt:
-                        self.optimize(passes=opt)
-                        self.prepare(['-break-infinite-loops', '-remove-infinite-loops'])
-
-            print_elapsed_time('INFO: Total slicing time')
-
-            # new slicer removes unused itself, but for the old slicer
-            # we must do it manually (this calls the new slicer ;)
-            if self.options.old_slicer:
-                self.remove_unused_only()
+            self.perform_slicing()
         else:
             print_elapsed_time('INFO: Compilation, preparation and '\
                                'instrumentation time')
@@ -616,27 +627,21 @@ class Symbiotic(object):
         # start a new time era
         restart_counting_time()
 
-        # optimize the code before symbolic execution
+        # optimize the code after slicing and
+        # before verification
         opt = get_optlist_after(self.options.optlevel)
         if opt:
             self.optimize(passes=opt)
 
+        #FIXME: make this KLEE specific
         if not self.check_llvmfile(self.llvmfile):
             dbg('Unsupported call (probably floating handling)')
             return report_results('unsupported call')
 
         # there may have been created new loops
         passes = ['-remove-infinite-loops']
-
-        # remove/replace the rest of undefined functions
-        # for which we do not have a definition and
-	# that has not been removed
-        if self.options.undef_retval_nosym:
-            passes.append('-delete-undefined-nosym')
-        else:
-            passes.append('-delete-undefined')
-
-        self.prepare(passes)
+        passes += self._tool.prepare_after()
+        self.run_opt(passes)
 
         # delete-undefined may insert __VERIFIER_make_symbolic
         # and also other funs like __errno_location may be included
@@ -650,6 +655,9 @@ class Symbiotic(object):
 
         # XXX: we could optimize the code again here...
         print_elapsed_time('INFO: After-slicing optimizations and preparation time')
+
+        # tool's specific preprocessing steps
+        self.preprocess_llvm()
 
         if not self.options.final_output is None:
             # copy the file to final_output

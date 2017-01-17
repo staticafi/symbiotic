@@ -9,6 +9,7 @@ class SymbioticOptions(object):
         self.tool_name = 'klee'
         self.is32bit = True
         self.prp = []
+        self.prpfile = None
         self.noslice = False
         # FIXME: make it False, this is just a temporary
         # switch for SV-COMP, since I do not want to send another
