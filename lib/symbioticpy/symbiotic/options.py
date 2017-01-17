@@ -6,6 +6,7 @@ class SymbioticOptions(object):
 	    from utils.utils import get_symbiotic_dir
 	    symbiotic_dir = get_symbiotic_dir()
 
+        self.tool_name = 'klee'
         self.is32bit = True
         self.prp = []
         self.noslice = False

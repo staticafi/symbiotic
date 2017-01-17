@@ -103,6 +103,12 @@ class Tool(benchexec.tools.template.BaseTool):
         """
         return 'klee'
 
+    def llvm_version(self):
+        """
+        Return required version of LLVM
+        """
+        return '3.8.1'
+
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
         Compose the command line to execute from the name of the executable

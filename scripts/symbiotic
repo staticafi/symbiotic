@@ -56,6 +56,8 @@ where OPTS can be following:
     --timeout=t               Set timeout to t seconds
     --no-slice                Do not slice the code
     --no-prepare              Do not prepare the code
+    --tool=name               Use the tool 'name'. Default is KLEE, other tools that
+                              can be integrated are Ceagle, Skink and SMACK
     --explicit-symbolic       Do not make all memory symbolic (in prepare phase),
                               but rely on calls to __VERIFIER_nondet_*
     --undefined-retval-nosym  Do not make return value of undefined functions symbolic,
@@ -102,7 +104,7 @@ where OPTS can be following:
     --cppflags=flags          Append extra CFLAGS and CPPFLAGS to use while compiling,
                               the environment CFLAGS and CPPFLAGS are used too
     --slicer-params=STR       Pass parameters directly to slicer
-    --tool-params=STR         Pass parameters directly to the tool 
+    --verifier-params=STR     Pass parameters directly to the verifier
     --save-files              Do not remove working files after running.
                               The files will be stored in the symbiotic_files directory.
     --no-libc                 Do not link missing functions from libc to the module
@@ -156,7 +158,7 @@ def get_include_paths():
 
     return paths
 
-def set_environ(is32bit = False):
+def set_environ(tool, is32bit = False):
     def prepend(env, what):
         if os.environ.has_key(env):
             newenv = '{0}:{1}'.format(what, os.environ[env])
@@ -172,7 +174,7 @@ def set_environ(is32bit = False):
 
     symbiotic_dir = get_symbiotic_dir()
     # set path without preprending, we want to use only our stuff
-    llvm_version='3.8.1'
+    llvm_version=tool.llvm_version()
 
     os.environ['PATH'] = '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version)
 
@@ -182,13 +184,13 @@ def set_environ(is32bit = False):
     prepend('C_INCLUDE_DIR', '{0}/llvm-{1}/include'.format(symbiotic_dir, llvm_version))
     prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
 
-    # FIXME: do this only for klee
-    if is32bit:
-        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] \
-            = '{0}/llvm-{1}/lib32/klee/runtime'.format(symbiotic_dir, llvm_version)
-    else:
-        os.environ['KLEE_RUNTIME_LIBRARY_PATH'] \
-            = '{0}/llvm-{1}/lib/klee/runtime'.format(symbiotic_dir, llvm_version)
+    if tool.name() == 'klee':
+        if is32bit:
+            os.environ['KLEE_RUNTIME_LIBRARY_PATH'] \
+                = '{0}/llvm-{1}/lib32/klee/runtime'.format(symbiotic_dir, llvm_version)
+        else:
+            os.environ['KLEE_RUNTIME_LIBRARY_PATH'] \
+                = '{0}/llvm-{1}/lib/klee/runtime'.format(symbiotic_dir, llvm_version)
 
     dbg('PATH={0}'.format(os.environ['PATH']))
     dbg('LD_LIBRARY_PATH={0}'.format(os.environ['LD_LIBRARY_PATH']))
@@ -268,9 +270,9 @@ def parse_command_line():
                                     'no-verification', 'output=', 'witness=', 'bc',
                                     'optimize=', 'no-prepare', 'malloc-never-fails',
                                     'pta=', 'no-libc', 'slicing-criterion=',
-                                    'cflags=', 'cppflags=', 'link=',
+                                    'cflags=', 'cppflags=', 'link=', 'verifier=',
                                     'no-link-undefined', 'repeat-slicing=',
-                                    'slicer-params=', 'tool-params=',
+                                    'slicer-params=', 'verifier-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
                                     'save-files', 'version-short', 'no-posix',
                                     'no-kernel', 'no-verifier-funs',
@@ -291,6 +293,8 @@ def parse_command_line():
             sys.exit(0)
         elif opt == '--debug':
             enable_debug(arg.split(','))
+        elif opt == '--verifier':
+            options.tool_name = arg
         elif opt == '--libc':
              if arg == 'klee':
                  options.add_libc = True
@@ -394,7 +398,7 @@ def parse_command_line():
             CPPFLAGS += arg.split()
         elif opt == '--slicer-params':
             options.slicer_params = arg.split()
-        elif opt == '--tool-params':
+        elif opt == '--verifier-params':
             options.tool_params = arg.split()
         elif opt == '--link':
             options.link_files += arg.split(',')
@@ -471,9 +475,12 @@ def dump_error(bindir):
         # so do not return any error
         dbg('Failed dumping the error')
 
-def get_tool(tool_name, opts):
-    from symbiotic.tools.klee import Tool
-    return Tool(opts)
+def get_tool(opts):
+    if opts.tool_name == 'klee':
+        from symbiotic.tools.klee import Tool
+        return Tool(opts)
+    else:
+        raise SymbioticException('Unknown tool: {0}'.format(opts.tool_name))
 
 if __name__ == "__main__":
     # store time when we have started, so that we can
@@ -492,13 +499,14 @@ if __name__ == "__main__":
     if opts.timeout != 0:
         start_timeout(opts.timeout)
 
-    tool = get_tool('klee', opts)
+    tool = get_tool(opts)
+
     try:
         symbiotic = None
 
         # set environment. That is set PATH and LD_LIBRARY_PATH
         # and so on
-        symbiotic_dir = set_environ(opts.is32bit)
+        symbiotic_dir = set_environ(tool, opts.is32bit)
         # set CFLAGS and CPPFLAGS for compilation
         parse_environ(opts)
 
