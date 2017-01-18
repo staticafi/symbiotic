@@ -123,6 +123,14 @@ class Tool(benchexec.tools.template.BaseTool):
         Prepare the bitcode for verification - return a list of
         LLVM passes that should be run on the code
         """
+        return []
+
+    def prepare_after(self):
+        """
+        Same as prepare, but runs after slicing
+        """
+        self._options.linkundef.append('verifier')
+
         # instrument our malloc -- either the version that can fail,
         # or the version that can not fail.
         if self._options.malloc_never_fails:
@@ -135,20 +143,14 @@ class Tool(benchexec.tools.template.BaseTool):
         # and replace them by symbolic stuff
         if not self._options.explicit_symbolic:
             passes.append('-initialize-uninitialized')
-        
-        return passes
 
-    def prepare_after(self):
-        """
-        Same as prepare, but runs after slicing
-        """
         # remove/replace the rest of undefined functions
         # for which we do not have a definition and
 	# that has not been removed
         if self._options.undef_retval_nosym:
-            passes = ['-delete-undefined-nosym']
+            passes += ['-delete-undefined-nosym']
         else:
-            passes = ['-delete-undefined']
+            passes += ['-delete-undefined']
 
         return passes
 

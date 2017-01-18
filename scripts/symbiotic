@@ -198,6 +198,9 @@ def set_environ(tool, is32bit = False):
     elif tool.name() == 'SMACK+Corral':
         prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
         prepend('PATH', '{0}/smack-1.7.1-64/'.format(symbiotic_dir))
+    elif tool.name() == 'SeaHorn-F16':
+        prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
+        prepend('PATH', '{0}/seahorn/bin'.format(symbiotic_dir))
     else:
         prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
 
@@ -258,7 +261,8 @@ def get_prp(prp):
             if line:
                 prp_list.append(line)
         f.close()
-        return (prp_list, os.path.abspath(epath))
+        pf = '{0}PropertyUnreachCall.prp'.format(epath[:epath.rfind('Property')])
+        return (prp_list, os.path.abspath(pf))
 
     # it is not a file, so it is given as a string
     # FIXME: this does not work for properties given
@@ -486,23 +490,24 @@ def remove_linkundef(options, what):
 
 
 def initialize_tool(opts):
+    opts.slicing_criterion = '__VERIFIER_error'
+    remove_linkundef(opts, 'verifier')
+
     if opts.tool_name == 'klee':
+        opts.explicit_symbolic = True
         from symbiotic.tools.klee import Tool
         return Tool(opts)
     elif opts.tool_name == 'ceagle':
         from symbiotic.tools.ceagle import Tool
-        opts.slicing_criterion = '__VERIFIER_error'
-        remove_linkundef(opts, 'verifier')
         return Tool()
     elif opts.tool_name == 'skink':
         from symbiotic.tools.skink import Tool
-        opts.slicing_criterion = '__VERIFIER_error'
-        remove_linkundef(opts, 'verifier')
         return Tool()
     elif opts.tool_name == 'smack':
         from symbiotic.tools.smack import Tool
-        opts.slicing_criterion = '__VERIFIER_error'
-        remove_linkundef(opts, 'verifier')
+        return Tool()
+    elif opts.tool_name == 'seahorn':
+        from symbiotic.tools.seahorn import Tool
         return Tool()
     else:
         raise SymbioticException('Unknown tool: {0}'.format(opts.tool_name))
@@ -608,7 +613,7 @@ if __name__ == "__main__":
         sys.stdout.flush()
         sys.stderr.flush()
 
-        print('timeout')
+        print('RESULT: timeout')
     finally:
         stop_timeout()
         if symbiotic:

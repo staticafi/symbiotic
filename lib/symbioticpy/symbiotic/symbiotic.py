@@ -174,8 +174,8 @@ class Symbiotic(object):
 
         cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h'] + opts
 
-        if with_g:
-            cmd.append('-g')
+       #if with_g:
+       #    cmd.append('-g')
 
         if self.options.CFLAGS:
             cmd += self.options.CFLAGS
@@ -558,9 +558,12 @@ class Symbiotic(object):
 
         # disable these optimizations, since LLVM 3.7 does
         # not have them
-        self.options.disabled_optimizations = ['-aa', '-demanded-bits',
-                                               '-globals-aa', '-forceattrs',
-                                               '-inferattrs', '-rpo-functionattrs']
+        self.options.disabled_optimizations = ['-aa', '-demanded-bits', # not in 3.7
+                                               '-globals-aa', '-forceattrs', # not in 3.7
+                                               '-inferattrs', '-rpo-functionattrs', # not in 3.7
+                                               '-tti', '-bdce', '-elim-avail-extern', # not in 3.6
+                                               '-float2int', '-loop-accesses' # not in 3.6
+                                               ]
 
         # compile all sources if the file is not given
         # as a .bc file
