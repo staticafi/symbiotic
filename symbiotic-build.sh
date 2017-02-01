@@ -649,8 +649,8 @@ if [ $FROM -le 7 ]; then
 		$LLVM_PREFIX/lib/klee/runtime/klee-libc.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc"
 	INSTR="$LLVM_PREFIX/bin/LLVMinstr \
-	       share/llvm-instrumentation/*/*.c \
-	       share/llvm-instrumentation/*/*.json"
+	       $LLVM_PREFIX/share/llvm-instrumentation/*/*.c \
+	       $LLVM_PREFIX/share/llvm-instrumentation/*/*.json"
 
 	CPACHECKER=
 	ULTIAUTO=
