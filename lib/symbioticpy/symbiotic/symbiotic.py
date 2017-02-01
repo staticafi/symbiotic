@@ -212,11 +212,14 @@ class Symbiotic(object):
         self._run_opt(passes=['-find-init'])
 
     def _instrument(self, prp):
-        prefix = '{0}/share/llvm-instrumentation/'.format(self.symbiotic_dir)
+        llvm_dir = 'llvm-{0}'.format(self._tool.llvm_version())
 	if self.options.is32bit:
-	    libdir = os.path.join(self.symbiotic_dir, 'lib32')
+	    libdir = os.path.join(self.symbiotic_dir, llvm_dir, 'lib32')
 	else:
-	    libdir = os.path.join(self.symbiotic_dir, 'lib')
+	    libdir = os.path.join(self.symbiotic_dir, llvm_dir, 'lib')
+
+        prefix = os.path.join(self.symbiotic_dir, llvm_dir,
+                              'share/llvm-instrumentation/')
 
 	tolinkbc = None
         if prp == 'MEMSAFETY':
