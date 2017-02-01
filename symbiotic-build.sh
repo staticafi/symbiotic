@@ -31,6 +31,7 @@ usage()
 	echo -e "update   - update repositories"
 	echo -e "with-cpa - download CPAchecker (due to witness checking)"
 	echo -e "with-ultimate-automizer - download UltimateAutomizer (due to witness checking)"
+	echo -e "with-zlib          - compile zlib"
 	echo -e "with-llvm=path     - use llvm from path"
 	echo -e "with-llvm-dir=path - use llvm from path"
 	echo -e "with-llvm-src=path - use llvm sources from path"
@@ -60,6 +61,7 @@ LLVM_VERSION=3.8.1
 WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
+WITH_ZLIB='no'
 
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
@@ -116,6 +118,9 @@ while [ $# -gt 0 ]; do
 		;;
 		'with-ultimate-automizer')
 			WITH_ULTIMATEAUTOMIZER='1'
+		;;
+		with-zlib)
+			WITH_ZLIB="yes"
 		;;
 		with-llvm=*)
 			WITH_LLVM=${1##*=}
@@ -373,6 +378,21 @@ if [ $FROM -le 1 ]; then
 	cd -
 fi
 
+
+######################################################################
+#   zlib
+######################################################################
+if [ $FROM -le 2 -a $WITH_ZLIB = "yes" ]; then
+	git_clone_or_pull https://github.com/madler/zlib
+	cd zlib || exit 1
+
+	if [ ! -d CMakeFiles ]; then
+		cmake -DCMAKE_INSTALL_PREFIX=$PREFIX
+	fi
+
+	(make -j2 && make install) || exit 1
+fi
+
 ######################################################################
 #   minisat
 ######################################################################
@@ -384,16 +404,12 @@ if [ $FROM -le 2 ]; then
 	if [ ! -d CMakeFiles ]; then
 		cd build || exit 1
 		cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX \
-			-DSTATICCOMPILE=ON \
-			-DZLIB_LIBRARY="-L/home/xchalup4/symbiotic/install/lib -lz"\
-			-DZLIB_INCLUDE_DIR="/home/xchalup4/symbiotic/install/include"
+				 -DSTATICCOMPILE=ON
+		cd -
 	fi
 
-	cd build
-
+	cd build || exit 1
 	(make -j2 && make install) || exit 1
-	# (build lr && make prefix=$PREFIX install-headers) || exit 1
-	# cp build/release/lib/libminisat.a $PREFIX/lib/ || exit 1
 
 	cd -
 fi
@@ -411,8 +427,6 @@ if [ $FROM -le 3 ]; then
 			-DCMAKE_C_FLAGS_RELEASE=-O2 \
 			-DCMAKE_BUILD_TYPE=Release \
 			-DBUILD_SHARED_LIBS:BOOL=OFF \
-			-DZLIB_LIBRARY="-L/home/xchalup4/symbiotic/install/lib -lz"\
-			-DZLIB_INCLUDE_DIR="/home/xchalup4/symbiotic/install/include"\
 			-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
 	fi
 
@@ -437,8 +451,6 @@ if [ $FROM -le 4 ]; then
 			-DENABLE_SOLVER_STP=ON \
 			-DSTP_DIR=`pwd`/../stp \
 			-DLLVM_CONFIG_BINARY=`pwd`/../llvm-build-cmake/bin/llvm-config \
-			-DZLIB_LIBRARY="-L/home/xchalup4/symbiotic/install/lib -lz"\
-			-DZLIB_INCLUDE_DIR="/home/xchalup4/symbiotic/install/include"\
 			-DENABLE_UNIT_TESTS=OFF \
 		|| clean_and_exit 1 "git"
 	fi
@@ -536,7 +548,9 @@ if [ $FROM -le 6 ]; then
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
-			|| clean_and_exit 1 "git"
+			|| exit 1
+			# DONT call clean_and_exit 1 "git" here, otherwise
+			# everything that was compiled will be removed
 	fi
 
 	(build && make install) || exit 1
