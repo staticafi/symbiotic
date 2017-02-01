@@ -527,7 +527,8 @@ class Symbiotic(object):
 
         # break the infinite loops just before slicing
         # so that the optimizations won't make them syntactically infinite again
-        self.run_opt(['-reg2mem', '-break-infinite-loops', '-remove-infinite-loops',
+        #self.run_opt(['-reg2mem', '-break-infinite-loops', '-remove-infinite-loops',
+        self.run_opt(['-break-infinite-loops', '-remove-infinite-loops',
                       # this somehow break the bitcode
                       #'-mem2reg'
                       ])
