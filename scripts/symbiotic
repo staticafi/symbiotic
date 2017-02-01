@@ -112,6 +112,7 @@ where OPTS can be following:
                               for which we have definition (default=off).
     --no-kernel               Do not link missing kernel functions for which we have
                               definition (default=off)
+    --no-witness              Do not create a witness
     --no-verifeir-funs        Do not link __VERIFIER_* function definitions (default=off)
     --dont-exit-on-error      Do not exit when the property violation is reached,
                               but continue searching
@@ -141,6 +142,7 @@ supported_properties = {
 
 # whether to dump source lines into the witness
 witness_with_source_lines = False
+no_witness = False
 
 def get_include_paths():
     """
@@ -288,7 +290,7 @@ def parse_command_line():
                                     'slicer-params=', 'verifier-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
                                     'save-files', 'version-short', 'no-posix',
-                                    'no-kernel', 'no-verifier-funs',
+                                    'no-kernel', 'no-verifier-funs', 'no-witness',
                                     'witness-with-source-lines', 'dont-exit-on-error'])
                                    # add klee-params
     except getopt.GetoptError as e:
@@ -326,6 +328,10 @@ def parse_command_line():
         elif opt == '--no-slice':
             dbg('Will not slice')
             options.noslice = True
+        elif opt == '--no-witness':
+            dbg('Will not create a witness')
+            global no_witness
+            no_witness = True
         elif opt == '--no-prepare':
             dbg('Will not prepare code')
             options.noprepare = True
@@ -603,10 +609,12 @@ if __name__ == "__main__":
         if res is None or tool.name() != 'klee':
             pass
         elif res.startswith('false'):
-            generate_counterexample(srcdir, original_sources,
-	                            opts.is32bit, False, opts.witness_output)
             dump_error(srcdir)
-	elif res == 'true':
+
+            if not no_witness:
+                generate_counterexample(srcdir, original_sources,
+	                                opts.is32bit, False, opts.witness_output)
+	elif res == 'true' and not no_witness:
 	    generate_counterexample(srcdir, original_sources,
 	                            opts.is32bit, True, opts.witness_output)
     except Timeout:
