@@ -4,8 +4,7 @@ char *strrchr(const char *str, int c)
 	while (*str != '\0') {
 		if (*str == c)
 			last = (char *) str;
-		else
-			++str;
+		++str;
 	}
 
 	return last;
