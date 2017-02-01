@@ -502,11 +502,12 @@ def remove_linkundef(options, what):
 
 
 def initialize_tool(opts):
-    opts.slicing_criterion = '__VERIFIER_error'
+    opts.slicing_criterion = '__VERIFIER_error,__assert_fail'
     remove_linkundef(opts, 'verifier')
+	opts.explicit_symbolic = True
 
     if opts.tool_name == 'klee':
-        opts.explicit_symbolic = True
+		opts.explicit_symbolic = False
         from symbiotic.tools.klee import Tool
         return Tool(opts)
     elif opts.tool_name == 'ceagle':
