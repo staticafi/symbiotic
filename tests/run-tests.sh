@@ -41,11 +41,17 @@ cat $TESTS | while read DESIRED ARGS; do
 	echo -n "$ARGS ... "
 
 	if [ "$DESIRED" = "FALSE" ]; then
-		echo "$OUTPUT" | grep -q "RESULT: false" || fail "FAILED"
-		echo "OK"
+		if echo "$OUTPUT" | grep -q "RESULT: false"; then
+			echo "OK"
+		else
+			fail "FAILED"
+		fi
 	elif [ "$DESIRED" = "TRUE" ]; then
-		echo "$OUTPUT" | grep -q "RESULT: true" || fail "FAILED"
-		echo "OK"
+		if echo "$OUTPUT" | grep -q "RESULT: true"; then
+			echo "OK"
+		else
+			fail "FAILED"
+		fi
 	else
 		errmsg  "Wrong syntax in tests.txt"
 	fi
