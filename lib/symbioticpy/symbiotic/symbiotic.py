@@ -385,6 +385,9 @@ class Symbiotic(object):
 
             cmd.append('-statistics')
 
+            if self.options.undefined_are_pure:
+                cmd.append('-undefined-are-pure')
+
             if self.options.slicer_params:
                 cmd += self.options.slicer_params
 

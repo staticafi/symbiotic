@@ -63,6 +63,7 @@ where OPTS can be following:
     --undefined-retval-nosym  Do not make return value of undefined functions symbolic,
                               but replace it with 0.
     --malloc-never-fails      Suppose malloc and calloc never return NULL
+    --undefined-are-pure      Suppose that undefined functions have no side-effects
     --require-slicer          Abort if slicing fails (default is to use the original file)
     --no-verification         Do not run verification phase (handy for debugging)
     --optimize=opt1,...       Run optimizations, every item in the optimizations list
@@ -291,7 +292,8 @@ def parse_command_line():
                                     'explicit-symbolic', 'undefined-retval-nosym',
                                     'save-files', 'version-short', 'no-posix',
                                     'no-kernel', 'no-verifier-funs', 'no-witness',
-                                    'witness-with-source-lines', 'dont-exit-on-error'])
+                                    'witness-with-source-lines', 'dont-exit-on-error',
+                                    'undefined-are-pure'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -345,6 +347,9 @@ def parse_command_line():
         elif opt == '--malloc-never-fails':
             dbg('Assuming malloc and calloc will never fail')
             options.malloc_never_fails = True
+        elif opt == '--undefined-are-pure':
+            dbg('Assuming that undefined functions are pure')
+            options.undefined_are_pure = True
         elif opt == '--no-verification':
             dbg('Will not run verification phase')
             options.no_verification = True

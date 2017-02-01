@@ -18,6 +18,7 @@ class SymbioticOptions(object):
         self.noprepare = False
         self.explicit_symbolic = False
         self.undef_retval_nosym = False
+        self.undefined_are_pure = False
         # link all that we have by default
         self.linkundef = ['verifier', 'libc', 'posix', 'kernel']
         self.timeout = 0
