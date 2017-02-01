@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
 #  -- Symbiotic tool --
-#      2015 - 2016
+#      2015 - 2017
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -461,7 +461,13 @@ def copy_sources_to_tmp(sources):
             rm_tmp_dir(tmpdir, True)
             os.mkdir(tmpdir)
     else:
-        tmpdir = mkdtemp(prefix='/tmp/symbiotic.', dir='.')
+        if os.path.isdir('/tmp'):
+            prefix = '/tmp/symbiotic-'
+        else:
+            dbg('Found no /tmp dir, falling-back to curdir: {0}'.format(os.getcwd()))
+            prefix = 'symbiotic-'
+
+        tmpdir = mkdtemp(prefix=prefix, dir='.')
 
     for s in sources:
         t = os.path.join(tmpdir, os.path.basename(s))
