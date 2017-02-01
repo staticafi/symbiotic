@@ -202,14 +202,15 @@ class Tool(benchexec.tools.template.BaseTool):
                 if fnd.startswith('false'):
                     return fnd
                 else:
-                    found += fnd
+                    found.append(fnd)
 
-        if not fnd:
+        if not found:
             if returncode != 0:
                 return result.RESULT_ERROR
-
-            # we haven't found anything
-            if not found:
+            else:
+                # we haven't found anything
                 return result.RESULT_TRUE_PROP
+        else:
+            return result.RESULT_UNKNOWN
 
         return result.RESULT_ERROR
