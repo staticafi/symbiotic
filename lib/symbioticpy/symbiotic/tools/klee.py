@@ -193,7 +193,7 @@ class Tool(benchexec.tools.template.BaseTool):
             return 'timeout'
 
         if output is None:
-            return 'error (no output)'
+            return 'ERROR (no output)'
 
         found = []
         for line in output:

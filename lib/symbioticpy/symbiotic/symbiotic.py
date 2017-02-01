@@ -85,8 +85,6 @@ def report_results(res):
     elif res.startswith('error') or\
          res.startswith('ERROR'):
         color='RED'
-    else:
-        result = 'unknown'
 
     sys.stdout.flush()
     print_stdout('RESULT: ', print_nl=False)
