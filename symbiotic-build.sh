@@ -445,6 +445,13 @@ if [ $FROM -le 4 ]; then
 	cd klee-build/
 
 	if [ ! -d CMakeFiles ]; then
+		# use our zlib, if we compiled it
+		ZLIB_FLAGS=
+		if [ -d $RUNDIR/zlib ]; then
+			ZLIB_FLAGS="-DZLIB_LIBRARY=\"-L${PREFIX}/lib -lz\""
+			ZLIB_FLAGS="$ZLIB_FLAGS -DZLIB_INCLUDE_DIR=$PREFIX/include"
+		fi
+
 		cmake ../klee -DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_BUILD_TYPE=Release \
 			-DKLEE_RUNTIME_BUILD_TYPE=Release+Asserts \
@@ -452,7 +459,8 @@ if [ $FROM -le 4 ]; then
 			-DSTP_DIR=`pwd`/../stp \
 			-DLLVM_CONFIG_BINARY=`pwd`/../llvm-build-cmake/bin/llvm-config \
 			-DENABLE_UNIT_TESTS=OFF \
-		|| clean_and_exit 1 "git"
+			"$ZLIB_FLAGS" \
+			|| clean_and_exit 1 "git"
 	fi
 
 	# clean runtime libs, it may be 32-bit from last build
