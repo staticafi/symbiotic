@@ -70,6 +70,22 @@ bool Prepare::runOnModule(Module &M) {
   if (Function *F = M.getFunction("__VERIFIER_assert"))
     F->addFnAttr(Attribute::NoInline);
 
+  static const char *set_linkage[] = {
+    "malloc",
+    "calloc",
+    "realloc",
+    nullptr
+  };
+
+  // we want to use our definiton of malloc
+  for (const char **curr = set_linkage; *curr; curr++) {
+    Function *F = M.getFunction(*curr);
+    if (F && !F->empty()) {
+      errs() << "Making " << F->getName() << " private\n";
+      F->setLinkage(GlobalValue::PrivateLinkage);
+    }
+  }
+
   return true;
 }
 
