@@ -573,7 +573,7 @@ class Symbiotic(object):
         # compile all sources if the file is not given
         # as a .bc file
         if self.options.source_is_bc:
-            self.llvmfile = sources[0]
+            self.llvmfile = self.sources[0]
         else:
             self._compile_sources()
 
