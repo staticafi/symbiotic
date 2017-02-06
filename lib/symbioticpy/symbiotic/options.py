@@ -46,4 +46,5 @@ class SymbioticOptions(object):
         self.disabled_optimizations = []
         self.CFLAGS = []
         self.CPPFLAGS = []
+        self.disable_instr_plugins = False
 

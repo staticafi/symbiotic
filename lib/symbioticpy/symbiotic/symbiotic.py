@@ -265,6 +265,8 @@ class Symbiotic(object):
 
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['LLVMinstr', config, self.llvmfile, output]
+        if self.options.disable_instr_plugins:
+            cmd.append('--disable-plugins')
 
         self._run(cmd, DbgWatch('instrument'), 'Instrumenting the code failed')
         self.llvmfile = output

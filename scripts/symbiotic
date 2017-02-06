@@ -293,7 +293,7 @@ def parse_command_line():
                                     'save-files', 'version-short', 'no-posix',
                                     'no-kernel', 'no-verifier-funs', 'no-witness',
                                     'witness-with-source-lines', 'dont-exit-on-error',
-                                    'undefined-are-pure'])
+                                    'undefined-are-pure', 'disable-instr-plugins'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -436,6 +436,8 @@ def parse_command_line():
             witness_with_source_lines = True
         elif opt == '--dont-exit-on-error':
             options.dont_exit_on_error = True
+        elif opt == '--disable-instr-plugins':
+            options.disable_instr_plugins = True
 
     return options, args
 
