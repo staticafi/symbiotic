@@ -390,7 +390,7 @@ if [ $FROM -le 2 -a $WITH_ZLIB = "yes" ]; then
 		cmake -DCMAKE_INSTALL_PREFIX=$PREFIX
 	fi
 
-	(make -j2 && make install) || exit 1
+	(make "$OPTS" && make install) || exit 1
 fi
 
 ######################################################################
@@ -407,7 +407,7 @@ if [ $FROM -le 2 ]; then
 				 -DSTATICCOMPILE=ON
 	fi
 
-	(make -j2 && make install) || exit 1
+	(make "$OPTS" && make install) || exit 1
 	popd
 fi
 
