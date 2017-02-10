@@ -477,9 +477,14 @@ if [ $FROM -le 4 ]; then
 		|| exitmsg "Failed building klee 32-bit runtime library"
 	rm -f Release+Asserts/lib/kleeRuntimeIntrinsic.bc*
 	rm -f Release+Asserts/lib/klee-libc.bc*
-	make -C runtime/Intrinsic -f Makefile.cmake.bitcode EXTRA_LLVMCC.Flags=-m32 \
+	# EXTRA_LLVMCC.Flags is obsolete and to be removed soon
+	make -C runtime/Intrinsic -f Makefile.cmake.bitcode \
+		LLVMCC.ExtraFlags=-m32 \
+		EXTRA_LLVMCC.Flags=-m32 \
 		|| exitmsg "Failed building 32-bit klee runtime library"
-	make -C runtime/klee-libc -f Makefile.cmake.bitcode EXTRA_LLVMCC.Flags=-m32 \
+	make -C runtime/klee-libc -f Makefile.cmake.bitcode \
+		LLVMCC.ExtraFlags=-m32 \
+		EXTRA_LLVMCC.Flags=-m32 \
 		|| exitmsg "Failed building 32-bit klee runtime library"
 
 	# copy 32-bit library version to prefix
