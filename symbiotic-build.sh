@@ -456,7 +456,7 @@ if [ $FROM -le 4 ]; then
 			-DSTP_DIR=`pwd`/../stp \
 			-DLLVM_CONFIG_BINARY=`pwd`/../llvm-build-cmake/bin/llvm-config \
 			-DENABLE_UNIT_TESTS=OFF \
-			"$ZLIB_FLAGS" \
+			$ZLIB_FLAGS \
 			|| clean_and_exit 1 "git"
 	fi
 
