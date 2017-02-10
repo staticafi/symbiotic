@@ -398,20 +398,17 @@ fi
 ######################################################################
 if [ $FROM -le 2 ]; then
 	git_clone_or_pull git://github.com/stp/minisat.git minisat
-	cd minisat
+	pushd minisat
 	mkdir -p build
+	cd build || exit 1
 
 	if [ ! -d CMakeFiles ]; then
-		cd build || exit 1
 		cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX \
 				 -DSTATICCOMPILE=ON
-		cd -
 	fi
 
-	cd build || exit 1
 	(make -j2 && make install) || exit 1
-
-	cd -
+	popd
 fi
 
 ######################################################################
