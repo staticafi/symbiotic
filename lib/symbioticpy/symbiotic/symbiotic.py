@@ -172,8 +172,8 @@ class Symbiotic(object):
 
         cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h'] + opts
 
-       #if with_g:
-       #    cmd.append('-g')
+        if with_g:
+            cmd.append('-g')
 
         if self.options.CFLAGS:
             cmd += self.options.CFLAGS
