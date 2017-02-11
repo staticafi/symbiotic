@@ -150,7 +150,7 @@ def get_include_paths():
     Find paths where standard headers are located
     """
     cmd = ['find', '/usr/lib', '-name', 'stddef.h']
-    paths = []
+    paths = [ '/usr/lib64/gcc/x86_64-suse-linux/6/include/' ]
 
     pr = ProcessRunner(cmd, ProcessWatch(lines_limit = None))
     if pr.run() == 0:
