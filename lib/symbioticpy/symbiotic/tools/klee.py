@@ -56,7 +56,7 @@ class Tool(benchexec.tools.template.BaseTool):
            ('ESYMSOL' , re.compile('.*unable to get symbolic solution.*')),
            ('ESILENTLYCONCRETIZED' , re.compile('.*silently concretizing.*')),
            ('EEXTRAARGS' , re.compile('.*calling .* with extra arguments.*')),
-           ('EABORT' , re.compile('.*abort failure.*')),
+           #('EABORT' , re.compile('.*abort failure.*')),
            ('EMALLOC' , re.compile('.*found huge malloc, returning 0.*')),
            ('ESKIPFORK' , re.compile('.*skipping fork.*')),
            ('EKILLSTATE' , re.compile('.*killing.*states \(over memory cap\).*')),
