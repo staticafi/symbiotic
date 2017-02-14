@@ -123,7 +123,14 @@ class Tool(benchexec.tools.template.BaseTool):
         Prepare the bitcode for verification - return a list of
         LLVM passes that should be run on the code
         """
-        return []
+        # make all memory symbolic (if desired)
+        # and then delete undefined function calls
+        # and replace them by symbolic stuff
+        passes = []
+        if not self._options.explicit_symbolic:
+            passes.append('-initialize-uninitialized')
+
+        return passes
 
     def prepare_after(self):
         """
@@ -137,12 +144,6 @@ class Tool(benchexec.tools.template.BaseTool):
             passes = ['-instrument-alloc-nf']
         else:
             passes = ['-instrument-alloc']
-
-        # make all memory symbolic (if desired)
-        # and then delete undefined function calls
-        # and replace them by symbolic stuff
-        if not self._options.explicit_symbolic:
-            passes.append('-initialize-uninitialized')
 
         # remove/replace the rest of undefined functions
         # for which we do not have a definition and
