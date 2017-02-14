@@ -229,6 +229,12 @@ check()
 		exit 1
 	fi
 
+	if ! rsync --version &>/dev/null; then
+		echo "will need rsync... or hack the script so that it uses cp ;)"
+		exit 1
+	fi
+
+
 	if ! bison --version &>/dev/null; then
 		echo "STP needs bison program"
 		exit 1
