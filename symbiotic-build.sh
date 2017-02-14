@@ -219,6 +219,16 @@ check()
 		alias wget='curl -O'
 	fi
 
+	if ! cmake --version &>/dev/null; then
+		echo "cmake is needed"
+		exit 1
+	fi
+
+	if ! make --version &>/dev/null; then
+		echo "make is needed"
+		exit 1
+	fi
+
 	if ! bison --version &>/dev/null; then
 		echo "STP needs bison program"
 		exit 1
