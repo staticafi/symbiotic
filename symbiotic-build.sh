@@ -219,11 +219,6 @@ check()
 		alias wget='curl -O'
 	fi
 
-	if ! python --version 2>&1 | grep -q 'Python 2'; then
-		echo "llvm-3.2 needs python 2 to build"
-		exit 1
-	fi
-
 	if ! bison --version &>/dev/null; then
 		echo "STP needs bison program"
 		exit 1
