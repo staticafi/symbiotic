@@ -37,6 +37,10 @@ if (LLVM_BUILD_PATH)
   link_directories(${LLVM_BUILD_PATH}/lib)
 endif(LLVM_BUILD_PATH)
 
+include(GNUInstallDirs)
+message(STATUS "CMAKE_INSTALL_LIBDIR: \"${CMAKE_INSTALL_LIBDIR}\"")
+message(STATUS "CMAKE_INSTALL_INCLUDEDIR: \"${CMAKE_INSTALL_INCLUDEDIR}\"")
+
 add_subdirectory(src)
 add_subdirectory(lib)
 add_subdirectory(include)
