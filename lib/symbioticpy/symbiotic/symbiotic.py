@@ -34,6 +34,14 @@ class SlicerWatch(ProcessWatch):
         else:
             dbg(line, 'slicer', False)
 
+class PrintWatch(ProcessWatch):
+    def __init__(self, prefix = ''):
+        ProcessWatch.__init__(self)
+        self._prefix = prefix
+
+    def parse(self, line):
+        print_stdout(line, prefix = self._prefix, print_nl = False)
+
 class CompileWatch(ProcessWatch):
     """ Parse output of compilation """
 
@@ -206,6 +214,15 @@ class Symbiotic(object):
         self._run(cmd, PrepareWatch(), 'Prepare phase failed')
         self.llvmfile = output
 
+    def _get_stats(self, prefix = ''):
+        cmd = ['opt', '-load', 'LLVMsvc15.so', '-count-instr',
+               '-o', '/dev/null', self.llvmfile]
+        try:
+            self._run(cmd, PrintWatch(prefix), 'Failed running opt')
+        except SymbioticException:
+            # not fatal, continue working
+            dbg('Failed getting statistics')
+
     def old_slicer_find_init(self):
         self._run_opt(passes=['-find-init'])
 
@@ -263,13 +280,17 @@ class Symbiotic(object):
             tolinkbc = self._compile_to_llvm(tolink, with_g = False)
         self.link(libs=[tolinkbc])
 
+        self._get_stats('Before instrumentation ')
+
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['LLVMinstr', config, self.llvmfile, output]
         if self.options.disable_instr_plugins:
             cmd.append('--disable-plugins')
 
         self._run(cmd, DbgWatch('instrument'), 'Instrumenting the code failed')
+
         self.llvmfile = output
+        self._get_stats('After instrumentation ')
 
     def instrument(self):
         """
@@ -579,6 +600,8 @@ class Symbiotic(object):
         else:
             self._compile_sources()
 
+        self._get_stats('After compilation ')
+
         if not self.check_llvmfile(self.llvmfile, '-check-concurr'):
             dbg('Unsupported call (probably pthread API)')
             return report_results('unsupported call')
@@ -680,6 +703,7 @@ class Symbiotic(object):
 
         if not self.options.no_verification:
             print('INFO: Starting verification')
+            self._get_stats('Before verification ')
             found = self.run_verification()
         else:
             found = 'Did not run verification'
