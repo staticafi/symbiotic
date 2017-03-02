@@ -12,6 +12,7 @@ add_llvm_loadable_module(LLVMsvc15
 				ReplaceUBSan.cpp
 				InstrumentAlloc.cpp
 				FindInit.cpp
+				CountInstr.cpp
 				CheckUnsupported.cpp)
 
 install(TARGETS LLVMsvc15
