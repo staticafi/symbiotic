@@ -133,7 +133,8 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
       assert(callee->hasName());
       StringRef name = callee->getName();
 
-      if (name.equals("__VERIFIER_error")) {
+      if (name.equals("__VERIFIER_error") ||
+          name.equals("__assert_fail")) {
         if (!ext) {
           LLVMContext& Ctx = M->getContext();
           Type *argTy = Type::getInt32Ty(Ctx);
