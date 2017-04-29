@@ -3,7 +3,7 @@
 
 int main(void)
 {
-	__VERIFIER_assert(isspace('1'));
+	assert(isspace('1'));
 
 	return 0;
 }
