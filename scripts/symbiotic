@@ -410,10 +410,10 @@ def parse_command_line():
             dbg('Given code is bytecode')
         elif opt == '--cflags':
             global CFLAGS
-            CFLAGS += arg.split()
+            options.CFLAGS += arg.split()
         elif opt == '--cppflags':
             global CPPFLAGS
-            CPPFLAGS += arg.split()
+            options.CPPFLAGS += arg.split()
         elif opt == '--slicer-params':
             options.slicer_params = arg.split()
         elif opt == '--verifier-params':
