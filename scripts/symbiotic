@@ -155,15 +155,15 @@ def get_include_paths():
     pr = ProcessRunner(cmd, ProcessWatch(lines_limit = None))
     if pr.run() == 0:
         for line in pr.getOutput():
-            if line.startswith('/usr/lib/') and\
-                ('gcc' in line or 'llvm' in line):
+            if line.startswith(b'/usr/lib/') and\
+                (b'gcc' in line or b'llvm' in line):
                 paths.append(os.path.dirname(line))
 
     return paths
 
 def set_environ(tool, is32bit = False):
     def prepend(env, what):
-        if os.environ.has_key(env):
+        if env in os.environ:
             newenv = '{0}:{1}'.format(what, os.environ[env])
         else:
             newenv = what
@@ -221,9 +221,9 @@ def parse_environ(opts):
     for p in os.environ['C_INCLUDE_DIR'].split(':'):
         opts.CPPFLAGS.append('-I{0}'.format(p))
 
-    if os.environ.has_key('CFLAGS'):
+    if 'CFLAGS' in os.environ:
         opts.CFLAGS += os.environ['CFLAGS'].split(' ')
-    if os.environ.has_key('CPPFLAGS'):
+    if 'CPPFLAGS' in os.environ:
         opts.CPPFLAGS += os.environ['CPPFLAGS'].split(' ')
 
 def generate_graphml(path, source, is32bit, is_correctness_wit, saveto):
@@ -575,7 +575,7 @@ if __name__ == "__main__":
         # set CFLAGS and CPPFLAGS for compilation
         parse_environ(opts)
 
-	# save original sources for later use
+        # save original sources for later use
         original_sources = []
         for s in sources:
             original_sources.append(os.path.abspath(s))
@@ -609,15 +609,11 @@ if __name__ == "__main__":
             symbiotic = Symbiotic(tool, sources, opts, symbiotic_dir)
             res = symbiotic.run()
         except SymbioticException as e:
-            if e.message:
-                print('RESULT: ERROR ({0})'.format(e.message))
-            else:
-                print('RESULT: ERROR (unknown)')
-
             sys.stdout.flush()
             sys.stderr.flush()
 
-            err(' == FAILURE ==\n{0}'.format(e.message))
+            print('RESULT: ERROR ({0})'.format(str(e)))
+            err(' == FAILURE ==\n{0}'.format(str(e)))
 
         srcdir = os.path.dirname(symbiotic.llvmfile)
         if res is None or tool.name() != 'klee':
@@ -627,10 +623,10 @@ if __name__ == "__main__":
 
             if not no_witness:
                 generate_counterexample(srcdir, original_sources,
-	                                opts.is32bit, False, opts.witness_output)
-	elif res == 'true' and not no_witness:
-	    generate_counterexample(srcdir, original_sources,
-	                            opts.is32bit, True, opts.witness_output)
+                                        opts.is32bit, False, opts.witness_output)
+        elif res == 'true' and not no_witness:
+            generate_counterexample(srcdir, original_sources,
+                                    opts.is32bit, True, opts.witness_output)
     except Timeout:
         sys.stdout.flush()
         sys.stderr.flush()
