@@ -3,36 +3,36 @@
 import os, sys
 import re
 
-from options import SymbioticOptions
-from utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
-from utils.process import ProcessRunner
-from utils.watch import ProcessWatch, DbgWatch
-from utils.utils import print_stdout, print_stderr, get_symbiotic_dir
-from exceptions import SymbioticException
+from . options import SymbioticOptions
+from . utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
+from . utils.process import ProcessRunner
+from . utils.watch import ProcessWatch, DbgWatch
+from . utils.utils import print_stdout, print_stderr, get_symbiotic_dir
+from . exceptions import SymbioticException
 
 class PrepareWatch(ProcessWatch):
     def __init__(self, lines = 100):
         ProcessWatch.__init__(self, lines)
 
     def parse(self, line):
-        if 'Removed' in line or 'Defining':
-            sys.stdout.write(line)
+        if b'Removed' in line or b'Defining' in line:
+            sys.stdout.write(line.decode('utf-8'))
         else:
-            dbg(line, 'prepare', False)
+            dbg(line.decode('utf-8'), 'prepare', False)
 
 class SlicerWatch(ProcessWatch):
     def __init__(self, lines = 100):
         ProcessWatch.__init__(self, lines)
 
     def parse(self, line):
-        if 'INFO' in line:
-            dbg(line, domain = 'slicer', print_nl = False)
-        elif 'ERROR' in line or 'error' in line:
-            print_stderr(line)
-        elif 'Statistics' in line:
-            print_stdout(line, print_nl = False)
+        if b'INFO' in line:
+            dbg(line.decode('utf-8'), domain = 'slicer', print_nl = False)
+        elif b'ERROR' in line or b'error' in line:
+            print_stderr(line.decode('utf-8'))
+        elif b'Statistics' in line:
+            print_stdout(line.decode('utf-8'), print_nl = False)
         else:
-            dbg(line, 'slicer', False)
+            dbg(line.decode('utf-8'), 'slicer', False)
 
 class PrintWatch(ProcessWatch):
     def __init__(self, prefix = ''):
@@ -40,7 +40,7 @@ class PrintWatch(ProcessWatch):
         self._prefix = prefix
 
     def parse(self, line):
-        print_stdout(line, prefix = self._prefix, print_nl = False)
+        print_stdout(line.decode('utf-8'), prefix = self._prefix,print_nl = False)
 
 class CompileWatch(ProcessWatch):
     """ Parse output of compilation """
@@ -49,10 +49,10 @@ class CompileWatch(ProcessWatch):
         ProcessWatch.__init__(self)
 
     def parse(self, line):
-        if 'error' in line or 'ERROR' in line:
-            sys.stderr.write('cc: {0}'.format(line))
+        if b'error' in line or b'ERROR' in line:
+            sys.stderr.write('cc: {0}'.format(line.decode('utf-8')))
         else:
-            dbg(line, 'compile', print_nl = False)
+            dbg(line.decode('utf-8'), 'compile', print_nl = False)
 
 class UnsuppWatch(ProcessWatch):
     unsupported_call = re.compile('.*call to .* is unsupported.*')
@@ -65,7 +65,7 @@ class UnsuppWatch(ProcessWatch):
         return self._ok
 
     def parse(self, line):
-        dbg(line, domain='prepare', print_nl = False)
+        dbg(line.decode('utf-8'), domain='prepare', print_nl = False)
         self._ok = not UnsuppWatch.unsupported_call.match(line)
 
 class ToolWatch(ProcessWatch):
@@ -75,11 +75,11 @@ class ToolWatch(ProcessWatch):
         self._tool = tool
 
     def parse(self, line):
-       if 'ERROR' in line or 'WARN' in line or 'Assertion' in line\
-          or 'error' in line or 'warn' in line:
-           sys.stderr.write(line)
+       if b'ERROR' in line or b'WARN' in line or b'Assertion' in line\
+          or b'error' in line or b'warn' in line:
+           sys.stderr.write(line.decode('utf-8'))
        else:
-           dbg(line, 'all', False)
+           dbg(line.decode('utf-8'), 'all', False)
 
 def report_results(res):
     dbg(res)
@@ -102,7 +102,7 @@ def report_results(res):
     return res
 
 def get_optlist_before(optlevel):
-    from optimizations import optimizations
+    from . optimizations import optimizations
     lst = []
     for opt in optlevel:
         if not opt.startswith('before-'):
@@ -112,13 +112,13 @@ def get_optlist_before(optlevel):
         if o.startswith('opt-'):
             lst.append(o[3:])
         else:
-            if optimizations.has_key(o):
+            if o in optimizations:
                 lst += optimizations[o]
 
     return lst
 
 def get_optlist_after(optlevel):
-    from optimizations import optimizations
+    from . optimizations import optimizations
     lst = []
     for opt in optlevel:
         if not opt.startswith('after-'):
@@ -128,7 +128,7 @@ def get_optlist_after(optlevel):
         if o.startswith('opt-'):
             lst.append(o[3:])
         else:
-            if optimizations.has_key(o):
+            if o in optimizations:
                 lst += optimizations[o]
 
     return lst
@@ -228,55 +228,55 @@ class Symbiotic(object):
 
     def _instrument(self, prp):
         llvm_dir = 'llvm-{0}'.format(self._tool.llvm_version())
-	if self.options.is32bit:
-	    libdir = os.path.join(self.symbiotic_dir, llvm_dir, 'lib32')
-	else:
-	    libdir = os.path.join(self.symbiotic_dir, llvm_dir, 'lib')
+        if self.options.is32bit:
+            libdir = os.path.join(self.symbiotic_dir, llvm_dir, 'lib32')
+        else:
+            libdir = os.path.join(self.symbiotic_dir, llvm_dir, 'lib')
 
         prefix = os.path.join(self.symbiotic_dir, llvm_dir,
                               'share/llvm-instrumentation/')
 
-	tolinkbc = None
+        tolinkbc = None
         if prp == 'MEMSAFETY':
             config = prefix + 'memsafety/config.json'
-	    # check wether we have this file precompiled
-	    # (this may be a distribution where we're trying to
-	    # avoid compilation of anything else than sources)
+            # check wether we have this file precompiled
+            # (this may be a distribution where we're trying to
+            # avoid compilation of anything else than sources)
             precompiled_bc = '{0}/memsafety.bc'.format(libdir)
-	    if os.path.isfile(precompiled_bc):
-	        tolinkbc = precompiled_bc
-	    else:
+            if os.path.isfile(precompiled_bc):
+                tolinkbc = precompiled_bc
+            else:
                 tolink = prefix + 'memsafety/memsafety.c'
         elif prp == 'VALID-FREE' or prp == 'MEM-TRACK':
             config = prefix + 'double_free/config.json'
-	    # check wether we have this file precompiled
-	    # (this may be a distribution where we're trying to
-	    # avoid compilation of anything else than sources)
+            # check wether we have this file precompiled
+            # (this may be a distribution where we're trying to
+            # avoid compilation of anything else than sources)
             precompiled_bc = '{0}/double_free.bc'.format(libdir)
-	    if os.path.isfile(precompiled_bc):
-	        tolinkbc = precompiled_bc
-	    else:
+            if os.path.isfile(precompiled_bc):
+                tolinkbc = precompiled_bc
+            else:
                 tolink = prefix + 'double_free/double_free.c'
         elif prp == 'VALID-DEREF':
             config = prefix + 'valid_deref/config.json'
             precompiled_bc = '{0}/valid_deref.bc'.format(libdir)
-	    if os.path.isfile(precompiled_bc):
-	        tolinkbc = precompiled_bc
-	    else:
+            if os.path.isfile(precompiled_bc):
+                tolinkbc = precompiled_bc
+            else:
                 tolink = prefix + 'valid_deref/valid_deref.c'
         elif prp == 'NULL-DEREF':
             config = prefix + 'null_deref/config.json'
             precompiled_bc = '{0}/null_deref.bc'.format(libdir)
-	    if os.path.isfile(precompiled_bc):
-	        tolinkbc = precompiled_bc
-	    else:
+            if os.path.isfile(precompiled_bc):
+                tolinkbc = precompiled_bc
+            else:
                 tolink = prefix + 'null_deref/null_deref.c'
         else:
             raise SymbioticException('BUG: Unhandled property')
 
         # we need to compile and link the state machines to the code
         # before the actual instrumentation - LLVMinstr requires that
-	if not tolinkbc:
+        if not tolinkbc:
             tolinkbc = self._compile_to_llvm(tolink, with_g = False)
         self.link(libs=[tolinkbc])
 
@@ -352,9 +352,9 @@ class Symbiotic(object):
             for undef in undefs:
                 name = '{0}/lib/{1}/{2}.c'.format(self.symbiotic_dir, ty, undef)
                 if os.path.isfile(name):
-	            output = os.path.join(os.getcwd(), os.path.basename(name))
+                    output = os.path.join(os.getcwd(), os.path.basename(name))
                     output = '{0}.bc'.format(output[:output.rfind('.')])
-	            self._compile_to_llvm(name, output)
+                    self._compile_to_llvm(name, output)
                     tolink.append(output)
 
                     # for debugging
@@ -383,11 +383,13 @@ class Symbiotic(object):
             return
 
         # get undefined functions from the bitcode
+        print('GETTING UNDEFINED')
         undefs = self._get_undefined(self.llvmfile)
         if only_func:
             undefs = filter(set(only_func).__contains__, undefs)
 
-        if self._link_undefined(undefs):
+        # python3 compatibility
+        if self._link_undefined([x.decode('ascii') for x in undefs]):
             # if we linked someting, try get undefined again,
             # because the functions may have added some new undefined
             # functions
@@ -442,7 +444,8 @@ class Symbiotic(object):
             passes = filter(lambda x: not ds.__contains__(x), passes)
 
         output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['opt', '-o', output, self.llvmfile] + passes
+        cmd = ['opt', '-o', output, self.llvmfile]
+        cmd += passes
 
         self._run(cmd, CompileWatch(), 'Optimizing the code failed')
         self.llvmfile = output
@@ -615,9 +618,9 @@ class Symbiotic(object):
         passes = ['-prepare', '-remove-infinite-loops']
 
         memsafety = 'VALID-DEREF' in self.options.prp or \
-	            'VALID-FREE' in self.options.prp or \
-	            'VALID-MEMTRACK' in self.options.prp or \
-	            'MEMSAFETY' in self.options.prp
+                    'VALID-FREE' in self.options.prp or \
+                    'VALID-MEMTRACK' in self.options.prp or \
+                    'MEMSAFETY' in self.options.prp
         if memsafety:
             # remove error calls, we'll put there our own
             passes.append('-remove-error-calls')

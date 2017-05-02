@@ -1,8 +1,8 @@
 #!/usr/bin/python
 
 from subprocess import call, Popen, PIPE, STDOUT
-from utils import dbg, err, print_stream
-from watch import ProcessWatch, DbgWatch
+from . utils import dbg, err, print_stream
+from . watch import ProcessWatch, DbgWatch
 from .. import SymbioticException
 from sys import stdout, stderr
 
@@ -32,7 +32,7 @@ class ProcessRunner(object):
 
         while True:
             line = self._process.stdout.readline()
-            if line == '' and self._process.poll() is not None:
+            if line == b'' and self._process.poll() is not None:
                 break
 
             self._watch.putLine(line)

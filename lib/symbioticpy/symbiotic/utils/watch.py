@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from utils import dbg
+from . utils import dbg
 
 class ProcessWatch(object):
     """ Parse output of running process """

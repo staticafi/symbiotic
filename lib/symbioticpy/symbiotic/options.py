@@ -3,8 +3,8 @@
 class SymbioticOptions(object):
     def __init__(self, symbiotic_dir = None):
         if symbiotic_dir is None:
-	    from utils.utils import get_symbiotic_dir
-	    symbiotic_dir = get_symbiotic_dir()
+            from . utils.utils import get_symbiotic_dir
+            symbiotic_dir = get_symbiotic_dir()
 
         self.tool_name = 'klee'
         self.is32bit = True

@@ -16,7 +16,7 @@ def get_sha1(source):
     f = open(source, 'r')
     hsh = sha1()
     for l in f:
-        hsh.update(l)
+        hsh.update(l.encode('utf-8'))
 
     f.close()
     return hsh.hexdigest()
@@ -38,17 +38,17 @@ class GraphMLWriter(object):
 
         self._graph = ET.SubElement(self._root, 'graph', edgedefault="directed")
         # add the description
-	if is_correctness_wit:
+        if is_correctness_wit:
             ET.SubElement(self._graph, 'data', key='witness-type').text = 'correctness_witness'
-	else:
+        else:
             ET.SubElement(self._graph, 'data', key='witness-type').text = 'violation_witness'
         ET.SubElement(self._graph, 'data', key='sourcecodelang').text = 'C'
         ET.SubElement(self._graph, 'data', key='producer').text = 'Symbiotic'
         # XXX: this may change in the future
         ET.SubElement(self._graph, 'data', key='specification').text \
             = 'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )'
-        ET.SubElement(self._graph, 'data', key='programfile').text = source.decode('utf-8')
-        ET.SubElement(self._graph, 'data', key='programhash').text = get_sha1(source).decode('utf-8')
+        ET.SubElement(self._graph, 'data', key='programfile').text = source
+        ET.SubElement(self._graph, 'data', key='programhash').text = get_sha1(source)
         #ET.SubElement(self._graph, 'data', key='memorymodel').text = 'precise'
         ET.SubElement(self._graph, 'data', key='architecture').text = arch
 
@@ -138,7 +138,7 @@ class GraphMLWriter(object):
     def dump(self):
         if no_lxml:
             print(ET.tostring(self._root))
-	else:
+        else:
             print(ET.tostring(self._root, pretty_print=True))
 
     def write(self, to):

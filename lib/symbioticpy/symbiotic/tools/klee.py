@@ -198,7 +198,7 @@ class Tool(benchexec.tools.template.BaseTool):
 
         found = []
         for line in output:
-            fnd = self._parse_klee_output_line(line)
+            fnd = self._parse_klee_output_line(line.decode('ascii'))
             if fnd:
                 if fnd.startswith('false'):
                     return fnd
