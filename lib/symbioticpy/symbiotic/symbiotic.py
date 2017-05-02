@@ -383,12 +383,11 @@ class Symbiotic(object):
             return
 
         # get undefined functions from the bitcode
-        print('GETTING UNDEFINED')
         undefs = self._get_undefined(self.llvmfile)
         if only_func:
             undefs = filter(set(only_func).__contains__, undefs)
 
-        # python3 compatibility
+        # --------------------- # python3 compatibility
         if self._link_undefined([x.decode('ascii') for x in undefs]):
             # if we linked someting, try get undefined again,
             # because the functions may have added some new undefined
