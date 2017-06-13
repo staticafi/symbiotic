@@ -16,7 +16,7 @@
 #include "llvm/Pass.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/TypeBuilder.h"
-#if (LLVM_VERSION_MINOR >= 5)
+#if LLVM_VERSION_MAJOR >= 4 || (LLVM_VERSION_MAJOR == 3 && LLVM_VERSION_MINOR >= 5)
   #include "llvm/IR/InstIterator.h"
 #else
   #include "llvm/Support/InstIterator.h"
