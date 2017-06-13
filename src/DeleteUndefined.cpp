@@ -27,6 +27,10 @@
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include <llvm/IR/DebugInfoMetadata.h>
 
+#if LLVM_VERSION_MAJOR >= 4
+#include <llvm/Support/Error.h>
+#endif
+
 using namespace llvm;
 
 class DeleteUndefined : public ModulePass {
@@ -106,7 +110,16 @@ static bool array_match(const StringRef &name, const char **array)
 }
 
 bool DeleteUndefined::runOnModule(Module& M) {
+#if LLVM_VERSION_MAJOR >= 4
+    if (llvm::Error err = M.materializeAll()) {
+	std::error_code ec = errorToErrorCode(std::move(err));
+	llvm::errs() << __PRETTY_FUNCTION__ << ": cannot load module: " <<
+		ec.message();
+	return false;
+    }
+#else
     M.materializeAll();
+#endif
 
     // delete/replace the calls in the rest of functions
     bool modified = false;
