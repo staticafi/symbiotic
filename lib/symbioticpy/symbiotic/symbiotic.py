@@ -614,7 +614,9 @@ class Symbiotic(object):
 
         # remove definitions of __VERIFIER_* that are not created by us
         # and syntactically infinite loops
-        passes = ['-prepare', '-remove-infinite-loops']
+        # we use functionattrs pass to set NoRecurse flag for functions
+  		# because of instrumentation with pointer analysis
+        passes = ['-prepare', '-remove-infinite-loops', '-functionattrs']
 
         memsafety = 'VALID-DEREF' in self.options.prp or \
                     'VALID-FREE' in self.options.prp or \
