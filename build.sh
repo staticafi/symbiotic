@@ -331,11 +331,20 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	cp $LLVM_LOCATION/bin/llvm-nm $LLVM_PREFIX/bin/llvm-nm || exit 1
 fi
 
+
+LLVM_MAJOR_VERSION="${LLVM_VERSION%%\.*}"
+LLVM_MINOR_VERSION=${LLVM_VERSION#*\.}
+LLVM_MINOR_VERSION="${LLVM_MINOR_VERSION%\.*}"
+LLVM_CMAKE_CONFIG_DIR=share/llvm/cmake
+if [ $LLVM_MAJOR_VERSION -ge 3 -a $LLVM_MINOR_VERSION -ge 9 ]; then
+	LLVM_CMAKE_CONFIG_DIR=lib/cmake/llvm
+fi
+
 if [ -z "$WITH_LLVM" ]; then
-	export LLVM_DIR=$ABS_RUNDIR/llvm-build-cmake/share/llvm/cmake/
+	export LLVM_DIR=$ABS_RUNDIR/llvm-build-cmake/$LLVM_CMAKE_CONFIG_DIR
 	export LLVM_BUILD_PATH=$ABS_RUNDIR/llvm-build-cmake/
 else
-	export LLVM_DIR=$WITH_LLVM/share/llvm/cmake/
+	export LLVM_DIR=$WITH_LLVM/$LLVM_CMAKE_CONFIG_DIR
 	export LLVM_BUILD_PATH=$WITH_LLVM
 fi
 
@@ -345,10 +354,15 @@ else
 	export LLVM_SRC_PATH="$WITH_LLVM_SRC"
 fi
 
-# do not do any funky nested ifs, just override the LLVM_DIR
-# in the case we are given that variable
+# do not do any funky nested ifs in the code above and just override
+# the default LLVM_DIR in the case we are given that variable
 if [ ! -z "$WITH_LLVM_DIR" ]; then
 	LLVM_DIR=$WITH_LLVM_DIR
+fi
+
+# check
+if [ ! -f $LLVM_DIR/LLVMConfig.cmake ]; then
+	exitmsg "Cannot find LLVMConfig.cmake file in the directory $LLVM_DIR"
 fi
 
 ######################################################################
@@ -358,20 +372,6 @@ if [ $FROM -le 1 ]; then
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/dg)" ]; then
 		git_submodule_init
 	fi
-
-#	cd "$SRCDIR/LLVMSlicer" || exitmsg "Cloning failed"
-#	if [ ! -d CMakeFiles ]; then
-#		cmake . \
-#			-DLLVM_SRC_PATH="$ABS_RUNDIR/llvm-${LLVM_VERSION}/" \
-#			-DLLVM_BUILD_PATH="$ABS_RUNDIR"/llvm-build-cmake/ \
-#			-DLLVM_DIR=$LLVM_DIR \
-#			-DCMAKE_INSTALL_PREFIX=$PREFIX \
-#			|| clean_and_exit 1 "git"
-#	fi
-#
-#	(build && make install) || exit 1
-#
-#	cd -
 
 	# download new slicer
 	cd "$SRCDIR/dg" || exitmsg "Cloning failed"
