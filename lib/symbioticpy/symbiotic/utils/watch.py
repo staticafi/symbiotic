@@ -67,5 +67,5 @@ class DbgWatch(ProcessWatch):
         self._domain = dbgdom
 
     def parse(self, line):
-        dbg(line, self._domain)
+        dbg(line.decode('utf-8'), self._domain)
 
