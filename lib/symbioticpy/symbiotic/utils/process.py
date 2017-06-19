@@ -62,7 +62,7 @@ class ProcessRunner(object):
 
     def printOutput(self, stream = stdout, clr = None):
         for line in self._watch.getLines():
-            print_stream(line, stream, color = clr, print_nl = False)
+            print_stream(line.decode('utf-8'), stream, color = clr, print_nl = False)
 
 def run_checked(cmd, error_msg, dbg_domain = 'all'):
     """
