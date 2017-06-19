@@ -10,3 +10,6 @@
 	path = LLVMInstrumentation
 	url = https://github.com/staticafi/LLVMInstrumentation
 	ignore = untracked
+[submodule "llvm-instrumentation"]
+	path = llvm-instrumentation
+	url = https://github.com/staticafi/llvm-instrumentation

@@ -577,11 +577,11 @@ if [ $FROM -le 6 ]; then
 	(build && make install) || exit 1
 
 	# download scripts
-	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/LLVMInstrumentation)" ]; then
+	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/llvm-instrumentation)" ]; then
 		git_submodule_init
 	fi
 
-	cd "$SRCDIR/LLVMInstrumentation" || exitmsg "Cloning failed"
+	cd "$SRCDIR/llvm-instrumentation" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		./bootstrap-json.sh || exitmsg "Failed generating json files"
 		cmake . \
@@ -614,7 +614,7 @@ if [ $FROM -le 7 ]; then
 	cd dg || exit 1
 	DG_VERSION=`git rev-parse HEAD`
 	cd -
-	cd LLVMInstrumentation || exit 1
+	cd llvm-instrumentation || exit 1
 	INSTRUMENTATION_VERSION=`git rev-parse HEAD`
 	cd -
 	cd minisat || exit 1
@@ -634,7 +634,7 @@ if [ $FROM -le 7 ]; then
 	echo "versions = {" >> $VERSFILE
 	echo -e "\t'symbiotic' : '$SYMBIOTIC_VERSION'," >> $VERSFILE
 	echo -e "\t'dg' : '$DG_VERSION'," >> $VERSFILE
-	echo -e "\t'LLVMInstrumentation' : '$INSTRUMENTATION_VERSION'," >> $VERSFILE
+	echo -e "\t'llvm-instrumentation' : '$INSTRUMENTATION_VERSION'," >> $VERSFILE
 	echo -e "\t'minisat' : '$MINISAT_VERSION'," >> $VERSFILE
 	echo -e "\t'stp' : '$STP_VERSION'," >> $VERSFILE
 	echo -e "\t'KLEE' : '$KLEE_VERSION'," >> $VERSFILE

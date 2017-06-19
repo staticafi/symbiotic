@@ -1,4 +1,4 @@
-INSTR="LLVMInstrumentation/"
+INSTR="llvm-instrumentation/"
 PREFIX="install"
 
 set -e
