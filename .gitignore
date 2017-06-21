@@ -10,5 +10,14 @@ stp
 *.pyc
 *.swp
 *.bc
+*.so
 
 tags
+
+*.cmake
+Makefile
+CMakeFiles
+CMakeCache.txt
+
+*.ninja
+.ninja*
