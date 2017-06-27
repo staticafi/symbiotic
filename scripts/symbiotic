@@ -117,6 +117,7 @@ where OPTS can be following:
     --no-verifeir-funs        Do not link __VERIFIER_* function definitions (default=off)
     --dont-exit-on-error      Do not exit when the property violation is reached,
                               but continue searching
+    --disable-instr-plugins   Do not run static analysis when instrumenting
     --help                    Show help message
     --version                 Return version
     --version-short           Return version as one-line string
