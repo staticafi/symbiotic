@@ -65,8 +65,9 @@ class UnsuppWatch(ProcessWatch):
         return self._ok
 
     def parse(self, line):
-        dbg(line.decode('utf-8'), domain='prepare', print_nl = False)
-        self._ok = not UnsuppWatch.unsupported_call.match(line)
+        uline = line.decode('utf-8')
+        dbg(uline, domain='prepare', print_nl = False)
+        self._ok = not UnsuppWatch.unsupported_call.match(uline)
 
 class ToolWatch(ProcessWatch):
     def __init__(self, tool):
