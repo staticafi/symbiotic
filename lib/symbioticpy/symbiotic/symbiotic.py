@@ -486,7 +486,7 @@ class Symbiotic(object):
         try:
             self._run(cmd, watch, 'Running the verifier failed')
         except SymbioticException as e:
-            print_stderr(e.message, color='RED')
+            print_stderr(str(e), color='RED')
             returncode = 1
 
         return self._tool.determine_result(returncode, 0,
