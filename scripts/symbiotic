@@ -146,21 +146,36 @@ supported_properties = {
 witness_with_source_lines = False
 no_witness = False
 
-def get_include_paths():
+def _get_include_paths(cmd):
     """
     Find paths where standard headers are located
     """
-    cmd = ['find', '/usr/lib', '-name', 'stddef.h']
-    paths = [ '/usr/lib64/gcc/x86_64-suse-linux/6/include/' ]
+    paths=[]
 
     pr = ProcessRunner(cmd, ProcessWatch(lines_limit = None))
     if pr.run() == 0:
-        for line in pr.getOutput():
-            if line.startswith(b'/usr/lib/') and\
-                (b'gcc' in line or b'llvm' in line):
-                paths.append(os.path.dirname(line))
+        lines_iter = iter(pr.getOutput())
+        # find the beginning of include paths
+        for line in lines_iter:
+            if line == b'#include <...> search starts here:\n':
+                break
+
+        for line in lines_iter:
+            line = line.decode('ascii').strip()
+            if line == 'End of search list.':
+                break
+            else:
+                paths.append(line)
 
     return paths
+
+def get_cpp_include_paths():
+    cmd = ['cpp', '-xc', '-v', '/dev/null']
+    return _get_include_paths(cmd)
+
+def get_clang_include_paths():
+    cmd = ['clang', '-E', '-xc', '-v', '/dev/null']
+    return _get_include_paths(cmd)
 
 def set_environ(tool, is32bit = False):
     def prepend(env, what):
@@ -172,7 +187,9 @@ def set_environ(tool, is32bit = False):
         os.environ[env] = newenv
 
     # do this before we override PATH - we need 'find' utility
-    additional_paths = get_include_paths()
+    additional_paths = get_clang_include_paths()
+    if not additional_paths:
+        additional_paths = get_cpp_include_paths()
     for p in additional_paths:
         prepend('C_INCLUDE_DIR', p)
 
