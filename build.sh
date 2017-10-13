@@ -207,6 +207,7 @@ git_submodule_init()
 	cd -
 }
 
+GET=wget
 check()
 {
 	if ! wget --version &>/dev/null; then
@@ -216,7 +217,7 @@ check()
 		fi
 
 		# try replace wget with curl
-		alias wget='curl -O'
+		GET='curl -O'
 	fi
 
 	if ! cmake --version &>/dev/null; then
@@ -269,9 +270,9 @@ check
 build_llvm()
 {
 	if [ ! -d "llvm-${LLVM_VERSION}" ]; then
-		wget http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz || exit 1
-		wget http://llvm.org/releases/${LLVM_VERSION}/cfe-${LLVM_VERSION}.src.tar.xz || exit 1
-		wget http://llvm.org/releases/${LLVM_VERSION}/compiler-rt-${LLVM_VERSION}.src.tar.xz || exit 1
+		$GET http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz || exit 1
+		$GET http://llvm.org/releases/${LLVM_VERSION}/cfe-${LLVM_VERSION}.src.tar.xz || exit 1
+		$GET http://llvm.org/releases/${LLVM_VERSION}/compiler-rt-${LLVM_VERSION}.src.tar.xz || exit 1
 
 		tar -xf llvm-${LLVM_VERSION}.src.tar.xz || exit 1
 		tar -xf cfe-${LLVM_VERSION}.src.tar.xz || exit 1
@@ -513,7 +514,7 @@ fi
 
 download_tar()
 {
-	wget "$1" || exit 1
+	$GET "$1" || exit 1
 	BASENAME="`basename $1`"
 	tar xf "$BASENAME" || exit 1
 	rm -f "BASENAME"
@@ -521,7 +522,7 @@ download_tar()
 
 download_zip()
 {
-	wget "$1" || exit 1
+	$GET "$1" || exit 1
 	BASENAME="`basename $1`"
 	unzip "$BASENAME" || exit 1
 	rm -f "BASENAME"
