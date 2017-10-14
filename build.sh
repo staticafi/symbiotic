@@ -25,9 +25,7 @@ usage()
 	echo "$0 [shell] [no-llvm] [update] [slicer | scripts | minisat | stp | klee | witness | bin] OPTS"
 	echo "" # new line
 	echo -e "shell    - run shell with environment set"
-	echo -e "no-llvm  - skip compiling llvm (assume that llvm is already"
-	echo -e "           present in build directory in folders"
-	echo -e "           llvm-build-cmake and llvm-build-configure)"
+	echo -e "no-llvm  - skip compiling llvm"
 	echo -e "update   - update repositories"
 	echo -e "with-cpa - download CPAchecker (due to witness checking)"
 	echo -e "with-ultimate-automizer - download UltimateAutomizer (due to witness checking)"
@@ -289,27 +287,24 @@ build_llvm()
 		rm -f compiler-rt-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
 	fi
 
-	mkdir -p llvm-build-cmake
-	cd llvm-build-cmake || exitmsg "downloading failed"
+	mkdir -p llvm-${LLVM_VERSION}/build
+	pushd llvm-${LLVM_VERSION}/build
 
 	# configure llvm
 	if [ ! -d CMakeFiles ]; then
-		echo 'we should definitely build RelWithDebInfo here, no?'
-		echo 'N.B. we strip below anyway, so why not Release actually?'
-		cmake ../llvm-${LLVM_VERSION} \
+		cmake .. \
 			-DCMAKE_BUILD_TYPE=Release\
 			-DLLVM_INCLUDE_EXAMPLES=OFF \
 			-DLLVM_INCLUDE_TESTS=OFF \
 			-DLLVM_ENABLE_TIMESTAMPS=OFF \
 			-DLLVM_TARGETS_TO_BUILD="X86" \
 			-DLLVM_ENABLE_PIC=ON \
-			-DCMAKE_C_FLAGS_DEBUG="-O0 -g" \
-			-DCMAKE_CXX_FLAGS_DEBUG="-O0 -g" || clean_and_exit
+			 || clean_and_exit
 	fi
 
 	# build llvm
 	ONLY_TOOLS='opt clang llvm-link llvm-dis llvm-nm' build
-	cd -
+	popd
 }
 
 ######################################################################
@@ -319,7 +314,7 @@ build_llvm()
 if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	if [ -z "$WITH_LLVM" ]; then
 		build_llvm
-		LLVM_LOCATION=llvm-build-cmake
+		LLVM_LOCATION=llvm-${LLVM_VERSION}/build
 	else
 		LLVM_LOCATION=$WITH_LLVM
 	fi
@@ -342,8 +337,8 @@ if [ $LLVM_MAJOR_VERSION -ge 3 -a $LLVM_MINOR_VERSION -ge 9 ]; then
 fi
 
 if [ -z "$WITH_LLVM" ]; then
-	export LLVM_DIR=$ABS_RUNDIR/llvm-build-cmake/$LLVM_CMAKE_CONFIG_DIR
-	export LLVM_BUILD_PATH=$ABS_RUNDIR/llvm-build-cmake/
+	export LLVM_DIR=$ABS_RUNDIR/llvm-${LLVM_VERSION}/build/$LLVM_CMAKE_CONFIG_DIR
+	export LLVM_BUILD_PATH=$ABS_RUNDIR/llvm-${LLVM_VERSION}/build/
 else
 	export LLVM_DIR=$WITH_LLVM/$LLVM_CMAKE_CONFIG_DIR
 	export LLVM_BUILD_PATH=$WITH_LLVM
@@ -466,7 +461,7 @@ if [ $FROM -le 4 ]; then
 			-DKLEE_RUNTIME_BUILD_TYPE=Release+Asserts \
 			-DENABLE_SOLVER_STP=ON \
 			-DSTP_DIR=`pwd`/../stp \
-			-DLLVM_CONFIG_BINARY=`pwd`/../llvm-build-cmake/bin/llvm-config \
+			-DLLVM_CONFIG_BINARY=`pwd`/../llvm-${LLVM_VERSION}/build/bin/llvm-config \
 			-DENABLE_UNIT_TESTS=OFF \
 			$ZLIB_FLAGS \
 			|| clean_and_exit 1 "git"
