@@ -107,7 +107,7 @@ class Tool(benchexec.tools.template.BaseTool):
         """
         Return required version of LLVM
         """
-        return '3.8.1'
+        return '3.9.1'
 
     def preprocess_llvm(self, infile):
         """
