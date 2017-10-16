@@ -5,6 +5,7 @@ endif()
 
 add_llvm_loadable_module(LLVMsvc15
 				Prepare.cpp
+				RemoveReadOnlyAttr.cpp
 				InitializeUninitialized.cpp
 				RemoveInfiniteLoops.cpp
 				BreakInfiniteLoops.cpp

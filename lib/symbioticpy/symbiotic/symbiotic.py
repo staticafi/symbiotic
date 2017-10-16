@@ -662,6 +662,12 @@ class Symbiotic(object):
             print_elapsed_time('INFO: Compilation, preparation and '\
                                'instrumentation time')
 
+        # for the memsafety property, make functions behave like they have
+        # side-effects, because LLVM instrumentations could remove them otherwise,
+        # even though they contain calls to assert
+        if memsafety:
+            self.run_opt(['-remove-readonly-attr'])
+
         # start a new time era
         restart_counting_time()
 
