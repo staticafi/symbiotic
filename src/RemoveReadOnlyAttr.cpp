@@ -3,6 +3,8 @@
 // This file is distributed under the University of Illinois Open Source
 // License. See LICENSE.TXT for details.
 
+#include <set>
+
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
@@ -32,31 +34,12 @@ public:
   virtual bool runOnModule(Module &M);
 
 private:
-  bool shouldRemoveROAttr(const Function& F) const {
-    // check whether this function is instrumented
-    // or whether it contains some call via function pointer
-    // (in which case we do not know anything).
-    for (const BasicBlock& BB : F) {
-      for (const Instruction& I : BB) {
-        if (const CallInst *CI = dyn_cast<CallInst>(&I)) {
-          const Function *calledF = CI->getCalledFunction();
-          // function pointer
-          if (calledF == nullptr)
-            return true;
-
-          // this function is instrumented
-          if (calledF->getName().startswith("__INSTR"))
-            return true;
-        }
-      }
-    }
-  }
+  std::set<Function *> visitedFuns;
 
   // remove the readonly attribute from F
   // and also from all functions that call F
-  void removeROAttr(Function& F) {
-    F.removeFnAttr(Attribute::ReadOnly);
-
+  bool removeROAttrFromCallers(Function& F) {
+    bool changed = false;
     for (auto use_it = F.use_begin(), use_end = F.use_end();
          use_it != use_end; ++use_it) {
 #if ((LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR < 5))
@@ -66,10 +49,27 @@ private:
 #endif
       if (CI) {
         Function *parent = CI->getParent()->getParent();
-        if (parent)
-          removeROAttr(*parent);
+        if (parent) {
+            // do not visit a function multiple times
+            // and leave out functions from instrumentation
+            if (parent->getName().startswith("__INSTR"))
+              continue;
+
+            if (!visitedFuns.insert(parent).second)
+              continue;
+
+            // continue recursively
+            changed |= parent->hasFnAttribute(Attribute::ReadOnly);
+            parent->removeFnAttr(Attribute::ReadOnly);
+            //llvm::errs() << "Removed 'readonly' attr from "
+            //             << parent->getName() << "\n";
+
+            changed |= removeROAttrFromCallers(*parent);
+        }
       }
     }
+
+    return changed;
   }
 };
 
@@ -80,9 +80,8 @@ char RemoveROAttrs::ID;
 bool RemoveROAttrs::runOnModule(Module &M) {
   bool changed = false;
   for (Function& F : M) {
-    if (F.hasFnAttribute(Attribute::ReadOnly) && shouldRemoveROAttr(F)) {
-      removeROAttr(F);
-      changed = true;
+    if (F.getName().startswith("__INSTR")) {
+      changed |= removeROAttrFromCallers(F);
     }
   }
 
