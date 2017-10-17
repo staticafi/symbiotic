@@ -39,6 +39,8 @@ static RegisterPass<RemoveInfiniteLoops> RIL("remove-infinite-loops",
                                              "and replace them with exit(0)");
 char RemoveInfiniteLoops::ID;
 
+void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2);
+
 bool RemoveInfiniteLoops::runOnFunction(Function &F) {
   Module *M = F.getParent();
 
@@ -66,6 +68,7 @@ bool RemoveInfiniteLoops::runOnFunction(Function &F) {
   for (BasicBlock *block : to_process) {
     Instruction *T = block->getTerminator();
     ext = CallInst::Create(extF, args);
+    CloneMetadata(&*(block->begin()), ext);
     ext->insertBefore(T);
 
     // replace the jump with unreachable, since exit will terminate
