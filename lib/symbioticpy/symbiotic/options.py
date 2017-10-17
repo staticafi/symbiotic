@@ -7,7 +7,7 @@ class SymbioticOptions(object):
             symbiotic_dir = get_symbiotic_dir()
 
         self.tool_name = 'klee'
-        self.is32bit = True
+        self.is32bit = False
         self.prp = []
         self.prpfile = None
         self.noslice = False
@@ -33,7 +33,7 @@ class SymbioticOptions(object):
         self.source_is_bc = False
         self.optlevel = ["before-O3", "after-O3"]
         self.slicer_pta = 'fi'
-        self.slicing_criterion = '__assert_fail'
+        self.slicing_criterion = '__assert_fail,__VERIFIER_error'
         self.repeat_slicing = 1
         self.dont_exit_on_error = False
         # these files will be linked unconditionally
