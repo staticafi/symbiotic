@@ -572,7 +572,7 @@ if [ $FROM -le 6 ]; then
 
 	(build && make install) || exit 1
 
-	# download scripts
+	# initialize instrumentation module if not done yet
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/llvm-instrumentation)" ]; then
 		git_submodule_init
 	fi
@@ -593,9 +593,6 @@ if [ $FROM -le 6 ]; then
 
 	(build && make install) || exit 1
 	cd -
-
-	# and also the symbiotic libraries
-	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
 
 	cd "$SRCDIR"
 fi
@@ -635,12 +632,13 @@ if [ $FROM -le 7 ]; then
 	echo -e "\t'stp' : '$STP_VERSION'," >> $VERSFILE
 	echo -e "\t'KLEE' : '$KLEE_VERSION'," >> $VERSFILE
 	echo -e "}\n" >> $VERSFILE
-fi
 
 ######################################################################
 #  create distribution
 ######################################################################
-if [ $FROM -le 7 ]; then
+	# copy the symbiotic python module
+	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
+
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
 
 	# create git repository and add all files that we need
