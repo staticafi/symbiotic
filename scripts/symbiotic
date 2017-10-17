@@ -38,7 +38,7 @@ from symbiotic.witnesses.witnesses import GraphMLWriter
 
 from subprocess import call
 
-VERSION='4.0.0'
+VERSION='5.0.0'
 try:
     from symbiotic.versions import versions
 except ImportError:
@@ -331,9 +331,9 @@ def parse_command_line():
                  print('Unknown libc')
                  sys.exit(0)
         elif opt == '--version-short':
-            vers = ''
+            vers = '{0}-'.format(VERSION)
             n = 0
-            for (k, v) in versions.iteritems():
+            for (k, v) in versions.items():
                 if n > 0:
                     vers += '-'
                 vers += k + ':' + v[:8]
@@ -342,7 +342,8 @@ def parse_command_line():
             print(vers)
             sys.exit(0)
         elif opt == '--version':
-            for (k, v) in versions.iteritems():
+            print('version: {0}'.format(VERSION))
+            for (k, v) in versions.items():
                 print('{0:<20} -> {1}'.format(k, v))
             sys.exit(0)
         elif opt == '--no-slice':
