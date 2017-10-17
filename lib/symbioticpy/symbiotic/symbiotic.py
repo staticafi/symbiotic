@@ -275,16 +275,14 @@ class Symbiotic(object):
         else:
             raise SymbioticException('BUG: Unhandled property')
 
-        # we need to compile and link the state machines to the code
-        # before the actual instrumentation - LLVMinstr requires that
+        # module with defintions of instrumented functions
         if not tolinkbc:
             tolinkbc = self._compile_to_llvm(tolink, with_g = False)
-        self.link(libs=[tolinkbc])
 
         self._get_stats('Before instrumentation ')
 
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['LLVMinstr', config, self.llvmfile, output]
+        cmd = ['LLVMinstr', config, self.llvmfile, tolinkbc, output]
         if self.options.disable_instr_plugins:
             cmd.append('--disable-plugins')
 
@@ -292,6 +290,11 @@ class Symbiotic(object):
 
         self.llvmfile = output
         self._get_stats('After instrumentation ')
+
+        # once we instrumented the code, we can link the definitions
+        # of functions
+        self.link(libs=[tolinkbc])
+        self._get_stats('After instrumentation and linking ')
 
     def instrument(self):
         """
