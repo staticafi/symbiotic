@@ -4,6 +4,7 @@ if (BUILD_SHARED_LIBS)
 endif()
 
 add_llvm_loadable_module(LLVMsvc15
+				CloneMetadata.cpp
 				Prepare.cpp
 				RemoveReadOnlyAttr.cpp
 				InitializeUninitialized.cpp
