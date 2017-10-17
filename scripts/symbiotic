@@ -52,7 +52,7 @@ Usage: symbiotic OPTS sources
 where OPTS can be following:
 
     --bc                      Given file is a bytecode
-    --64                      Use 64-bit environment
+    --32                      Use 32-bit environment
     --timeout=t               Set timeout to t seconds
     --no-slice                Do not slice the code
     --no-prepare              Do not prepare the code
@@ -298,7 +298,7 @@ def parse_command_line():
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], '',
-                                   ['no-slice', '64', 'prp=', 'no-optimize',
+                                   ['no-slice', '32', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=', 'version', 'help',
                                     'libc=', 'old-slicer', 'require-slicer',
                                     'no-verification', 'output=', 'witness=', 'bc',
@@ -377,8 +377,8 @@ def parse_command_line():
         elif opt == '--old-slicer':
             dbg('Will use old slicer')
             options.old_slicer = True
-        elif opt == '--64':
-            dbg('Will use 64-bit environment')
+        elif opt == '--32':
+            dbg('Will use 32-bit environment')
             options.is32bit = False
         elif opt == '--no-optimize':
             dbg('Will not optimize the code')
