@@ -525,15 +525,19 @@ download_zip()
 
 get_cpa()
 {
-	if [ ! -d CPAchecker-1.4-unix ]; then
-		download_tar https://cpachecker.sosy-lab.org/CPAchecker-1.6.1-unix.tar.bz2
+	if [ ! -d CPAchecker ]; then
+		CPA_VERSION="CPAchecker-1.6.12-svcomp17-unix"
+		download_tar https://cpachecker.sosy-lab.org/${CPA_VERSION}.tar.bz2
+		mv "$CPA_VERSION" "CPAchecker" || exit 1
 	fi
 }
 
 get_ultimize()
 {
 	if [ ! -d UltimateAutomizer ]; then
-		download_zip https://ultimate.informatik.uni-freiburg.de/downloads/svcomp2017/UltimateAutomizer-linux.zip
+		ULTIMATE_VERSION=UltimateAutomizer-linux
+		download_zip https://ultimate.informatik.uni-freiburg.de/downloads/svcomp2017/${ULTIMATE_VERSION}.zip
+		mv "UAutomizer-linux" "UltimateAutomizer" || exit 1
 	fi
 }
 
@@ -543,11 +547,10 @@ get_ultimize()
 if [ $FROM -le 5 ]; then
 	if [ $WITH_CPA -eq 1 ]; then
 		get_cpa
-		rsync -a CPAchecker-1.6.1-unix/ $PREFIX/CPAchecker/
+		rsync -a CPAchecker $PREFIX/CPAchecker/
 	fi
 	if [ $WITH_ULTIMATEAUTOMIZER -eq 1 ]; then
 		get_ultimize
-		mv UAutomizer-linux UltimateAutomizer
 		rsync -a UltimateAutomizer $PREFIX/
 	fi
 fi
@@ -659,14 +662,14 @@ if [ $FROM -le 7 ]; then
 	       $LLVM_PREFIX/share/llvm-instrumentation/*/*.c \
 	       $LLVM_PREFIX/share/llvm-instrumentation/*/*.json"
 
-	CPACHECKER=
-	ULTIAUTO=
-	if [ $WITH_CPA -eq 1 ]; then
-		CPACHECKER=`find CPAchecker/ -type f`
-	fi
-	if [ $WITH_ULTIMATEAUTOMIZER -eq 1 ]; then
-		ULTIAUTO=`find UltimateAutomizer/ -type f`
-	fi
+#CPACHECKER=
+#ULTIAUTO=
+#if [ $WITH_CPA -eq 1 ]; then
+#	CPACHECKER=`find CPAchecker/ -type f`
+#fi
+#if [ $WITH_ULTIMATEAUTOMIZER -eq 1 ]; then
+#	ULTIAUTO=`find UltimateAutomizer/ -type f`
+#fi
 
 	#strip binaries, it will save us 500 MB!
 	strip $BINARIES
