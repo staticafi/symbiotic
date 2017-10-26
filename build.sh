@@ -34,6 +34,7 @@ usage()
 	echo -e "with-llvm-dir=path - use llvm from path"
 	echo -e "with-llvm-src=path - use llvm sources from path"
 	echo -e "llvm-version=ver   - use this version of llvm"
+	echo -e "build-type=TYPE    - set Release/Debug build"
 	echo "" # new line
 	echo -e "slicer, scripts,"
 	echo -e "minisat, stp, klee, witness"
@@ -60,6 +61,7 @@ WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
 WITH_ZLIB='no'
+[ -z $BUILD_TYPE ] && BUILD_TYPE="Release"
 
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
@@ -132,6 +134,9 @@ while [ $# -gt 0 ]; do
 		llvm-version=*)
 			LLVM_VERSION=${1##*=}
 			LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
+		;;
+		build-type=*)
+			BUILD_TYPE=${1##*=}
 		;;
 		*)
 			if [ -z "$OPTS" ]; then
@@ -293,7 +298,7 @@ build_llvm()
 	# configure llvm
 	if [ ! -d CMakeFiles ]; then
 		cmake .. \
-			-DCMAKE_BUILD_TYPE=Release\
+			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DLLVM_INCLUDE_EXAMPLES=OFF \
 			-DLLVM_INCLUDE_TESTS=OFF \
 			-DLLVM_ENABLE_TIMESTAMPS=OFF \
@@ -373,6 +378,7 @@ if [ $FROM -le 1 ]; then
 	cd "$SRCDIR/dg" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
+			-DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
@@ -429,7 +435,7 @@ if [ $FROM -le 3 ]; then
 			-DSTP_TIMESTAMPS:BOOL="OFF" \
 			-DCMAKE_CXX_FLAGS_RELEASE=-O2 \
 			-DCMAKE_C_FLAGS_RELEASE=-O2 \
-			-DCMAKE_BUILD_TYPE=Release \
+			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DBUILD_SHARED_LIBS:BOOL=OFF \
 			-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
 	fi
@@ -448,6 +454,12 @@ if [ $FROM -le 4 ]; then
 	mkdir -p klee-build/
 	cd klee-build/
 
+	if [ "x$BUILD_TYPE" = "xRelease" ]; then
+		KLEE_BUILD_TYPE="Release+Asserts"
+	else
+		KLEE_BUILD_TYPE="$BUILD_TYPE"
+	fi
+
 	if [ ! -d CMakeFiles ]; then
 		# use our zlib, if we compiled it
 		ZLIB_FLAGS=
@@ -457,8 +469,8 @@ if [ $FROM -le 4 ]; then
 		fi
 
 		cmake ../klee -DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
-			-DCMAKE_BUILD_TYPE=Release \
-			-DKLEE_RUNTIME_BUILD_TYPE=Release+Asserts \
+			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
+			-DKLEE_RUNTIME_BUILD_TYPE=${KLEE_BUILD_TYPE} \
 			-DENABLE_SOLVER_STP=ON \
 			-DSTP_DIR=`pwd`/../stp \
 			-DLLVM_CONFIG_BINARY=`pwd`/../llvm-${LLVM_VERSION}/build/bin/llvm-config \
@@ -469,8 +481,8 @@ if [ $FROM -le 4 ]; then
 
 	# clean runtime libs, it may be 32-bit from last build
 	make -C runtime -f Makefile.cmake.bitcode clean 2>/dev/null
-	rm -f Release+Asserts/lib/kleeRuntimeIntrinsic.bc* 2>/dev/null
-	rm -f Release+Asserts/lib/klee-libc.bc* 2>/dev/null
+	rm -f ${KLEE_BUILD_TYPE}/lib/kleeRuntimeIntrinsic.bc* 2>/dev/null
+	rm -f ${KLEE_BUILD_TYPE}/lib/klee-libc.bc* 2>/dev/null
 
 	# build 64-bit libs and install them to prefix
 	pwd
@@ -482,8 +494,8 @@ if [ $FROM -le 4 ]; then
 	# clean 64-bit build and build 32-bit version of runtime library
 	make -C runtime -f Makefile.cmake.bitcode clean \
 		|| exitmsg "Failed building klee 32-bit runtime library"
-	rm -f Release+Asserts/lib/kleeRuntimeIntrinsic.bc*
-	rm -f Release+Asserts/lib/klee-libc.bc*
+	rm -f ${KLEE_BUILD_TYPE}/lib/kleeRuntimeIntrinsic.bc*
+	rm -f ${KLEE_BUILD_TYPE}/lib/klee-libc.bc*
 	# EXTRA_LLVMCC.Flags is obsolete and to be removed soon
 	make -C runtime/Intrinsic -f Makefile.cmake.bitcode \
 		LLVMCC.ExtraFlags=-m32 \
@@ -496,13 +508,12 @@ if [ $FROM -le 4 ]; then
 
 	# copy 32-bit library version to prefix
 	mkdir -p $LLVM_PREFIX/lib32/klee/runtime
-	cp Release+Asserts/lib/kleeRuntimeIntrinsic.bc \
+	cp ${KLEE_BUILD_TYPE}/lib/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
-	cp Release+Asserts/lib/klee-libc.bc \
+	cp ${KLEE_BUILD_TYPE}/lib/klee-libc.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
-
 
 	cd -
 fi
