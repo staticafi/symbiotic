@@ -379,7 +379,7 @@ def parse_command_line():
             options.old_slicer = True
         elif opt == '--32':
             dbg('Will use 32-bit environment')
-            options.is32bit = False
+            options.is32bit = True
         elif opt == '--no-optimize':
             dbg('Will not optimize the code')
             options.no_optimize = True
