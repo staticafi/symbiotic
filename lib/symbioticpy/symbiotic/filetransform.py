@@ -28,6 +28,29 @@ class InlineRemove(FileTransform):
             else:
                 outfile.write(l)
 
+class ReplaceNamedNondet(FileTransform):
+    """
+    Replace all nondet() calls to nondet_named(#__LINE__) calls
+    """
+    def __init__(self):
+        from re import compile
+        self._re = compile('(.*)__VERIFIER_nondet_(.*)\(\s*\)(.*)')
+
+    def run(self, inputfile, outputfile):
+        infile = open(inputfile, 'r')
+        outfile = open(outputfile, 'w')
+
+        n = 1
+        for l in infile:
+            res = self._re.match(l)
+            if res:
+                outfile.write('{0}__VERIFIER_nondet_{1}_named("{2}"){3}\n'.format(res.group(1), res.group(2), n, res.group(3)))
+            else:
+                outfile.write(l)
+
+            n += 1
+
+
 class NondetSimplify(FileTransform):
     """
     Simplify some nondeterministic calls
