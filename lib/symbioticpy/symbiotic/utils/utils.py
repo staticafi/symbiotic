@@ -53,6 +53,14 @@ def err(msg, color = 'RED'):
     print_stderr(msg, 'ERROR: ', color=color)
     sys.exit(1)
 
+def process_grep(cmd, pattern):
+    from . watch import GrepWatch
+    from . process import ProcessRunner
+
+    p = ProcessRunner(cmd, GrepWatch(pattern))
+    retval = p.run()
+    return (retval, p.getOutput())
+
 debug_enabled = False
 debug_opts = []
 def enable_debug(d_opts):

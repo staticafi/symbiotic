@@ -28,7 +28,7 @@ pth = os.path.join(os.path.dirname(__file__), '../lib/symbioticpy')
 sys.path.append(os.path.abspath(pth))
 
 from symbiotic.utils import err, dbg, enable_debug
-from symbiotic.utils.utils import print_stdout, print_stderr, get_symbiotic_dir
+from symbiotic.utils.utils import print_stdout, print_stderr, get_symbiotic_dir, process_grep
 from symbiotic.utils.watch import ProcessWatch
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
 from symbiotic.utils.process import ProcessRunner
@@ -121,6 +121,7 @@ where OPTS can be following:
     --help                    Show help message
     --version                 Return version
     --version-short           Return version as one-line string
+    --no-integrity-check      Does not run integrity check. For development only.
 
     One (and only one) of the sources must contain 'main' function
 """
@@ -145,6 +146,7 @@ supported_properties = {
 # whether to dump source lines into the witness
 witness_with_source_lines = False
 no_witness = False
+no_integrity_check = False
 
 def _get_include_paths(cmd):
     """
@@ -311,7 +313,8 @@ def parse_command_line():
                                     'save-files', 'version-short', 'no-posix',
                                     'no-kernel', 'no-verifier-funs', 'no-witness',
                                     'witness-with-source-lines', 'dont-exit-on-error',
-                                    'undefined-are-pure', 'disable-instr-plugins'])
+                                    'undefined-are-pure', 'disable-instr-plugins',
+                                    'no-integrity-check'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -457,8 +460,47 @@ def parse_command_line():
             options.dont_exit_on_error = True
         elif opt == '--disable-instr-plugins':
             options.disable_instr_plugins = True
+        elif opt == '--no-integrity-check':
+            global no_integrity_check
+            no_integrity_check = True
 
     return options, args
+
+def check_klee_version(vers):
+    (retval, lines) = process_grep(['klee', '-version'], 'revision')
+    assert retval == 0
+    assert(len(lines) == 1)
+
+    klee_vers = lines[0].split(b':')[1].strip()
+    vers = bytes(vers, 'utf-8')
+    if vers != klee_vers:
+        raise SymbioticException('Invalid version of KLEE, expected {0}, but got {1}'.format(vers, klee_vers))
+
+def check_dg_version(vers):
+    pr = ProcessRunner(['llvm-slicer', '-version'], ProcessWatch(1))
+    retval = pr.run()
+    assert retval == 0
+    lines = pr.getOutput()
+    assert(len(lines) == 1)
+
+    vers = bytes(vers, 'utf-8')[:8]
+    dg_vers = lines[0].strip()
+    if vers != dg_vers:
+        raise SymbioticException('Invalid version of dg, expected {0}, but got {1}'.format(vers, dg_vers))
+
+def integrity_check():
+    """
+    Check whether every module in Symbiotic agrees on versions
+    stored in Symbiotic.
+    """
+    for (k, v) in versions.items():
+        #print(k,v)
+        if k == 'KLEE':
+            check_klee_version(v)
+        elif k == 'dg':
+            check_dg_version(v)
+        elif k == 'dg':
+            pass #check_dg_version(v)
 
 def on_rm_error(func, pth, exc):
     dbg('Failed removing tmp dir: {0})'.format(str(exc[1])))
@@ -591,6 +633,13 @@ if __name__ == "__main__":
         # set environment. That is set PATH and LD_LIBRARY_PATH
         # and so on
         symbiotic_dir = set_environ(tool, opts.is32bit)
+        # this calls the tools, so it must be after setting the environ
+        if not no_integrity_check:
+            try:
+                integrity_check();
+            except SymbioticException as e:
+                err('{0}\nIf you are aware of this, you may use --no-integrity-check to suppress this error'.format(str(e)))
+
         # set CFLAGS and CPPFLAGS for compilation
         parse_environ(opts)
 

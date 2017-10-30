@@ -57,6 +57,21 @@ class ProcessWatch(object):
         """
         return True
 
+class GrepWatch(ProcessWatch):
+    def __init__(self, pattern):
+        ProcessWatch.__init__(self, 0)
+
+        from re import compile
+        self._pattern = compile(pattern)
+        self._result = []
+
+    def parse(self, line):
+        if self._pattern.search(line.decode('utf-8')):
+            self._result.append(line)
+
+    def getLines(self):
+        return self._result
+
 class DbgWatch(ProcessWatch):
     """
     Watch that just prints the output as debugging messages
