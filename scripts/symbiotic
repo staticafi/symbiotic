@@ -488,6 +488,18 @@ def check_dg_version(vers):
     if vers != dg_vers:
         raise SymbioticException('Invalid version of dg, expected {0}, but got {1}'.format(vers, dg_vers))
 
+def check_instr_version(vers):
+    pr = ProcessRunner(['LLVMinstr', '--version'], ProcessWatch(1))
+    retval = pr.run()
+    assert retval == 0
+    lines = pr.getOutput()
+    assert(len(lines) == 1)
+
+    vers = bytes(vers, 'utf-8')[:8]
+    vers2 = lines[0].strip()
+    if vers != vers2:
+        raise SymbioticException('Invalid version of llvm-instrumentation, expected {0}, but got {1}'.format(vers, vers2))
+
 def integrity_check():
     """
     Check whether every module in Symbiotic agrees on versions
@@ -499,8 +511,8 @@ def integrity_check():
             check_klee_version(v)
         elif k == 'dg':
             check_dg_version(v)
-        elif k == 'dg':
-            pass #check_dg_version(v)
+        elif k == 'llvm-instrumentation':
+            check_instr_version(v)
 
 def on_rm_error(func, pth, exc):
     dbg('Failed removing tmp dir: {0})'.format(str(exc[1])))
