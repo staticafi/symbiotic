@@ -56,7 +56,44 @@ class GraphMLWriter(object):
         self._entry = ET.SubElement(self._graph, 'node', id='0')
         ET.SubElement(self._entry, 'data', key='entry').text = 'true'
 
-    def parsePath(self, pathFile, filename = None):
+    def _parseKtest(self, pathFile):
+        # this code is taken from ktest-tool from KLEE
+        # (but modified)
+        from struct import unpack
+
+        f = open(pathFile,'rb')
+
+        hdr = f.read(5)
+        if len(hdr)!=5 or (hdr!=b'KTEST' and hdr != b"BOUT\n"):
+            print('unrecognized file')
+            sys.exit(1)
+        version, = unpack('>i', f.read(4))
+        if version > 3:
+            print('unrecognized version')
+            sys.exit(1)
+        # skip args
+        numArgs, = unpack('>i', f.read(4))
+        for i in range(numArgs):
+            size, = unpack('>i', f.read(4))
+            f.read(size)
+
+        if version >= 2:
+            unpack('>i', f.read(4))
+            unpack('>i', f.read(4))
+
+        numObjects, = unpack('>i', f.read(4))
+        objects = []
+        for i in range(numObjects):
+            size, = unpack('>i', f.read(4))
+            name = f.read(size)
+            size, = unpack('>i', f.read(4))
+            bytes = f.read(size)
+            objects.append( (name,bytes) )
+
+        f.close()
+        return objects
+
+    def parseError(self, pathFile, filename = None):
         """
         Parse .path file from klee
         \param pathFile     the .path file
@@ -68,6 +105,11 @@ class GraphMLWriter(object):
             filenm = basename(filename)
         else:
             filenm = None
+
+        # replace .path with .ktest
+        ktestfile = '{0}ktest'.format(pathFile[:-4])
+        objects = self._parseKtest(ktestfile)
+        print(objects)
 
         dump_source_lines = self._with_source_lines and filename
         if dump_source_lines:

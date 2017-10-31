@@ -253,7 +253,7 @@ def generate_graphml(path, source, is32bit, is_correctness_wit, saveto):
 
     gen = GraphMLWriter(source, is32bit, is_correctness_wit, witness_with_source_lines)
     if not is_correctness_wit:
-        gen.parsePath(path, source)
+        gen.parseError(path, source)
     else:
         assert path is None
     gen.write(saveto)
