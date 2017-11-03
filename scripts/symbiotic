@@ -472,7 +472,7 @@ def check_klee_version(vers):
     assert(len(lines) == 1)
 
     klee_vers = lines[0].split(b':')[1].strip()
-    vers = bytes(vers, 'utf-8')
+    vers = vers.decode('utf-8')
     if vers != klee_vers:
         raise SymbioticException('Invalid version of KLEE, expected {0}, but got {1}'.format(vers, klee_vers))
 
@@ -483,7 +483,7 @@ def check_dg_version(vers):
     lines = pr.getOutput()
     assert(len(lines) == 1)
 
-    vers = bytes(vers, 'utf-8')[:8]
+    vers = vers.decode('utf-8')[:8]
     dg_vers = lines[0].strip()
     if vers != dg_vers:
         raise SymbioticException('Invalid version of dg, expected {0}, but got {1}'.format(vers, dg_vers))
@@ -495,7 +495,7 @@ def check_instr_version(vers):
     lines = pr.getOutput()
     assert(len(lines) == 1)
 
-    vers = bytes(vers, 'utf-8')[:8]
+    vers = vers.decode('utf-8')[:8]
     vers2 = lines[0].strip()
     if vers != vers2:
         raise SymbioticException('Invalid version of llvm-instrumentation, expected {0}, but got {1}'.format(vers, vers2))
