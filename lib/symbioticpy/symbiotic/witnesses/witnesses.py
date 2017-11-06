@@ -21,6 +21,32 @@ def get_sha1(source):
     f.close()
     return hsh.hexdigest()
 
+def get_repr(obj):
+    ret = []
+    assert len(obj[1]) > 0
+
+    b = obj[1][0]
+    num = 1
+    for i in range(1, len(obj[1])):
+        if obj[1][i] != b:
+            ret.append((b, num))
+            b = obj[1][i]
+            num = 1
+        else:
+            num += 1
+
+    ret.append((b, num))
+    return ret
+
+def print_object(obj):
+    rep = 'len {0} bytes, |'.format(len(obj[1]))
+    for part in get_repr(obj):
+        if part[1] > 1:
+            rep += '{0} times {1}|'.format(part[1], hex(part[0]))
+        else:
+            rep += '{0}|'.format(hex(part[0]))
+    print('{0} := {1}'.format(obj[0], rep))
+
 class GraphMLWriter(object):
     def __init__(self, source, is32bit, is_correctness_wit, with_source_lines = False):
         if no_lxml:
@@ -109,7 +135,11 @@ class GraphMLWriter(object):
         # replace .path with .ktest
         ktestfile = '{0}ktest'.format(pathFile[:-4])
         objects = self._parseKtest(ktestfile)
-        print(objects)
+        print(' -- ---- --')
+        print('Symbolic objects:')
+        for o in objects:
+            print_object(o)
+        print(' -- ---- --')
 
         dump_source_lines = self._with_source_lines and filename
         if dump_source_lines:
