@@ -8,6 +8,9 @@ class SymbioticOptions(object):
 
         self.tool_name = 'klee'
         self.is32bit = False
+        # properties as we get then on input
+        self.orig_prp = []
+        # properties mapped to our names
         self.prp = []
         self.prpfile = None
         self.noslice = False

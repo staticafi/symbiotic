@@ -57,7 +57,7 @@ def print_object(obj):
     print('{0} := {1}'.format(obj[0], rep))
 
 class GraphMLWriter(object):
-    def __init__(self, source, is32bit, is_correctness_wit, with_source_lines = False):
+    def __init__(self, source, prps, is32bit, is_correctness_wit, with_source_lines = False):
         if no_lxml:
             self._root = ET.Element('graphml')
         else:
@@ -80,8 +80,8 @@ class GraphMLWriter(object):
         ET.SubElement(self._graph, 'data', key='sourcecodelang').text = 'C'
         ET.SubElement(self._graph, 'data', key='producer').text = 'Symbiotic'
         # XXX: this may change in the future
-        ET.SubElement(self._graph, 'data', key='specification').text \
-            = 'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )'
+        for p in prps:
+            ET.SubElement(self._graph, 'data', key='specification').text = p
         ET.SubElement(self._graph, 'data', key='programfile').text = source
         ET.SubElement(self._graph, 'data', key='programhash').text = get_sha1(source)
         #ET.SubElement(self._graph, 'data', key='memorymodel').text = 'precise'

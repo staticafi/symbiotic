@@ -246,30 +246,30 @@ def parse_environ(opts):
     if 'CPPFLAGS' in os.environ:
         opts.CPPFLAGS += os.environ['CPPFLAGS'].split(' ')
 
-def generate_graphml(path, source, is32bit, is_correctness_wit, saveto):
+def generate_graphml(path, source, prps, is32bit, is_correctness_wit, saveto):
     if saveto is None:
         saveto = '{0}.graphml'.format(os.path.basename(path))
         saveto = os.path.abspath(saveto)
 
-    gen = GraphMLWriter(source, is32bit, is_correctness_wit, witness_with_source_lines)
+    gen = GraphMLWriter(source, prps, is32bit, is_correctness_wit, witness_with_source_lines)
     if not is_correctness_wit:
         gen.parseError(path, source)
     else:
         assert path is None
     gen.write(saveto)
 
-def generate_counterexample(bindir, sources, is32bit, is_correctness_wit, saveto = None):
+def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
     print('Generating witness: {0}'.format(saveto))
     if is_correctness_wit:
-        generate_graphml(None, sources[0], is32bit, is_correctness_wit, saveto)
+        generate_graphml(None, sources[0], prps, is32bit, is_correctness_wit, saveto)
         return
 
     abd = os.path.abspath(bindir)
     for path in os.listdir('{0}/klee-last'.format(abd)):
         if 'assert' in path:
             pth = os.path.abspath('{0}/klee-last/{1}.path'.format(abd, path[:-11]))
-            generate_graphml(pth, sources[0], is32bit, is_correctness_wit, saveto)
+            generate_graphml(pth, sources[0], prps, is32bit, is_correctness_wit, saveto)
             break
 
 def get_prp(prp):
@@ -284,7 +284,8 @@ def get_prp(prp):
             if line:
                 prp_list.append(line)
         f.close()
-        pf = '{0}PropertyUnreachCall.prp'.format(epath[:epath.rfind('Property')])
+        #pf = '{0}PropertyUnreachCall.prp'.format(epath[:epath.rfind('Property')])
+        pf = epath
         return (prp_list, os.path.abspath(pf))
 
     # it is not a file, so it is given as a string
@@ -396,8 +397,8 @@ def parse_command_line():
                     options.optlevel = []
                     break
         elif opt == '--prp':
-            options.prp, options.prpfile = get_prp(arg)
-            for prp in options.prp:
+            options.orig_prp, options.prpfile = get_prp(arg)
+            for prp in options.orig_prp:
                 dbg('Property: {0}'.format(prp))
         elif opt == '--pta':
             options.slicer_pta = arg
@@ -625,13 +626,10 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        # opts.prp now contain a list with keys (or None),
-        # but we want the value from the map
-        if opts.prp:
-            prps = opts.prp[:] # make copy of properties
-            opts.prp = []
-
-            for prp in prps:
+        # opts.orig_prp now contain a list with keys (or None),
+        # but we want the values from the map
+        if opts.orig_prp:
+            for prp in opts.orig_prp:
                 prp_key = supported_properties[prp]
                 opts.prp.append(prp_key)
     except KeyError as ke:
@@ -712,10 +710,10 @@ if __name__ == "__main__":
             dump_error(srcdir)
 
             if not no_witness:
-                generate_counterexample(srcdir, original_sources,
+                generate_counterexample(srcdir, original_sources, opts.orig_prp,
                                         opts.is32bit, False, opts.witness_output)
         elif res == 'true' and not no_witness:
-            generate_counterexample(srcdir, original_sources,
+            generate_counterexample(srcdir, original_sources, opts.orig_prp,
                                     opts.is32bit, True, opts.witness_output)
     except Timeout:
         sys.stdout.flush()
