@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
 from os.path import basename
+from sys import version_info
 from hashlib import sha1
+
 no_lxml = False
 try:
     from lxml import etree as ET
@@ -41,10 +43,17 @@ def get_repr(obj):
 def print_object(obj):
     rep = 'len {0} bytes, |'.format(len(obj[1]))
     for part in get_repr(obj):
-        if part[1] > 1:
-            rep += '{0} times {1}|'.format(part[1], hex(part[0]))
+        if version_info.major < 3:
+            value = ord(part[0])
         else:
-            rep += '{0}|'.format(hex(part[0]))
+            value = part[0]
+
+        value = hex(value)
+
+        if part[1] > 1:
+            rep += '{0} times {1}|'.format(part[1], value)
+        else:
+            rep += '{0}|'.format(value)
     print('{0} := {1}'.format(obj[0], rep))
 
 class GraphMLWriter(object):
