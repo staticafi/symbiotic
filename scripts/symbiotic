@@ -196,16 +196,34 @@ def set_environ(tool, is32bit = False):
         prepend('C_INCLUDE_DIR', p)
 
     symbiotic_dir = get_symbiotic_dir()
+    # check whether we are in distribution directory or in the developement directory
+    if os.path.isfile('{0}/build.sh'.format(symbiotic_dir)):
+        devel_env = True
+    else:
+        devel_env = False
+
     llvm_version=tool.llvm_version()
 
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
     prepend('LD_LIBRARY_PATH', '{0}/llvm-{1}/lib'.format(symbiotic_dir, llvm_version))
 
+    if devel_env:
+        prepend('LD_LIBRARY_PATH', '{0}/src'.format(symbiotic_dir))
+
     prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
     prepend('C_INCLUDE_DIR', '{0}/llvm-{1}/include'.format(symbiotic_dir, llvm_version))
 
-    if tool.name() == 'klee':
-        # set path without preprending, we want to use only our stuff
+    assert tool.name() == 'klee'
+
+    # override the path completely, we want to be sure that we use only our binaries
+    if devel_env:
+        os.environ['PATH'] = '{0}/llvm-{1}/build/bin:{0}/bin'.format(symbiotic_dir, llvm_version)
+        prepend('PATH', '{0}/dg/tools'.format(symbiotic_dir))
+        prepend('PATH', '{0}/llvm-instrumentation/src'.format(symbiotic_dir))
+        prepend('PATH', '{0}/klee-build/bin'.format(symbiotic_dir))
+
+        # XXX no KLEE_RUNTIME_LIBRARY_PATH 
+    else:
         os.environ['PATH'] = '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version)
 
         if is32bit:
@@ -214,19 +232,8 @@ def set_environ(tool, is32bit = False):
         else:
             os.environ['KLEE_RUNTIME_LIBRARY_PATH'] \
                 = '{0}/llvm-{1}/lib/klee/runtime'.format(symbiotic_dir, llvm_version)
-    elif tool.name() == 'skink':
-        prepend('LD_LIBRARY_PATH', '{0}/skink-v2.0/lib'.format(symbiotic_dir, llvm_version))
-        prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
-        prepend('PATH', '{0}/skink-v2.0/bin'.format(symbiotic_dir, llvm_version))
-    elif tool.name() == 'SMACK+Corral':
-        prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
-        prepend('PATH', '{0}/smack-1.7.1-64/'.format(symbiotic_dir))
-    elif tool.name() == 'SeaHorn-F16':
-        prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
-        prepend('PATH', '{0}/seahorn/bin'.format(symbiotic_dir))
-    else:
-        prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
 
+    dbg('Symbiotic dir: {0}'.format(symbiotic_dir))
     dbg('PATH={0}'.format(os.environ['PATH']))
     dbg('LD_LIBRARY_PATH={0}'.format(os.environ['LD_LIBRARY_PATH']))
     dbg('C_INCLUDE_DIR={0}'.format(os.environ['C_INCLUDE_DIR']))
