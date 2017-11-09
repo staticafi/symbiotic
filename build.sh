@@ -558,7 +558,7 @@ get_ultimize()
 if [ $FROM -le 5 ]; then
 	if [ $WITH_CPA -eq 1 ]; then
 		get_cpa
-		rsync -a CPAchecker $PREFIX/CPAchecker/
+		rsync -a CPAchecker $PREFIX/
 	fi
 	if [ $WITH_ULTIMATEAUTOMIZER -eq 1 ]; then
 		get_ultimize
