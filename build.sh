@@ -700,6 +700,7 @@ if [ $FROM -le 7 ]; then
 		lib/*.c \
 		lib/symbioticpy/symbiotic/*.py \
 		lib/symbioticpy/symbiotic/benchexec/*.py \
+		lib/symbioticpy/symbiotic/benchexec/tools/*.py \
 		lib/symbioticpy/symbiotic/tools/*.py \
 		lib/symbioticpy/symbiotic/utils/*.py \
 		lib/symbioticpy/symbiotic/witnesses/*.py \
