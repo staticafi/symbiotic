@@ -22,11 +22,11 @@ from os.path import join as joinpath
 
 import re
 
-import benchexec.util as util
-import benchexec.tools.template
-import benchexec.result as result
+import symbiotic.benchexec.util as util
+import symbiotic.benchexec.tools.template
+import symbiotic.benchexec.result as result
 
-class Tool(benchexec.tools.template.BaseTool):
+class Tool(symbiotic.benchexec.tools.template.BaseTool):
     """
     Symbiotic tool info object
     """
