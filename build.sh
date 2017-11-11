@@ -69,6 +69,7 @@ RUNDIR=`pwd`
 SRCDIR=`dirname $0`
 ABS_RUNDIR=`readlink -f $RUNDIR`
 ABS_SRCDIR=`readlink -f $SRCDIR`
+ARCHIVE="no"
 
 MODE="$1"
 
@@ -121,6 +122,9 @@ while [ $# -gt 0 ]; do
 		;;
 		with-zlib)
 			WITH_ZLIB="yes"
+		;;
+		archive)
+			ARCHIVE="yes"
 		;;
 		with-llvm=*)
 			WITH_LLVM=${1##*=}
@@ -694,11 +698,11 @@ if [ $FROM -le 7 ]; then
 		include/symbiotic.h \
 		include/symbiotic-size_t.h \
 		lib/*.c \
-		lib/symbioticpy/benchexec/*.py \
 		lib/symbioticpy/symbiotic/*.py \
+		lib/symbioticpy/symbiotic/benchexec/*.py \
+		lib/symbioticpy/symbiotic/tools/*.py \
 		lib/symbioticpy/symbiotic/utils/*.py \
 		lib/symbioticpy/symbiotic/witnesses/*.py \
-		lib/symbioticpy/symbiotic/tools/*.py \
 		$CPACHECKER \
 		$ULTIAUTO
 
@@ -707,4 +711,8 @@ if [ $FROM -le 7 ]; then
 # DO NOT: so that the tools are not rebuilt over and over
 # They depend on the installed headers and libs.
 #	git clean -xdf
+fi
+
+if [ "x$ARCHIVE" = "xyes" ]; then
+	git archive --prefix "symbiotic/" -o symbiotic.zip -9 --format zip HEAD
 fi
