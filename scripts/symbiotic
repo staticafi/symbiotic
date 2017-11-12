@@ -189,11 +189,11 @@ def set_environ(tool, is32bit = False):
         os.environ[env] = newenv
 
     # do this before we override PATH - we need 'find' utility
-    additional_paths = get_clang_include_paths()
-    if not additional_paths:
-        additional_paths = get_cpp_include_paths()
-    for p in additional_paths:
-        prepend('C_INCLUDE_DIR', p)
+    #additional_paths = get_clang_include_paths()
+    #if not additional_paths:
+    #    additional_paths = get_cpp_include_paths()
+    #for p in additional_paths:
+    #    prepend('C_INCLUDE_DIR', p)
 
     symbiotic_dir = get_symbiotic_dir()
     # check whether we are in distribution directory or in the developement directory
@@ -303,6 +303,18 @@ def get_prp(prp):
 # do not remove working files after running
 save_files = False
 
+def print_short_vers():
+    vers = '{0}-'.format(VERSION)
+    n = 0
+    for (k, v) in versions.items():
+        if n > 0:
+            vers += '-'
+        vers += k + ':' + v[:8]
+        n += 1
+
+    print(vers)
+
+
 def parse_command_line():
     options = SymbioticOptions()
 
@@ -342,15 +354,7 @@ def parse_command_line():
                  print('Unknown libc')
                  sys.exit(0)
         elif opt == '--version-short':
-            vers = '{0}-'.format(VERSION)
-            n = 0
-            for (k, v) in versions.items():
-                if n > 0:
-                    vers += '-'
-                vers += k + ':' + v[:8]
-                n += 1
-
-            print(vers)
+            print_short_vers()
             sys.exit(0)
         elif opt == '--version':
             print('version: {0}'.format(VERSION))
@@ -632,6 +636,8 @@ if __name__ == "__main__":
         print(usage_msg)
         sys.exit(1)
 
+
+    print_short_vers()
     try:
         # opts.orig_prp now contain a list with keys (or None),
         # but we want the values from the map
