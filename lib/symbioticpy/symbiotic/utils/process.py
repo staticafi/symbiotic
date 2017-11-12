@@ -28,7 +28,11 @@ class ProcessRunner(object):
         # current_process, so that we can easily kill this process
         # on timeout or signal. This way we can run only one
         # process at the time, but we don't need more (yet?)
-        self._process = Popen(self._cmd, stdout=PIPE, stderr=STDOUT)
+        try:
+            self._process = Popen(self._cmd, stdout=PIPE, stderr=STDOUT)
+        except OSError as e:
+            msg = ' '.join(self._cmd) + '\n'
+            raise SymbioticError(msg + str(e))
 
         while True:
             line = self._process.stdout.readline()
