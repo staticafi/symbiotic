@@ -32,7 +32,7 @@ class ProcessRunner(object):
             self._process = Popen(self._cmd, stdout=PIPE, stderr=STDOUT)
         except OSError as e:
             msg = ' '.join(self._cmd) + '\n'
-            raise SymbioticError(msg + str(e))
+            raise SymbioticException(msg + str(e))
 
         while True:
             line = self._process.stdout.readline()
