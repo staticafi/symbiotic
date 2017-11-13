@@ -609,8 +609,8 @@ class Symbiotic(object):
         self._get_stats('After compilation ')
 
         if not self.check_llvmfile(self.llvmfile, '-check-concurr'):
-            dbg('Unsupported call (probably pthread API)')
-            return report_results('unsupported call')
+            print('Unsupported call (probably pthread API or floating point stdlib functions)')
+            return report_results('unknown')
 
         self._run_opt(['-rename-verifier-funs', '-rename-verifier-funs-source={0}'.format(self.sources[0])])
 
