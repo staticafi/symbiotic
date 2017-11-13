@@ -34,7 +34,8 @@ class ReplaceNamedNondet(FileTransform):
     """
     def __init__(self):
         from re import compile
-        self._re = compile('(.*)__VERIFIER_nondet_(.*)\(\s*\)(.*)')
+        # XXX: this replaces also declarations -- and we do not have a namy anyway
+        #self._re = compile('(.*)__VERIFIER_nondet_(.*)\(\s*\)(.*)')
         self._re2 = compile('(.*\s(.+)\s*=\s*)__VERIFIER_nondet_(.*)\(\s*\)(.*)')
 
     def run(self, inputfile, outputfile):
@@ -49,14 +50,14 @@ class ReplaceNamedNondet(FileTransform):
                 name = res.group(2).rstrip()
                 ctype = res.group(3)
                 suffix = res.group(4)
-            else:
-                # no luck, try without name
-                res = self._re.match(l)
-                if res:
-                    prefix = res.group(1)
-                    name = '--'
-                    ctype = res.group(2)
-                    suffix = res.group(3)
+           #else:
+           #    # no luck, try without name
+           #    res = self._re.match(l)
+           #    if res:
+           #        prefix = res.group(1)
+           #        name = '--'
+           #        ctype = res.group(2)
+           #        suffix = res.group(3)
 
             if res:
                 outfile.write('{0}__VERIFIER_nondet_{1}_named("{2}.{3}"){4}\n'.\
