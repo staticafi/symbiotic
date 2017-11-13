@@ -60,7 +60,7 @@ class ReplaceNamedNondet(FileTransform):
            #        suffix = res.group(3)
 
             if res:
-                outfile.write('{0}__VERIFIER_nondet_{1}_named("{2}.{3}"){4}\n'.\
+                outfile.write('{0}__VERIFIER_nondet_{1}_named("{2}:{3}"){4}\n'.\
                             format(prefix, ctype, name, n, suffix))
             else:
                 outfile.write(l)
