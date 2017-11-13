@@ -685,9 +685,10 @@ if __name__ == "__main__":
         os.chdir(working_dir)
         dbg('Working directory: {0}'.format(working_dir))
 
-        from symbiotic.filetransform import ReplaceNamedNondet, InlineRemove, NondetSimplify, InfiniteLoopsRemover
+        from symbiotic.filetransform import InlineRemove, NondetSimplify, InfiniteLoopsRemover #, ReplaceNamedNondet
         transformations = [InlineRemove(), NondetSimplify(),
-                           ReplaceNamedNondet(), InfiniteLoopsRemover()]
+                           #ReplaceNamedNondet(),
+                           InfiniteLoopsRemover()]
         for trans in transformations:
             # remove __inline from the source
             new_sources = []

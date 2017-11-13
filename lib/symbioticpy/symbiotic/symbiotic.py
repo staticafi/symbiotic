@@ -612,6 +612,8 @@ class Symbiotic(object):
             dbg('Unsupported call (probably pthread API)')
             return report_results('unsupported call')
 
+        self._run_opt(['-rename-verifier-funs', '-rename-verifier-funs-source={0}'.format(self.sources[0])])
+
         # link the files that we got on the command line
         # and that we are required to link in on any circumstances
         self.link_unconditional()

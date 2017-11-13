@@ -7,6 +7,7 @@ add_llvm_loadable_module(LLVMsvc15
 				CloneMetadata.cpp
 				Prepare.cpp
 				RemoveReadOnlyAttr.cpp
+				RenameVerifierFuns.cpp
 				InitializeUninitialized.cpp
 				RemoveInfiniteLoops.cpp
 				BreakInfiniteLoops.cpp
