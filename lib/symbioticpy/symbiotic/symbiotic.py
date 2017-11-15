@@ -532,6 +532,7 @@ class Symbiotic(object):
                 opts.append('-fno-sanitize=unsigned-integer-overflow')
             elif 'SIGNED-OVERFLOW' in self.options.prp:
                 opts.append('-fsanitize=signed-integer-overflow')
+                opts.append('-fsanitize=shift')
                 # XXX: remove once we have better CD algorithm
                 self.options.disabled_optimizations = ['-instcombine']
 
