@@ -35,7 +35,6 @@
 #include <ctype.h>
 #include <math.h>
 #include <float.h>
-#include <stdlib.h>
 
 double strtod(const char *str, char **endptr) {
   double number;

@@ -31,10 +31,16 @@
  * SUCH DAMAGE.
  */
 
-#include <limits.h>
 #include <ctype.h>
 #include <errno.h>
-#include <stdlib.h>
+
+/* Maximum value an `unsigned long int' can hold.  (Minimum is 0.)  */
+#  if __WORDSIZE == 64
+#   define ULONG_MAX	18446744073709551615UL
+#  else
+#   define ULONG_MAX	4294967295UL
+#  endif
+
 
 /*
  * Convert a string to an unsigned long integer.

@@ -1,9 +1,30 @@
 /* http://www.net-snmp.org/dev/agent/strtoull_8c_source.html */
 
-#include <limits.h>
 #include <ctype.h>
 #include <errno.h>
-#include <stdlib.h>
+
+/* Maximum value an `unsigned long int' can hold.  (Minimum is 0.)  */
+#  if __WORDSIZE == 64
+#   define ULONG_MAX	18446744073709551615UL
+#  else
+#   define ULONG_MAX	4294967295UL
+#  endif
+
+/* The <limits.h> files in some gcc versions don't define LLONG_MIN,
+   LLONG_MAX, and ULLONG_MAX.  Instead only the values gcc defined for
+   ages are available.  */
+#if defined __USE_ISOC99 && defined __GNUC__
+# ifndef LLONG_MIN
+#  define LLONG_MIN	(-LLONG_MAX-1)
+# endif
+# ifndef LLONG_MAX
+#  define LLONG_MAX	__LONG_LONG_MAX__
+# endif
+# ifndef ULLONG_MAX
+#  define ULLONG_MAX	(LLONG_MAX * 2ULL + 1)
+# endif
+#endif
+
 
 /*
  * Convert a string to an unsigned long long integer.

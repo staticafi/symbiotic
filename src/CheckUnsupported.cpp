@@ -105,7 +105,9 @@ bool CheckUnsupported::runOnFunction(Function &F) {
     "fdim",
     "fdimf",
     "fdiml",
-    NULL
+    "longjmp",
+    "setjmp",
+    nullptr
   };
 
   check_unsupported(F, unsupported_calls);
