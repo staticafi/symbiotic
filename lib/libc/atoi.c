@@ -1,6 +1,5 @@
 /* http://git.musl-libc.org/cgit/musl/tree/src/stdlib/atoi.c */
 
-#include <stdlib.h>
 #include <ctype.h>
 
 int atoi(const char *s)
