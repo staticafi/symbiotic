@@ -83,8 +83,8 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
     GlobalVariable *GV = &*I;
     if (GV->hasInitializer())
       continue;
-    // we need to set some initializer
-    GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
+    // DONT set the global to be initialized to 0 (null)
+    //GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
     GV->setExternallyInitialized(false);
     errs() << "Making global variable '" << GV->getName() << "' non-extern\n";
 
