@@ -296,6 +296,13 @@ class Symbiotic(object):
         self.link(libs=[tolinkbc])
         self._get_stats('After instrumentation and linking ')
 
+    def _is_memsafety_prp(self):
+        return 'MEMSAFETY' in self.options.prp or\
+               'MEM-TRACK' in self.options.prp or \
+               'VALID-DEREF' in self.options.prp or \
+               'VALID-FREE' in self.options.prp or\
+               'NULL-DEREF' in self.options.prp
+
     def instrument(self):
         """
         Instrument the code.
@@ -410,6 +417,13 @@ class Symbiotic(object):
             if self.options.slicer_pta in ['fi', 'fs']:
                 cmd.append('-pta')
                 cmd.append(self.options.slicer_pta)
+            elif self._is_memsafety_prp():
+                # if not specified otherwise,
+                # use FS for memsafety as it usually faster
+                # because of smaller PTA set in the instrumented
+                # functions
+                cmd.append('-pta')
+                cmd.append('fs')
 
             cmd.append('-statistics')
 
