@@ -130,27 +130,40 @@ class GraphMLWriter(object):
         f.close()
         return objects
 
-    def parseError(self, pathFile, filename = None):
-        """
-        Parse .path file from klee
-        \param pathFile     the .path file
-        \param filename     name of the file the symbiotic ran on
-                            -- in the case that we want to stick
-                            only to this file in the witness
-        """
-        if filename:
-            filenm = basename(filename)
-        else:
-            filenm = None
+    def _newNodeEdge(self, last_id, line = None, originfile = None):
+        # create new node
+        node = ET.SubElement(self._graph, 'node', id=str(last_id))
 
-        # replace .path with .ktest
-        ktestfile = '{0}ktest'.format(pathFile[:-4])
+        # create new edge
+        edge = ET.SubElement(self._graph, 'edge',
+                                source=str(last_id - 1),
+                                target=str(last_id))
+        if line is not None:
+            ET.SubElement(edge, 'data', key='startline').text = line
+        if originfile is not None:
+            ET.SubElement(edge, 'data', key='originfile').text = originfile
+
+        return node, edge
+
+    def _dumpObjects(self, ktestfile):
         objects = self._parseKtest(ktestfile)
         print(' -- ---- --')
         print('Symbolic objects:')
         for o in objects:
             print_object(o)
         print(' -- ---- --')
+
+        return 1
+
+    def _dumpPath(self, pathFile, last_id, filename):
+        #ctrlelem = None
+        last_node = None
+        line_set = set()
+
+        if filename:
+            filenm = basename(filename)
+        else:
+            filenm = None
 
         dump_source_lines = self._with_source_lines and filename
         if dump_source_lines:
@@ -159,11 +172,7 @@ class GraphMLWriter(object):
             fl.close()
 
         f = open(pathFile, 'r')
-        last_id=1
-        last_node = None
-        line_set = set()
 
-        #ctrlelem = None
         for line in f:
             l = line.split()
 
@@ -182,15 +191,7 @@ class GraphMLWriter(object):
 
             line_set.add(lineno)
 
-            # create new node
-            last_node = ET.SubElement(self._graph, 'node', id=str(last_id))
-
-            # create new edge
-            edge = ET.SubElement(self._graph, 'edge',
-                                    source=str(last_id - 1),
-                                    target=str(last_id))
-            ET.SubElement(edge, 'data', key='startline').text = l[3]
-            ET.SubElement(edge, 'data', key='originfile').text = originfile
+            last_node, edge = self._newNodeEdge(last_id, l[3], originfile)
 
             if dump_source_lines:
                 ET.SubElement(edge, 'data', key='sourcecode').text\
@@ -224,6 +225,18 @@ class GraphMLWriter(object):
         #     ctrlelem.getparent().remove(ctrlelem)
 
         f.close()
+
+    def parseError(self, pathFile, filename = None):
+        """
+        Parse .path file from klee
+        \param pathFile     the .path file
+        \param filename     name of the file the symbiotic ran on
+                            -- in the case that we want to stick
+                            only to this file in the witness
+        """
+        # replace .path with .ktest
+        last_id = self._dumpObjects('{0}ktest'.format(pathFile[:-4]))
+        self._dumpPath(pathFile, last_id, filename)
 
     def dump(self):
         if no_lxml:
