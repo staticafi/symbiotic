@@ -4,6 +4,8 @@ from os.path import basename
 from sys import version_info
 from hashlib import sha1
 
+skip_repeating_lines = False
+
 no_lxml = False
 try:
     from lxml import etree as ET
@@ -159,6 +161,7 @@ class GraphMLWriter(object):
         f = open(pathFile, 'r')
         last_id=1
         last_node = None
+        line_set = set()
 
         #ctrlelem = None
         for line in f:
@@ -173,6 +176,12 @@ class GraphMLWriter(object):
             if filenm and filenm != originfile:
                 continue
 
+	    lineno = int(l[3])
+	    if skip_repeating_lines and lineno in line_set:
+	        continue
+
+            line_set.add(lineno)
+
             # create new node
             last_node = ET.SubElement(self._graph, 'node', id=str(last_id))
 
@@ -185,7 +194,7 @@ class GraphMLWriter(object):
 
             if dump_source_lines:
                 ET.SubElement(edge, 'data', key='sourcecode').text\
-                    = lines[int(l[3]) - 1].strip().encode('utf-8')
+                    = lines[lineno - 1].strip().encode('utf-8')
 
             # not all of the lines are branches and also not every
             # branch evaluation corresponds to the same evaluation
