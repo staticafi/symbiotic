@@ -4,7 +4,10 @@ from os.path import basename
 from sys import version_info
 from hashlib import sha1
 
+import re
+
 skip_repeating_lines = False
+include_objects = False
 
 no_lxml = False
 try:
@@ -72,6 +75,8 @@ class GraphMLWriter(object):
             arch = '64bit'
 
         self._with_source_lines = with_source_lines
+
+        self._variable_index_re = re.compile("^[_a-zA-Z\$][_a-zA-Z\$0-9]*(\[.*\])?$")
 
         self._graph = ET.SubElement(self._root, 'graph', edgedefault="directed")
         # add the description
@@ -153,7 +158,32 @@ class GraphMLWriter(object):
             print_object(o)
         print(' -- ---- --')
 
-        return 1
+        if not include_objects:
+            return 1
+
+        last_id = 1
+
+        for o in objects:
+            var = o[0].split(":")
+            if len(var) != 3:
+                continue
+            var_fun = var[0]
+            var_name = var[1]
+
+            if not self._variable_index_re.match(var_name):
+                continue
+
+            ass_list = []
+            for i in range(0, len(o[1])):
+                ass_list.append("*(char *)&({0}))[{1}] == {2}".format(var_name, i, ord(o[1][i])))
+
+            node, edge = self._newNodeEdge(last_id)
+            ET.SubElement(edge, 'data', key='assumption').text = "; ".join(ass_list)
+            ET.SubElement(edge, 'data', key='assumption_scope').text = var_fun
+
+            last_id += 1
+
+        return last_id
 
     def _dumpPath(self, pathFile, last_id, filename):
         #ctrlelem = None
