@@ -35,7 +35,7 @@ class SymbioticOptions(object):
         self.witness_output = '{0}/witness.graphml'.format(symbiotic_dir)
         self.source_is_bc = False
         self.optlevel = ["before-O3", "after-O3"]
-        self.slicer_pta = None
+        self.slicer_pta = 'fi'
         self.slicing_criterion = '__assert_fail,__VERIFIER_error'
         self.repeat_slicing = 1
         self.dont_exit_on_error = False
