@@ -152,6 +152,8 @@ class GraphMLWriter(object):
         return node, edge
 
     def _dumpObjects(self, ktestfile):
+        from struct import unpack
+
         objects = self._parseKtest(ktestfile)
         print(' -- ---- --')
         print('Symbolic objects:')
@@ -165,7 +167,7 @@ class GraphMLWriter(object):
         last_id = 1
 
         for o in objects:
-            var = o[0].split(":")
+            var = o[0].decode('utf-8').split(":")
             if len(var) != 3:
                 continue
             var_fun = var[0]
@@ -175,8 +177,20 @@ class GraphMLWriter(object):
                 continue
 
             ass_list = []
-            for i in range(0, len(o[1])):
-                ass_list.append("*(char *)&({0}))[{1}] == {2}".format(var_name, i, ord(o[1][i])))
+            bytes_num = len(o[1])
+            if bytes_num == 4:
+                # dump this as a regular number
+                # can't there be a problem with signed/unsigned?
+                val = unpack('i', o[1])[0]
+                ass_list.append("{0} == {1}".format(var_name, val))
+            else:
+                # dump this as bytes
+                for i in range(0, bytes_num):
+                    if version_info.major < 3:
+                        val = ord(o[1][i])
+                    else:
+                        val = o[1][i]
+                    ass_list.append("*(char *)&({0}))[{1}] == {2}".format(var_name, i, val))
 
             node, edge = self._newNodeEdge(last_id)
             ET.SubElement(edge, 'data', key='assumption').text = "; ".join(ass_list)
@@ -217,7 +231,6 @@ class GraphMLWriter(object):
                 continue
 
             lineno = int(l[3])
-
             if skip_repeating_lines and lineno in line_set:
                 continue
 
