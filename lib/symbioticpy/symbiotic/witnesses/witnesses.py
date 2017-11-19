@@ -8,6 +8,7 @@ import re
 
 skip_repeating_lines = False
 include_objects = False
+trivial_witness = True
 
 no_lxml = False
 try:
@@ -215,9 +216,10 @@ class GraphMLWriter(object):
             if filenm and filenm != originfile:
                 continue
 
-	    lineno = int(l[3])
-	    if skip_repeating_lines and lineno in line_set:
-	        continue
+            lineno = int(l[3])
+
+            if skip_repeating_lines and lineno in line_set:
+                continue
 
             line_set.add(lineno)
 
@@ -266,7 +268,15 @@ class GraphMLWriter(object):
         """
         # replace .path with .ktest
         last_id = self._dumpObjects('{0}ktest'.format(pathFile[:-4]))
-        self._dumpPath(pathFile, last_id, filename)
+        if trivial_witness:
+            last_node = ET.SubElement(self._graph, 'node', id=str(last_id))
+            ET.SubElement(self._graph, 'edge',
+                             source=str(last_id - 1),
+                             target=str(last_id))
+
+            ET.SubElement(last_node, 'data', key='violation').text = 'true'
+        else:
+            self._dumpPath(pathFile, last_id, filename)
 
     def dump(self):
         if no_lxml:
