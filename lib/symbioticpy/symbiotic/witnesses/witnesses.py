@@ -7,7 +7,8 @@ from hashlib import sha1
 import re
 
 skip_repeating_lines = False
-include_objects = False
+include_objects = True
+only_objects_in_main = True
 trivial_witness = True
 
 no_lxml = False
@@ -61,6 +62,12 @@ def print_object(obj):
         else:
             rep += '{0}|'.format(value)
     print('{0} := {1}'.format(obj[0], rep))
+
+def split_name(name):
+    var = name.decode('utf-8').split(":")
+    if len(var) != 3:
+        return None, None, None
+    return var[0], var[1], var[2]
 
 class GraphMLWriter(object):
     def __init__(self, source, prps, is32bit, is_correctness_wit, with_source_lines = False):
@@ -166,14 +173,31 @@ class GraphMLWriter(object):
 
         last_id = 1
 
-        for o in objects:
-            var = o[0].decode('utf-8').split(":")
-            if len(var) != 3:
-                continue
-            var_fun = var[0]
-            var_name = var[1]
+        if only_objects_in_main:
+            # filter the objects to those that are present in main
+            # and sort them according to line numbers
+            new_objects = []
+            for o in objects:
+                var_fun, var_name, var_line = split_name(o[0])
+                if var_fun is None or var_fun != 'main':
+                    continue
 
-            if not self._variable_index_re.match(var_name):
+                if not self._variable_index_re.match(var_name):
+                    continue
+
+                new_objects.append((var_line, o))
+
+            new_objects.sort()
+            objects = [o for o in map(lambda x: x[1], new_objects)]
+
+        for o in objects:
+            var_fun, var_name, var_line  = split_name(o[0])
+            if var_line is None:
+                continue
+
+            assert var_fun and var_name and var_line
+            if not only_objects_in_main and\
+               not self._variable_index_re.match(var_name):
                 continue
 
             ass_list = []
