@@ -158,7 +158,7 @@ class GraphMLWriter(object):
 
         return node, edge
 
-    def _dumpObjects(self, ktestfile):
+    def _dumpObjects(self, ktestfile, originfile):
         from struct import unpack
 
         objects = self._parseKtest(ktestfile)
@@ -216,7 +216,7 @@ class GraphMLWriter(object):
                         val = o[1][i]
                     ass_list.append("*(char *)&({0}))[{1}] == {2}".format(var_name, i, val))
 
-            node, edge = self._newNodeEdge(last_id)
+            node, edge = self._newNodeEdge(last_id, var_line, originfile)
             ET.SubElement(edge, 'data', key='assumption').text = "; ".join(ass_list)
             ET.SubElement(edge, 'data', key='assumption_scope').text = var_fun
 
@@ -304,7 +304,7 @@ class GraphMLWriter(object):
                             only to this file in the witness
         """
         # replace .path with .ktest
-        last_id = self._dumpObjects('{0}ktest'.format(pathFile[:-4]))
+        last_id = self._dumpObjects('{0}ktest'.format(pathFile[:-4]), filename)
         if trivial_witness:
             last_node = ET.SubElement(self._graph, 'node', id=str(last_id))
             ET.SubElement(self._graph, 'edge',
