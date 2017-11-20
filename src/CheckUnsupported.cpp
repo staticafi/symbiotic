@@ -107,6 +107,10 @@ bool CheckUnsupported::runOnFunction(Function &F) {
     "fdiml",
     "longjmp",
     "setjmp",
+    // I do not know if this is problem with us or with
+    // benchmarks, but until I found out,
+    // skip benchmarks with this function
+    "getopt32",
     nullptr
   };
 
