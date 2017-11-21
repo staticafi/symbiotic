@@ -74,7 +74,7 @@ class GraphMLWriter(object):
         if no_lxml:
             self._root = ET.Element('graphml')
         else:
-            ns = {None:'http://graphml.graphdrawing.org/xmlns/graphml'}
+            ns = {None:'http://graphml.graphdrawing.org/xmlns'}
             self._root = ET.Element('graphml', nsmap=ns)
 
         if is32bit:
