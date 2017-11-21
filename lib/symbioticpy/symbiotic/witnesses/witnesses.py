@@ -7,7 +7,7 @@ from hashlib import sha1
 import re
 
 skip_repeating_lines = False
-include_objects = True
+include_objects = False
 only_objects_in_main = True
 trivial_witness = True
 
@@ -306,12 +306,18 @@ class GraphMLWriter(object):
         # replace .path with .ktest
         last_id = self._dumpObjects('{0}ktest'.format(pathFile[:-4]), filename)
         if trivial_witness:
-            last_node = ET.SubElement(self._graph, 'node', id=str(last_id))
-            ET.SubElement(self._graph, 'edge',
-                             source=str(last_id - 1),
-                             target=str(last_id))
+            if not include_objects or (include_objects and last_id == 1):
+                # set the entry node as violation too
+                ET.SubElement(self._entry, 'data', key='violation').text = 'true'
+            else:
+                # we included some objects, so create an edge from there
+                # to violation
+                last_node = ET.SubElement(self._graph, 'node', id=str(last_id))
+                ET.SubElement(self._graph, 'edge',
+                                 source=str(last_id - 1),
+                                 target=str(last_id))
 
-            ET.SubElement(last_node, 'data', key='violation').text = 'true'
+                ET.SubElement(last_node, 'data', key='violation').text = 'true'
         else:
             self._dumpPath(pathFile, last_id, filename)
 
