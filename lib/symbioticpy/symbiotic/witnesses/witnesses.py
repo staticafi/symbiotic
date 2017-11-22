@@ -7,7 +7,7 @@ from hashlib import sha1
 import re
 
 skip_repeating_lines = False
-include_objects = False
+include_objects = True
 only_objects_in_main = True
 trivial_witness = True
 
@@ -187,7 +187,8 @@ class GraphMLWriter(object):
 
                 new_objects.append((var_line, o))
 
-            new_objects.sort()
+            # sort the objects according to line numbers
+            new_objects.sort(key=lambda x: int(x[0]))
             objects = [o for o in map(lambda x: x[1], new_objects)]
 
         for o in objects:
