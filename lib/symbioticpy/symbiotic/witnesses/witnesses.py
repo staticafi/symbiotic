@@ -239,7 +239,7 @@ class GraphMLWriter(object):
 
             node, edge = self._newNodeEdge(last_id, var_line, originfile)
             ET.SubElement(edge, 'data', key='assumption').text = "; ".join(ass_list)
-            ET.SubElement(edge, 'data', key='assumption_scope').text = var_fun
+            ET.SubElement(edge, 'data', key='assumption.scope').text = var_fun
 
             last_id += 1
 
