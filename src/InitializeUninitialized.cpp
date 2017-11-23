@@ -91,7 +91,7 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
     Type *Ty = GV->getType()->getContainedType(0);
     if (!Ty->isSized()) {
       GV->dump();
-      llvm::errs() << "WARNING: failed making global variable symbolic "
+      llvm::errs() << "ERROR: failed making global variable symbolic "
                       "(type is unsized)\n";
       continue;
     }
@@ -102,8 +102,14 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
     // the global is a pointer, so we will create an object that it can
     // point to and set it to symbolic at the beggining of main
     if (Ty->isPointerTy()) {
+        if (!Ty->getContainedType(0)->isSized()) {
+            GV->dump();
+            llvm::errs() << "ERROR: failed making global variable symbolic "
+                            "(referenced type is unsized)\n";
+            continue;
+        }
+
         // maybe we should do that recursively? Until we get a non-pointer?
-        llvm::errs() << "Pointer\n";
         Constant *init = Constant::getNullValue(Ty->getContainedType(0));
         GlobalVariable *pointedG
             = new GlobalVariable(M, Ty->getContainedType(0),
