@@ -84,6 +84,10 @@ class GraphMLWriter(object):
 
         self._with_source_lines = with_source_lines
 
+        # is this string a valid variable identificatior?
+        self._variable_re = re.compile("^[_a-zA-Z\$][_a-zA-Z\$0-9]*$")
+        # is this string a valid variable identificatior or array access?
+        #XXX: this is not supported now
         self._variable_index_re = re.compile("^[_a-zA-Z\$][_a-zA-Z\$0-9]*(\[.*\])?$")
 
         self._graph = ET.SubElement(self._root, 'graph', edgedefault="directed")
@@ -182,7 +186,9 @@ class GraphMLWriter(object):
                 if var_fun is None or var_fun != 'main':
                     continue
 
-                if not self._variable_index_re.match(var_name):
+                # for the trivial witnesses use only scalar variables, as for
+                # array accesses we would need a full path
+                if trivial_witness and not self._variable_re.match(var_name):
                     continue
 
                 new_objects.append((var_line, o))
@@ -198,7 +204,9 @@ class GraphMLWriter(object):
 
             assert var_fun and var_name and var_line
             if not only_objects_in_main and\
-               not self._variable_index_re.match(var_name):
+               not self._variable_re.match(var_name):
+               # use only scalar variables now, as we do not support arrays
+               # or multiple assignments now
                 continue
 
             ass_list = []
