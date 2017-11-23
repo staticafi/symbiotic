@@ -211,10 +211,22 @@ class GraphMLWriter(object):
 
             ass_list = []
             bytes_num = len(o[1])
-            if bytes_num == 4:
-                # dump this as a regular number
-                # can't there be a problem with signed/unsigned?
+            # If possible, dump the value as a regular number (not byte per byte)
+            # XXX: the length may not be sufficient. We need to know also
+            # that it is really a primitive type (we can have a struct of size 8)
+            if bytes_num == 8:
+                val = unpack('l', o[1])[0]
+                ass_list.append("{0} == {1}".format(var_name, val))
+            elif bytes_num == 4:
                 val = unpack('i', o[1])[0]
+                ass_list.append("{0} == {1}".format(var_name, val))
+            elif bytes_num == 2:
+                # unpack needs a buffer of size 4 for an integer
+                val = unpack('h', o[1])[0]
+                ass_list.append("{0} == {1}".format(var_name, val))
+            elif bytes_num == 1:
+                # unpack needs a buffer of size 4 for an integer
+                val = unpack('b', o[1])[0]
                 ass_list.append("{0} == {1}".format(var_name, val))
             else:
                 # dump this as bytes
