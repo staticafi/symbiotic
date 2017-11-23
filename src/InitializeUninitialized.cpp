@@ -83,30 +83,54 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
     GlobalVariable *GV = &*I;
     if (GV->hasInitializer())
       continue;
-    // DONT set the global to be initialized to 0 (null)
-    //GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
-    GV->setExternallyInitialized(false);
-    errs() << "Making global variable '" << GV->getName() << "' non-extern\n";
-
-    // and now make the global symbolic at the beginning of main
 
     // insert initialization of the new global variable
     // at the beginning of main
-    Function *vms = get_verifier_make_symbolic(&M);
+
     // GV is a pointer to some memory, we want the size of the memory
     Type *Ty = GV->getType()->getContainedType(0);
     if (!Ty->isSized()) {
       GV->dump();
-      llvm::errs() << "WARNING: failed making global variable symbolic (type is unsized)\n";
+      llvm::errs() << "WARNING: failed making global variable symbolic "
+                      "(type is unsized)\n";
       continue;
     }
 
-    CastInst *CastI = CastInst::CreatePointerCast(GV, Type::getInt8PtrTy(Ctx));
+    // what memory will be made symbolic
+    Value *memory = GV;
+
+    // the global is a pointer, so we will create an object that it can
+    // point to and set it to symbolic at the beggining of main
+    if (Ty->isPointerTy()) {
+        // maybe we should do that recursively? Until we get a non-pointer?
+        llvm::errs() << "Pointer\n";
+        Constant *init = Constant::getNullValue(Ty->getContainedType(0));
+        GlobalVariable *pointedG
+            = new GlobalVariable(M, Ty->getContainedType(0),
+                                 false /*constant */,
+                                 GlobalVariable::PrivateLinkage,
+                                 init);
+        GV->setInitializer(pointedG);
+
+        // set memory and its type that should be made symbolic
+        memory = pointedG;
+        Ty = Ty->getContainedType(0);
+    } else {
+        // we need to set some initializer, otherwise the global
+        // won't be marked as non-external. This initializer will
+        // be overwritten at the beginning of main
+        GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
+    }
+
+    Function *vms = get_verifier_make_symbolic(&M);
+    CastInst *CastI = CastInst::CreatePointerCast(memory, Type::getInt8PtrTy(Ctx));
 
     std::vector<Value *> args;
     args.push_back(CastI);
     args.push_back(ConstantInt::get(get_size_t(&M), DL->getTypeAllocSize(Ty)));
-    Constant *name = ConstantDataArray::getString(Ctx, "extern_nondet");
+    std::string nameStr = "extern-global:" + (GV->hasName() ? GV->getName().str() : "--");
+    Constant *name
+        = ConstantDataArray::getString(Ctx, nameStr);
     GlobalVariable *nameG = new GlobalVariable(M, name->getType(), true /*constant */,
                                                GlobalVariable::PrivateLinkage, name);
     args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
@@ -125,6 +149,9 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
     CallAddMetadata(CI, &Inst);
 
     modified = true;
+
+    GV->setExternallyInitialized(false);
+    errs() << "Made global variable '" << GV->getName() << "' non-extern\n";
   }
 
   return modified;
