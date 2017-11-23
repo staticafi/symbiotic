@@ -93,7 +93,6 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
     // insert initialization of the new global variable
     // at the beginning of main
     Function *vms = get_verifier_make_symbolic(&M);
-    CastInst *CastI = CastInst::CreatePointerCast(GV, Type::getInt8PtrTy(Ctx));
     // GV is a pointer to some memory, we want the size of the memory
     Type *Ty = GV->getType()->getContainedType(0);
     if (!Ty->isSized()) {
@@ -101,6 +100,8 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
       llvm::errs() << "WARNING: failed making global variable symbolic (type is unsized)\n";
       continue;
     }
+
+    CastInst *CastI = CastInst::CreatePointerCast(GV, Type::getInt8PtrTy(Ctx));
 
     std::vector<Value *> args;
     args.push_back(CastI);
