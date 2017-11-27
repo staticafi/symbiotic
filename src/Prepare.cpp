@@ -26,6 +26,9 @@ namespace {
       Prepare() : ModulePass(ID) {}
 
       virtual bool runOnModule(Module &M);
+
+      bool replace_ldv_calls(Module &M);
+      bool replace_ldv_calls(Module& M, Function &F);
   };
 }
 
@@ -34,6 +37,8 @@ static RegisterPass<Prepare> PRP("prepare",
 char Prepare::ID;
 
 bool Prepare::runOnModule(Module &M) {
+  bool changed = false;
+
   static const char *del_body[] = {
     "__VERIFIER_assume",
     "__VERIFIER_error",
@@ -62,13 +67,16 @@ bool Prepare::runOnModule(Module &M) {
     if (toDel && !toDel->empty()) {
       errs() << "deleting " << toDel->getName() << '\n';
       toDel->deleteBody();
+      changed = true;
     }
   }
 
   // prevent __VERIFIER_assert from inlining, it introduces
   // a weakness in our control dependence algorithm in some cases
-  if (Function *F = M.getFunction("__VERIFIER_assert"))
+  if (Function *F = M.getFunction("__VERIFIER_assert")) {
     F->addFnAttr(Attribute::NoInline);
+    changed = true;
+  }
 
   static const char *set_linkage[] = {
     "malloc",
@@ -83,9 +91,74 @@ bool Prepare::runOnModule(Module &M) {
     if (F && !F->empty()) {
       errs() << "Making " << F->getName() << " private\n";
       F->setLinkage(GlobalValue::PrivateLinkage);
+      changed = true;
     }
   }
 
-  return true;
+  return changed | replace_ldv_calls(M);
 }
 
+bool Prepare::replace_ldv_calls(Module &M) {
+  bool changed = false;
+
+  for (auto& F : M) {
+    const StringRef& name = F.getName();
+    if (!name.startswith("ldv_"))
+      continue;
+
+    changed |= replace_ldv_calls(M, F);
+  }
+
+  return changed;
+}
+
+bool Prepare::replace_ldv_calls(Module& M, Function &F) {
+  bool changed = false;
+  const StringRef& name = F.getName();
+
+  if (!name.equals("ldv_assume") && !name.equals("ldv_stop"))
+    return false;
+
+  LLVMContext& Ctx = M.getContext();
+
+  for (auto I = F.use_begin(), E = F.use_end(); I != E; ++I) {
+#if ((LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR < 5))
+    Value *use = *I;
+#else
+    Value *use = I->getUser();
+#endif
+
+    if (CallInst *CI = dyn_cast<CallInst>(use)) {
+      std::vector<Value *> args;
+      Constant *new_func = nullptr;
+      if (name.equals("ldv_assume")) {
+        Type *argTy = Type::getInt32Ty(Ctx);
+        new_func = M.getOrInsertFunction("__VERIFIER_assume", Type::getVoidTy(Ctx),
+                                         argTy, nullptr);
+
+        args.push_back(CI->getOperand(0));
+      } else if (name.equals("ldv_stop")) {
+        Type *argTy = Type::getInt32Ty(Ctx);
+        new_func = M.getOrInsertFunction("__VERIFIER_exit", Type::getVoidTy(Ctx),
+                                         argTy, nullptr);
+
+        args.push_back(ConstantInt::get(argTy, 0));
+      }
+
+      CallInst *new_CI = CallInst::Create(new_func, args);
+      SmallVector<std::pair<unsigned, MDNode *>, 8> metadata;
+      CI->getAllMetadata(metadata);
+      // copy the metadata
+      for (auto& md : metadata)
+        new_CI->setMetadata(md.first, md.second);
+      // copy the attributes (like zeroext etc.)
+      new_CI->setAttributes(CI->getAttributes());
+
+      new_CI->insertAfter(CI);
+      CI->replaceAllUsesWith(new_CI);
+      CI->eraseFromParent();
+    }
+  }
+
+  return changed;
+}
