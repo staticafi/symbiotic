@@ -18,8 +18,8 @@ class InlineRemove(FileTransform):
         self._tdre = compile('^\s*(__inline|inline)\s+(.*)$')
 
     def run(self, inputfile, outputfile):
-        infile = open(inputfile, 'r')
-        outfile = open(outputfile, 'w')
+        infile = open(inputfile, 'r', encoding='utf-8')
+        outfile = open(outputfile, 'w', encoding='utf-8')
 
         for l in infile:
             res = self._tdre.match(l)
@@ -39,8 +39,8 @@ class ReplaceNamedNondet(FileTransform):
         self._re2 = compile('(.*\s(.+)\s*=\s*)__VERIFIER_nondet_(.*)\(\s*\)(.*)')
 
     def run(self, inputfile, outputfile):
-        infile = open(inputfile, 'r')
-        outfile = open(outputfile, 'w')
+        infile = open(inputfile, 'r', encoding='utf-8')
+        outfile = open(outputfile, 'w', encoding='utf-8')
 
         n = 1
         for l in infile:
@@ -78,8 +78,8 @@ class NondetSimplify(FileTransform):
         self._re2 = compile('^(\s*)while\s*\(\s*__VERIFIER_nondet_(int|uint)\(\s*\)\s*\)(.*)$')
 
     def run(self, inputfile, outputfile):
-        infile = open(inputfile, 'r')
-        outfile = open(outputfile, 'w')
+        infile = open(inputfile, 'r', encoding='utf-8')
+        outfile = open(outputfile, 'w', encoding='utf-8')
 
         for l in infile:
             res = self._re1.match(l)
@@ -107,8 +107,8 @@ class InfiniteLoopsRemover(FileTransform):
                           compile('^(\s*)while\s*\(\s*TRUE\s*\)(.*)$')]
 
     def run(self, inputfile, outputfile):
-        infile = open(inputfile, 'r')
-        outfile = open(outputfile, 'w')
+        infile = open(inputfile, 'r', encoding='utf-8')
+        outfile = open(outputfile, 'w', encoding='utf-8')
 
         lines = 0
         for l in infile:

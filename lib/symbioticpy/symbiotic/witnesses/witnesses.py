@@ -22,7 +22,7 @@ if no_lxml:
     from xml.etree import ElementTree as ET
 
 def get_sha1(source):
-    f = open(source, 'r')
+    f = open(source, 'r', encoding='utf-8')
     hsh = sha1()
     for l in f:
         hsh.update(l.encode('utf-8'))
@@ -257,11 +257,11 @@ class GraphMLWriter(object):
 
         dump_source_lines = self._with_source_lines and filename
         if dump_source_lines:
-            fl = open(filename, 'r')
+            fl = open(filename, 'r', encoding='utf-8')
             lines = fl.readlines()
             fl.close()
 
-        f = open(pathFile, 'r')
+        f = open(pathFile, 'r', encoding='utf-8')
 
         for line in f:
             l = line.split()
