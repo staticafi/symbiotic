@@ -4,6 +4,10 @@ from os.path import basename
 from sys import version_info
 from hashlib import sha1
 
+from sys import version_info
+if version_info < (3,0):
+    from io import open
+
 import re
 
 skip_repeating_lines = False

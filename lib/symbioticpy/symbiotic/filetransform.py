@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+from sys import version_info
+if version_info < (3,0):
+    from io import open
+
 class FileTransform(object):
     """
     Do some transformation of file,
