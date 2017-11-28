@@ -109,8 +109,9 @@ bool CheckUnsupported::runOnFunction(Function &F) {
     "setjmp",
     // I do not know if this is problem with us or with
     // benchmarks, but until I found out,
-    // skip benchmarks with this function
+    // skip benchmarks with getopt32 and getopt
     "getopt32",
+    "getopt",
     nullptr
   };
 
