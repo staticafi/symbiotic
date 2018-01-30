@@ -14,7 +14,6 @@ add_llvm_loadable_module(LLVMsvc15
 				DeleteUndefined.cpp
 				ReplaceUBSan.cpp
 				InstrumentAlloc.cpp
-				FindInit.cpp
 				CountInstr.cpp
 				CheckUnsupported.cpp)
 

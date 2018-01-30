@@ -27,7 +27,6 @@ class SymbioticOptions(object):
         self.timeout = 0
         self.add_libc = False
         self.no_lib = False
-        self.old_slicer = False
         self.require_slicer = False
         self.no_optimize = False
         self.no_verification = False

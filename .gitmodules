@@ -2,10 +2,6 @@
 	path = dg
 	url = https://github.com/mchalupa/dg
 	ignore = untracked
-[submodule "LLVMSlicer"]
-	path = LLVMSlicer
-	url = https://github.com/jirislaby/LLVMSlicer
-	ignore = untracked
 [submodule "LLVMInstrumentation"]
 	path = LLVMInstrumentation
 	url = https://github.com/staticafi/LLVMInstrumentation

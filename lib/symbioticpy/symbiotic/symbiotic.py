@@ -224,9 +224,6 @@ class Symbiotic(object):
             # not fatal, continue working
             dbg('Failed getting statistics')
 
-    def old_slicer_find_init(self):
-        self._run_opt(passes=['-find-init'])
-
     def _instrument(self, prp):
         llvm_dir = 'llvm-{0}'.format(self._tool.llvm_version())
         if self.options.is32bit:
@@ -401,26 +398,21 @@ class Symbiotic(object):
 
     def slicer(self, criterion, add_params = []):
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        if self.options.old_slicer:
-            cmd = ['opt', '-load', 'LLVMSlicer.so',
-                   '-create-hammock-cfg', '-slice-inter',
-                   '-o', output] + self.options.slicer_params
-        else:
-            cmd = ['llvm-slicer', '-c', criterion]
-            if self.options.slicer_pta in ['fi', 'fs']:
-                cmd.append('-pta')
-                cmd.append(self.options.slicer_pta)
+        cmd = ['llvm-slicer', '-c', criterion]
+        if self.options.slicer_pta in ['fi', 'fs']:
+            cmd.append('-pta')
+            cmd.append(self.options.slicer_pta)
 
-            cmd.append('-statistics')
+        cmd.append('-statistics')
 
-            if self.options.undefined_are_pure:
-                cmd.append('-undefined-are-pure')
+        if self.options.undefined_are_pure:
+            cmd.append('-undefined-are-pure')
 
-            if self.options.slicer_params:
-                cmd += self.options.slicer_params
+        if self.options.slicer_params:
+            cmd += self.options.slicer_params
 
-            if add_params:
-                cmd += add_params
+        if add_params:
+            cmd += add_params
 
         cmd.append(self.llvmfile)
 
@@ -549,12 +541,6 @@ class Symbiotic(object):
         if opt:
             self.optimize(passes=opt)
 
-        # if this is old slicer run, we must find the starting functions
-        # (this adds the __ai_init_funs global variable to the module)
-        # NOTE: must be after the optimizations that could remove it
-        if self.options.old_slicer:
-            self.old_slicer_find_init()
-
         # break the infinite loops just before slicing
         # so that the optimizations won't make them syntactically infinite again
         #self.run_opt(['-reg2mem', '-break-infinite-loops', '-remove-infinite-loops',
@@ -582,11 +568,6 @@ class Symbiotic(object):
                     self.run_opt(['-break-infinite-loops', '-remove-infinite-loops'])
 
         print_elapsed_time('INFO: Total slicing time')
-
-        # new slicer removes unused itself, but for the old slicer
-        # we must do it manually (this calls the new slicer ;)
-        if self.options.old_slicer:
-            self.remove_unused_only()
 
     def _run_symbiotic(self):
         restart_counting_time()
