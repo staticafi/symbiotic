@@ -30,6 +30,20 @@ If you need to specify paths to header files or libraries, you can do it
 by passing CFLAGS, CPPFLAGS, LDFLAGS environment variables either by exporting
 them beforehand, or by passing them as make options (e.g. CFLAGS='-g')
 
+There is a known problem that can arise while building KLEE:
+
+```
+llvm-config: error: missing: /home/mchalupa/src/symbiotic/llvm-3.9.1/build/lib/libgtest.a
+llvm-config: error: missing: /home/mchalupa/src/symbiotic/llvm-3.9.1/build/lib/libgtest_main.a
+CMake Error at cmake/find_llvm.cmake:62 (message):
+  Failed running
+  /home/mchalupa/src/symbiotic/llvm-3.9.1/build/bin/llvm-config;--system-libs
+Call Stack (most recent call first):
+  cmake/find_llvm.cmake:163 (_run_llvm_config)
+  lib/Basic/CMakeLists.txt:19 (klee_get_llvm_libs)
+```
+This is due to [b5cd41e2](https://github.com/llvm-mirror/llvm/commit/b5cd41e26f89aad2f2dc4f5dc37577f7abf8528a) commit in LLVM. Until we have this fixed, the fastest workaround is to just create empty files `build/lib/libgtest.a` and `build/lib/libgtest_main.a` in the LLVM's folder.
+
 ### Running Symbiotic
 
 Running Symbiotic is very easy. Change the directory to `bin` (or `install/bin` in the case that you built Symbiotic yourself) and give it a C program:
