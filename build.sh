@@ -301,13 +301,21 @@ build_llvm()
 
 	# configure llvm
 	if [ ! -d CMakeFiles ]; then
+		EXTRA_FLAGS=
+		if [ "x${BUILD_TYPE}" = "xDebug" ]; then
+			EXTRA_FLAGS=-DLLVM_ENABLE_ASSERTIONS=ON
+		fi
 		cmake .. \
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DLLVM_INCLUDE_EXAMPLES=OFF \
 			-DLLVM_INCLUDE_TESTS=OFF \
+			-DLLVM_INCLUDE_DOCS=OFF \
+			-DLLVM_BUILD_TESTS=OFF\
+			-DLLVM_BUILD_TESTS=OFF\
 			-DLLVM_ENABLE_TIMESTAMPS=OFF \
 			-DLLVM_TARGETS_TO_BUILD="X86" \
 			-DLLVM_ENABLE_PIC=ON \
+			${EXTRA_FLAGS} \
 			 || clean_and_exit
 	fi
 
