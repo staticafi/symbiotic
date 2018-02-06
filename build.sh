@@ -607,6 +607,7 @@ if [ $FROM -le 6 ]; then
 	if [ ! -d CMakeFiles ]; then
 		./bootstrap-json.sh || exitmsg "Failed generating json files"
 		cmake . \
+			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
