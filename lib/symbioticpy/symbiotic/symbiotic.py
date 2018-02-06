@@ -34,6 +34,20 @@ class SlicerWatch(ProcessWatch):
         else:
             dbg(line.decode('utf-8'), 'slicer', False)
 
+class InstrumentationWatch(ProcessWatch):
+    def __init__(self, lines = 100):
+        ProcessWatch.__init__(self, lines)
+
+    def parse(self, line):
+        if b'Info' in line:
+            dbg(line.decode('utf-8'), domain = 'instrumentation', print_nl = False)
+        elif b'ERROR' in line or b'error' in line:
+            print_stderr(line.decode('utf-8'))
+        elif b'Inserted' in line:
+            print_stdout(line.decode('utf-8'), print_nl = False)
+        else:
+            dbg(line.decode('utf-8'), 'slicer', False)
+
 class PrintWatch(ProcessWatch):
     def __init__(self, prefix = ''):
         ProcessWatch.__init__(self)
@@ -283,7 +297,7 @@ class Symbiotic(object):
         if self.options.disable_instr_plugins:
             cmd.append('--disable-plugins')
 
-        self._run(cmd, DbgWatch('instrument'), 'Instrumenting the code failed')
+        self._run(cmd, InstrumentationWatch(), 'Instrumenting the code failed')
 
         self.llvmfile = output
         self._get_stats('After instrumentation ')
