@@ -672,7 +672,7 @@ if __name__ == "__main__":
         #        integrity_check();
         #    except SymbioticException as e:
         #        err('{0}\nIf you are aware of this, you may use --no-integrity-check to suppress this error'.format(str(e)))
-        
+
         # set CFLAGS and CPPFLAGS for compilation
         parse_environ(opts)
 
@@ -715,7 +715,7 @@ if __name__ == "__main__":
             sys.stdout.flush()
             sys.stderr.flush()
 
-            print('RESULT: ERROR ({0})'.format(str(e)))
+            print_stdout('RESULT: ERROR ({0})'.format(str(e)))
             err(' == FAILURE ==\n{0}'.format(str(e)))
 
         srcdir = os.path.dirname(symbiotic.llvmfile)
@@ -734,7 +734,7 @@ if __name__ == "__main__":
         sys.stdout.flush()
         sys.stderr.flush()
 
-        print('RESULT: timeout')
+        print_stdout('RESULT: timeout')
     finally:
         stop_timeout()
         if symbiotic:
@@ -746,5 +746,6 @@ if __name__ == "__main__":
     rm_tmp_dir(working_dir)
 
     # print information about how long Symbiotic ran
-    print('INFO: Total time elapsed: {0}'.format(time() - start_time))
+    print_stdout('INFO: Total time elapsed: {0}'.format(time() - start_time),
+                 color='WHITE')
     sys.exit(0)

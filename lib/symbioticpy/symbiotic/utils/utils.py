@@ -4,10 +4,15 @@ import sys, os
 from time import time
 
 COLORS = {
-    'RED'   : '\033[1;31m',
-    'GREEN' : '\033[1;32m',
-    'BROWN' : '\033[0;33m',
-    'RESET' : '\033[0m'
+    'DARK_BLUE' : '\033[0;34m',
+    'BLUE'      : '\033[1;34m',
+    'PURPLE'    : '\033[0;35m',
+    'RED'       : '\033[1;31m',
+    'GREEN'     : '\033[1;32m',
+    'BROWN'     : '\033[0;33m',
+    'YELLOW'    : '\033[1;33m',
+    'WHITE'     : '\033[1;37m',
+    'RESET'     : '\033[0m'
 }
 
 def print_stream(msg, stream, prefix = None, print_nl = True, color = None):
@@ -70,7 +75,7 @@ def enable_debug(d_opts):
     debug_enabled = True
     debug_opts = d_opts
 
-def dbg(msg, domain = 'all', print_nl = True, prefix = 'DBG: '):
+def dbg(msg, domain = 'all', print_nl = True, prefix = 'DBG: ', color=None):
     global debug_enabled
 
     if debug_enabled:
@@ -78,7 +83,7 @@ def dbg(msg, domain = 'all', print_nl = True, prefix = 'DBG: '):
         should_print = 'all' in debug_opts or\
                        domain in debug_opts
         if should_print:
-            print_stderr(msg, prefix, print_nl)
+            print_stderr(msg, prefix, print_nl, color)
 
 # variable used to measure elapsed time
 last_time = None
@@ -87,12 +92,12 @@ def restart_counting_time():
     global last_time
     last_time = time()
 
-def print_elapsed_time(msg):
+def print_elapsed_time(msg, color=None):
     global last_time
     assert last_time is not None
 
     tm = time() - last_time
-    print('{0}: {1}'.format(msg, tm))
+    print_stdout('{0}: {1}'.format(msg, tm), color=color)
     # set new starting point
     last_time = time()
 

@@ -29,8 +29,6 @@ class SlicerWatch(ProcessWatch):
             dbg(line.decode('utf-8'), domain = 'slicer', print_nl = False)
         elif b'ERROR' in line or b'error' in line:
             print_stderr(line.decode('utf-8'))
-        elif b'Statistics' in line:
-            print_stdout(line.decode('utf-8'), print_nl = False)
         else:
             dbg(line.decode('utf-8'), 'slicer', False)
 
@@ -49,12 +47,14 @@ class InstrumentationWatch(ProcessWatch):
             dbg(line.decode('utf-8'), 'slicer', False)
 
 class PrintWatch(ProcessWatch):
-    def __init__(self, prefix = ''):
+    def __init__(self, prefix = '', color=None):
         ProcessWatch.__init__(self)
         self._prefix = prefix
+        self._color = color
 
     def parse(self, line):
-        print_stdout(line.decode('utf-8'), prefix = self._prefix,print_nl = False)
+        print_stdout(line.decode('utf-8'), prefix = self._prefix,
+                     print_nl = False, color = self._color)
 
 class CompileWatch(ProcessWatch):
     """ Parse output of compilation """
@@ -63,8 +63,8 @@ class CompileWatch(ProcessWatch):
         ProcessWatch.__init__(self)
 
     def parse(self, line):
-        if b'error' in line or b'ERROR' in line:
-            sys.stderr.write('cc: {0}'.format(line.decode('utf-8')))
+        if b'error:' in line:
+            print_stderr('cc: {0}'.format(line.decode('utf-8')), color='BROWN')
         else:
             dbg(line.decode('utf-8'), 'compile', print_nl = False)
 
@@ -102,12 +102,14 @@ def report_results(res):
 
     if res.startswith('false'):
         color = 'RED'
+        print_stdout('Error found.', color=color);
     elif res == 'true':
         color='GREEN'
-    #elif res == 'timeout':
+        print_stdout('No error found.', color=color);
     elif res.startswith('error') or\
          res.startswith('ERROR'):
         color='RED'
+        print_stdout('Failure!', color=color);
 
     sys.stdout.flush()
     print_stdout('RESULT: ', print_nl=False)
@@ -233,7 +235,7 @@ class Symbiotic(object):
         cmd = ['opt', '-load', 'LLVMsvc15.so', '-count-instr',
                '-o', '/dev/null', self.llvmfile]
         try:
-            self._run(cmd, PrintWatch(prefix), 'Failed running opt')
+            self._run(cmd, PrintWatch('INFO: ' + prefix), 'Failed running opt')
         except SymbioticException:
             # not fatal, continue working
             dbg('Failed getting statistics')
@@ -417,7 +419,8 @@ class Symbiotic(object):
             cmd.append('-pta')
             cmd.append(self.options.slicer_pta)
 
-        cmd.append('-statistics')
+        # we do that now using _get_stats
+        #cmd.append('-statistics')
 
         if self.options.undefined_are_pure:
             cmd.append('-undefined-are-pure')
@@ -563,9 +566,11 @@ class Symbiotic(object):
                       #'-mem2reg'
                       ])
 
+        self._get_stats('Before slicing ')
+
         # print info about time
         print_elapsed_time('INFO: Compilation, preparation and '\
-                           'instrumentation time')
+                           'instrumentation time', color='WHITE')
 
         for n in range(0, self.options.repeat_slicing):
             dbg('Slicing the code for the {0}. time'.format(n + 1))
@@ -581,7 +586,9 @@ class Symbiotic(object):
                     self.optimize(passes=opt)
                     self.run_opt(['-break-infinite-loops', '-remove-infinite-loops'])
 
-        print_elapsed_time('INFO: Total slicing time')
+        print_elapsed_time('INFO: Total slicing time', color='WHITE')
+
+        self._get_stats('After slicing ')
 
     def _run_symbiotic(self):
         restart_counting_time()
@@ -661,7 +668,7 @@ class Symbiotic(object):
             self.perform_slicing()
         else:
             print_elapsed_time('INFO: Compilation, preparation and '\
-                               'instrumentation time')
+                               'instrumentation time', color='WHITE')
 
         # for the memsafety property, make functions behave like they have
         # side-effects, because LLVM instrumentations could remove them otherwise,
@@ -699,7 +706,8 @@ class Symbiotic(object):
                 print_stdout(f)
 
         # XXX: we could optimize the code again here...
-        print_elapsed_time('INFO: After-slicing optimizations and preparation time')
+        print_elapsed_time('INFO: After-slicing optimizations and preparation time',
+                           color='WHITE')
 
         # tool's specific preprocessing steps
         self.preprocess_llvm()
@@ -714,8 +722,8 @@ class Symbiotic(object):
                 raise SymbioticException(msg)
 
         if not self.options.no_verification:
-            print('INFO: Starting verification')
             self._get_stats('Before verification ')
+            print_stdout('INFO: Starting verification', color='WHITE')
             found = self.run_verification()
         else:
             found = 'Did not run verification'
