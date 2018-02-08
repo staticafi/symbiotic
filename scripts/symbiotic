@@ -90,6 +90,8 @@ where OPTS can be following:
                                   or undef-behavior
                                 signed-overflow -- check for signed integer overflow
                               The string can be given on line or in a file.
+    --memsafety-config-file   Set the configuration file for memsafety. The files
+                              can be found in share/llvm-instrumentation/memsafety/
     --pta=[fs|fi|old]         Use flow-sensitive/flow-insensitive or old
                               (flow-insensitive too) points-to analysis when slicing.
                               Default is the old
@@ -342,7 +344,8 @@ def parse_command_line():
                                     'no-kernel', 'no-verifier-funs', 'no-witness',
                                     'witness-with-source-lines', 'dont-exit-on-error',
                                     'undefined-are-pure', 'disable-instr-plugins',
-                                    'no-integrity-check', 'dump-env'])
+                                    'no-integrity-check', 'dump-env',
+                                    'memsafety-config-file='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -480,6 +483,8 @@ def parse_command_line():
             options.dont_exit_on_error = True
         elif opt == '--disable-instr-plugins':
             options.disable_instr_plugins = True
+        elif opt == '--memsafety-config-file':
+            options.memsafety_config_file = arg
         elif opt == '--dump-env':
             global dump_env_only
             dump_env_only = True

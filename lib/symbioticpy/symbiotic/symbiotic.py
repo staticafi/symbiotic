@@ -252,7 +252,9 @@ class Symbiotic(object):
 
         tolinkbc = None
         if prp == 'MEMSAFETY':
-            config = prefix + 'memsafety/config.json'
+            # default config file is 'config.json'
+            config_file = self.options.memsafety_config_file
+            config = prefix + 'memsafety/' + config_file
             # check wether we have this file precompiled
             # (this may be a distribution where we're trying to
             # avoid compilation of anything else than sources)
@@ -261,23 +263,6 @@ class Symbiotic(object):
                 tolinkbc = precompiled_bc
             else:
                 tolink = prefix + 'memsafety/memsafety.c'
-        elif prp == 'VALID-FREE' or prp == 'MEM-TRACK':
-            config = prefix + 'double_free/config.json'
-            # check wether we have this file precompiled
-            # (this may be a distribution where we're trying to
-            # avoid compilation of anything else than sources)
-            precompiled_bc = '{0}/double_free.bc'.format(libdir)
-            if os.path.isfile(precompiled_bc):
-                tolinkbc = precompiled_bc
-            else:
-                tolink = prefix + 'double_free/double_free.c'
-        elif prp == 'VALID-DEREF':
-            config = prefix + 'valid_deref/config.json'
-            precompiled_bc = '{0}/valid_deref.bc'.format(libdir)
-            if os.path.isfile(precompiled_bc):
-                tolinkbc = precompiled_bc
-            else:
-                tolink = prefix + 'valid_deref/valid_deref.c'
         elif prp == 'NULL-DEREF':
             config = prefix + 'null_deref/config.json'
             precompiled_bc = '{0}/null_deref.bc'.format(libdir)
