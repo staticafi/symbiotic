@@ -214,17 +214,12 @@ git_submodule_init()
 	cd -
 }
 
-GET=wget
+GET="curl -LRO"
 check()
 {
-	if ! wget --version &>/dev/null; then
-		if ! curl --version &>/dev/null; then
-			echo "Need wget or curl to download files"
-			exit 1
-		fi
-
-		# try replace wget with curl
-		GET='curl -O'
+	if ! curl --version &>/dev/null; then
+		echo "Need curl to download files"
+		exit 1
 	fi
 
 	if ! cmake --version &>/dev/null; then
