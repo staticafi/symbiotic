@@ -9,3 +9,6 @@
 [submodule "llvm-instrumentation"]
 	path = llvm-instrumentation
 	url = https://github.com/staticafi/llvm-instrumentation
+[submodule "sbt-slicer"]
+	path = sbt-slicer
+	url = git://github.com/staticafi/sbt-slicer
