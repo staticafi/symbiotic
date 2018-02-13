@@ -1,11 +1,15 @@
 ## What is Symbiotic?
 Symbiotic is a tool for analysis of computer programs. At this moment it can check only reachability property, but we're in the process of extending Symbiotic to handle more properties, namely these described by finite state machines [1]. Symbiotic uses three well-know techniques: instrumentation, slicing, and symbolic execution [2]. We use LLVM (https://llvm.org) as program representation. Symbiotic is highly modular and not all of its components can be found in this repository. Nevertheless, this repository contains a build script that automatically downloads and builds all required components. Also tarballs with Symbiotic distribution are present in this repository.
 
+
+## SV-COMP 2018
+> Symbiotic won the gold medal in MemSafety category, Bronze medal in the FalsificationOverall meta category and took 4th place in the Overall category of SV-COMP 2018. Complete results can be found at http://sv-comp.sosy-lab.org/2018/results/results-verified/
+
 ## SV-COMP 2017
->We participated in SV-COMP 2017 and we won the bronze medal in MemSafety category! Complete results can be found here: http://sv-comp.sosy-lab.org/2017/results/results-verified/
+> We participated in SV-COMP 2017 and we won the bronze medal in MemSafety category! Complete results can be found here: http://sv-comp.sosy-lab.org/2017/results/results-verified/
 
 ## SV-COMP 2016
->We participated in SV-COMP 2016 with this particular release: https://github.com/staticafi/symbiotic/releases/tag/3.0.1 and we won the bronze medal in Arrays category! Complete results can be found here: http://sv-comp.sosy-lab.org/2016/results/results-verified/
+> We participated in SV-COMP 2016 with this particular release: https://github.com/staticafi/symbiotic/releases/tag/3.0.1 and we won the bronze medal in Arrays category! Complete results can be found here: http://sv-comp.sosy-lab.org/2016/results/results-verified/
 
 
 ## Getting started
