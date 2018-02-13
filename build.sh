@@ -599,11 +599,11 @@ if [ $FROM -le 6 ]; then
 	(build && make install) || exit 1
 
 	# initialize instrumentation module if not done yet
-	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/llvm-instrumentation)" ]; then
+	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/sbt-instrumentation)" ]; then
 		git_submodule_init
 	fi
 
-	cd "$SRCDIR/llvm-instrumentation" || exitmsg "Cloning failed"
+	cd "$SRCDIR/sbt-instrumentation" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		./bootstrap-json.sh || exitmsg "Failed generating json files"
 		cmake . \
@@ -634,7 +634,7 @@ if [ $FROM -le 7 ]; then
 	cd dg || exit 1
 	DG_VERSION=`git rev-parse HEAD`
 	cd -
-	cd llvm-instrumentation || exit 1
+	cd sbt-instrumentation || exit 1
 	INSTRUMENTATION_VERSION=`git rev-parse HEAD`
 	cd -
 	cd minisat || exit 1
@@ -654,7 +654,7 @@ if [ $FROM -le 7 ]; then
 	echo "versions = {" >> $VERSFILE
 	echo -e "\t'symbiotic' : '$SYMBIOTIC_VERSION'," >> $VERSFILE
 	echo -e "\t'dg' : '$DG_VERSION'," >> $VERSFILE
-	echo -e "\t'llvm-instrumentation' : '$INSTRUMENTATION_VERSION'," >> $VERSFILE
+	echo -e "\t'sbt-instrumentation' : '$INSTRUMENTATION_VERSION'," >> $VERSFILE
 	echo -e "\t'minisat' : '$MINISAT_VERSION'," >> $VERSFILE
 	echo -e "\t'stp' : '$STP_VERSION'," >> $VERSFILE
 	echo -e "\t'KLEE' : '$KLEE_VERSION'," >> $VERSFILE
@@ -683,8 +683,8 @@ if [ $FROM -le 7 ]; then
 		$LLVM_PREFIX/lib/klee/runtime/klee-libc.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc"
 	INSTR="$LLVM_PREFIX/bin/LLVMinstr \
-	       $LLVM_PREFIX/share/llvm-instrumentation/*/*.c \
-	       $LLVM_PREFIX/share/llvm-instrumentation/*/*.json"
+	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
+	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
 
 #CPACHECKER=
 #ULTIAUTO=

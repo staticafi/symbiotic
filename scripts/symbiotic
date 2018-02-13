@@ -91,7 +91,7 @@ where OPTS can be following:
                                 signed-overflow -- check for signed integer overflow
                               The string can be given on line or in a file.
     --memsafety-config-file   Set the configuration file for memsafety. The files
-                              can be found in share/llvm-instrumentation/memsafety/
+                              can be found in share/sbt-instrumentation/memsafety/
     --pta=[fs|fi|old]         Use flow-sensitive/flow-insensitive or old
                               (flow-insensitive too) points-to analysis when slicing.
                               Default is the old
@@ -230,7 +230,7 @@ def set_environ(tool, is32bit = False):
     if devel_env:
         os.environ['PATH'] = '{0}/llvm-{1}/build/bin:{0}/bin'.format(symbiotic_dir, llvm_version)
         prepend('PATH', '{0}/dg/tools'.format(symbiotic_dir))
-        prepend('PATH', '{0}/llvm-instrumentation/src'.format(symbiotic_dir))
+        prepend('PATH', '{0}/sbt-instrumentation/src'.format(symbiotic_dir))
         prepend('PATH', '{0}/klee-build/bin'.format(symbiotic_dir))
 
         # XXX no KLEE_RUNTIME_LIBRARY_PATH 
@@ -535,7 +535,7 @@ def check_instr_version(vers):
         vers = bytes(vers[:8] , 'utf-8')
     vers2 = lines[0].strip()
     if vers != vers2:
-        raise SymbioticException('Invalid version of llvm-instrumentation, expected {0}, but got {1}'.format(vers, vers2))
+        raise SymbioticException('Invalid version of sbt-instrumentation, expected {0}, but got {1}'.format(vers, vers2))
 
 def integrity_check():
     """
@@ -548,7 +548,7 @@ def integrity_check():
             check_klee_version(v)
         elif k == 'dg':
             check_dg_version(v)
-        elif k == 'llvm-instrumentation':
+        elif k == 'sbt-instrumentation':
             check_instr_version(v)
 
 def on_rm_error(func, pth, exc):
