@@ -485,6 +485,13 @@ if [ $FROM -le 4 ]; then
 	# build klee
 	git_clone_or_pull "-b 4.0.7 https://github.com/staticafi/klee.git" klee || exitmsg "Cloning failed"
 
+	# workaround a problem with calling llvm-config from build directory
+	if [ ! -f ${ABS_SRCDIR}/llvm-3.9.1/build/lib/libgtest.a -o
+	     ! -f ${ABS_SRCDIR}/llvm-3.9.1/build/lib/libgtest_main.a ]; then
+		touch ${ABS_SRCDIR}/llvm-3.9.1/build/lib/libgtest.a
+		touch ${ABS_SRCDIR}/llvm-3.9.1/build/lib/libgtest_main.a
+	fi
+
 	mkdir -p klee-build/
 	cd klee-build/
 
