@@ -3,7 +3,6 @@ Symbiotic is a tool for analysis of computer programs. It can check all common s
 
 
 ## SV-COMP 2018
-![gold medal](https://publicdomainvectors.org/download.php?file=Gold-Medal--Arvin611r58.svg width=20)
 Symbiotic won the gold medal in MemSafety category, Bronze medal in the FalsificationOverall meta category and took 4th place in the Overall category of SV-COMP 2018. Complete results can be found at http://sv-comp.sosy-lab.org/2018/results/results-verified/
 
 ## SV-COMP 2017
