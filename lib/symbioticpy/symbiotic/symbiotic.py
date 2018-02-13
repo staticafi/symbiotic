@@ -421,16 +421,6 @@ class Symbiotic(object):
         self._run(cmd, SlicerWatch(), 'Slicing failed')
         self.llvmfile = output
 
-    def remove_unused_only(self):
-        output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['sbt-slicer', '-remove-unused-only']
-
-        cmd.append('-statistics')
-        cmd.append(self.llvmfile)
-
-        self._run(cmd, SlicerWatch(), 'Slicing failed (removing unused only)')
-        self.llvmfile = output
-
     def optimize(self, passes, disable = []):
         if self.options.no_optimize:
             return
