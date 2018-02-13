@@ -1,8 +1,3 @@
----
-layout: default
-title: Symbiotic
----
-
 ## What is Symbiotic?
 Symbiotic is a tool for analysis of computer programs. At this moment it can check only reachability property, but we're in the process of extending Symbiotic to handle more properties, namely these described by finite state machines [1]. Symbiotic uses three well-know techniques: instrumentation, slicing, and symbolic execution [2]. We use LLVM (https://llvm.org) as program representation. Symbiotic is highly modular and not all of its components can be found in this repository. Nevertheless, this repository contains a build script that automatically downloads and builds all required components. Also tarballs with Symbiotic distribution are present in this repository.
 
