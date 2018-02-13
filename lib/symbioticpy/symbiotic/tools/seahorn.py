@@ -61,15 +61,15 @@ import benchexec.result as result
 
 import os
 
+
 class Tool(benchexec.tools.template.BaseTool):
 
-
     REQUIRED_PATHS = [
-                  "bin",
-                  "include",
-                  "lib",
-                  "share"
-                  ]
+        "bin",
+        "include",
+        "lib",
+        "share"
+    ]
 
     def executable(self):
         return util.find_executable('sea_svcomp', os.path.join("bin", 'sea_svcomp'))
@@ -114,7 +114,6 @@ class Tool(benchexec.tools.template.BaseTool):
         Same as prepare, but runs after slicing
         """
         return []
-
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         output = '\n'.join(output)

@@ -6,8 +6,9 @@ from . watch import ProcessWatch, DbgWatch
 from .. import SymbioticException
 from sys import stdout, stderr
 
+
 class ProcessRunner(object):
-    def __init__(self, cmd, watch = ProcessWatch()):
+    def __init__(self, cmd, watch=ProcessWatch()):
         self._cmd = cmd
         self._watch = watch
         self._process = None
@@ -64,16 +65,17 @@ class ProcessRunner(object):
     def getOutput(self):
         return self._watch.getLines()
 
-    def printOutput(self, stream = stdout, clr = None):
+    def printOutput(self, stream=stdout, clr=None):
         for line in self._watch.getLines():
-            print_stream(line.decode('utf-8'), stream, color = clr, print_nl = False)
+            print_stream(line.decode('utf-8'), stream,
+                         color=clr, print_nl=False)
 
-def run_checked(cmd, error_msg, dbg_domain = 'all'):
+
+def run_checked(cmd, error_msg, dbg_domain='all'):
     """
     Run command and raise an exeception on error
     """
     pr = ProcessRunner(cmd, DbgWatch(dbg_domain, None))
     if pr.run() != 0:
-       pr.printOutput(stderr)
-       raise SymbioticException(error_msg)
-
+        pr.printOutput(stderr)
+        raise SymbioticException(error_msg)

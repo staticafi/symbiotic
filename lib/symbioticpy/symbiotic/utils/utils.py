@@ -1,21 +1,23 @@
 #/usr/bin/python
 
-import sys, os
+import sys
+import os
 from time import time
 
 COLORS = {
-    'DARK_BLUE' : '\033[0;34m',
-    'BLUE'      : '\033[1;34m',
-    'PURPLE'    : '\033[0;35m',
-    'RED'       : '\033[1;31m',
-    'GREEN'     : '\033[1;32m',
-    'BROWN'     : '\033[0;33m',
-    'YELLOW'    : '\033[1;33m',
-    'WHITE'     : '\033[1;37m',
-    'RESET'     : '\033[0m'
+    'DARK_BLUE': '\033[0;34m',
+    'BLUE': '\033[1;34m',
+    'PURPLE': '\033[0;35m',
+    'RED': '\033[1;31m',
+    'GREEN': '\033[1;32m',
+    'BROWN': '\033[0;33m',
+    'YELLOW': '\033[1;33m',
+    'WHITE': '\033[1;37m',
+    'RESET': '\033[0m'
 }
 
-def print_stream(msg, stream, prefix = None, print_nl = True, color = None):
+
+def print_stream(msg, stream, prefix=None, print_nl=True, color=None):
     """
     Print message to stderr/stdout
 
@@ -48,15 +50,19 @@ def print_stream(msg, stream, prefix = None, print_nl = True, color = None):
 
     stream.flush()
 
-def print_stderr(msg, prefix = None, print_nl = True, color = None):
+
+def print_stderr(msg, prefix=None, print_nl=True, color=None):
     print_stream(msg, sys.stderr, prefix, print_nl, color)
 
-def print_stdout(msg, prefix = None, print_nl = True, color = None):
+
+def print_stdout(msg, prefix=None, print_nl=True, color=None):
     print_stream(msg, sys.stdout, prefix, print_nl, color)
 
-def err(msg, color = 'RED'):
+
+def err(msg, color='RED'):
     print_stderr(msg, 'ERROR: ', color=color)
     sys.exit(1)
+
 
 def process_grep(cmd, pattern):
     from . watch import GrepWatch
@@ -66,8 +72,11 @@ def process_grep(cmd, pattern):
     retval = p.run()
     return (retval, p.getOutput())
 
+
 debug_enabled = False
 debug_opts = []
+
+
 def enable_debug(d_opts):
     global debug_enabled
     global debug_opts
@@ -75,7 +84,8 @@ def enable_debug(d_opts):
     debug_enabled = True
     debug_opts = d_opts
 
-def dbg(msg, domain = 'all', print_nl = True, prefix = 'DBG: ', color=None):
+
+def dbg(msg, domain='all', print_nl=True, prefix='DBG: ', color=None):
     global debug_enabled
 
     if debug_enabled:
@@ -85,12 +95,15 @@ def dbg(msg, domain = 'all', print_nl = True, prefix = 'DBG: ', color=None):
         if should_print:
             print_stderr(msg, prefix, print_nl, color)
 
+
 # variable used to measure elapsed time
 last_time = None
+
 
 def restart_counting_time():
     global last_time
     last_time = time()
+
 
 def print_elapsed_time(msg, color=None):
     global last_time
@@ -101,8 +114,8 @@ def print_elapsed_time(msg, color=None):
     # set new starting point
     last_time = time()
 
+
 def get_symbiotic_dir():
     # get real path (strip off links)
     realpath = os.path.realpath(os.path.join(sys.argv[0], '..'))
     return os.path.abspath(os.path.dirname(realpath))
-

@@ -2,10 +2,11 @@
 
 from . utils import dbg
 
+
 class ProcessWatch(object):
     """ Parse output of running process """
 
-    def __init__(self, lines_limit = 0):
+    def __init__(self, lines_limit=0):
         """
         Initialize a watch. By default, do not store
         any output of the process. If \param buffer_lines
@@ -17,7 +18,7 @@ class ProcessWatch(object):
 
         if self.isBuffering():
             from collections import deque
-            self.buff = deque(maxlen = lines_limit)
+            self.buff = deque(maxlen=lines_limit)
 
     def isBuffering(self):
         return self._maxlines is None or self._maxlines > 0
@@ -57,6 +58,7 @@ class ProcessWatch(object):
         """
         return True
 
+
 class GrepWatch(ProcessWatch):
     def __init__(self, pattern):
         ProcessWatch.__init__(self, 0)
@@ -72,15 +74,16 @@ class GrepWatch(ProcessWatch):
     def getLines(self):
         return self._result
 
+
 class DbgWatch(ProcessWatch):
     """
     Watch that just prints the output as debugging messages
     with given domain. It may optionally buffer the lines
     """
-    def __init__(self, dbgdom, maxlines = 0):
+
+    def __init__(self, dbgdom, maxlines=0):
         ProcessWatch.__init__(self, maxlines)
         self._domain = dbgdom
 
     def parse(self, line):
         dbg(line.decode('utf-8'), self._domain)
-

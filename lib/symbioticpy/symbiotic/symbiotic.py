@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-import os, sys
+import os
+import sys
 import re
 
 from . options import SymbioticOptions
@@ -10,8 +11,9 @@ from . utils.watch import ProcessWatch, DbgWatch
 from . utils.utils import print_stdout, print_stderr, get_symbiotic_dir
 from . exceptions import SymbioticException
 
+
 class PrepareWatch(ProcessWatch):
-    def __init__(self, lines = 100):
+    def __init__(self, lines=100):
         ProcessWatch.__init__(self, lines)
 
     def parse(self, line):
@@ -20,41 +22,45 @@ class PrepareWatch(ProcessWatch):
         else:
             dbg(line.decode('utf-8'), 'prepare', False)
 
+
 class SlicerWatch(ProcessWatch):
-    def __init__(self, lines = 100):
+    def __init__(self, lines=100):
         ProcessWatch.__init__(self, lines)
 
     def parse(self, line):
         if b'INFO' in line:
-            dbg(line.decode('utf-8'), domain = 'slicer', print_nl = False)
+            dbg(line.decode('utf-8'), domain='slicer', print_nl=False)
         elif b'ERROR' in line or b'error' in line:
             print_stderr(line.decode('utf-8'))
         else:
             dbg(line.decode('utf-8'), 'slicer', False)
 
+
 class InstrumentationWatch(ProcessWatch):
-    def __init__(self, lines = 100):
+    def __init__(self, lines=100):
         ProcessWatch.__init__(self, lines)
 
     def parse(self, line):
         if b'Info' in line:
-            dbg(line.decode('utf-8'), domain = 'instrumentation', print_nl = False)
+            dbg(line.decode('utf-8'), domain='instrumentation', print_nl=False)
         elif b'ERROR' in line or b'error' in line:
             print_stderr(line.decode('utf-8'))
         elif b'Inserted' in line:
-            print_stdout(line.decode('utf-8'), print_nl = False)
+            print_stdout(line.decode('utf-8'), print_nl=False)
         else:
             dbg(line.decode('utf-8'), 'slicer', False)
 
+
 class PrintWatch(ProcessWatch):
-    def __init__(self, prefix = '', color=None):
+    def __init__(self, prefix='', color=None):
         ProcessWatch.__init__(self)
         self._prefix = prefix
         self._color = color
 
     def parse(self, line):
-        print_stdout(line.decode('utf-8'), prefix = self._prefix,
-                     print_nl = False, color = self._color)
+        print_stdout(line.decode('utf-8'), prefix=self._prefix,
+                     print_nl=False, color=self._color)
+
 
 class CompileWatch(ProcessWatch):
     """ Parse output of compilation """
@@ -66,7 +72,8 @@ class CompileWatch(ProcessWatch):
         if b'error:' in line:
             print_stderr('cc: {0}'.format(line.decode('utf-8')), color='BROWN')
         else:
-            dbg(line.decode('utf-8'), 'compile', print_nl = False)
+            dbg(line.decode('utf-8'), 'compile', print_nl=False)
+
 
 class UnsuppWatch(ProcessWatch):
     unsupported_call = re.compile('.*call to .* is unsupported.*')
@@ -80,8 +87,9 @@ class UnsuppWatch(ProcessWatch):
 
     def parse(self, line):
         uline = line.decode('utf-8')
-        dbg(uline, domain='prepare', print_nl = False)
+        dbg(uline, domain='prepare', print_nl=False)
         self._ok = not UnsuppWatch.unsupported_call.match(uline)
+
 
 class ToolWatch(ProcessWatch):
     def __init__(self, tool):
@@ -90,11 +98,12 @@ class ToolWatch(ProcessWatch):
         self._tool = tool
 
     def parse(self, line):
-       if b'ERROR' in line or b'WARN' in line or b'Assertion' in line\
-          or b'error' in line or b'warn' in line:
-           sys.stderr.write(line.decode('utf-8'))
-       else:
-           dbg(line.decode('utf-8'), 'all', False)
+        if b'ERROR' in line or b'WARN' in line or b'Assertion' in line\
+           or b'error' in line or b'warn' in line:
+            sys.stderr.write(line.decode('utf-8'))
+        else:
+            dbg(line.decode('utf-8'), 'all', False)
+
 
 def report_results(res):
     dbg(res)
@@ -102,14 +111,14 @@ def report_results(res):
 
     if res.startswith('false'):
         color = 'RED'
-        print_stdout('Error found.', color=color);
+        print_stdout('Error found.', color=color)
     elif res == 'true':
-        color='GREEN'
-        print_stdout('No error found.', color=color);
+        color = 'GREEN'
+        print_stdout('No error found.', color=color)
     elif res.startswith('error') or\
-         res.startswith('ERROR'):
-        color='RED'
-        print_stdout('Failure!', color=color);
+            res.startswith('ERROR'):
+        color = 'RED'
+        print_stdout('Failure!', color=color)
 
     sys.stdout.flush()
     print_stdout('RESULT: ', print_nl=False)
@@ -117,6 +126,7 @@ def report_results(res):
     sys.stdout.flush()
 
     return res
+
 
 def get_optlist_before(optlevel):
     from . optimizations import optimizations
@@ -134,6 +144,7 @@ def get_optlist_before(optlevel):
 
     return lst
 
+
 def get_optlist_after(optlevel):
     from . optimizations import optimizations
     lst = []
@@ -150,12 +161,14 @@ def get_optlist_after(optlevel):
 
     return lst
 
+
 class Symbiotic(object):
     """
     Instance of symbiotic tool. Instruments, prepares, compiles and runs
     symbolic execution on given source(s)
     """
-    def __init__(self, tool, src, opts = None, symb_dir = None):
+
+    def __init__(self, tool, src, opts=None, symb_dir=None):
         # source file
         self.sources = src
         # source compiled to llvm bytecode
@@ -190,7 +203,7 @@ class Symbiotic(object):
 
         self.current_process = None
 
-    def _compile_to_llvm(self, source, output = None, with_g = True, opts = []):
+    def _compile_to_llvm(self, source, output=None, with_g=True, opts=[]):
         """
         Compile given source to LLVM bytecode
         """
@@ -217,7 +230,8 @@ class Symbiotic(object):
         cmd.append(llvmfile)
         cmd.append(source)
 
-        self._run(cmd, CompileWatch(), "Compiling source '{0}' failed".format(source))
+        self._run(cmd, CompileWatch(),
+                  "Compiling source '{0}' failed".format(source))
 
         return llvmfile
 
@@ -226,12 +240,13 @@ class Symbiotic(object):
 
     def _run_opt(self, passes):
         output = '{0}-pr.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['opt', '-load', 'LLVMsvc15.so', self.llvmfile, '-o', output] + passes
+        cmd = ['opt', '-load', 'LLVMsvc15.so',
+               self.llvmfile, '-o', output] + passes
 
         self._run(cmd, PrepareWatch(), 'Prepare phase failed')
         self.llvmfile = output
 
-    def _get_stats(self, prefix = ''):
+    def _get_stats(self, prefix=''):
         cmd = ['opt', '-load', 'LLVMsvc15.so', '-count-instr',
                '-o', '/dev/null', self.llvmfile]
         try:
@@ -275,7 +290,7 @@ class Symbiotic(object):
 
         # module with defintions of instrumented functions
         if not tolinkbc:
-            tolinkbc = self._compile_to_llvm(tolink, with_g = False)
+            tolinkbc = self._compile_to_llvm(tolink, with_g=False)
 
         self._get_stats('Before instrumentation ')
 
@@ -331,7 +346,7 @@ class Symbiotic(object):
 
         return files
 
-    def link(self, output = None, libs = None):
+    def link(self, output=None, libs=None):
         if libs is None:
             libs = self._get_libraries()
 
@@ -339,20 +354,23 @@ class Symbiotic(object):
             return
 
         if output is None:
-            output = '{0}-ln.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+            output = '{0}-ln.bc'.format(
+                self.llvmfile[:self.llvmfile.rfind('.')])
 
         cmd = ['llvm-link', '-o', output] + libs
         if self.llvmfile:
             cmd.append(self.llvmfile)
 
-        self._run(cmd, DbgWatch('compile'), 'Failed linking llvm file with libraries')
+        self._run(cmd, DbgWatch('compile'),
+                  'Failed linking llvm file with libraries')
         self.llvmfile = output
 
     def _link_undefined(self, undefs):
         tolink = []
         for ty in self.options.linkundef:
             for undef in undefs:
-                name = '{0}/lib/{1}/{2}.c'.format(self.symbiotic_dir, ty, undef)
+                name = '{0}/lib/{1}/{2}.c'.format(
+                    self.symbiotic_dir, ty, undef)
                 if os.path.isfile(name):
                     output = os.path.join(os.getcwd(), os.path.basename(name))
                     output = '{0}.bc'.format(output[:output.rfind('.')])
@@ -363,7 +381,7 @@ class Symbiotic(object):
                     self._linked_functions.append(undef)
 
         if tolink:
-            self.link(libs = tolink)
+            self.link(libs=tolink)
             return True
 
         return False
@@ -373,14 +391,13 @@ class Symbiotic(object):
 
         return self._link_undefined(self.options.link_files)
 
-
     def _get_undefined(self, bitcode):
         cmd = ['llvm-nm', '-undefined-only', '-just-symbol-name', bitcode]
         watch = ProcessWatch(None)
         self._run(cmd, watch, 'Failed getting undefined symbols from bitcode')
-        return map (lambda s: s.strip(), watch.getLines())
+        return map(lambda s: s.strip(), watch.getLines())
 
-    def link_undefined(self, only_func = []):
+    def link_undefined(self, only_func=[]):
         if not self.options.linkundef:
             return
 
@@ -397,7 +414,7 @@ class Symbiotic(object):
             if only_func is None:
                 self.link_undefined()
 
-    def slicer(self, criterion, add_params = []):
+    def slicer(self, criterion, add_params=[]):
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['sbt-slicer', '-c', criterion]
         if self.options.slicer_pta in ['fi', 'fs']:
@@ -405,7 +422,7 @@ class Symbiotic(object):
             cmd.append(self.options.slicer_pta)
 
         # we do that now using _get_stats
-        #cmd.append('-statistics')
+        # cmd.append('-statistics')
 
         if self.options.undefined_are_pure:
             cmd.append('-undefined-are-pure')
@@ -421,7 +438,7 @@ class Symbiotic(object):
         self._run(cmd, SlicerWatch(), 'Slicing failed')
         self.llvmfile = output
 
-    def optimize(self, passes, disable = []):
+    def optimize(self, passes, disable=[]):
         if self.options.no_optimize:
             return
 
@@ -460,7 +477,8 @@ class Symbiotic(object):
         if not cmd:
             return
 
-        self._run(cmd, DbgWatch('compile'), 'Failed preprocessing the llvm code')
+        self._run(cmd, DbgWatch('compile'),
+                  'Failed preprocessing the llvm code')
         self.llvmfile = output
 
     def run_verification(self):
@@ -500,7 +518,7 @@ class Symbiotic(object):
 
     def run(self):
         try:
-            return self._run_symbiotic();
+            return self._run_symbiotic()
         except KeyboardInterrupt:
             self.terminate()
             self.kill()
@@ -535,7 +553,7 @@ class Symbiotic(object):
 
         # break the infinite loops just before slicing
         # so that the optimizations won't make them syntactically infinite again
-        #self.run_opt(['-reg2mem', '-break-infinite-loops', '-remove-infinite-loops',
+        # self.run_opt(['-reg2mem', '-break-infinite-loops', '-remove-infinite-loops',
         self.run_opt(['-break-infinite-loops', '-remove-infinite-loops',
                       # this somehow break the bitcode
                       #'-mem2reg'
@@ -544,13 +562,13 @@ class Symbiotic(object):
         self._get_stats('Before slicing ')
 
         # print info about time
-        print_elapsed_time('INFO: Compilation, preparation and '\
+        print_elapsed_time('INFO: Compilation, preparation and '
                            'instrumentation time', color='WHITE')
 
         for n in range(0, self.options.repeat_slicing):
             dbg('Slicing the code for the {0}. time'.format(n + 1))
             add_params = []
-            #if n == 0 and self.options.repeat_slicing > 1:
+            # if n == 0 and self.options.repeat_slicing > 1:
             #    add_params = ['-pta-field-sensitive=8']
 
             self.slicer(self.options.slicing_criterion, add_params)
@@ -559,7 +577,8 @@ class Symbiotic(object):
                 opt = get_optlist_after(self.options.optlevel)
                 if opt:
                     self.optimize(passes=opt)
-                    self.run_opt(['-break-infinite-loops', '-remove-infinite-loops'])
+                    self.run_opt(['-break-infinite-loops',
+                                  '-remove-infinite-loops'])
 
         print_elapsed_time('INFO: Total slicing time', color='WHITE')
 
@@ -570,11 +589,11 @@ class Symbiotic(object):
 
         # disable these optimizations, since LLVM 3.7 does
         # not have them
-        self.options.disabled_optimizations = ['-aa', '-demanded-bits', # not in 3.7
-                                               '-globals-aa', '-forceattrs', # not in 3.7
-                                               '-inferattrs', '-rpo-functionattrs', # not in 3.7
-                                               '-tti', '-bdce', '-elim-avail-extern', # not in 3.6
-                                               '-float2int', '-loop-accesses' # not in 3.6
+        self.options.disabled_optimizations = ['-aa', '-demanded-bits',  # not in 3.7
+                                               '-globals-aa', '-forceattrs',  # not in 3.7
+                                               '-inferattrs', '-rpo-functionattrs',  # not in 3.7
+                                               '-tti', '-bdce', '-elim-avail-extern',  # not in 3.6
+                                               '-float2int', '-loop-accesses'  # not in 3.6
                                                ]
 
         # compile all sources if the file is not given
@@ -587,10 +606,12 @@ class Symbiotic(object):
         self._get_stats('After compilation ')
 
         if not self.check_llvmfile(self.llvmfile, '-check-concurr'):
-            print('Unsupported call (probably pthread API or floating point stdlib functions)')
+            print(
+                'Unsupported call (probably pthread API or floating point stdlib functions)')
             return report_results('unknown')
 
-        self._run_opt(['-rename-verifier-funs', '-rename-verifier-funs-source={0}'.format(self.sources[0])])
+        self._run_opt(['-rename-verifier-funs',
+                       '-rename-verifier-funs-source={0}'.format(self.sources[0])])
 
         # link the files that we got on the command line
         # and that we are required to link in on any circumstances
@@ -599,7 +620,7 @@ class Symbiotic(object):
         # remove definitions of __VERIFIER_* that are not created by us
         # and syntactically infinite loops
         # we use functionattrs pass to set NoRecurse flag for functions
-  		# because of instrumentation with pointer analysis
+        # because of instrumentation with pointer analysis
         passes = ['-prepare', '-remove-infinite-loops', '-functionattrs']
 
         memsafety = 'VALID-DEREF' in self.options.prp or \
@@ -615,7 +636,7 @@ class Symbiotic(object):
             # new on places where the code exhibits an undefined behavior
             passes += ['-remove-error-calls', '-replace-ubsan']
 
-        self.run_opt(passes = passes)
+        self.run_opt(passes=passes)
 
         # we want to link these functions before instrumentation,
         # because in those we need to check for invalid dereferences
@@ -642,7 +663,7 @@ class Symbiotic(object):
         if not self.options.noslice:
             self.perform_slicing()
         else:
-            print_elapsed_time('INFO: Compilation, preparation and '\
+            print_elapsed_time('INFO: Compilation, preparation and '
                                'instrumentation time', color='WHITE')
 
         # for the memsafety property, make functions behave like they have
@@ -660,7 +681,7 @@ class Symbiotic(object):
         if opt:
             self.optimize(passes=opt)
 
-        #FIXME: make this KLEE specific
+        # FIXME: make this KLEE specific
         if not self.check_llvmfile(self.llvmfile):
             dbg('Unsupported call (probably floating handling)')
             return report_results('unsupported call')
@@ -672,12 +693,12 @@ class Symbiotic(object):
 
         # delete-undefined may insert __VERIFIER_make_symbolic
         # and also other funs like __errno_location may be included
-        self.link_undefined();
+        self.link_undefined()
 
         if self._linked_functions:
             print('Linked our definitions to these undefined functions:')
             for f in self._linked_functions:
-                print_stdout('  ', print_nl = False)
+                print_stdout('  ', print_nl=False)
                 print_stdout(f)
 
         # XXX: we could optimize the code again here...
@@ -693,7 +714,8 @@ class Symbiotic(object):
                 os.rename(self.llvmfile, self.options.final_output)
                 self.llvmfile = self.options.final_output
             except OSError as e:
-                msg = 'Cannot create {0}: {1}'.format(self.options.final_output, e.message)
+                msg = 'Cannot create {0}: {1}'.format(
+                    self.options.final_output, e.message)
                 raise SymbioticException(msg)
 
         if not self.options.no_verification:
@@ -704,4 +726,3 @@ class Symbiotic(object):
             found = 'Did not run verification'
 
         return report_results(found)
-

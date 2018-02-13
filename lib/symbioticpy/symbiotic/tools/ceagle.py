@@ -23,6 +23,7 @@ import benchexec.result as result
 import benchexec.util as util
 import benchexec.tools.template
 
+
 class Tool(benchexec.tools.template.BaseTool):
 
     REQUIRED_PATHS = [
@@ -40,7 +41,8 @@ class Tool(benchexec.tools.template.BaseTool):
         return 'Ceagle'
 
     def cmdline(self, executable, options, tasks, propertyfile, rlimits):
-        spec = ["--property-file=" + propertyfile] if propertyfile is not None else []
+        spec = ["--property-file=" +
+                propertyfile] if propertyfile is not None else []
         return [executable] + options + spec + tasks
 
     def llvm_version(self):
@@ -55,7 +57,6 @@ class Tool(benchexec.tools.template.BaseTool):
         """
         output = infile + '.ll'
         return (['llvm-dis', infile, '-o', output], output)
-
 
     def prepare(self):
         """

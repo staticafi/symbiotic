@@ -26,6 +26,7 @@ import symbiotic.benchexec.util as util
 import symbiotic.benchexec.tools.template
 import symbiotic.benchexec.result as result
 
+
 class Tool(symbiotic.benchexec.tools.template.BaseTool):
     """
     Symbiotic tool info object
@@ -34,53 +35,56 @@ class Tool(symbiotic.benchexec.tools.template.BaseTool):
     def __init__(self, opts):
         self._options = opts
         self._memsafety = 'VALID-DEREF' in self._options.prp or \
-	                  'VALID-FREE' in self._options.prp or \
-	                  'VALID-MEMTRACK' in self._options.prp or \
-	                  'MEMSAFETY' in self._options.prp
+                          'VALID-FREE' in self._options.prp or \
+                          'VALID-MEMTRACK' in self._options.prp or \
+                          'MEMSAFETY' in self._options.prp
         self._overflow = 'SIGNED-OVERFLOW' in self._options.prp
         assert not (self._memsafety and self._overflow)
 
         # define and compile regular expressions for parsing klee's output
         self._patterns = [
-           ('EDOUBLEFREE' , re.compile('.*ASSERTION FAIL: 0 && "double free".*')),
-           ('EINVALFREE' , re.compile('.*ASSERTION FAIL: 0 && "free on non-allocated memory".*')),
-           ('EMEMLEAK' , re.compile('.*ASSERTION FAIL: 0 && "memory leak detected".*')),
-           ('ASSERTIONFAILED' , re.compile('.*ASSERTION FAIL:.*')),
-           ('ESTPTIMEOUT' , re.compile('.*query timed out (resolve).*')),
-           ('EKLEETIMEOUT' , re.compile('.*HaltTimer invoked.*')),
-           ('EEXTENCALL' , re.compile('.*failed external call.*')),
-           ('ELOADSYM' , re.compile('.*ERROR: unable to load symbol.*')),
-           ('EINVALINST' , re.compile('.*LLVM ERROR: Code generator does not support.*')),
-           ('EKLEEASSERT' , re.compile('.*klee: .*Assertion .* failed.*')),
-           ('EINITVALS' , re.compile('.*unable to compute initial values.*')),
-           ('ESYMSOL' , re.compile('.*unable to get symbolic solution.*')),
-           ('ESILENTLYCONCRETIZED' , re.compile('.*silently concretizing.*')),
-           ('EEXTRAARGS' , re.compile('.*calling .* with extra arguments.*')),
-           #('EABORT' , re.compile('.*abort failure.*')),
-           ('EMALLOC' , re.compile('.*found huge malloc, returning 0.*')),
-           ('ESKIPFORK' , re.compile('.*skipping fork.*')),
-           ('EKILLSTATE' , re.compile('.*killing.*states \(over memory cap\).*')),
-           ('EMEMERROR'  , re.compile('.*memory error: out of bound pointer.*')),
-           ('EMAKESYMBOLIC' , re.compile('.*memory error: invalid pointer: make_symbolic.*')),
-           ('EVECTORUNSUP' , re.compile('.*XXX vector instructions unhandled.*')),
-           ('EFREE' , re.compile('.*memory error: invalid pointer: free.*'))
+            ('EDOUBLEFREE', re.compile('.*ASSERTION FAIL: 0 && "double free".*')),
+            ('EINVALFREE', re.compile(
+                '.*ASSERTION FAIL: 0 && "free on non-allocated memory".*')),
+            ('EMEMLEAK', re.compile('.*ASSERTION FAIL: 0 && "memory leak detected".*')),
+            ('ASSERTIONFAILED', re.compile('.*ASSERTION FAIL:.*')),
+            ('ESTPTIMEOUT', re.compile('.*query timed out (resolve).*')),
+            ('EKLEETIMEOUT', re.compile('.*HaltTimer invoked.*')),
+            ('EEXTENCALL', re.compile('.*failed external call.*')),
+            ('ELOADSYM', re.compile('.*ERROR: unable to load symbol.*')),
+            ('EINVALINST', re.compile('.*LLVM ERROR: Code generator does not support.*')),
+            ('EKLEEASSERT', re.compile('.*klee: .*Assertion .* failed.*')),
+            ('EINITVALS', re.compile('.*unable to compute initial values.*')),
+            ('ESYMSOL', re.compile('.*unable to get symbolic solution.*')),
+            ('ESILENTLYCONCRETIZED', re.compile('.*silently concretizing.*')),
+            ('EEXTRAARGS', re.compile('.*calling .* with extra arguments.*')),
+            #('EABORT' , re.compile('.*abort failure.*')),
+            ('EMALLOC', re.compile('.*found huge malloc, returning 0.*')),
+            ('ESKIPFORK', re.compile('.*skipping fork.*')),
+            ('EKILLSTATE', re.compile('.*killing.*states \(over memory cap\).*')),
+            ('EMEMERROR', re.compile('.*memory error: out of bound pointer.*')),
+            ('EMAKESYMBOLIC', re.compile(
+                '.*memory error: invalid pointer: make_symbolic.*')),
+            ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
+            ('EFREE', re.compile('.*memory error: invalid pointer: free.*'))
         ]
 
         if not self._memsafety:
             # we do not want this pattern to be found in memsafety benchmarks,
             # because we insert our own check that do not care about what KLEE
             # really allocated underneath
-            self._patterns.append(('ECONCRETIZED', re.compile('.* concretized symbolic size.*')))
+            self._patterns.append(
+                ('ECONCRETIZED', re.compile('.* concretized symbolic size.*')))
 
     REQUIRED_PATHS = [
-                  "bin",
-                  "include",
-                  "share",
-                  "instrumentations",
-                  "lib",
-                  "lib32",
-                  "symbiotic"
-                  ]
+        "bin",
+        "include",
+        "share",
+        "instrumentations",
+        "lib",
+        "lib32",
+        "symbiotic"
+    ]
 
     def executable(self):
         """
@@ -147,7 +151,7 @@ class Tool(symbiotic.benchexec.tools.template.BaseTool):
 
         # remove/replace the rest of undefined functions
         # for which we do not have a definition and
-	# that has not been removed
+        # that has not been removed
         if self._options.undef_retval_nosym:
             passes += ['-delete-undefined-nosym']
         else:

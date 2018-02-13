@@ -25,16 +25,17 @@ import benchexec.tools.template
 import os
 import re
 
+
 class Tool(benchexec.tools.template.BaseTool):
 
     REQUIRED_PATHS = [
-                  "boogie",
-                  "corral",
-                  "llvm",
-                  "lockpwn",
-                  "smack",
-                  "smack.sh"
-                  ]
+        "boogie",
+        "corral",
+        "llvm",
+        "lockpwn",
+        "smack",
+        "smack.sh"
+    ]
 
     def executable(self):
         """
@@ -98,20 +99,19 @@ class Tool(benchexec.tools.template.BaseTool):
         """
         splitout = "\n".join(output)
         if 'SMACK found no errors' in splitout:
-          return result.RESULT_TRUE_PROP
+            return result.RESULT_TRUE_PROP
         errmsg = re.search(r'SMACK found an error(:\s+([^\.]+))?\.', splitout)
         if errmsg:
-          errtype = errmsg.group(2)
-          if errtype:
-            if 'invalid pointer dereference' == errtype:
-              return result.RESULT_FALSE_DEREF
-            elif 'invalid memory deallocation' == errtype:
-              return result.RESULT_FALSE_FREE
-            elif 'memory leak' == errtype:
-              return result.RESULT_FALSE_MEMTRACK
-            elif 'signed integer overflow' == errtype:
-              return result.RESULT_FALSE_OVERFLOW
-          else:
-            return result.RESULT_FALSE_REACH
+            errtype = errmsg.group(2)
+            if errtype:
+                if 'invalid pointer dereference' == errtype:
+                    return result.RESULT_FALSE_DEREF
+                elif 'invalid memory deallocation' == errtype:
+                    return result.RESULT_FALSE_FREE
+                elif 'memory leak' == errtype:
+                    return result.RESULT_FALSE_MEMTRACK
+                elif 'signed integer overflow' == errtype:
+                    return result.RESULT_FALSE_OVERFLOW
+            else:
+                return result.RESULT_FALSE_REACH
         return result.RESULT_UNKNOWN
-

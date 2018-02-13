@@ -5,7 +5,7 @@ from sys import version_info
 from hashlib import sha1
 
 from sys import version_info
-if version_info < (3,0):
+if version_info < (3, 0):
     from io import open
 
 import re
@@ -25,6 +25,7 @@ if no_lxml:
     # if this fails, then we're screwed, so let the script die
     from xml.etree import ElementTree as ET
 
+
 def get_sha1(source):
     f = open(source, 'r', encoding='utf-8')
     hsh = sha1()
@@ -33,6 +34,7 @@ def get_sha1(source):
 
     f.close()
     return hsh.hexdigest()
+
 
 def get_repr(obj):
     ret = []
@@ -51,6 +53,7 @@ def get_repr(obj):
     ret.append((b, num))
     return ret
 
+
 def print_object(obj):
     rep = 'len {0} bytes, |'.format(len(obj[1]))
     for part in get_repr(obj):
@@ -67,18 +70,20 @@ def print_object(obj):
             rep += '{0}|'.format(value)
     print('{0} := {1}'.format(obj[0], rep))
 
+
 def split_name(name):
     var = name.decode('utf-8').split(":")
     if len(var) != 3:
         return None, None, None
     return var[0], var[1], var[2]
 
+
 class GraphMLWriter(object):
-    def __init__(self, source, prps, is32bit, is_correctness_wit, with_source_lines = False):
+    def __init__(self, source, prps, is32bit, is_correctness_wit, with_source_lines=False):
         if no_lxml:
             self._root = ET.Element('graphml')
         else:
-            ns = {None:'http://graphml.graphdrawing.org/xmlns'}
+            ns = {None: 'http://graphml.graphdrawing.org/xmlns'}
             self._root = ET.Element('graphml', nsmap=ns)
 
         if is32bit:
@@ -91,22 +96,27 @@ class GraphMLWriter(object):
         # is this string a valid variable identificatior?
         self._variable_re = re.compile("^[_a-zA-Z\$][_a-zA-Z\$0-9]*$")
         # is this string a valid variable identificatior or array access?
-        #XXX: this is not supported now
-        self._variable_index_re = re.compile("^[_a-zA-Z\$][_a-zA-Z\$0-9]*(\[.*\])?$")
+        # XXX: this is not supported now
+        self._variable_index_re = re.compile(
+            "^[_a-zA-Z\$][_a-zA-Z\$0-9]*(\[.*\])?$")
 
-        self._graph = ET.SubElement(self._root, 'graph', edgedefault="directed")
+        self._graph = ET.SubElement(
+            self._root, 'graph', edgedefault="directed")
         # add the description
         if is_correctness_wit:
-            ET.SubElement(self._graph, 'data', key='witness-type').text = 'correctness_witness'
+            ET.SubElement(self._graph, 'data',
+                          key='witness-type').text = 'correctness_witness'
         else:
-            ET.SubElement(self._graph, 'data', key='witness-type').text = 'violation_witness'
+            ET.SubElement(self._graph, 'data',
+                          key='witness-type').text = 'violation_witness'
         ET.SubElement(self._graph, 'data', key='sourcecodelang').text = 'C'
         ET.SubElement(self._graph, 'data', key='producer').text = 'Symbiotic'
         # XXX: this may change in the future
         for p in prps:
             ET.SubElement(self._graph, 'data', key='specification').text = p
         ET.SubElement(self._graph, 'data', key='programfile').text = source
-        ET.SubElement(self._graph, 'data', key='programhash').text = get_sha1(source)
+        ET.SubElement(self._graph, 'data',
+                      key='programhash').text = get_sha1(source)
         #ET.SubElement(self._graph, 'data', key='memorymodel').text = 'precise'
         ET.SubElement(self._graph, 'data', key='architecture').text = arch
 
@@ -119,10 +129,10 @@ class GraphMLWriter(object):
         # (but modified)
         from struct import unpack
 
-        f = open(pathFile,'rb')
+        f = open(pathFile, 'rb')
 
         hdr = f.read(5)
-        if len(hdr)!=5 or (hdr!=b'KTEST' and hdr != b"BOUT\n"):
+        if len(hdr) != 5 or (hdr != b'KTEST' and hdr != b"BOUT\n"):
             print('unrecognized file')
             sys.exit(1)
         version, = unpack('>i', f.read(4))
@@ -146,19 +156,19 @@ class GraphMLWriter(object):
             name = f.read(size)
             size, = unpack('>i', f.read(4))
             bytes = f.read(size)
-            objects.append( (name,bytes) )
+            objects.append((name, bytes))
 
         f.close()
         return objects
 
-    def _newNodeEdge(self, last_id, line = None, originfile = None):
+    def _newNodeEdge(self, last_id, line=None, originfile=None):
         # create new node
         node = ET.SubElement(self._graph, 'node', id=str(last_id))
 
         # create new edge
         edge = ET.SubElement(self._graph, 'edge',
-                                source=str(last_id - 1),
-                                target=str(last_id))
+                             source=str(last_id - 1),
+                             target=str(last_id))
         if line is not None:
             ET.SubElement(edge, 'data', key='startline').text = line
         if originfile is not None:
@@ -202,7 +212,7 @@ class GraphMLWriter(object):
             objects = [o for o in map(lambda x: x[1], new_objects)]
 
         for o in objects:
-            var_fun, var_name, var_line  = split_name(o[0])
+            var_fun, var_name, var_line = split_name(o[0])
             if var_line is None:
                 continue
 
@@ -239,10 +249,12 @@ class GraphMLWriter(object):
                         val = ord(o[1][i])
                     else:
                         val = o[1][i]
-                    ass_list.append("*(char *)&({0}))[{1}] == {2}".format(var_name, i, val))
+                    ass_list.append(
+                        "*(char *)&({0}))[{1}] == {2}".format(var_name, i, val))
 
             node, edge = self._newNodeEdge(last_id, var_line, originfile)
-            ET.SubElement(edge, 'data', key='assumption').text = "; ".join(ass_list)
+            ET.SubElement(
+                edge, 'data', key='assumption').text = "; ".join(ass_list)
             ET.SubElement(edge, 'data', key='assumption.scope').text = var_fun
 
             last_id += 1
@@ -309,8 +321,8 @@ class GraphMLWriter(object):
         if last_node is None:
             last_node = ET.SubElement(self._graph, 'node', id=str(last_id))
             ET.SubElement(self._graph, 'edge',
-                             source=str(last_id - 1),
-                             target=str(last_id))
+                          source=str(last_id - 1),
+                          target=str(last_id))
 
         ET.SubElement(last_node, 'data', key='violation').text = 'true'
 
@@ -320,7 +332,7 @@ class GraphMLWriter(object):
 
         f.close()
 
-    def parseError(self, pathFile, filename = None):
+    def parseError(self, pathFile, filename=None):
         """
         Parse .path file from klee
         \param pathFile     the .path file
@@ -333,14 +345,15 @@ class GraphMLWriter(object):
         if trivial_witness:
             if not include_objects or (include_objects and last_id == 1):
                 # set the entry node as violation too
-                ET.SubElement(self._entry, 'data', key='violation').text = 'true'
+                ET.SubElement(self._entry, 'data',
+                              key='violation').text = 'true'
             else:
                 # we included some objects, so create an edge from there
                 # to violation
                 last_node = ET.SubElement(self._graph, 'node', id=str(last_id))
                 ET.SubElement(self._graph, 'edge',
-                                 source=str(last_id - 1),
-                                 target=str(last_id))
+                              source=str(last_id - 1),
+                              target=str(last_id))
 
                 ET.SubElement(last_node, 'data', key='violation').text = 'true'
         else:
@@ -360,4 +373,3 @@ class GraphMLWriter(object):
         else:
             et.write(to, encoding='UTF-8', method="xml",
                      pretty_print=True, xml_declaration=True)
-

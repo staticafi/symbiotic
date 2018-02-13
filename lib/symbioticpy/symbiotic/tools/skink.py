@@ -15,14 +15,15 @@ import benchexec.util as util
 import benchexec.tools.template
 import benchexec.result as result
 
+
 class Tool(benchexec.tools.template.BaseTool):
 
     REQUIRED_PATHS = [
-                  "bin/*",
-                  "lib/*",
-                  "skink.sh",
-                  "skink.jar"
-                  ]
+        "bin/*",
+        "lib/*",
+        "skink.sh",
+        "skink.jar"
+    ]
 
     def executable(self):
         return 'java'
