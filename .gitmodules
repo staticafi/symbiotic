@@ -12,3 +12,6 @@
 [submodule "sbt-slicer"]
 	path = sbt-slicer
 	url = git://github.com/staticafi/sbt-slicer
+[submodule "sbt-instrumentation"]
+	path = sbt-instrumentation
+	url = https://github.com/staticafi/sbt-instrumentation
