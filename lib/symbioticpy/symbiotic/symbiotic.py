@@ -399,7 +399,7 @@ class Symbiotic(object):
 
     def slicer(self, criterion, add_params = []):
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['llvm-slicer', '-c', criterion]
+        cmd = ['sbt-slicer', '-c', criterion]
         if self.options.slicer_pta in ['fi', 'fs']:
             cmd.append('-pta')
             cmd.append(self.options.slicer_pta)
@@ -423,7 +423,7 @@ class Symbiotic(object):
 
     def remove_unused_only(self):
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['llvm-slicer', '-remove-unused-only']
+        cmd = ['sbt-slicer', '-remove-unused-only']
 
         cmd.append('-statistics')
         cmd.append(self.llvmfile)

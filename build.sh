@@ -386,7 +386,7 @@ if [ $FROM -le 1 ]; then
 		git_submodule_init
 	fi
 
-	# download new slicer
+	# download the dg library
 	cd "$SRCDIR/dg" || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
@@ -395,6 +395,28 @@ if [ $FROM -le 1 ]; then
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
+			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
+			|| clean_and_exit 1 "git"
+	fi
+
+	(build && make install) || exit 1
+	cd -
+
+	# initialize instrumentation module if not done yet
+	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/sbt-slicer)" ]; then
+		git_submodule_init
+	fi
+
+	cd "$SRCDIR/sbt-slicer" || exitmsg "Cloning failed"
+	if [ ! -d CMakeFiles ]; then
+		cmake . \
+			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
+			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
+			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
+			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
+			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
+			-DLLVM_DIR=$LLVM_DIR \
+			-DDG_PATH=$ABS_SRCDIR/dg \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			|| clean_and_exit 1 "git"
 	fi
@@ -672,7 +694,8 @@ if [ $FROM -le 7 ]; then
 	# then remove the rest and create distribution
 	BINARIES="$LLVM_PREFIX/bin/clang $LLVM_PREFIX/bin/opt \
 		  $LLVM_PREFIX/bin/klee $LLVM_PREFIX/bin/llvm-link \
-		  $LLVM_PREFIX/bin/llvm-nm $LLVM_PREFIX/bin/llvm-slicer"
+		  $LLVM_PREFIX/bin/llvm-nm $LLVM_PREFIX/bin/sbt-slicer \
+		  $LLVM_PREFIX/bin/sbt-instr"
 	LIBRARIES="\
 		$LLVM_PREFIX/lib/libLLVMdg.so $LLVM_PREFIX/lib/libLLVMpta.so \
 		$LLVM_PREFIX/lib/libPTA.so $LLVM_PREFIX/lib/libRD.so \
@@ -682,8 +705,7 @@ if [ $FROM -le 7 ]; then
 		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib/klee/runtime/klee-libc.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc"
-	INSTR="$LLVM_PREFIX/bin/sbt-instr \
-	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
+	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
 
 #CPACHECKER=

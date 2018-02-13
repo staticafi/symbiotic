@@ -508,7 +508,7 @@ def check_klee_version(vers):
         raise SymbioticException('Invalid version of KLEE, expected {0}, but got {1}'.format(vers, klee_vers))
 
 def check_dg_version(vers):
-    pr = ProcessRunner(['llvm-slicer', '-version'], ProcessWatch(1))
+    pr = ProcessRunner(['sbt-slicer', '-version'], ProcessWatch(1))
     retval = pr.run()
     assert retval == 0
     lines = pr.getOutput()
