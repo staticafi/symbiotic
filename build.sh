@@ -682,7 +682,7 @@ if [ $FROM -le 7 ]; then
 		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib/klee/runtime/klee-libc.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc"
-	INSTR="$LLVM_PREFIX/bin/LLVMinstr \
+	INSTR="$LLVM_PREFIX/bin/sbt-instr \
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
 

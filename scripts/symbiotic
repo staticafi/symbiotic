@@ -523,7 +523,7 @@ def check_dg_version(vers):
         raise SymbioticException('Invalid version of dg, expected {0}, but got {1}'.format(vers, dg_vers))
 
 def check_instr_version(vers):
-    pr = ProcessRunner(['LLVMinstr', '--version'], ProcessWatch(1))
+    pr = ProcessRunner(['sbt-instr', '--version'], ProcessWatch(1))
     retval = pr.run()
     assert retval == 0
     lines = pr.getOutput()

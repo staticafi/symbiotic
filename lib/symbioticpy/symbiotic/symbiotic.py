@@ -280,7 +280,7 @@ class Symbiotic(object):
         self._get_stats('Before instrumentation ')
 
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['LLVMinstr', config, self.llvmfile, tolinkbc, output]
+        cmd = ['sbt-instr', config, self.llvmfile, tolinkbc, output]
         if self.options.disable_instr_plugins:
             cmd.append('--disable-plugins')
 
