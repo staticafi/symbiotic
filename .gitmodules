@@ -2,16 +2,11 @@
 	path = dg
 	url = https://github.com/mchalupa/dg
 	ignore = untracked
-[submodule "LLVMInstrumentation"]
-	path = LLVMInstrumentation
-	url = https://github.com/staticafi/LLVMInstrumentation
-	ignore = untracked
-[submodule "llvm-instrumentation"]
-	path = llvm-instrumentation
-	url = https://github.com/staticafi/llvm-instrumentation
 [submodule "sbt-slicer"]
 	path = sbt-slicer
 	url = git://github.com/staticafi/sbt-slicer
+	ignore = untracked
 [submodule "sbt-instrumentation"]
 	path = sbt-instrumentation
 	url = https://github.com/staticafi/sbt-instrumentation
+	ignore = untracked
