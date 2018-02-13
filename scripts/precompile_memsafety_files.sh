@@ -1,4 +1,4 @@
-INSTR="llvm-instrumentation/"
+INSTR="sbt-instrumentation/"
 PREFIX="install"
 
 set -e
