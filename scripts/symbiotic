@@ -119,7 +119,6 @@ where OPTS can be following:
     --no-verifeir-funs        Do not link __VERIFIER_* function definitions (default=off)
     --dont-exit-on-error      Do not exit when the property violation is reached,
                               but continue searching
-    --disable-instr-plugins   Do not run static analysis when instrumenting
     --help                    Show help message
     --version                 Return version
     --version-short           Return version as one-line string
@@ -343,7 +342,7 @@ def parse_command_line():
                                     'save-files', 'version-short', 'no-posix',
                                     'no-kernel', 'no-verifier-funs', 'no-witness',
                                     'witness-with-source-lines', 'dont-exit-on-error',
-                                    'undefined-are-pure', 'disable-instr-plugins',
+                                    'undefined-are-pure',
                                     'no-integrity-check', 'dump-env',
                                     'memsafety-config-file='])
                                    # add klee-params
@@ -481,8 +480,6 @@ def parse_command_line():
             witness_with_source_lines = True
         elif opt == '--dont-exit-on-error':
             options.dont_exit_on_error = True
-        elif opt == '--disable-instr-plugins':
-            options.disable_instr_plugins = True
         elif opt == '--memsafety-config-file':
             options.memsafety_config_file = arg
         elif opt == '--dump-env':

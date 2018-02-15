@@ -296,9 +296,6 @@ class Symbiotic(object):
 
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['sbt-instr', config, self.llvmfile, tolinkbc, output]
-        if self.options.disable_instr_plugins:
-            cmd.append('--disable-plugins')
-
         self._run(cmd, InstrumentationWatch(), 'Instrumenting the code failed')
 
         self.llvmfile = output
