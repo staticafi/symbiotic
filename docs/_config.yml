@@ -1,2 +1,4 @@
 theme: jekyll-theme-cayman
 title: Symbiotic
+description: Tool for verifying computer programs based on instrumentation, program slicing and symbolic executor KLEE.
+
