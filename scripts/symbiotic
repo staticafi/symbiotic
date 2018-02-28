@@ -56,8 +56,9 @@ where OPTS can be following:
     --timeout=t               Set timeout to t seconds
     --no-slice                Do not slice the code
     --no-prepare              Do not prepare the code
-    --tool=name               Use the tool 'name'. Default is KLEE, other tools that
-                              can be integrated are Ceagle, Skink and SMACK
+    --verifier=name           Use the tool 'name'. Default is KLEE, other tools that
+                              can be integrated are Ceagle, CPAchecker, Seahorn,
+                              Skink and SMACK.
     --explicit-symbolic       Do not make all memory symbolic (in prepare phase),
                               but rely on calls to __VERIFIER_nondet_*
     --undefined-retval-nosym  Do not make return value of undefined functions symbolic,
@@ -219,7 +220,6 @@ def set_environ(tool, opts):
 
     prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
     prepend('C_INCLUDE_DIR', '{0}/include'.format(llvm_prefix))
-
     prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
 
     tool.set_environment(symbiotic_dir, opts)
@@ -233,7 +233,6 @@ def set_environ(tool, opts):
 
         prepend('LD_LIBRARY_PATH', '{0}/transforms'.format(symbiotic_dir))
         prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/analyses'.format(symbiotic_dir))
-
         opts.instrumentation_files_path = '{0}/sbt-instrumentation/instrumentations/'.format(symbiotic_dir)
     else:
         opts.instrumentation_files_path = '{0}/share/sbt-instrumentation/'.format(llvm_prefix)
@@ -354,7 +353,7 @@ def parse_command_line():
         elif opt == '--debug':
             enable_debug(arg.split(','))
         elif opt == '--verifier':
-            options.tool_name = arg
+            options.tool_name = arg.lower()
         elif opt == '--libc':
              if arg == 'klee':
                  options.add_libc = True
@@ -565,6 +564,9 @@ def initialize_verifier(opts):
         return SymbioticTool(opts)
     elif opts.tool_name == 'ceagle':
         from symbiotic.tools.ceagle import SymbioticTool
+        return SymbioticTool()
+    elif opts.tool_name == 'cpachecker':
+        from symbiotic.tools.cpachecker import SymbioticTool
         return SymbioticTool()
     elif opts.tool_name == 'skink':
         from symbiotic.tools.skink import SymbioticTool
