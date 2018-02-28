@@ -100,6 +100,7 @@ where OPTS can be following:
                               In that case you get verbose output. You can just use
                               --debug= to print basic messages.
     --output=FILE             Store the final code (that is to be run by a tool) to FILE
+    --additional-path=PATH    Additional PATH to consider
     --witness=FILE            Store witness into FILE (default is witness.graphml)
     --witness-with-source-lines
                               Store source lines into the witness (may have memory overhead).
@@ -188,7 +189,7 @@ def dump_paths(fun = print_stdout):
         if v in os.environ:
             fun('{0}={1}'.format(v, os.environ[v]))
 
-def set_environ(tool, is32bit = False):
+def set_environ(tool, is32bit = False, additional_path = None):
     def prepend(env, what):
         if env in os.environ:
             newenv = '{0}:{1}'.format(what, os.environ[env])
@@ -225,13 +226,18 @@ def set_environ(tool, is32bit = False):
     assert tool.name() == 'klee'
 
     # override the path completely, we want to be sure that we use only our binaries
+    if additional_path:
+        os.environ['PATH'] = additional_path
+    else:
+        os.environ['PATH'] = ''
+
     if devel_env:
-        os.environ['PATH'] = '{0}/llvm-{1}/build/bin:{0}/bin'.format(symbiotic_dir, llvm_version)
+        prepend('PATH', '{0}/llvm-{1}/build/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
         prepend('PATH', '{0}/dg/tools'.format(symbiotic_dir))
         prepend('PATH', '{0}/sbt-instrumentation/src'.format(symbiotic_dir))
         prepend('PATH', '{0}/klee-build/bin'.format(symbiotic_dir))
 
-        # XXX no KLEE_RUNTIME_LIBRARY_PATH 
+        # XXX no KLEE_RUNTIME_LIBRARY_PATH
     else:
         os.environ['PATH'] = '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version)
 
@@ -331,7 +337,8 @@ def parse_command_line():
                                    ['no-slice', '32', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=', 'version', 'help',
                                     'libc=', 'old-slicer', 'require-slicer',
-                                    'no-verification', 'output=', 'witness=', 'bc',
+                                    'no-verification', 'output=', 'additional-path=',
+                                    'witness=', 'bc',
                                     'optimize=', 'no-prepare', 'malloc-never-fails',
                                     'pta=', 'no-libc', 'slicing-criterion=',
                                     'cflags=', 'cppflags=', 'link=', 'verifier=',
@@ -444,6 +451,9 @@ def parse_command_line():
         elif opt == '--output':
             options.final_output = arg
             dbg('Output will be stored to {0}'.format(arg))
+        elif opt == '--additional-path':
+            options.additional_path = ':'.join([os.path.abspath(os.path.expanduser(p)) for p in arg.split(':')])
+            dbg('Additional path used is {0}'.format(arg))
         elif opt == '--witness':
             options.witness_output = os.path.expanduser(arg)
             options.witness_output = os.path.abspath(options.witness_output)
@@ -590,7 +600,7 @@ if __name__ == "__main__":
         if dump_env_only:
             tool = initialize_tool(opts)
             parse_environ(opts)
-            set_environ(tool, opts.is32bit)
+            set_environ(tool, opts.is32bit, opts.additional_path)
             dump_paths()
             sys.exit(0)
         else:
@@ -624,7 +634,7 @@ if __name__ == "__main__":
 
         # set environment. That is set PATH and LD_LIBRARY_PATH
         # and so on
-        symbiotic_dir = set_environ(tool, opts.is32bit)
+        symbiotic_dir = set_environ(tool, opts.is32bit, opts.additional_path)
         # this calls the tools, so it must be after setting the environ
         if not no_integrity_check:
             from symbiotic.integritycheck import IntegrityChecker
