@@ -148,8 +148,7 @@ supported_properties = {
 # whether to dump source lines into the witness
 witness_with_source_lines = False
 no_witness = False
-#no_integrity_check = False
-no_integrity_check = True
+no_integrity_check = False
 dump_env_only = False
 
 def _get_include_paths(cmd):
@@ -490,64 +489,6 @@ def parse_command_line():
             no_integrity_check = True
 
     return options, args
-
-def check_klee_version(vers):
-    (retval, lines) = process_grep(['klee', '-version'], 'revision')
-    assert retval == 0
-    assert(len(lines) == 1)
-
-    klee_vers = lines[0].split(b':')[1].strip()
-    if sys.version_info < (3,0):
-        vers = vers.decode('utf-8')
-    else:
-        vers = bytes(vers, 'utf-8')
-    if vers != klee_vers:
-        raise SymbioticException('Invalid version of KLEE, expected {0}, but got {1}'.format(vers, klee_vers))
-
-def check_dg_version(vers):
-    pr = ProcessRunner(['sbt-slicer', '-version'], ProcessWatch(1))
-    retval = pr.run()
-    assert retval == 0
-    lines = pr.getOutput()
-    assert(len(lines) == 1)
-
-    if sys.version_info < (3,0):
-        vers = vers.decode('utf-8')[:8]
-    else:
-        vers = bytes(vers[:8] , 'utf-8')
-    dg_vers = lines[0].strip()
-    if vers != dg_vers:
-        raise SymbioticException('Invalid version of dg, expected {0}, but got {1}'.format(vers, dg_vers))
-
-def check_instr_version(vers):
-    pr = ProcessRunner(['sbt-instr', '--version'], ProcessWatch(1))
-    retval = pr.run()
-    assert retval == 0
-    lines = pr.getOutput()
-    assert(len(lines) == 1)
-
-    if sys.version_info < (3,0):
-        vers = vers.decode('utf-8')[:8]
-    else:
-        vers = bytes(vers[:8] , 'utf-8')
-    vers2 = lines[0].strip()
-    if vers != vers2:
-        raise SymbioticException('Invalid version of sbt-instrumentation, expected {0}, but got {1}'.format(vers, vers2))
-
-def integrity_check():
-    """
-    Check whether every module in Symbiotic agrees on versions
-    stored in Symbiotic.
-    """
-    for (k, v) in versions.items():
-        #print(k,v)
-        if k == 'KLEE':
-            check_klee_version(v)
-        elif k == 'dg':
-            check_dg_version(v)
-        elif k == 'sbt-instrumentation':
-            check_instr_version(v)
-
 def on_rm_error(func, pth, exc):
     dbg('Failed removing tmp dir: {0})'.format(str(exc[1])))
 
@@ -685,11 +626,14 @@ if __name__ == "__main__":
         # and so on
         symbiotic_dir = set_environ(tool, opts.is32bit)
         # this calls the tools, so it must be after setting the environ
-        #if not no_integrity_check:
-        #    try:
-        #        integrity_check();
-        #    except SymbioticException as e:
-        #        err('{0}\nIf you are aware of this, you may use --no-integrity-check to suppress this error'.format(str(e)))
+        if not no_integrity_check:
+            from symbiotic.integritycheck import IntegrityChecker
+
+            try:
+                checker = IntegrityChecker(versions)
+                checker.check();
+            except SymbioticException as e:
+                err('{0}\nIf you are aware of this, you may use --no-integrity-check to suppress this error'.format(str(e)))
 
         # set CFLAGS and CPPFLAGS for compilation
         parse_environ(opts)
