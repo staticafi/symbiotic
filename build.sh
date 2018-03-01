@@ -658,6 +658,9 @@ if [ $FROM -le 7 ]; then
 	cd dg || exit 1
 	DG_VERSION=`git rev-parse HEAD`
 	cd -
+	cd sbt-slicer || exit 1
+	SBT_SLICER_VERSION=`git rev-parse HEAD`
+	cd -
 	cd sbt-instrumentation || exit 1
 	INSTRUMENTATION_VERSION=`git rev-parse HEAD`
 	cd -
@@ -678,6 +681,7 @@ if [ $FROM -le 7 ]; then
 	echo "versions = {" >> $VERSFILE
 	echo -e "\t'symbiotic' : '$SYMBIOTIC_VERSION'," >> $VERSFILE
 	echo -e "\t'dg' : '$DG_VERSION'," >> $VERSFILE
+	echo -e "\t'sbt-slicer' : '$SBT_SLICER_VERSION'," >> $VERSFILE
 	echo -e "\t'sbt-instrumentation' : '$INSTRUMENTATION_VERSION'," >> $VERSFILE
 	echo -e "\t'minisat' : '$MINISAT_VERSION'," >> $VERSFILE
 	echo -e "\t'stp' : '$STP_VERSION'," >> $VERSFILE

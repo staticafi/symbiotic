@@ -57,7 +57,7 @@ class IntegrityChecker(object):
                 self._check(k, expected, vers)
             elif k == 'sbt-slicer':
                 vers = self._get_slicer_version()
-                expected = self._decode(v)
+                expected = self._decode(v[:8])
                 self._check(k, expected, vers)
             elif k == 'sbt-instrumentation':
                 vers = self._get_instr_version()
