@@ -116,7 +116,7 @@ where OPTS can be following:
     --no-kernel               Do not link missing kernel functions for which we have
                               definition (default=off)
     --no-witness              Do not create a witness
-    --no-verifeir-funs        Do not link __VERIFIER_* function definitions (default=off)
+    --no-verifier-funs        Do not link __VERIFIER_* function definitions (default=off)
     --dont-exit-on-error      Do not exit when the property violation is reached,
                               but continue searching
     --help                    Show help message
