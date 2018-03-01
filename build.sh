@@ -316,6 +316,9 @@ build_llvm()
 
 	# build llvm
 	ONLY_TOOLS='opt clang llvm-link llvm-dis llvm-nm' build
+	# copy the generated stddef.h due to compilation of instrumentation libraries
+	cp "lib/clang/3.9.1/include/stddef.h" "$PREFIX/include" || exit 1
+
 	popd
 }
 
@@ -732,6 +735,7 @@ if [ $FROM -le 7 ]; then
 		$LIBRARIES \
 		$INSTR\
 		bin/symbiotic \
+		include/stddef.h \
 		include/symbiotic.h \
 		include/symbiotic-size_t.h \
 		lib/*.c \
