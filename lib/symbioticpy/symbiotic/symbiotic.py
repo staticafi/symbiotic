@@ -290,7 +290,7 @@ class Symbiotic(object):
 
         # module with defintions of instrumented functions
         if not tolinkbc:
-            tolinkbc = self._compile_to_llvm(tolink, with_g=False)
+            tolinkbc = self._compile_to_llvm(tolink, with_g=False, opts=['-O2'])
 
         self._get_stats('Before instrumentation ')
 
