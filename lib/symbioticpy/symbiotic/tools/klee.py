@@ -153,24 +153,7 @@ class SymbioticTool(BaseTool):
         """
         Same as prepare, but runs after slicing
         """
-        self._options.linkundef.append('verifier')
-
-        # instrument our malloc -- either the version that can fail,
-        # or the version that can not fail.
-        if self._options.malloc_never_fails:
-            passes = ['-instrument-alloc-nf']
-        else:
-            passes = ['-instrument-alloc']
-
-        # remove/replace the rest of undefined functions
-        # for which we do not have a definition and
-        # that has not been removed
-        if self._options.undef_retval_nosym:
-            passes += ['-delete-undefined-nosym']
-        else:
-            passes += ['-delete-undefined']
-
-        return passes
+        return []
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
