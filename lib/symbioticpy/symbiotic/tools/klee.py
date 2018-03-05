@@ -127,14 +127,8 @@ class Tool(symbiotic.benchexec.tools.template.BaseTool):
         Prepare the bitcode for verification - return a list of
         LLVM passes that should be run on the code
         """
-        # make all memory symbolic (if desired)
-        # and then delete undefined function calls
-        # and replace them by symbolic stuff
-        passes = []
-        if not self._options.explicit_symbolic:
-            passes.append('-initialize-uninitialized')
 
-        return passes
+        return []
 
     def prepare_after(self):
         """
@@ -142,22 +136,7 @@ class Tool(symbiotic.benchexec.tools.template.BaseTool):
         """
         self._options.linkundef.append('verifier')
 
-        # instrument our malloc -- either the version that can fail,
-        # or the version that can not fail.
-        if self._options.malloc_never_fails:
-            passes = ['-instrument-alloc-nf']
-        else:
-            passes = ['-instrument-alloc']
-
-        # remove/replace the rest of undefined functions
-        # for which we do not have a definition and
-        # that has not been removed
-        if self._options.undef_retval_nosym:
-            passes += ['-delete-undefined-nosym']
-        else:
-            passes += ['-delete-undefined']
-
-        return passes
+        return []
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """

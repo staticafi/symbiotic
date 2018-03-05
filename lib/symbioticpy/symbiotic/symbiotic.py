@@ -645,6 +645,11 @@ class Symbiotic(object):
         self.instrument()
 
         passes = self._tool.prepare()
+        # make all memory symbolic (if desired)
+        # and then delete undefined function calls
+        # and replace them by symbolic stuff
+        if not self.options.explicit_symbolic:
+            passes.append('-initialize-uninitialized')
         if passes:
             self.run_opt(passes)
 
@@ -685,11 +690,28 @@ class Symbiotic(object):
 
         # there may have been created new loops
         passes = ['-remove-infinite-loops']
+
+        # instrument our malloc -- either the version that can fail,
+        # or the version that can not fail.
+        if self.options.malloc_never_fails:
+            passes += ['-instrument-alloc-nf']
+        else:
+            passes += ['-instrument-alloc']
+
+        # remove/replace the rest of undefined functions
+        # for which we do not have a definition and
+        # that has not been removed
+        if self.options.undef_retval_nosym:
+            passes += ['-delete-undefined-nosym']
+        else:
+            passes += ['-delete-undefined']
+
         passes += self._tool.prepare_after()
         self.run_opt(passes)
 
         # delete-undefined may insert __VERIFIER_make_symbolic
         # and also other funs like __errno_location may be included
+        self.options.linkundef.append('verifier')
         self.link_undefined()
 
         if self._linked_functions:
