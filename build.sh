@@ -505,7 +505,7 @@ if [ $FROM -le 4 ]; then
 		# use our zlib, if we compiled it
 		ZLIB_FLAGS=
 		if [ -d $RUNDIR/zlib ]; then
-			ZLIB_FLAGS="-DZLIB_LIBRARY=\"-L${PREFIX}/lib;-lz\""
+			ZLIB_FLAGS="-DZLIB_LIBRARY=-L${PREFIX}/lib;-lz"
 			ZLIB_FLAGS="$ZLIB_FLAGS -DZLIB_INCLUDE_DIR=$PREFIX/include"
 		fi
 
