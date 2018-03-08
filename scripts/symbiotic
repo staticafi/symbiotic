@@ -36,7 +36,6 @@ from symbiotic import SymbioticException, Symbiotic
 from symbiotic.options import SymbioticOptions
 from symbiotic.witnesses.witnesses import GraphMLWriter
 from symbiotic.includepaths import IncludePathsSearcher
-
 from subprocess import call
 
 VERSION='5.0.0'
@@ -158,7 +157,36 @@ def dump_paths(fun = print_stdout):
         if v in os.environ:
             fun('{0}={1}'.format(v, os.environ[v]))
 
-def set_environ(tool, is32bit = False):
+def perform_binaries_check():
+    try:
+        from benchexec.util import find_executable
+    except ImportError:
+        from symbiotic.benchexec.util import find_executable
+
+    executables = ['clang', 'opt', 'llvm-link', 'sbt-instr', 'sbt-slicer']
+    for exe in executables:
+        exe_path = find_executable(exe)
+        if not os.path.isfile(exe_path):
+            err("Cannot find executable '{0}' ('{1}')".format(exe, exe_path))
+
+def _find_library(lib):
+    # code taken and modified from benchexec.util.find_executable
+    dirs = os.environ['LD_LIBRARY_PATH'].split(os.path.pathsep)
+
+    for dir_ in dirs:
+        name = os.path.join(dir_, lib)
+        if os.path.isfile(name):
+            return name
+
+    return None
+
+def perform_libraries_check():
+    libraries = ['LLVMsvc15.so', 'libPoints_to_plugin.so']
+    for lib in libraries:
+        if not _find_library(lib):
+            err("Cannot find library '{0}'".format(lib))
+
+def set_environ(tool, opts):
     def prepend(env, what):
         if env in os.environ:
             newenv = '{0}:{1}'.format(what, os.environ[env])
@@ -176,9 +204,9 @@ def set_environ(tool, is32bit = False):
 
     # check whether we are in distribution directory or in the developement directory
     if os.path.isfile('{0}/build.sh'.format(symbiotic_dir)):
-        devel_env = True
+        opts.devel_mode = True
     else:
-        devel_env = False
+        opts.devel_mode = False
 
     llvm_version = tool.llvm_version()
     llvm_prefix = '{0}/llvm-{1}'.format(symbiotic_dir, llvm_version)
@@ -189,24 +217,32 @@ def set_environ(tool, is32bit = False):
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(llvm_prefix))
 
-    if devel_env:
-        prepend('LD_LIBRARY_PATH', '{0}/src'.format(symbiotic_dir))
-
     prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
     prepend('C_INCLUDE_DIR', '{0}/include'.format(llvm_prefix))
 
     prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
 
-    if devel_env:
+    tool.set_environment(symbiotic_dir, opts)
+
+    if opts.devel_mode:
         prepend('PATH', '{0}/llvm-{1}/build/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
         prepend('PATH', '{0}/dg/tools'.format(symbiotic_dir))
+        prepend('PATH', '{0}/sbt-slicer/src'.format(symbiotic_dir))
         prepend('PATH', '{0}/sbt-instrumentation/src'.format(symbiotic_dir))
         prepend('PATH', '{0}/klee-build/bin'.format(symbiotic_dir))
 
-    tool.set_environment(symbiotic_dir, opts)
+        prepend('LD_LIBRARY_PATH', '{0}/transforms'.format(symbiotic_dir))
+        prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/analyses'.format(symbiotic_dir))
+
+        opts.instrumentation_files_path = '{0}/sbt-instrumentation/instrumentations/'.format(symbiotic_dir)
+    else:
+        opts.instrumentation_files_path = '{0}/share/sbt-instrumentation/'.format(llvm_prefix)
 
     dbg('Symbiotic dir: {0}'.format(symbiotic_dir))
     dump_paths(dbg)
+
+    perform_binaries_check()
+    perform_libraries_check()
 
     return symbiotic_dir
 
@@ -552,7 +588,7 @@ if __name__ == "__main__":
         if dump_env_only:
             tool = initialize_verifier(opts)
             parse_environ(opts)
-            set_environ(tool, opts.is32bit)
+            set_environ(tool, opts)
             dump_paths()
             sys.exit(0)
         else:
@@ -586,7 +622,7 @@ if __name__ == "__main__":
 
         # set environment. That is set PATH and LD_LIBRARY_PATH
         # and so on
-        symbiotic_dir = set_environ(tool, opts.is32bit)
+        symbiotic_dir = set_environ(tool, opts)
         # this calls the tools, so it must be after setting the environ
         if not no_integrity_check:
             from symbiotic.integritycheck import IntegrityChecker

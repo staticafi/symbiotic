@@ -118,6 +118,10 @@ class SymbioticTool(BaseTool):
 
         from os import environ
 
+        # XXX: maybe there is a nicer solution?
+        if opts.devel_mode:
+            symbiotic_dir += '/install'
+
         if opts.is32bit:
             environ['KLEE_RUNTIME_LIBRARY_PATH'] \
                 = '{0}/llvm-{1}/lib32/klee/runtime'.format(symbiotic_dir, self.llvm_version())

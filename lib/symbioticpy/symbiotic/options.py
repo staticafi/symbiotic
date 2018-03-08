@@ -50,3 +50,5 @@ class SymbioticOptions(object):
         self.disabled_optimizations = []
         self.CFLAGS = []
         self.CPPFLAGS = []
+        self.devel_mode = False
+        self.instrumentation_files_path = None

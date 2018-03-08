@@ -267,8 +267,7 @@ class Symbiotic(object):
         else:
             libdir = os.path.join(self.symbiotic_dir, llvm_dir, 'lib')
 
-        prefix = os.path.join(self.symbiotic_dir, llvm_dir,
-                              'share/sbt-instrumentation/')
+        prefix = self.options.instrumentation_files_path
 
         tolinkbc = None
         if prp == 'MEMSAFETY':
