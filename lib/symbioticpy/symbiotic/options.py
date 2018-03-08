@@ -32,6 +32,7 @@ class SymbioticOptions(object):
         self.no_optimize = False
         self.no_verification = False
         self.final_output = None
+        self.additional_path = None
         self.witness_output = '{0}/witness.graphml'.format(symbiotic_dir)
         self.source_is_bc = False
         self.optlevel = ["before-O3", "after-O3"]
