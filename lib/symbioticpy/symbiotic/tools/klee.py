@@ -22,12 +22,19 @@ from os.path import join as joinpath
 
 import re
 
-import symbiotic.benchexec.util as util
-import symbiotic.benchexec.tools.template
-import symbiotic.benchexec.result as result
+try:
+    import benchexec.util as util
+    import benchexec.tools.template
+    import benchexec.result as result
+    from benchexec.tools.template import  BaseTool
+except ImportError:
+    # fall-back solution (at least for now)
+    import symbiotic.benchexec.util as util
+    import symbiotic.benchexec.tools.template
+    import symbiotic.benchexec.result as result
+    from symbiotic.benchexec.tools.template import  BaseTool
 
-
-class Tool(symbiotic.benchexec.tools.template.BaseTool):
+class Tool(BaseTool):
     """
     Symbiotic tool info object
     """

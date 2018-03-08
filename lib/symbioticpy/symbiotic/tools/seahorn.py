@@ -55,14 +55,19 @@ distribution.
 
 DM-0002198
 """
-import benchexec.util as util
-import benchexec.tools.template
-import benchexec.result as result
-
 import os
 
+try:
+    import benchexec.util as util
+    import benchexec.result as result
+    from benchexec.tools.template import  BaseTool
+except ImportError:
+    # fall-back solution (at least for now)
+    import symbiotic.benchexec.util as util
+    import symbiotic.benchexec.result as result
+    from symbiotic.benchexec.tools.template import  BaseTool
 
-class Tool(benchexec.tools.template.BaseTool):
+class Tool(BaseTool):
 
     REQUIRED_PATHS = [
         "bin",

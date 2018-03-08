@@ -17,16 +17,22 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-import benchexec.result as result
-import benchexec.util as util
-import benchexec.tools.template
-
 import os
 import re
 
+try:
+    import benchexec.util as util
+    import benchexec.result as result
+    import benchexec.tools.template.BaseTool as BaseTool
+    from benchexec.tools.template import  BaseTool
+except ImportError:
+    # fall-back solution (at least for now)
+    import symbiotic.benchexec.util as util
+    import symbiotic.benchexec.result as result
+    import symbiotic.benchexec.tools.template.BaseTool as BaseTool
+    from symbiotic.benchexec.tools.template import  BaseTool
 
-class Tool(benchexec.tools.template.BaseTool):
+class Tool(BaseTool):
 
     REQUIRED_PATHS = [
         "boogie",

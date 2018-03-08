@@ -11,12 +11,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import benchexec.util as util
-import benchexec.tools.template
-import benchexec.result as result
 
+try:
+    import benchexec.util as util
+    import benchexec.result as result
+    from benchexec.tools.template import  BaseTool
+except ImportError:
+    # fall-back solution (at least for now)
+    import symbiotic.benchexec.util as util
+    import symbiotic.benchexec.result as result
+    from symbiotic.benchexec.tools.template import  BaseTool
 
-class Tool(benchexec.tools.template.BaseTool):
+class Tool(BaseTool):
 
     REQUIRED_PATHS = [
         "bin/*",
