@@ -42,10 +42,7 @@ class SymbioticTool(BaseTool):
 
     def __init__(self, opts):
         self._options = opts
-        self._memsafety = 'VALID-DEREF' in self._options.prp or \
-                          'VALID-FREE' in self._options.prp or \
-                          'VALID-MEMTRACK' in self._options.prp or \
-                          'MEMSAFETY' in self._options.prp
+        self._memsafety = 'MEMSAFETY' in self._options.prp
         self._overflow = 'SIGNED-OVERFLOW' in self._options.prp
         assert not (self._memsafety and self._overflow)
 
