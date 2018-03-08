@@ -173,42 +173,37 @@ def set_environ(tool, is32bit = False):
     #     prepend('C_INCLUDE_DIR', p)
 
     symbiotic_dir = get_symbiotic_dir()
+
     # check whether we are in distribution directory or in the developement directory
     if os.path.isfile('{0}/build.sh'.format(symbiotic_dir)):
         devel_env = True
     else:
         devel_env = False
 
-    llvm_version=tool.llvm_version()
+    llvm_version = tool.llvm_version()
+    llvm_prefix = '{0}/llvm-{1}'.format(symbiotic_dir, llvm_version)
+
+    if not os.path.isdir(llvm_prefix):
+        err("Directory with LLVM binaries does not exist: '{0}'".format(llvm_prefix))
 
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
-    prepend('LD_LIBRARY_PATH', '{0}/llvm-{1}/lib'.format(symbiotic_dir, llvm_version))
+    prepend('LD_LIBRARY_PATH', '{0}/lib'.format(llvm_prefix))
 
     if devel_env:
         prepend('LD_LIBRARY_PATH', '{0}/src'.format(symbiotic_dir))
 
     prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
-    prepend('C_INCLUDE_DIR', '{0}/llvm-{1}/include'.format(symbiotic_dir, llvm_version))
+    prepend('C_INCLUDE_DIR', '{0}/include'.format(llvm_prefix))
 
-    assert tool.name() == 'klee'
+    prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
 
-    # override the path completely, we want to be sure that we use only our binaries
     if devel_env:
-        os.environ['PATH'] = '{0}/llvm-{1}/build/bin:{0}/bin'.format(symbiotic_dir, llvm_version)
+        prepend('PATH', '{0}/llvm-{1}/build/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
         prepend('PATH', '{0}/dg/tools'.format(symbiotic_dir))
         prepend('PATH', '{0}/sbt-instrumentation/src'.format(symbiotic_dir))
         prepend('PATH', '{0}/klee-build/bin'.format(symbiotic_dir))
 
-        # XXX no KLEE_RUNTIME_LIBRARY_PATH 
-    else:
-        os.environ['PATH'] = '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version)
-
-        if is32bit:
-            os.environ['KLEE_RUNTIME_LIBRARY_PATH'] \
-                = '{0}/llvm-{1}/lib32/klee/runtime'.format(symbiotic_dir, llvm_version)
-        else:
-            os.environ['KLEE_RUNTIME_LIBRARY_PATH'] \
-                = '{0}/llvm-{1}/lib/klee/runtime'.format(symbiotic_dir, llvm_version)
+    tool.set_environment(symbiotic_dir, opts)
 
     dbg('Symbiotic dir: {0}'.format(symbiotic_dir))
     dump_paths(dbg)
@@ -523,30 +518,29 @@ def remove_linkundef(options, what):
     except ValueError:
         pass
 
-
-def initialize_tool(opts):
+def initialize_verifier(opts):
     opts.slicing_criterion = '__VERIFIER_error,__assert_fail'
     remove_linkundef(opts, 'verifier')
     opts.explicit_symbolic = True
 
     if opts.tool_name == 'klee':
         opts.explicit_symbolic = False
-        from symbiotic.tools.klee import Tool
-        return Tool(opts)
+        from symbiotic.tools.klee import SymbioticTool
+        return SymbioticTool(opts)
     elif opts.tool_name == 'ceagle':
-        from symbiotic.tools.ceagle import Tool
-        return Tool()
+        from symbiotic.tools.ceagle import SymbioticTool
+        return SymbioticTool()
     elif opts.tool_name == 'skink':
-        from symbiotic.tools.skink import Tool
-        return Tool()
+        from symbiotic.tools.skink import SymbioticTool
+        return SymbioticTool()
     elif opts.tool_name == 'smack':
-        from symbiotic.tools.smack import Tool
-        return Tool()
+        from symbiotic.tools.smack import SymbioticTool
+        return SymbioticTool()
     elif opts.tool_name == 'seahorn':
-        from symbiotic.tools.seahorn import Tool
-        return Tool()
+        from symbiotic.tools.seahorn import SymbioticTool
+        return SymbioticTool()
     else:
-        raise SymbioticException('Unknown tool: {0}'.format(opts.tool_name))
+        raise SymbioticException('Unknown verifier: {0}'.format(opts.tool_name))
 
 if __name__ == "__main__":
     # store time when we have started, so that we can
@@ -556,7 +550,7 @@ if __name__ == "__main__":
     opts, args = parse_command_line()
     if len(args) < 1:
         if dump_env_only:
-            tool = initialize_tool(opts)
+            tool = initialize_verifier(opts)
             parse_environ(opts)
             set_environ(tool, opts.is32bit)
             dump_paths()
@@ -585,7 +579,7 @@ if __name__ == "__main__":
     if opts.timeout != 0:
         start_timeout(opts.timeout)
 
-    tool = initialize_tool(opts)
+    tool = initialize_verifier(opts)
 
     try:
         symbiotic = None

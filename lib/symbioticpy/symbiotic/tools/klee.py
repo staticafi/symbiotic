@@ -24,17 +24,18 @@ import re
 
 try:
     import benchexec.util as util
-    import benchexec.tools.template
     import benchexec.result as result
-    from benchexec.tools.template import  BaseTool
+    from benchexec.tools.template import BaseTool
 except ImportError:
     # fall-back solution (at least for now)
     import symbiotic.benchexec.util as util
-    import symbiotic.benchexec.tools.template
     import symbiotic.benchexec.result as result
-    from symbiotic.benchexec.tools.template import  BaseTool
+    from symbiotic.benchexec.tools.template import BaseTool
 
-class Tool(BaseTool):
+# we use are own fork of KLEE, so do not use the official
+# benchexec module for klee (FIXME: update the module so that
+# we can use it)
+class SymbioticTool(BaseTool):
     """
     Symbiotic tool info object
     """
@@ -83,16 +84,6 @@ class Tool(BaseTool):
             self._patterns.append(
                 ('ECONCRETIZED', re.compile('.* concretized symbolic size.*')))
 
-    REQUIRED_PATHS = [
-        "bin",
-        "include",
-        "share",
-        "instrumentations",
-        "lib",
-        "lib32",
-        "symbiotic"
-    ]
-
     def executable(self):
         """
         Find the path to the executable file that will get executed.
@@ -119,6 +110,20 @@ class Tool(BaseTool):
         Return required version of LLVM
         """
         return '3.9.1'
+
+    def set_environment(self, symbiotic_dir, opts):
+        """
+        Set environment for the tool
+        """
+
+        from os import environ
+
+        if opts.is32bit:
+            environ['KLEE_RUNTIME_LIBRARY_PATH'] \
+                = '{0}/llvm-{1}/lib32/klee/runtime'.format(symbiotic_dir, self.llvm_version())
+        else:
+            environ['KLEE_RUNTIME_LIBRARY_PATH'] \
+                = '{0}/llvm-{1}/lib/klee/runtime'.format(symbiotic_dir, self.llvm_version())
 
     def preprocess_llvm(self, infile):
         """

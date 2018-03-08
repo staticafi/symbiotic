@@ -1,58 +1,12 @@
-# coding=utf-8
-"""
-BenchExec is a framework for reliable benchmarking.
-This file is part of BenchExec.
-
-Copyright (C) 2007-2015  Dirk Beyer
-All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-"""
-
 try:
-    import benchexec.util as util
-    import benchexec.tools.template
-    import benchexec.result as result
-    import benchexec.tools.template.BaseTool as BaseTool
-    from benchexec.tools.template import  BaseTool
+    from benchexec.tools.ceagle import Tool as CeagleTool
 except ImportError:
-    # fall-back solution (at least for now)
-    import symbiotic.benchexec.util as util
-    import symbiotic.benchexec.tools.template
-    import symbiotic.benchexec.result as result
-    import symbiotic.benchexec.tools.template.BaseTool as BaseTool
-    from symbiotic.benchexec.tools.template import  BaseTool
+    print('Using the fallback tool module')
+    from .. benchexec.tools.ceagle import Tool as CeagleTool
 
-class Tool(BaseTool):
+class SymbioticTool(CeagleTool):
 
-    REQUIRED_PATHS = [
-        "sv-ceagle",
-        "z3"
-    ]
-
-    def executable(self):
-        return util.find_executable('sv-ceagle')
-
-    def version(self, executable):
-        return self._version_from_tool(executable)
-
-    def name(self):
-        return 'Ceagle'
-
-    def cmdline(self, executable, options, tasks, propertyfile, rlimits):
-        spec = ["--property-file=" +
-                propertyfile] if propertyfile is not None else []
-        return [executable] + options + spec + tasks
+    REQUIRED_PATHS = CeagleTool.REQUIRED_PATHS
 
     def llvm_version(self):
         return '3.7.1'
@@ -80,24 +34,9 @@ class Tool(BaseTool):
         """
         return []
 
-    def determine_result(self, returncode, returnsignal, output, isTimeout):
+    def set_environment(self, symbiotic_dir, opts):
+        """
+        Set environment for the tool
+        """
+        pass
 
-        status = result.RESULT_UNKNOWN
-        stroutput = str(output)
-
-        if isTimeout:
-            status = 'TIMEOUT'
-        elif 'TRUE' in stroutput:
-            status = result.RESULT_TRUE_PROP
-        elif 'FALSE(valid-deref)' in stroutput:
-            status = result.RESULT_FALSE_DEREF
-        elif 'FALSE(no-overflow)' in stroutput:
-            status = result.RESULT_FALSE_OVERFLOW
-        elif 'FALSE' in stroutput:
-            status = result.RESULT_FALSE_REACH
-        elif 'UNKNOWN' in stroutput:
-            status = result.RESULT_UNKNOWN
-        else:
-            status = result.RESULT_UNKNOWN
-
-        return status

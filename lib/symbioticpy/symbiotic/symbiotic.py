@@ -11,6 +11,10 @@ from . utils.watch import ProcessWatch, DbgWatch
 from . utils.utils import print_stdout, print_stderr, get_symbiotic_dir
 from . exceptions import SymbioticException
 
+try:
+    from benchexec.util import find_executable
+except ImportError:
+    from . benchexec.util import find_executable
 
 class PrepareWatch(ProcessWatch):
     def __init__(self, lines=100):
@@ -195,6 +199,7 @@ class Symbiotic(object):
         self._tool = tool
 
     def _run(self, cmd, watch, err_msg):
+        dbg("'{0}' is '{1}'".format(cmd[0], find_executable(cmd[0])))
         self.current_process = ProcessRunner(cmd, watch)
         if self.current_process.run() != 0:
             self.current_process.printOutput(sys.stderr, 'RED')
