@@ -35,6 +35,7 @@ from symbiotic.utils.process import ProcessRunner
 from symbiotic import SymbioticException, Symbiotic
 from symbiotic.options import SymbioticOptions
 from symbiotic.witnesses.witnesses import GraphMLWriter
+from symbiotic.includepaths import IncludePathsSearcher
 
 from subprocess import call
 
@@ -151,37 +152,6 @@ no_witness = False
 no_integrity_check = False
 dump_env_only = False
 
-def _get_include_paths(cmd):
-    """
-    Find paths where standard headers are located
-    """
-    paths=[]
-
-    pr = ProcessRunner(cmd, ProcessWatch(lines_limit = None))
-    if pr.run() == 0:
-        lines_iter = iter(pr.getOutput())
-        # find the beginning of include paths
-        for line in lines_iter:
-            if line == b'#include <...> search starts here:\n':
-                break
-
-        for line in lines_iter:
-            line = line.decode('ascii').strip()
-            if line == 'End of search list.':
-                break
-            else:
-                paths.append(line)
-
-    return paths
-
-def get_cpp_include_paths():
-    cmd = ['cpp', '-xc', '-v', '/dev/null']
-    return _get_include_paths(cmd)
-
-def get_clang_include_paths():
-    cmd = ['clang', '-E', '-xc', '-v', '/dev/null']
-    return _get_include_paths(cmd)
-
 def dump_paths(fun = print_stdout):
     variables = ['PATH', 'LD_LIBRARY_PATH', 'C_INCLUDE_DIR', 'CFLAGS', 'CPPFLAGS']
     for v in variables:
@@ -197,12 +167,10 @@ def set_environ(tool, is32bit = False):
 
         os.environ[env] = newenv
 
-    # do this before we override PATH - we need 'find' utility
-    #additional_paths = get_clang_include_paths()
-    #if not additional_paths:
-    #    additional_paths = get_cpp_include_paths()
-    #for p in additional_paths:
-    #    prepend('C_INCLUDE_DIR', p)
+    # path_searcher = IncludePathsSearcher()
+    # additional_include_paths = path_searcher.get()
+    # for p in additional_include_paths:
+    #     prepend('C_INCLUDE_DIR', p)
 
     symbiotic_dir = get_symbiotic_dir()
     # check whether we are in distribution directory or in the developement directory
