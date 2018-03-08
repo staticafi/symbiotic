@@ -11,6 +11,10 @@ from . utils.watch import ProcessWatch, DbgWatch
 from . utils.utils import print_stdout, print_stderr, get_symbiotic_dir
 from . exceptions import SymbioticException
 
+try:
+    from benchexec.util import find_executable
+except ImportError:
+    from . benchexec.util import find_executable
 
 class PrepareWatch(ProcessWatch):
     def __init__(self, lines=100):
@@ -195,6 +199,7 @@ class Symbiotic(object):
         self._tool = tool
 
     def _run(self, cmd, watch, err_msg):
+        dbg("'{0}' is '{1}'".format(cmd[0], find_executable(cmd[0])))
         self.current_process = ProcessRunner(cmd, watch)
         if self.current_process.run() != 0:
             self.current_process.printOutput(sys.stderr, 'RED')
@@ -262,8 +267,7 @@ class Symbiotic(object):
         else:
             libdir = os.path.join(self.symbiotic_dir, llvm_dir, 'lib')
 
-        prefix = os.path.join(self.symbiotic_dir, llvm_dir,
-                              'share/sbt-instrumentation/')
+        prefix = self.options.instrumentation_files_path
 
         tolinkbc = None
         if prp == 'MEMSAFETY':
@@ -312,24 +316,9 @@ class Symbiotic(object):
         """
 
         # FIXME: do not compare the strings all the time...
-
         if 'MEMSAFETY' in self.options.prp:
             self._instrument('MEMSAFETY')
-        elif 'MEM-TRACK' in self.options.prp and\
-             'VALID-DEREF' in self.options.prp and\
-             'VALID-FREE' in self.options.prp:
-            self._instrument('MEMSAFETY')
-        else:
-            # these two are mutually exclusive
-            if 'MEM-TRACK' in self.options.prp:
-                self._instrument('MEM-TRACK')
-            elif 'VALID-FREE' in self.options.prp:
-                self._instrument('VALID-FREE')
-
-            if 'VALID-DEREF' in self.options.prp:
-                self._instrument('VALID-DEREF')
-
-            if 'NULL-DEREF' in self.options.prp:
+        elif 'NULL-DEREF' in self.options.prp:
                 self._instrument('NULL-DEREF')
 
     def _get_libraries(self, which=[]):
@@ -620,10 +609,7 @@ class Symbiotic(object):
         # because of instrumentation with pointer analysis
         passes = ['-prepare', '-remove-infinite-loops', '-functionattrs']
 
-        memsafety = 'VALID-DEREF' in self.options.prp or \
-                    'VALID-FREE' in self.options.prp or \
-                    'VALID-MEMTRACK' in self.options.prp or \
-                    'MEMSAFETY' in self.options.prp
+        memsafety = 'MEMSAFETY' in self.options.prp
         if memsafety:
             # remove error calls, we'll put there our own
             passes.append('-remove-error-calls')

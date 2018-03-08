@@ -20,8 +20,13 @@ import os
 import logging
 import subprocess
 
-import symbiotic.benchexec.result as result
-import symbiotic.benchexec.util as util
+try:
+    import benchexec.result as result
+    import benchexec.util as util
+except ImportError:
+    # fall-back possible out-of-date copy
+    import symbiotic.benchexec.util as util
+    import symbiotic.benchexec.result as result
 
 class BaseTool(object):
     """
