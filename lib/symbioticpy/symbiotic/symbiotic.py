@@ -674,7 +674,7 @@ class Symbiotic(object):
         passes += self._tool.prepare_after()
         self.run_opt(passes)
 
-        # delete-undefined may insert __VERIFIER_make_symbolic
+        # delete-undefined may insert __VERIFIER_make_nondet
         # and also other funs like __errno_location may be included
         self.link_undefined()
 

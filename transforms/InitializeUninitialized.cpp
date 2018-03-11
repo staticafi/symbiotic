@@ -41,7 +41,7 @@ static void CallAddMetadata(CallInst *CI, Instruction *I)
 }
 
 class InitializeUninitialized : public ModulePass {
-    Function *_vms = nullptr; // verifier_make_symbolic function
+    Function *_vms = nullptr; // verifier_make_nondet function
     Type *_size_t_Ty = nullptr; // type of size_t
 
     std::unordered_map<Type *, GlobalVariable *> added_globals;
@@ -49,7 +49,7 @@ class InitializeUninitialized : public ModulePass {
 
     // add global of given type and initialize it in may as nondeterministic
     GlobalVariable *getGlobalNondet(Type *, Module *);
-    Function *get_verifier_make_symbolic(Module *);
+    Function *get_verifier_make_nondet(Module *);
     Type *get_size_t(Module *);
     bool initializeExternalGlobals(Module&);
   public:
@@ -128,7 +128,7 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
         GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
     }
 
-    Function *vms = get_verifier_make_symbolic(&M);
+    Function *vms = get_verifier_make_nondet(&M);
     CastInst *CastI = CastInst::CreatePointerCast(memory, Type::getInt8PtrTy(Ctx));
 
     std::vector<Value *> args;
@@ -163,14 +163,14 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
   return modified;
 }
 
-Function *InitializeUninitialized::get_verifier_make_symbolic(llvm::Module *M)
+Function *InitializeUninitialized::get_verifier_make_nondet(llvm::Module *M)
 {
   if (_vms)
     return _vms;
 
   LLVMContext& Ctx = M->getContext();
   //void verifier_make_symbolic(void *addr, size_t nbytes, const char *name);
-  Constant *C = M->getOrInsertFunction("__VERIFIER_make_symbolic",
+  Constant *C = M->getOrInsertFunction("__VERIFIER_make_nondet",
                                        Type::getVoidTy(Ctx),
                                        Type::getInt8PtrTy(Ctx), // addr
                                        get_size_t(M),   // nbytes
@@ -213,7 +213,7 @@ GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::M
 
   // insert initialization of the new global variable
   // at the beginning of main
-  Function *vms = get_verifier_make_symbolic(M);
+  Function *vms = get_verifier_make_nondet(M);
   CastInst *CastI = CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Ctx));
 
   std::vector<Value *> args;
@@ -295,7 +295,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
                                             GlobalValue::PrivateLinkage,
                                             name_init);
 
-  Function *C = get_verifier_make_symbolic(M);
+  Function *C = get_verifier_make_nondet(M);
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
     Instruction *ins = &*I;
@@ -318,7 +318,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
       // to the original alloca. This way slicer will slice this
       // initialization away if program initialize it manually later
       if (Ty->isSized()) {
-        // if this is an array allocation, just call verifier_make_symbolic on it,
+        // if this is an array allocation, just call verifier_make_nondet on it,
         // since storing whole symbolic array into it would have soo huge overhead
         if (Ty->isArrayTy()) {
             CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(Ctx));

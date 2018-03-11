@@ -42,7 +42,7 @@ class DeleteUndefined : public ModulePass {
 
   // add global of given type and initialize it in may as nondeterministic
   GlobalVariable *getGlobalNondet(llvm::Type *, llvm::Module *);
-  Function *get_verifier_make_symbolic(llvm::Module *);
+  Function *get_verifier_make_nondet(llvm::Module *);
   Type *get_size_t(llvm::Module *);
 
   //void replaceCall(CallInst *CI, Module *M);
@@ -163,14 +163,14 @@ static void CallAddMetadata(CallInst *CI, Instruction *I)
   }
 }
 
-Function *DeleteUndefined::get_verifier_make_symbolic(llvm::Module *M)
+Function *DeleteUndefined::get_verifier_make_nondet(llvm::Module *M)
 {
   if (_vms)
     return _vms;
 
   LLVMContext& Ctx = M->getContext();
   //void verifier_make_symbolic(void *addr, size_t nbytes, const char *name);
-  Constant *C = M->getOrInsertFunction("__VERIFIER_make_symbolic",
+  Constant *C = M->getOrInsertFunction("__VERIFIER_make_nondet",
                                        Type::getVoidTy(Ctx),
                                        Type::getInt8PtrTy(Ctx), // addr
                                        get_size_t(M),   // nbytes
@@ -216,7 +216,7 @@ GlobalVariable *DeleteUndefined::getGlobalNondet(llvm::Type *Ty, llvm::Module *M
 
   // insert initialization of the new global variable
   // at the beginning of main
-  Function *vms = get_verifier_make_symbolic(M);
+  Function *vms = get_verifier_make_nondet(M);
   CastInst *CastI = CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Ctx));
 
   std::vector<Value *> args;
