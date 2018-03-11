@@ -352,19 +352,32 @@ class Symbiotic(object):
         self.llvmfile = output
 
     def _link_undefined(self, undefs):
+        def get_path(symbdir, ty, tool, name):
+            path = os.path.abspath('{0}/lib/{1}/{2}/{3}.c'.format(symbdir, ty, tool, undef))
+            if os.path.isfile(path):
+                return path
+
+            # do we have at least a generic implementation?
+            path = os.path.abspath('{0}/lib/{1}/{2}.c'.format(symbdir, ty, undef))
+            if os.path.isfile(path):
+                return path
+
+            return None
+
         tolink = []
         for ty in self.options.linkundef:
             for undef in undefs:
-                name = '{0}/lib/{1}/{2}.c'.format(
-                    self.symbiotic_dir, ty, undef)
-                if os.path.isfile(name):
-                    output = os.path.join(os.getcwd(), os.path.basename(name))
-                    output = '{0}.bc'.format(output[:output.rfind('.')])
-                    self._compile_to_llvm(name, output)
-                    tolink.append(output)
+                path = get_path(self.symbiotic_dir, ty,
+                                self._tool.name(), undef)
+                if path is None:
+                    continue
 
-                    # for debugging
-                    self._linked_functions.append(undef)
+                output = '{0}.bc'.format(path[:path.rfind('.')])
+                self._compile_to_llvm(path, output)
+                tolink.append(output)
+
+                # for debugging
+                self._linked_functions.append(undef)
 
         if tolink:
             self.link(libs=tolink)
