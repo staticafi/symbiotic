@@ -181,7 +181,7 @@ def _find_library(lib):
     return None
 
 def perform_libraries_check():
-    libraries = ['LLVMsvc15.so', 'libPoints_to_plugin.so']
+    libraries = ['LLVMsbt.so', 'libPoints_to_plugin.so']
     for lib in libraries:
         if not _find_library(lib):
             err("Cannot find library '{0}'".format(lib))

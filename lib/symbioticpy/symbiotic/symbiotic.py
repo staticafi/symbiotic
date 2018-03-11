@@ -245,14 +245,14 @@ class Symbiotic(object):
 
     def _run_opt(self, passes):
         output = '{0}-pr.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['opt', '-load', 'LLVMsvc15.so',
+        cmd = ['opt', '-load', 'LLVMsbt.so',
                self.llvmfile, '-o', output] + passes
 
         self._run(cmd, PrepareWatch(), 'Prepare phase failed')
         self.llvmfile = output
 
     def _get_stats(self, prefix=''):
-        cmd = ['opt', '-load', 'LLVMsvc15.so', '-count-instr',
+        cmd = ['opt', '-load', 'LLVMsbt.so', '-count-instr',
                '-o', '/dev/null', self.llvmfile]
         try:
             self._run(cmd, PrintWatch('INFO: ' + prefix), 'Failed running opt')
@@ -458,7 +458,7 @@ class Symbiotic(object):
         Check whether the bitcode does not contain anything
         that we do not support
         """
-        cmd = ['opt', '-load', 'LLVMsvc15.so', check,
+        cmd = ['opt', '-load', 'LLVMsbt.so', check,
                '-o', '/dev/null', llvmfile]
         try:
             self._run(cmd, UnsuppWatch(), 'Failed checking the code')

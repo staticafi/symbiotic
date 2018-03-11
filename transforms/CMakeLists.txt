@@ -3,7 +3,7 @@ if (BUILD_SHARED_LIBS)
 	set(LLVM_LINK_COMPONENTS analysis core support)
 endif()
 
-add_llvm_loadable_module(LLVMsvc15
+add_llvm_loadable_module(LLVMsbt
 				CloneMetadata.cpp
 				Prepare.cpp
 				RemoveReadOnlyAttr.cpp
@@ -17,5 +17,5 @@ add_llvm_loadable_module(LLVMsvc15
 				CountInstr.cpp
 				CheckUnsupported.cpp)
 
-install(TARGETS LLVMsvc15
+install(TARGETS LLVMsbt
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})

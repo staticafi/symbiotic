@@ -710,7 +710,7 @@ if [ $FROM -le 7 ]; then
 	LIBRARIES="\
 		$LLVM_PREFIX/lib/libLLVMdg.so $LLVM_PREFIX/lib/libLLVMpta.so \
 		$LLVM_PREFIX/lib/libPTA.so $LLVM_PREFIX/lib/libRD.so \
-		$LLVM_PREFIX/lib/LLVMsvc15.so \
+		$LLVM_PREFIX/lib/LLVMsbt.so \
 		$LLVM_PREFIX/lib/libPoints_to_plugin.so \
 		$LLVM_PREFIX/lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
