@@ -237,11 +237,6 @@ class SymbioticTool(BaseTool):
         Prepare the bitcode for verification - return a list of
         LLVM passes that should be run on the code
         """
-        """passes = []
-        if not self._options.explicit_symbolic:
-            passes.append('-initialize-uninitialized')
-
-        return passes"""
         return []
 
     def prepare_after(self):
