@@ -114,6 +114,11 @@ class SymbioticTool(BaseTool):
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         additional_options = self._get_additional_options(options, propertyfile, rlimits)
+        # use a default configuration if no other is specicied
+        if not options:
+            config_paths = os.path.join(os.path.dirname(executable), '..', 'config')
+            additional_options += ['-config', '{0}/svcomp18.properties'.format(config_paths),
+                                   '-timelimit', '900s']
         return [executable, "-setprop", "language=LLVM"] + options + additional_options + tasks
 
 
