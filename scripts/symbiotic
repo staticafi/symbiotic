@@ -118,6 +118,7 @@ where OPTS can be following:
                               definition (default=off)
     --no-witness              Do not create a witness
     --no-verifier-funs        Do not link __VERIFIER_* function definitions (default=off)
+    --no-svcomp-funs          Do not link __VERIFIER_* SV-COMP function definitions (default=off)
     --dont-exit-on-error      Do not exit when the property violation is reached,
                               but continue searching
     --help                    Show help message
@@ -339,7 +340,7 @@ def parse_command_line():
                                     'save-files', 'version-short', 'no-posix',
                                     'no-kernel', 'no-verifier-funs', 'no-witness',
                                     'witness-with-source-lines', 'dont-exit-on-error',
-                                    'undefined-are-pure',
+                                    'undefined-are-pure', 'no-svcomp-funs',
                                     'no-integrity-check', 'dump-env',
                                     'memsafety-config-file='])
                                    # add klee-params
@@ -470,6 +471,8 @@ def parse_command_line():
             remove_linkundef(options, 'kernel')
         elif opt == '--no-verifier-funs':
             remove_linkundef(options, 'verifier')
+        elif opt == '--no-svcomp-funs':
+            remove_linkundef(options, 'svcomp')
         elif opt == '--no-libc':
             remove_linkundef(options, 'libc')
         elif opt == '--witness-with-source-lines':
