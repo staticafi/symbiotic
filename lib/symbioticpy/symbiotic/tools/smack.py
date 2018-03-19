@@ -14,6 +14,12 @@ class SymbioticTool(SmackTool):
     def llvm_version(self):
         return '3.7.1'
 
+    def compilation_options(self):
+    	"""
+	List of compilation options specific for this tool
+	"""
+        pass
+
     def preprocess_llvm(self, infile):
         """
         A tool's specific preprocessing steps for llvm file

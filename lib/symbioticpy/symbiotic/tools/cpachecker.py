@@ -227,6 +227,11 @@ class SymbioticTool(BaseTool):
         """
         pass
 
+    def compilation_options(self):
+    	"""
+	List of compilation options specific for this tool
+	"""
+        pass
 
     def preprocess_llvm(self, infile):
         """

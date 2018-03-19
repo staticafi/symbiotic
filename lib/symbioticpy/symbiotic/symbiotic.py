@@ -528,13 +528,10 @@ class Symbiotic(object):
         for source in self.sources:
             opts = ['-Wno-unused-parameter', '-Wno-unused-attribute',
                     '-Wno-unused-label', '-Wno-unknown-pragmas']
-            if 'UNDEF-BEHAVIOR' in self.options.prp:
-                opts.append('-fsanitize=undefined')
-                opts.append('-fno-sanitize=unsigned-integer-overflow')
-            elif 'SIGNED-OVERFLOW' in self.options.prp:
-                opts.append('-fsanitize=signed-integer-overflow')
-                opts.append('-fsanitize=shift')
-                # XXX: remove once we have better CD algorithm
+			opts += self._tool.compilation_options()
+
+            if 'SIGNED-OVERFLOW' in self.options.prp:
+                # FIXME: this is a hack, remove once we have better CD algorithm
                 self.options.disabled_optimizations = ['-instcombine']
 
             llvms = self._compile_to_llvm(source, opts=opts)

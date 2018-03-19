@@ -44,7 +44,10 @@ class SymbioticTool(BaseTool):
         self._options = opts
         self._memsafety = 'MEMSAFETY' in self._options.prp
         self._overflow = 'SIGNED-OVERFLOW' in self._options.prp
+        self._undefined = 'UNDEF-BEHAVIOR' in self._options.prp:
         assert not (self._memsafety and self._overflow)
+        assert not (self._memsafety and self._undefined)
+        assert not (self._overflow and self._undefined)
 
         # define and compile regular expressions for parsing klee's output
         self._patterns = [
@@ -126,14 +129,19 @@ class SymbioticTool(BaseTool):
             environ['KLEE_RUNTIME_LIBRARY_PATH'] \
                 = '{0}/llvm-{1}/lib/klee/runtime'.format(symbiotic_dir, self.llvm_version())
 
-    def preprocess_llvm(self, infile):
-        """
-        A tool's specific preprocessing steps for llvm file
-        before verification itself. Returns a pair (cmd, outputfile),
-        where cmd is the list suitable to pass to Popen and outputfile
-        is the resulting file from the preprocessing
-        """
-        return (None, None)
+    def compilation_options(self):
+    	"""
+	List of compilation options specific for this tool
+	"""
+	opts = []
+	if self._undefined:
+            opts.append('-fsanitize=undefined')
+            opts.append('-fno-sanitize=unsigned-integer-overflow')
+	elif self._overflow:
+            opts.append('-fsanitize=signed-integer-overflow')
+            opts.append('-fsanitize=shift')
+
+	return opts
 
     def prepare(self):
         """
@@ -146,6 +154,8 @@ class SymbioticTool(BaseTool):
         passes = []
         if not self._options.explicit_symbolic:
             passes.append('-initialize-uninitialized')
+
+	if self._memsafety
 
         return passes
 
@@ -169,6 +179,15 @@ class SymbioticTool(BaseTool):
             cmd.append('-exit-on-error-type=Assert')
 
         return cmd + options + tasks
+
+    def preprocess_llvm(self, infile):
+        """
+        A tool's specific preprocessing steps for llvm file
+        before verification itself. Returns a pair (cmd, outputfile),
+        where cmd is the list suitable to pass to Popen and outputfile
+        is the resulting file from the preprocessing
+        """
+        return (None, None)
 
     def _parse_klee_output_line(self, line):
         for (key, pattern) in self._patterns:

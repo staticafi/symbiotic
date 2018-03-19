@@ -11,6 +11,12 @@ class SymbioticTool(SeaTool):
     def llvm_version(self):
         return '3.6.2'
 
+    def compilation_options(self):
+    	"""
+	List of compilation options specific for this tool
+	"""
+        pass
+
     def preprocess_llvm(self, infile):
         """
         A tool's specific preprocessing steps for llvm file
