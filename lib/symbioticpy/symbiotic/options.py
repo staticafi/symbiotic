@@ -7,6 +7,9 @@ class SymbioticOptions(object):
             from . utils.utils import get_symbiotic_dir
             symbiotic_dir = get_symbiotic_dir()
 
+        # source codes
+        self.sources = []
+
         self.tool_name = 'klee'
         self.is32bit = False
         # properties as we get then on input

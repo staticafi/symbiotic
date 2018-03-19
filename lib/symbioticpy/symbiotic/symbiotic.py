@@ -469,7 +469,7 @@ class Symbiotic(object):
 
     def preprocess_llvm(self):
         """
-        Run a command that proprocesses a llvm code
+        Run a command that proprocesses the llvm code
         for a particular tool
         """
         cmd, output = self._tool.preprocess_llvm(self.llvmfile)
@@ -528,7 +528,7 @@ class Symbiotic(object):
         for source in self.sources:
             opts = ['-Wno-unused-parameter', '-Wno-unused-attribute',
                     '-Wno-unused-label', '-Wno-unknown-pragmas']
-			opts += self._tool.compilation_options()
+            opts += self._tool.compilation_options()
 
             if 'SIGNED-OVERFLOW' in self.options.prp:
                 # FIXME: this is a hack, remove once we have better CD algorithm
@@ -580,17 +580,29 @@ class Symbiotic(object):
 
         self._get_stats('After slicing ')
 
+    def _disable_some_optimizations(self, llvm_version):
+        # disable optimizations that are not in particular llvm versions
+        ver_major, ver_minor, ver_micro = map(int, llvm_version.split('.'))
+        disabled = []
+        if ver_major != 3:
+            return []
+
+        if ver_minor <= 7:
+            disabled += ['-aa', '-demanded-bits',
+                        '-globals-aa', '-forceattrs',
+                        '-inferattrs', '-rpo-functionattrs']
+        if ver_minor <= 6:
+            disabled += [ '-tti', '-bdce', '-elim-avail-extern',
+                          '-float2int', '-loop-accesses']
+
+        if disabled:
+            dbg('Disabled these optimizations: {0}'.format(str(disabled)))
+        self.options.disabled_optimizations = disabled
+
     def _run_symbiotic(self):
         restart_counting_time()
 
-        # disable these optimizations, since LLVM 3.7 does
-        # not have them
-        self.options.disabled_optimizations = ['-aa', '-demanded-bits',  # not in 3.7
-                                               '-globals-aa', '-forceattrs',  # not in 3.7
-                                               '-inferattrs', '-rpo-functionattrs',  # not in 3.7
-                                               '-tti', '-bdce', '-elim-avail-extern',  # not in 3.6
-                                               '-float2int', '-loop-accesses'  # not in 3.6
-                                               ]
+        self._disable_some_optimizations(self._tool.llvm_version())
 
         # compile all sources if the file is not given
         # as a .bc file
@@ -601,48 +613,39 @@ class Symbiotic(object):
 
         self._get_stats('After compilation ')
 
+        # FIXME: make tool-specific
         if not self.check_llvmfile(self.llvmfile, '-check-concurr'):
-            print(
-                'Unsupported call (probably pthread API or floating point stdlib functions)')
+            print('Unsupported call (probably pthread API or floating point stdlib functions)')
             return report_results('unknown')
 
-        self._run_opt(['-rename-verifier-funs',
-                       '-rename-verifier-funs-source={0}'.format(self.sources[0])])
+        # remove definitions of __VERIFIER_* that are not created by us,
+        # make extern globals local, etc. Also remove syntactically infinite loops.
+        self._run_opt(['-prepare', '-remove-infinite-loops'])
 
         # link the files that we got on the command line
         # and that we are required to link in on any circumstances
         self.link_unconditional()
 
-        # remove definitions of __VERIFIER_* that are not created by us
-        # and syntactically infinite loops
-        # we use functionattrs pass to set NoRecurse flag for functions
-        # because of instrumentation with pointer analysis
-        passes = ['-prepare', '-remove-infinite-loops', '-functionattrs']
-
-        memsafety = 'MEMSAFETY' in self.options.prp
-        if memsafety:
-            # remove error calls, we'll put there our own
+        passes = []
+        if 'MEMSAFETY' in self.options.prp or \
+           'UNDEF-BEHAVIOR' in self.options.prp or\
+           'SIGNED-OVERFLOW' in self.options.prp:
+            # remove the original calls to __VERIFIER_error
             passes.append('-remove-error-calls')
-        elif 'UNDEF-BEHAVIOR' in self.options.prp or\
-             'SIGNED-OVERFLOW' in self.options.prp:
-            # remove the original calls to __VERIFIER_error and put there
-            # new on places where the code exhibits an undefined behavior
-            passes += ['-remove-error-calls', '-replace-ubsan']
 
-        self.run_opt(passes=passes)
+        passes += self._tool.prepare()
+        self.run_opt(passes)
 
-        # we want to link these functions before instrumentation,
-        # because in those we need to check for invalid dereferences
-        if memsafety:
-            self.link_undefined()
+        # we want to link memsafety functions before instrumentation,
+        # because we need to check for invalid dereferences in them
+        if 'MEMSAFETY' in self.options.prp:
             self.link_undefined()
 
-        # now instrument the code according to properties
+        #################### #################### ###################
+        # INSTRUMENTATION
+        #  - now instrument the code according to properties
+        #################### #################### ###################
         self.instrument()
-
-        passes = self._tool.prepare()
-        if passes:
-            self.run_opt(passes)
 
         # link with the rest of libraries if needed (klee-libc)
         self.link()
@@ -662,7 +665,7 @@ class Symbiotic(object):
         # for the memsafety property, make functions behave like they have
         # side-effects, because LLVM instrumentations could remove them otherwise,
         # even though they contain calls to assert
-        if memsafety:
+        if 'MEMSAFETY' in self.options.prp:
             self.run_opt(['-remove-readonly-attr'])
 
         # start a new time era
@@ -674,7 +677,6 @@ class Symbiotic(object):
         if opt:
             self.optimize(passes=opt)
 
-        # FIXME: make this KLEE specific
         if not self.check_llvmfile(self.llvmfile):
             dbg('Unsupported call (probably floating handling)')
             return report_results('unsupported call')
@@ -702,7 +704,6 @@ class Symbiotic(object):
 
         # delete-undefined may insert __VERIFIER_make_nondet
         # and also other funs like __errno_location may be included
-        self.options.linkundef.append('verifier')
         self.link_undefined()
 
         if self._linked_functions:

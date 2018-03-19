@@ -557,18 +557,14 @@ def remove_linkundef(options, what):
         pass
 
 def initialize_verifier(opts):
-    opts.slicing_criterion = '__VERIFIER_error,__assert_fail'
-    remove_linkundef(opts, 'verifier')
-    opts.explicit_symbolic = True
-
     if opts.tool_name == 'klee':
-        opts.explicit_symbolic = False
         from symbiotic.tools.klee import SymbioticTool
         return SymbioticTool(opts)
     elif opts.tool_name == 'ceagle':
         from symbiotic.tools.ceagle import SymbioticTool
         return SymbioticTool()
     elif opts.tool_name == 'cpachecker':
+        opts.explicit_symbolic = True
         from symbiotic.tools.cpachecker import SymbioticTool
         return SymbioticTool()
     elif opts.tool_name == 'skink':
@@ -614,6 +610,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     sources = args
+
     if opts.source_is_bc and len(sources) != 1:
         err('Bytecode must be only one file')
 
@@ -671,6 +668,8 @@ if __name__ == "__main__":
 
             assert len(sources) == len(new_sources)
             sources = new_sources
+
+        opts.sources = sources
 
         # let the show begin!
         try:

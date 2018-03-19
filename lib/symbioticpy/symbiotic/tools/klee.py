@@ -44,7 +44,7 @@ class SymbioticTool(BaseTool):
         self._options = opts
         self._memsafety = 'MEMSAFETY' in self._options.prp
         self._overflow = 'SIGNED-OVERFLOW' in self._options.prp
-        self._undefined = 'UNDEF-BEHAVIOR' in self._options.prp:
+        self._undefined = 'UNDEF-BEHAVIOR' in self._options.prp
         assert not (self._memsafety and self._overflow)
         assert not (self._memsafety and self._undefined)
         assert not (self._overflow and self._undefined)
@@ -130,18 +130,18 @@ class SymbioticTool(BaseTool):
                 = '{0}/llvm-{1}/lib/klee/runtime'.format(symbiotic_dir, self.llvm_version())
 
     def compilation_options(self):
-    	"""
-	List of compilation options specific for this tool
-	"""
-	opts = []
-	if self._undefined:
-            opts.append('-fsanitize=undefined')
-            opts.append('-fno-sanitize=unsigned-integer-overflow')
-	elif self._overflow:
-            opts.append('-fsanitize=signed-integer-overflow')
-            opts.append('-fsanitize=shift')
+        """
+    List of compilation options specific for this tool
+    """
+        opts = []
+        if self._undefined:
+                opts.append('-fsanitize=undefined')
+                opts.append('-fno-sanitize=unsigned-integer-overflow')
+        elif self._overflow:
+                opts.append('-fsanitize=signed-integer-overflow')
+                opts.append('-fsanitize=shift')
 
-	return opts
+        return opts
 
     def prepare(self):
         """
@@ -151,11 +151,15 @@ class SymbioticTool(BaseTool):
         # make all memory symbolic (if desired)
         # and then delete undefined function calls
         # and replace them by symbolic stuff
-        passes = []
+        passes = \
+        ['-rename-verifier-funs',
+         '-rename-verifier-funs-source={0}'.format(self._options.sources[0])]
+
+        if self._overflow or self._undefined:
+            passes.append('-replace-ubsan')
+
         if not self._options.explicit_symbolic:
             passes.append('-initialize-uninitialized')
-
-	if self._memsafety
 
         return passes
 
