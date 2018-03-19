@@ -4,7 +4,7 @@ Symbiotic is developed at Faculty of Informatics, Masaryk University in Brno, Cz
 
 ### Supervisor
 
-* [doc. RNDr. Jan Strejček, Ph.D.](https://www.fi.muni.cz/~xstrejc/)
+* [Jan Strejček](https://www.fi.muni.cz/~xstrejc/)
 
 ### Developers
 
