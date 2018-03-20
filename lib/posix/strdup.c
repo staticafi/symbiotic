@@ -1,12 +1,12 @@
 #include "symbiotic-size_t.h"
 
-extern void *malloc(size_t);
+extern void *__VERIFIER_malloc(size_t);
 extern void *memcpy(void *dest, const void *src, size_t n);
 
 char *strdup(const char *str)
 {
-	size_t len = strlen(str);
-	char *mem = malloc(len);
+	size_t len = strlen(str) + 1;
+	char *mem = malloc(len);//__VERIFIER_malloc(len);
 	if (!mem)
 		return ((void *) 0);
 
