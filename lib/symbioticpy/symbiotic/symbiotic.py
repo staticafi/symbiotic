@@ -390,27 +390,26 @@ class Symbiotic(object):
 
         return self._link_undefined(self.options.link_files)
 
-    def _get_undefined(self, bitcode):
+    def _get_undefined(self, bitcode, only_func=[]):
         cmd = ['llvm-nm', '-undefined-only', '-just-symbol-name', bitcode]
         watch = ProcessWatch(None)
         self._run(cmd, watch, 'Failed getting undefined symbols from bitcode')
-        return map(lambda s: s.strip(), watch.getLines())
+        undefs = map(lambda s: s.strip(), watch.getLines())
+        if only_func:
+            return filter(set(only_func).__contains__, undefs)
+        return undefs
 
     def link_undefined(self, only_func=[]):
         if not self.options.linkundef:
             return
 
         # get undefined functions from the bitcode
-        undefs = self._get_undefined(self.llvmfile)
-        if only_func:
-            undefs = filter(set(only_func).__contains__, undefs)
-
-        # --------------------- # python3 compatibility
+        undefs = self._get_undefined(self.llvmfile, only_func)
         if self._link_undefined([x.decode('ascii') for x in undefs]):
             # if we linked someting, try get undefined again,
             # because the functions may have added some new undefined
             # functions
-            if only_func is None:
+            if not only_func:
                 self.link_undefined()
 
     def slicer(self, criterion, add_params=[]):
