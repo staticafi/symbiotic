@@ -737,9 +737,9 @@ if [ $FROM -le 7 ]; then
 		$LIBRARIES \
 		$INSTR\
 		bin/symbiotic \
-		include/stddef.h \
 		include/symbiotic.h \
 		include/symbiotic-size_t.h \
+		$LLVM_PREFIX/include/stddef.h \
 		lib/*.c \
 		lib/symbioticpy/symbiotic/*.py \
 		lib/symbioticpy/symbiotic/benchexec/*.py \
