@@ -317,7 +317,7 @@ build_llvm()
 	# build llvm
 	ONLY_TOOLS='opt clang llvm-link llvm-dis llvm-nm' build
 	# copy the generated stddef.h due to compilation of instrumentation libraries
-	cp "lib/clang/3.9.1/include/stddef.h" "$PREFIX/include" || exit 1
+	cp "lib/clang/3.9.1/include/stddef.h" "$LLVM_PREFIX/include" || exit 1
 
 	popd
 }
