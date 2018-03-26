@@ -317,7 +317,8 @@ build_llvm()
 	# build llvm
 	ONLY_TOOLS='opt clang llvm-link llvm-dis llvm-nm' build
 	# copy the generated stddef.h due to compilation of instrumentation libraries
-	cp "lib/clang/3.9.1/include/stddef.h" "$LLVM_PREFIX/include" || exit 1
+	mkdir -p "$LLVM_PREFIX/include"
+	cp "lib/clang/${LLVM_VERSION}/include/stddef.h" "$LLVM_PREFIX/include" || exit 1
 
 	popd
 }
@@ -347,7 +348,9 @@ LLVM_MAJOR_VERSION="${LLVM_VERSION%%\.*}"
 LLVM_MINOR_VERSION=${LLVM_VERSION#*\.}
 LLVM_MINOR_VERSION="${LLVM_MINOR_VERSION%\.*}"
 LLVM_CMAKE_CONFIG_DIR=share/llvm/cmake
-if [ $LLVM_MAJOR_VERSION -ge 3 -a $LLVM_MINOR_VERSION -ge 9 ]; then
+if [ $LLVM_MAJOR_VERSION -gt 3 ]; then
+	LLVM_CMAKE_CONFIG_DIR=lib/cmake/llvm
+elif [ $LLVM_MAJOR_VERSION -ge 3 -a $LLVM_MINOR_VERSION -ge 9 ]; then
 	LLVM_CMAKE_CONFIG_DIR=lib/cmake/llvm
 fi
 
