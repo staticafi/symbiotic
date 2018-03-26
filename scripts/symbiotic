@@ -557,8 +557,8 @@ def remove_linkundef(options, what):
         pass
 
 def initialize_verifier(opts):
-    if opts.tool_name == 'klee':
-        from symbiotic.tools.klee import SymbioticTool
+    if opts.tool_name == 'klee-symbiotic':
+        from symbiotic.tools.klee_symbiotic import SymbioticTool
         return SymbioticTool(opts)
     elif opts.tool_name == 'ceagle':
         from symbiotic.tools.ceagle import SymbioticTool
@@ -682,8 +682,9 @@ if __name__ == "__main__":
             print_stdout('RESULT: ERROR ({0})'.format(str(e)))
             err(' == FAILURE ==\n{0}'.format(str(e)))
 
+        # FIXME: make tool specific
         srcdir = os.path.dirname(symbiotic.llvmfile)
-        if res is None or tool.name() != 'klee':
+        if res is None or not tool.name().startswith('klee'):
             pass
         elif res.startswith('false'):
             dump_error(srcdir)

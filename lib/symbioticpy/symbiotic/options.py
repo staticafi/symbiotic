@@ -10,7 +10,7 @@ class SymbioticOptions(object):
         # source codes
         self.sources = []
 
-        self.tool_name = 'klee'
+        self.tool_name = 'klee-symbiotic'
         self.is32bit = False
         # properties as we get then on input
         self.orig_prp = []
