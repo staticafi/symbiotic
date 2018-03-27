@@ -72,8 +72,8 @@ class SymbioticTool(BaseTool):
 
         # define and compile regular expressions for parsing klee's output
         self._patterns = [
-            ('ASSERTIONFAILED', re.compile('.*klee: .*Assertion .* failed.*')),
-            ('VERIFIERERR', re.compile('.*ASSERTION FAIL: verifier assertion failed.*')),
+            ('ASSERTIONFAILED', re.compile('.*ASSERTION FAIL:.*')),
+            ('ASSERTIONFAILED2', re.compile('.Assertion .* failed.*')),
             ('ESTPTIMEOUT', re.compile('.*query timed out (resolve).*')),
             ('EKLEETIMEOUT', re.compile('.*HaltTimer invoked.*')),
             ('EEXTENCALL', re.compile('.*failed external call.*')),
@@ -236,7 +236,7 @@ class SymbioticTool(BaseTool):
         for (key, pattern) in self._patterns:
             if pattern.match(line):
                 # return True so that we know we should terminate
-                if key == 'ASSERTIONFAILED' or key == 'VERIFIERERR':
+                if key.startswith('ASSERTIONFAILED'):
                     return result.RESULT_FALSE_REACH
                 elif key == 'EFREE':
                         return result.RESULT_FALSE_FREE
