@@ -126,6 +126,7 @@ where OPTS can be following:
     --version-short           Return version as one-line string
     --no-integrity-check      Does not run integrity check. For development only.
     --dump-env                Only dump environment variables (for debugging)
+    --dump-env-cmd            Dump environment variables for using them in command line
 
     One (and only one) of the sources must contain 'main' function
 """
@@ -152,12 +153,24 @@ witness_with_source_lines = False
 no_witness = False
 no_integrity_check = False
 dump_env_only = False
+dump_env_cmd = False
 
-def dump_paths(fun = print_stdout):
-    variables = ['PATH', 'LD_LIBRARY_PATH', 'C_INCLUDE_DIR', 'CFLAGS', 'CPPFLAGS']
+def dump_paths(dump_as_cmd=False, fun = print_stdout):
+    variables = ['PATH', 'LD_LIBRARY_PATH', 'C_INCLUDE_DIR']
     for v in variables:
         if v in os.environ:
-            fun('{0}={1}'.format(v, os.environ[v]))
+            if dump_as_cmd:
+                fun('export {0}={1}:${0}'.format(v, os.environ[v]))
+            else:
+                fun('{0}={1}'.format(v, os.environ[v]))
+
+    variables = ['CFLAGS', 'CPPFLAGS']
+    for v in variables:
+        if v in os.environ:
+            if dump_as_cmd:
+                fun('export {0}="{1} ${0}"'.format(v, os.environ[v]))
+            else:
+                fun('{0}="{1}"'.format(v, os.environ[v]))
 
 def perform_binaries_check():
     try:
@@ -239,7 +252,7 @@ def set_environ(tool, opts):
         opts.instrumentation_files_path = '{0}/share/sbt-instrumentation/'.format(llvm_prefix)
 
     dbg('Symbiotic dir: {0}'.format(symbiotic_dir))
-    dump_paths(dbg)
+    dump_paths(fun=dbg)
 
     perform_binaries_check()
     perform_libraries_check()
@@ -341,11 +354,17 @@ def parse_command_line():
                                     'no-kernel', 'no-verifier-funs', 'no-witness',
                                     'witness-with-source-lines', 'dont-exit-on-error',
                                     'undefined-are-pure', 'no-svcomp-funs',
-                                    'no-integrity-check', 'dump-env',
+                                    'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
+
+    global save_files
+    global witness_with_source_lines
+    global dump_env_only
+    global dump_env_cmd
+    global no_integrity_check
 
     for opt, arg in opts:
         if opt == '--help':
@@ -463,7 +482,6 @@ def parse_command_line():
         elif opt == '--link':
             options.link_files += arg.split(',')
         elif opt == '--save-files':
-            global save_files
             save_files = True
         elif opt == '--no-posix':
             remove_linkundef(options, 'posix')
@@ -476,17 +494,17 @@ def parse_command_line():
         elif opt == '--no-libc':
             remove_linkundef(options, 'libc')
         elif opt == '--witness-with-source-lines':
-            global witness_with_source_lines
             witness_with_source_lines = True
         elif opt == '--dont-exit-on-error':
             options.dont_exit_on_error = True
         elif opt == '--memsafety-config-file':
             options.memsafety_config_file = arg
         elif opt == '--dump-env':
-            global dump_env_only
             dump_env_only = True
+        elif opt == '--dump-env-cmd':
+            dump_env_only = True
+            dump_env_cmd = True
         elif opt == '--no-integrity-check':
-            global no_integrity_check
             no_integrity_check = True
 
     return options, args
@@ -579,7 +597,7 @@ if __name__ == "__main__":
             tool = initialize_verifier(opts)
             parse_environ(opts)
             set_environ(tool, opts)
-            dump_paths()
+            dump_paths(dump_env_cmd)
             sys.exit(0)
         else:
             print(usage_msg)
