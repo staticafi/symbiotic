@@ -49,6 +49,9 @@ class SymbioticTool(BaseTool):
     It also supports extracting data from the statistics output of CPAchecker
     for adding it to the result tables.
     """
+    def __init__(self, opts):
+        self._options = opts
+        self._memsafety = 'MEMSAFETY' in self._options.prp
 
     REQUIRED_PATHS = [
                   "lib/java/runtime",
@@ -111,6 +114,45 @@ class SymbioticTool(BaseTool):
         spec = ["-spec", propertyfile] if propertyfile is not None else []
 
         return options + spec
+
+    def compilation_options(self):
+        """
+        List of compilation options specific for this tool
+        """
+        return []
+
+    def instrumentation_options(self):
+        """
+        Returns a triple (c, l, x) where c is the configuration
+        file for instrumentation (or None if no instrumentation
+        should be performed), l is the
+        file with definitions of the instrumented functions
+        and x is True if the definitions should be linked after
+        instrumentation (and False otherwise)
+        """
+
+        if self._memsafety:
+            # default config file is 'config.json'
+            return ('config-marker.json', 'marker.c', False)
+
+        return (None, None, None)
+
+    def slicer_options(self):
+        """
+        Returns tuple (c, opts) where c is the slicing
+        criterion and opts is a list of options
+        """
+
+        if self._memsafety:
+            # default config file is 'config.json'
+            # slice with respect to the memory handling operations
+            return ('__INSTR_mark_pointer,free', ['-criteria-are-mem-uses'])
+
+        return (self._options.slicing_criterion,[])
+
+ 
+    def describe_error(self, llvmfile):
+        pass
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         additional_options = self._get_additional_options(options, propertyfile, rlimits)
@@ -225,12 +267,6 @@ class SymbioticTool(BaseTool):
         """
         Set environment for the tool
         """
-        pass
-
-    def compilation_options(self):
-    	"""
-	List of compilation options specific for this tool
-	"""
         pass
 
     def preprocess_llvm(self, infile):

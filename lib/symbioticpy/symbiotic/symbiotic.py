@@ -261,6 +261,13 @@ class Symbiotic(object):
             dbg('Failed getting statistics')
 
     def _instrument(self, prp):
+        config_file, definitions, shouldlink = self._tool.instrumentation_options()
+        if config_file is None:
+            return
+
+        # if we have config_file, we must have definitions file
+        assert definitions
+
         llvm_dir = 'llvm-{0}'.format(self._tool.llvm_version())
         if self.options.is32bit:
             libdir = os.path.join(self.symbiotic_dir, llvm_dir, 'lib32')
@@ -269,37 +276,33 @@ class Symbiotic(object):
 
         prefix = self.options.instrumentation_files_path
 
-        tolinkbc = None
+        definitionsbc = None
         if prp == 'MEMSAFETY':
             # default config file is 'config.json'
-            config_file = self.options.memsafety_config_file
             config = prefix + 'memsafety/' + config_file
-            # check wether we have this file precompiled
+            assert os.path.isfile(config)
+            # check whether we have this file precompiled
             # (this may be a distribution where we're trying to
             # avoid compilation of anything else than sources)
-            precompiled_bc = '{0}/memsafety.bc'.format(libdir)
+            precompiled_bc = '{0}/{1}.bc'.format(libdir,definitions[:-2])
             if os.path.isfile(precompiled_bc):
-                tolinkbc = precompiled_bc
+                definitionsbc = precompiled_bc
             else:
-                tolink = prefix + 'memsafety/memsafety.c'
-        elif prp == 'NULL-DEREF':
-            config = prefix + 'null_deref/config.json'
-            precompiled_bc = '{0}/null_deref.bc'.format(libdir)
-            if os.path.isfile(precompiled_bc):
-                tolinkbc = precompiled_bc
-            else:
-                tolink = prefix + 'null_deref/null_deref.c'
+                definitions = prefix + 'memsafety/{0}'.format(definitions)
+                assert os.path.isfile(definitions)
         else:
             raise SymbioticException('BUG: Unhandled property')
 
         # module with defintions of instrumented functions
-        if not tolinkbc:
-            tolinkbc = self._compile_to_llvm(tolink, with_g=False, opts=['-O2'])
+        if not definitionsbc:
+            definitionsbc = self._compile_to_llvm(definitions, with_g=False, opts=['-O2'])
+
+        assert definitionsbc
 
         self._get_stats('Before instrumentation ')
 
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['sbt-instr', config, self.llvmfile, tolinkbc, output]
+        cmd = ['sbt-instr', config, self.llvmfile, definitionsbc, output]
         self._run(cmd, InstrumentationWatch(), 'Instrumenting the code failed')
 
         self.llvmfile = output
@@ -307,7 +310,9 @@ class Symbiotic(object):
 
         # once we instrumented the code, we can link the definitions
         # of functions
-        self.link(libs=[tolinkbc])
+        if shouldlink:
+            self.link(libs=[definitionsbc])
+
         self._get_stats('After instrumentation and linking ')
 
     def instrument(self):
@@ -412,9 +417,11 @@ class Symbiotic(object):
             if not only_func:
                 self.link_undefined()
 
-    def slicer(self, criterion, add_params=[]):
+    def slicer(self, add_params=[]):
+        crit, opts = self._tool.slicer_options()
+
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['sbt-slicer', '-c', criterion]
+        cmd = ['sbt-slicer', '-c', crit] + opts
         if self.options.slicer_pta in ['fi', 'fs']:
             cmd.append('-pta')
             cmd.append(self.options.slicer_pta)
@@ -566,7 +573,7 @@ class Symbiotic(object):
             # if n == 0 and self.options.repeat_slicing > 1:
             #    add_params = ['-pta-field-sensitive=8']
 
-            self.slicer(self.options.slicing_criterion, add_params)
+            self.slicer(add_params)
 
             if self.options.repeat_slicing > 1:
                 opt = get_optlist_after(self.options.optlevel)
@@ -600,6 +607,8 @@ class Symbiotic(object):
 
     def _run_symbiotic(self):
         restart_counting_time()
+
+        dbg('Running Symbiotic with {0}'.format(self._tool.name()))
 
         self._disable_some_optimizations(self._tool.llvm_version())
 

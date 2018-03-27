@@ -72,17 +72,13 @@ class SymbioticTool(BaseTool):
 
         # define and compile regular expressions for parsing klee's output
         self._patterns = [
-            ('EDOUBLEFREE', re.compile('.*ASSERTION FAIL: 0 && "double free".*')),
-            ('EINVALFREE', re.compile(
-                '.*ASSERTION FAIL: 0 && "free on non-allocated memory".*')),
-            ('EMEMLEAK', re.compile('.*ASSERTION FAIL: 0 && "memory leak detected".*')),
-            ('ASSERTIONFAILED', re.compile('.*ASSERTION FAIL:.*')),
+            ('ASSERTIONFAILED', re.compile('.*klee: .*Assertion .* failed.*')),
+            ('VERIFIERERR', re.compile('.*ASSERTION FAIL: verifier assertion failed.*')),
             ('ESTPTIMEOUT', re.compile('.*query timed out (resolve).*')),
             ('EKLEETIMEOUT', re.compile('.*HaltTimer invoked.*')),
             ('EEXTENCALL', re.compile('.*failed external call.*')),
             ('ELOADSYM', re.compile('.*ERROR: unable to load symbol.*')),
             ('EINVALINST', re.compile('.*LLVM ERROR: Code generator does not support.*')),
-            ('EKLEEASSERT', re.compile('.*klee: .*Assertion .* failed.*')),
             ('EINITVALS', re.compile('.*unable to compute initial values.*')),
             ('ESYMSOL', re.compile('.*unable to get symbolic solution.*')),
             ('ESILENTLYCONCRETIZED', re.compile('.*silently concretizing.*')),
@@ -97,13 +93,6 @@ class SymbioticTool(BaseTool):
             ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*'))
         ]
-
-        if not self._memsafety:
-            # we do not want this pattern to be found in memsafety benchmarks,
-            # because we insert our own check that do not care about what KLEE
-            # really allocated underneath
-            self._patterns.append(
-                ('ECONCRETIZED', re.compile('.* concretized symbolic size.*')))
 
     def executable(self):
         """
@@ -152,8 +141,8 @@ class SymbioticTool(BaseTool):
 
     def compilation_options(self):
         """
-    List of compilation options specific for this tool
-    """
+        List of compilation options specific for this tool
+        """
         opts = []
         if self._undefined:
                 opts.append('-fsanitize=undefined')
@@ -196,7 +185,7 @@ class SymbioticTool(BaseTool):
 
         if self._memsafety:
             # default config file is 'config.json'
-            return (self._options.memsafety_config_file, 'memsafety.c', True)
+            return ('config-marker.json', 'marker.c', False)
 
         return (None, None, None)
 
@@ -205,6 +194,11 @@ class SymbioticTool(BaseTool):
         Returns tuple (c, opts) where c is the slicing
         criterion and opts is a list of options
         """
+
+        if self._memsafety:
+            # default config file is 'config.json'
+            # slice with respect to the memory handling operations
+            return ('__INSTR_mark_pointer,free', ['-criteria-are-mem-uses'])
 
         return (self._options.slicing_criterion,[])
 
@@ -215,7 +209,7 @@ class SymbioticTool(BaseTool):
         return []
 
     def describe_error(self, llvmfile):
-        dump_error(dirname(llvmfile))
+        dump_error(dirname(llvmfile), self._memsafety)
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
@@ -226,9 +220,6 @@ class SymbioticTool(BaseTool):
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
                '-output-stats=0', '-disable-opt', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self._options.timeout)]
-
-        if not self._options.dont_exit_on_error:
-            cmd.append('-exit-on-error-type=Assert')
 
         return cmd + options + tasks
 
@@ -245,16 +236,13 @@ class SymbioticTool(BaseTool):
         for (key, pattern) in self._patterns:
             if pattern.match(line):
                 # return True so that we know we should terminate
-                if key == 'ASSERTIONFAILED':
-                    if self._memsafety:
-                        return result.RESULT_FALSE_DEREF
-                    elif self._overflow:
-                        return result.RESULT_FALSE_OVERFLOW
+                if key == 'ASSERTIONFAILED' or key == 'VERIFIERERR':
                     return result.RESULT_FALSE_REACH
-                elif self._memsafety:
-                    if key == 'EDOUBLEFREE' or key == 'EINVALFREE':
+                elif key == 'EFREE':
                         return result.RESULT_FALSE_FREE
-                    if key == 'EMEMLEAK':
+                elif key == 'EMEMERROR':
+                        return result.RESULT_FALSE_DEREF
+                elif key == 'EMEMLEAK':
                         return result.RESULT_FALSE_MEMTRACK
                 return key
 

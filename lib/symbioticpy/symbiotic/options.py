@@ -5,7 +5,9 @@ class SymbioticOptions(object):
     def __init__(self, symbiotic_dir=None):
         if symbiotic_dir is None:
             from . utils.utils import get_symbiotic_dir
-            symbiotic_dir = get_symbiotic_dir()
+            self.symbiotic_dir = get_symbiotic_dir()
+        else:
+            self.symbiotic_dir = symbiotic_dir
 
         # source codes
         self.sources = []
@@ -35,7 +37,7 @@ class SymbioticOptions(object):
         self.no_optimize = False
         self.no_verification = False
         self.final_output = None
-        self.witness_output = '{0}/witness.graphml'.format(symbiotic_dir)
+        self.witness_output = '{0}/witness.graphml'.format(self.symbiotic_dir)
         self.source_is_bc = False
         self.optlevel = ["before-O3", "after-O3"]
         self.slicer_pta = 'fi'
