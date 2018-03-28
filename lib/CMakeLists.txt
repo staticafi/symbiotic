@@ -2,6 +2,9 @@
 install(DIRECTORY verifier
 	DESTINATION ${INSTALL_DATA_DIR}/lib)
 
+install(DIRECTORY svcomp
+	DESTINATION ${INSTALL_DATA_DIR}/lib)
+
 # std functions
 install(DIRECTORY libc
 	DESTINATION ${INSTALL_DATA_DIR}/lib)
