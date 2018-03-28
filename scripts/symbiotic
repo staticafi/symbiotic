@@ -616,6 +616,12 @@ if __name__ == "__main__":
         print('RESULT: unknown')
         sys.exit(0)
 
+    if 'VALID-FREE' in opts.prp and 'VALID-DEREF' in opts.prp and\
+        'MEM-TRACK' in opts.prp:
+        # this is whole memsafety
+        # FIXME: create a new class for property
+        opts.prp.append('MEMSAFETY')
+
     sources = args
 
     if opts.source_is_bc and len(sources) != 1:
