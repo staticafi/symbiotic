@@ -295,9 +295,9 @@ class Symbiotic(object):
 
         # module with defintions of instrumented functions
         if not definitionsbc:
-            definitionsbc = self._compile_to_llvm(definitions,\
+            definitionsbc = os.path.abspath(self._compile_to_llvm(definitions,\
                  output=os.path.basename(definitions[:-2]+'.bc'),
-                 with_g=False, opts=['-O2'])
+                 with_g=False, opts=['-O2']))
 
         assert definitionsbc
 
@@ -379,7 +379,7 @@ class Symbiotic(object):
                 if path is None:
                     continue
 
-				output = os.path.abspath('{0}.bc'.format(os.path.basename(path)[:-2]))
+                output = os.path.abspath('{0}.bc'.format(os.path.basename(path)[:-2]))
                 self._compile_to_llvm(path, output)
                 tolink.append(output)
 

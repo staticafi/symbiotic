@@ -146,7 +146,7 @@ class SymbioticTool(BaseTool):
         if self._memsafety:
             # default config file is 'config.json'
             # slice with respect to the memory handling operations
-            return ('__INSTR_mark_pointer,free', ['-criteria-are-mem-uses'])
+            return ('__INSTR_mark_pointer', ['-criteria-are-next-instr'])
 
         return (self._options.slicing_criterion,[])
 
