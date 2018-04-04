@@ -34,6 +34,7 @@ from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
 from symbiotic.utils.process import ProcessRunner
 from symbiotic import SymbioticException, Symbiotic
 from symbiotic.options import SymbioticOptions
+from symbiotic.property import get_property
 from symbiotic.witnesses.witnesses import GraphMLWriter
 from symbiotic.includepaths import IncludePathsSearcher
 from subprocess import call
@@ -132,23 +133,6 @@ where OPTS can be following:
 
     One (and only one) of the sources must contain 'main' function
 """
-
-supported_properties = {
-    'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )' : 'REACHCALL',
-    'CHECK( init(main()), LTL(G valid-free) )'                 : 'VALID-FREE',
-    'CHECK( init(main()), LTL(G valid-deref) )'                : 'VALID-DEREF',
-    'CHECK( init(main()), LTL(G valid-memtrack) )'             : 'MEM-TRACK',
-    'CHECK( init(main()), LTL(G ! overflow) )'                 : 'SIGNED-OVERFLOW',
-    'CHECK( init(main()), LTL(G def-behavior) )'               : 'UNDEF-BEHAVIOR',
-    'valid-deref'                                              : 'VALID-DEREF',
-    'valid-free'                                               : 'VALID-FREE',
-    'valid-memtrack'                                           : 'MEM-TRACK',
-    'null-deref'                                               : 'NULL-DEREF',
-    'undefined-behavior'                                       : 'UNDEF-BEHAVIOR',
-    'undef-behavior'                                           : 'UNDEF-BEHAVIOR',
-    'signed-overflow'                                          : 'SIGNED-OVERFLOW',
-    'memsafety'                                                : 'MEMSAFETY',
-}
 
 # whether to dump source lines into the witness
 witness_with_source_lines = False
@@ -318,27 +302,6 @@ def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, 
             generate_graphml(pth, sources[0], prps, is32bit, is_correctness_wit, saveto)
             break
 
-def get_prp(prp):
-    # if property is given in file, read the file
-    epath = os.path.expanduser(prp)
-    if os.path.isfile(epath):
-        prp_list = []
-        f = open(epath, 'r')
-        for line in f.readlines():
-            line = line.strip()
-            # ignore empty lines
-            if line:
-                prp_list.append(line)
-        f.close()
-        #pf = '{0}PropertyUnreachCall.prp'.format(epath[:epath.rfind('Property')])
-        pf = epath
-        return (prp_list, os.path.abspath(pf))
-
-    # it is not a file, so it is given as a string
-    # FIXME: this does not work for properties given
-    # as LTL (there are spaces)
-    return (prp.split(), None)
-
 # do not remove working files after running
 save_files = False
 
@@ -457,9 +420,13 @@ def parse_command_line():
                     options.optlevel = []
                     break
         elif opt == '--prp':
-            options.orig_prp, options.prpfile = get_prp(arg)
-            for prp in options.orig_prp:
-                dbg('Property: {0}'.format(prp))
+            try:
+                options.property = get_property(arg)
+                if options.property is None:
+                    err('Could not derive the right property')
+            except SymbioticException as e:
+                err(str(e))
+
         elif opt == '--pta':
             options.slicer_pta = arg
             if not arg in ['fs', 'fi', 'old']:
@@ -627,36 +594,6 @@ if __name__ == "__main__":
             sys.exit(1)
 
     print_short_vers()
-    try:
-        # opts.orig_prp now contain a list with keys (or None),
-        # but we want the values from the map
-        if opts.orig_prp:
-            for prp in opts.orig_prp:
-                prp_key = supported_properties[prp]
-                opts.prp.append(prp_key)
-    except KeyError as ke:
-        print('Unknown or unsupported property: {0}'.format(ke.message))
-        print('RESULT: unknown')
-        sys.exit(0)
-
-    if 'VALID-FREE' in opts.prp and 'VALID-DEREF' in opts.prp and\
-        'MEM-TRACK' in opts.prp:
-        # this is whole memsafety
-        # FIXME: create a new class for property
-        opts.prp.append('MEMSAFETY')
-
-    if opts.prpfile is None:
-        if 'MEMSAFETY' in opts.prp:
-            prpfile = 'specs/PropertyMemSafety.prp'
-        elif 'SIGNED-OVERFLOW' in opts.prp:
-            prpfile = 'specs/PropertyNoOverflow.prp'
-        elif 'UNDEF-BEHAVIOR' in opts.prp:
-            prpfile = 'specs/PropertyDefBehavior.prp'
-        else:
-            prpfile = 'specs/PropertyUnreachCall.prp'
-
-        opts.prpfile = os.path.abspath(prpfile)
-
     sources = args
 
     if opts.source_is_bc and len(sources) != 1:
