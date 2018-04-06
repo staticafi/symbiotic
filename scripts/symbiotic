@@ -470,10 +470,8 @@ def parse_command_line():
             options.source_is_bc = True
             dbg('Given code is bytecode')
         elif opt == '--cflags':
-            global CFLAGS
             options.CFLAGS += arg.split()
         elif opt == '--cppflags':
-            global CPPFLAGS
             options.CPPFLAGS += arg.split()
         elif opt == '--slicer-params':
             options.slicer_params = arg.split()
