@@ -210,10 +210,10 @@ def set_environ(tool, opts):
 
         os.environ[env] = newenv
 
-    # path_searcher = IncludePathsSearcher()
-    # additional_include_paths = path_searcher.get()
-    # for p in additional_include_paths:
-    #     prepend('C_INCLUDE_DIR', p)
+    path_searcher = IncludePathsSearcher()
+    additional_include_paths = path_searcher.get()
+    for p in additional_include_paths:
+        prepend('C_INCLUDE_DIR', p)
 
     symbiotic_dir = get_symbiotic_dir()
 
