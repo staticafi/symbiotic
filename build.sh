@@ -43,6 +43,20 @@ usage()
 	echo -e "OPTS = options for make (i. e. -j8)"
 }
 
+LLVM_VERSION_DEFAULT=3.9.1
+get_llvm_version()
+{
+	# check whether we have llvm already present
+	PRESENT_LLVM=`ls -d llvm-*`
+	LLVM_VERSION=${PRESENT_LLVM#llvm-*}
+	# if we got exactly one version, use it
+	if echo ${LLVM_VERSION} | grep  -q '^[0-9]\+\.[0-9]\+\.[0-9]\+$'; then
+		echo ${LLVM_VERSION}
+	else
+		echo ${LLVM_VERSION_DEFAULT}
+	fi
+}
+
 export PREFIX=`pwd`/install
 export SYMBIOTIC_ENV=1
 
@@ -56,7 +70,7 @@ UPDATE=
 OPTS=
 WITH_CPA='0'
 WITH_ULTIMATEAUTOMIZER='0'
-LLVM_VERSION=3.9.1
+LLVM_VERSION=`get_llvm_version`
 WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
