@@ -267,7 +267,8 @@ def set_environ(tool, opts):
         append('C_INCLUDE_DIR', p)
 
     # let the tool set its specific environment
-    tool.set_environment(symbiotic_dir, opts)
+    if hasattr(tool, 'set_environment'):
+        tool.set_environment(symbiotic_dir, opts)
 
     dbg('Symbiotic dir: {0}'.format(symbiotic_dir))
     dump_paths(fun=dbg)
@@ -719,7 +720,8 @@ if __name__ == "__main__":
         if res is None or not tool.name().startswith('klee'):
             pass
         elif res.startswith('false'):
-            symbiotic._tool.describe_error(symbiotic.llvmfile)
+            if hasattr(symbiotic._tool, "describe_error"):
+                symbiotic._tool.describe_error(symbiotic.llvmfile)
 
             if not no_witness:
                 generate_counterexample(srcdir, original_sources, opts.orig_prp,

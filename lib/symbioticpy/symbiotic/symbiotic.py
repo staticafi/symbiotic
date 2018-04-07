@@ -261,6 +261,9 @@ class Symbiotic(object):
             dbg('Failed getting statistics')
 
     def _instrument(self, prp):
+        if not hasattr(self._tool, 'instrumentation_options'):
+            return
+
         config_file, definitions, shouldlink = self._tool.instrumentation_options()
         if config_file is None:
             return
@@ -420,7 +423,10 @@ class Symbiotic(object):
                 self.link_undefined()
 
     def slicer(self, add_params=[]):
-        crit, opts = self._tool.slicer_options()
+        if hasattr(self._tool, 'slicer_options'):
+            crit, opts = self._tool.slicer_options()
+        else:
+            crit, opts = '__assert_fail,__VERIFIER_error', []
 
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['sbt-slicer', '-c', crit] + opts
@@ -480,6 +486,9 @@ class Symbiotic(object):
         Run a command that proprocesses the llvm code
         for a particular tool
         """
+        if not hasattr(self._tool, 'preprocess_llvm'):
+            return
+
         cmd, output = self._tool.preprocess_llvm(self.llvmfile)
         if not cmd:
             return
@@ -536,7 +545,8 @@ class Symbiotic(object):
         for source in self.sources:
             opts = ['-Wno-unused-parameter', '-Wno-unused-attribute',
                     '-Wno-unused-label', '-Wno-unknown-pragmas']
-            opts += self._tool.compilation_options()
+            if hasattr(self._tool, 'compilation_options'):
+                opts += self._tool.compilation_options()
 
             if 'SIGNED-OVERFLOW' in self.options.prp:
                 # FIXME: this is a hack, remove once we have better CD algorithm
@@ -643,7 +653,8 @@ class Symbiotic(object):
             # remove the original calls to __VERIFIER_error
             passes.append('-remove-error-calls')
 
-        passes += self._tool.prepare()
+        if hasattr(self._tool, 'prepare'):
+            passes += self._tool.prepare()
         self.run_opt(passes)
 
         # we want to link memsafety functions before instrumentation,
@@ -709,7 +720,8 @@ class Symbiotic(object):
         else:
             passes += ['-delete-undefined']
 
-        passes += self._tool.prepare_after()
+        if hasattr(self._tool, 'prepare_after'):
+            passes += self._tool.prepare_after()
         self.run_opt(passes)
 
         # delete-undefined may insert __VERIFIER_make_nondet
