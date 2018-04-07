@@ -21,6 +21,12 @@ from os.path import dirname, abspath
 from os.path import join as joinpath
 from symbiotic.utils.utils import print_stdout
 
+try:
+    from symbiotic.versions import llvm_version
+except ImportError:
+    # the default version
+    llvm_version='3.9.1'
+
 import re
 
 try:
@@ -130,7 +136,7 @@ class SymbioticTool(BaseTool):
         """
         Return required version of LLVM
         """
-        return '3.9.1'
+        return llvm_version
 
     def set_environment(self, symbiotic_dir, opts):
         """
