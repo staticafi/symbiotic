@@ -301,10 +301,12 @@ build_llvm()
 		mv compiler-rt-${LLVM_VERSION}.src llvm-${LLVM_VERSION}/tools/clang/runtime/compiler-rt
 
 		# apply our patches for LLVM/Clang
-		pushd llvm-${LLVM_VERSION}/tools/clang
-		patch -p0 --dry-run < $ABS_SRCDIR/patches/force_lifetime_markers.patch || exit 1
-		patch -p0 < $ABS_SRCDIR/patches/force_lifetime_markers.patch || exit 1
-		popd
+		if [ "$LLVM_VERSION" = "4.0.1" ]; then
+			pushd llvm-${LLVM_VERSION}/tools/clang
+			patch -p0 --dry-run < $ABS_SRCDIR/patches/force_lifetime_markers.patch || exit 1
+			patch -p0 < $ABS_SRCDIR/patches/force_lifetime_markers.patch || exit 1
+			popd
+		fi
 
 		rm -f llvm-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
 		rm -f cfe-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
