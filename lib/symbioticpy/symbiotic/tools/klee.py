@@ -96,7 +96,8 @@ class SymbioticTool(BaseTool):
             ('EMAKESYMBOLIC', re.compile(
                 '.*memory error: invalid pointer: make_symbolic.*')),
             ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
-            ('EFREE', re.compile('.*memory error: invalid pointer: free.*'))
+            ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
+            ('EMEMLEAK', re.compile('.*memory error: memory leak detected.*'))
         ]
 
     def executable(self):
@@ -222,9 +223,11 @@ class SymbioticTool(BaseTool):
         """
 
         cmd = [executable, '-write-paths',
-               '-dump-states-on-halt=0', '-silent-klee-assume=1',
+               '-dump-states-on-halt=0', '-silent-klee-assume=1', '-exit-on-error',
                '-output-stats=0', '-disable-opt', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self._options.timeout)]
+        if self._memsafety:
+            cmd.append('-check-leaks')
 
         return cmd + options + tasks
 
