@@ -79,13 +79,21 @@ WITH_ZLIB='no'
 
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
+abspath() {
+	if which realpath &>/dev/null; then
+		realpath "$1"
+	elif [[ "$OSTYPE" == *darwin* ]]; then
+		greadlink -f "$1"
+	else
+		readlink -f "$1"
+	fi
+}
+
 RUNDIR=`pwd`
 SRCDIR=`dirname $0`
-ABS_RUNDIR=`readlink -f $RUNDIR`
-ABS_SRCDIR=`readlink -f $SRCDIR`
+ABS_RUNDIR=`abspath $RUNDIR`
+ABS_SRCDIR=`abspath $SRCDIR`
 ARCHIVE="no"
-
-MODE="$1"
 
 while [ $# -gt 0 ]; do
 	case $1 in
