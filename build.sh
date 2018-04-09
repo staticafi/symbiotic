@@ -499,6 +499,7 @@ if [ $FROM -le 3 ]; then
 	cd stp || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
 		cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
+			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DSTP_TIMESTAMPS:BOOL="OFF" \
 			-DCMAKE_CXX_FLAGS_RELEASE=-O2 \
 			-DCMAKE_C_FLAGS_RELEASE=-O2 \
