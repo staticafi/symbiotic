@@ -97,6 +97,7 @@ class SymbioticTool(BaseTool):
                 '.*memory error: invalid pointer: make_symbolic.*')),
             ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
+            ('EMEMALLOC', re.compile('.*KLEE: WARNING: Allocating memory failed.*')),
             ('EMEMLEAK', re.compile('.*memory error: memory leak detected.*'))
         ]
 

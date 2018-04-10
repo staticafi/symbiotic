@@ -97,6 +97,7 @@ class SymbioticTool(BaseTool):
             ('EMALLOC', re.compile('.*found huge malloc, returning 0.*')),
             ('ESKIPFORK', re.compile('.*skipping fork.*')),
             ('EKILLSTATE', re.compile('.*killing.*states \(over memory cap\).*')),
+            ('EMEMALLOC', re.compile('.*KLEE: WARNING: Allocating memory failed.*')),
             ('EMEMERROR', re.compile('.*memory error: out of bound pointer.*')),
             ('EMAKESYMBOLIC', re.compile(
                 '.*memory error: invalid pointer: make_symbolic.*')),
