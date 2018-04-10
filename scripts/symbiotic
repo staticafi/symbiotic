@@ -38,7 +38,7 @@ from symbiotic.witnesses.witnesses import GraphMLWriter
 from symbiotic.includepaths import IncludePathsSearcher
 from subprocess import call
 
-VERSION='5.0.0'
+VERSION='6.0.0-dev'
 try:
     from symbiotic.versions import versions
     from symbiotic.versions import llvm_version as LLVM_VERSION
