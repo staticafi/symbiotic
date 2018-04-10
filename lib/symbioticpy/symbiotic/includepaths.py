@@ -1,5 +1,7 @@
 from . utils.process import ProcessRunner
 from . utils.watch import ProcessWatch
+from . utils import dbg
+from . exceptions import SymbioticException
 
 class IncludePathsSearcher:
     def __init__(self):
@@ -26,11 +28,18 @@ class IncludePathsSearcher:
 
     def _get_cpp_include_paths(self):
         cmd = ['cpp', '-xc', '-v', '/dev/null']
-        self._get_include_paths(cmd)
+        try:
+            self._get_include_paths(cmd)
+        except SymbioticException as e:
+            dbg('Failed getting include paths: {0}'.format(str(e)))
+
 
     def _get_clang_include_paths(self):
         cmd = ['clang', '-E', '-xc', '-v', '/dev/null']
-        self._get_include_paths(cmd)
+        try:
+            self._get_include_paths(cmd)
+        except SymbioticException as e:
+            dbg('Failed getting include paths: {0}'.format(str(e)))
 
     def get(self):
         self._get_clang_include_paths()
