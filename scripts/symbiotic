@@ -212,6 +212,14 @@ def set_environ(tool, opts):
 
         os.environ[env] = newenv
 
+    def append(env, what):
+        if env in os.environ:
+            newenv = '{0}:{1}'.format(os.environ[env], what)
+        else:
+            newenv = what
+
+        os.environ[env] = newenv
+
     path_searcher = IncludePathsSearcher()
     additional_include_paths = path_searcher.get()
     for p in additional_include_paths:
@@ -238,8 +246,6 @@ def set_environ(tool, opts):
     prepend('C_INCLUDE_DIR', '{0}/include'.format(llvm_prefix))
     prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
 
-    tool.set_environment(symbiotic_dir, opts)
-
     if opts.devel_mode:
         prepend('PATH', '{0}/llvm-{1}/build/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
         prepend('PATH', '{0}/dg/tools'.format(symbiotic_dir))
@@ -252,6 +258,16 @@ def set_environ(tool, opts):
         opts.instrumentation_files_path = '{0}/sbt-instrumentation/instrumentations/'.format(symbiotic_dir)
     else:
         opts.instrumentation_files_path = '{0}/share/sbt-instrumentation/'.format(llvm_prefix)
+
+    # Get include paths again now when we have our clang in the path,
+    # so that we have at least includes from our clang's instalation
+    # (these has the lowest prefs., so just append them
+    additional_include_paths = path_searcher.get()
+    for p in additional_include_paths:
+        append('C_INCLUDE_DIR', p)
+
+    # let the tool set its specific environment
+    tool.set_environment(symbiotic_dir, opts)
 
     dbg('Symbiotic dir: {0}'.format(symbiotic_dir))
     dump_paths(fun=dbg)
