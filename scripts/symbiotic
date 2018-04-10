@@ -41,10 +41,12 @@ from subprocess import call
 VERSION='5.0.0'
 try:
     from symbiotic.versions import versions
+    from symbiotic.versions import llvm_version as LLVM_VERSION
 except ImportError:
     versions = {
         'symbiotic' : VERSION
     }
+    LLVM_VERSION='unknown'
 
 usage_msg = """
 Usage: symbiotic OPTS sources
@@ -325,6 +327,8 @@ save_files = False
 
 def print_short_vers():
     vers = '{0}-'.format(VERSION)
+    # the LLVM version of the default verifier
+    vers += 'llvm-{0}-'.format(LLVM_VERSION)
     n = 0
     for (k, v) in versions.items():
         if n > 0:
@@ -385,6 +389,7 @@ def parse_command_line():
             sys.exit(0)
         elif opt == '--version':
             print('version: {0}'.format(VERSION))
+            print('LLVM version: {0}'.format(LLVM_VERSION))
             for (k, v) in versions.items():
                 print('{0:<20} -> {1}'.format(k, v))
             sys.exit(0)
