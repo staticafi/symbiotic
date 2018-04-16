@@ -20,8 +20,9 @@ The build script of Symbiotic uses `curl`, `make`, and `cmake`, so make sure
 you have them installed (the script will complain otherwise).
 STP theorem prover further needs `bison` and `flex` and minisat needs `zlib`.
 These components are needed when building KLEE. However, if you do not want to
-build Symbiotic with KLEE, then you need to modify the build script
-(there is no switch for not building KLEE yet).
+build Symbiotic with KLEE (and therefore with STP and minisat), then you can comment
+these components out in the build script (there is no switch for not building these
+components yet).
 
 If you have all the dependencies, you are ready to run the `build.sh` script:
 
