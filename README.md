@@ -32,7 +32,7 @@ $ cd symbiotic
 $ ./build.sh -j2
 ```
 
-And thst should be it! However, if something goes wrong or you need to adust the build
+And that should be it! However, if something goes wrong or you need to adust the build
 process, you can pass different options to the build script. Possible options include:
   - `build-type=TYPE` (TYPE one of `Release`, `Debug`)
   - `llvm-version=VERSION` (the default `VERSION` is `3.9.1`, other versions are rather experimental)
