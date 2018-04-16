@@ -1,7 +1,7 @@
 Symbiotic is an open-source tool for finding bugs in sequential computer programs.
-It is based on three well-know techniques -
+It is based on three well-know techniques:
 instrumentation, static program slicing and symbolic execution.
-Symbiotic is highly modular: most of its components are in self-standing repositories (see https://github.com/staticafi)
+Symbiotic is highly modular and most of its components are self-standing programs of LLVM passes that have their own repositories at https://github.com/staticafi.
 
 ## Getting started
 ### Downloading Symbiotic
