@@ -67,7 +67,7 @@ Call Stack (most recent call first):
 This is due to [b5cd41e2](https://github.com/llvm-mirror/llvm/commit/b5cd41e26f89aad2f2dc4f5dc37577f7abf8528a) commit in LLVM. Until we have this fixed, the fastest workaround is to just create empty files `build/lib/libgtest.a` and `build/lib/libgtest_main.a` in the LLVM's folder.
 
 When building on mac, you may need to build LLVM with shared libraries
-(modify the build script).
+(modify the build script) or use `with-llvm-*` switch with your LLVM build.
 
 ### Running Symbiotic
 
