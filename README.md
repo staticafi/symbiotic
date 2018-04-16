@@ -26,12 +26,14 @@ components yet).
 
 If you have all the dependencies, you are ready to run the `build.sh` script:
 
+
 ```
 $ cd symbiotic
-$ ./build.sh <OPTIONS>
+$ ./build.sh -j2
 ```
 
-Possible options include:
+And thst should be it! However, if something goes wrong or you need to adust the build
+process, you can pass different options to the build script. Possible options include:
   - `build-type=TYPE` (TYPE one of `Release`, `Debug`)
   - `llvm-version=VERSION` (the default `VERSION` is `3.9.1`, other versions are rather experimental)
   - `with-llvm=`, `with-llvm-src=`, `with-llvm-dir=` This set of options orders the script to use already built external LLVM (the build script will build LLVM otherwise if it has not been built already in this folder)
@@ -40,7 +42,7 @@ Possible options include:
   - `slicer`, `minisat`, `stp`, `klee`, `scripts`, `bin` Start building Symbiotic from this point
 
 
-Further, you can pass arguments for make, e.g. `-j2`, to the build script.
+As you can see from the example, you can pass also arguments for make, e.g. `-j2`, to the build script.
 If you need to specify paths to header files or libraries, you can do it
 by passing `CFLAGS`, `CPPFLAGS`, LDFLAGS environment variables either by exporting
 them beforehand, or by passing them as make options (e.g. `CFLAGS='-g'`)
