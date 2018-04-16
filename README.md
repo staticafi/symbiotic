@@ -34,7 +34,7 @@ $ ./build.sh <OPTIONS>
 Possible options include:
   - `build-type=TYPE` (TYPE one of `Release`, `Debug`)
   - `llvm-version=VERSION` (the default `VERSION` is `3.9.1`, other versions are rather experimental)
-  - `with-llvm=`, `with-llvm-src=`, `with-llvm-dir=` This set of options orders the script to use already built LLVM (the build script will build LLVM otherwise if it has not been built already)
+  - `with-llvm=`, `with-llvm-src=`, `with-llvm-dir=` This set of options orders the script to use already built external LLVM (the build script will build LLVM otherwise if it has not been built already in this folder)
   - `with-zlib` Build also zlib
   - `no-llvm` Do not try building LLVM
   - `slicer`, `minisat`, `stp`, `klee`, `scripts`, `bin` Start building Symbiotic from this point
