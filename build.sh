@@ -81,11 +81,11 @@ export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
 abspath() {
 	if which realpath &>/dev/null; then
-		realpath "$1"
+		realpath "$1" || exitmsg "Can not get absolute path of $1";
 	elif [[ "$OSTYPE" == *darwin* ]]; then
-		greadlink -f "$1"
+		greadlink -f "$1" || exitmsg "Can not get absolute path of $1";
 	else
-		readlink -f "$1"
+		readlink -f "$1" || exitmsg "Can not get absolute path of $1";
 	fi
 }
 
