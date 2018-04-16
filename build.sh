@@ -97,14 +97,6 @@ ARCHIVE="no"
 
 while [ $# -gt 0 ]; do
 	case $1 in
-		'shell')
-			# stp needs this
-			ulimit -s unlimited
-
-			# most of the environment is already set
-			export PATH=$PREFIX/bin:$PATH
-			exec $SHELL
-		;;
 		'help'|'--help')
 			usage
 			exit 0
