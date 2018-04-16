@@ -182,6 +182,7 @@ class SymbioticTool(BaseTool):
         status = None
 
         for line in output:
+            line = line.decode('ascii')
             if 'java.lang.OutOfMemoryError' in line:
                 status = 'OUT OF JAVA MEMORY'
             elif isOutOfNativeMemory(line):
