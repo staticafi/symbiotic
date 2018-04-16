@@ -224,11 +224,17 @@ class SymbioticTool(BaseTool):
         """
 
         cmd = [executable, '-write-paths',
-               '-dump-states-on-halt=0', '-silent-klee-assume=1', '-exit-on-error',
+               '-dump-states-on-halt=0', '-silent-klee-assume=1',
                '-output-stats=0', '-disable-opt', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self._options.timeout)]
         if self._memsafety:
             cmd.append('-check-leaks')
+            cmd.append('-exit-on-error-type=Ptr')
+            cmd.append('-exit-on-error-type=ReadOnly')
+            cmd.append('-exit-on-error-type=Free')
+            cmd.append('-exit-on-error-type=BadVectorAccess')
+        else:
+            cmd.append('-exit-on-error-type=Assert')
 
         return cmd + options + tasks
 
