@@ -18,7 +18,7 @@ We participated in SV-COMP 2016 with this particular release: <https://github.co
 
 ### Symbiotic Components
 
-Components of Symbiotic can be found at <https://github.com/staticafi> with the only exception of the slicer, that can be found at <https://github.com/mchalupa/dg> (it will be moved to _staticafi_ in the future though). All parts of Symbiotic are open-source projects and are licensed under various open-source licenses (GPL, MIT license, University of Illinois Open Source license)
+Components of Symbiotic can be found at <https://github.com/staticafi> with the only exception of the slicer, that can be found at <https://github.com/mchalupa/dg> (it will be moved to _staticafi_ in the future though). All parts of Symbiotic are open-source projects and are licensed under various open-source licenses (mainly MIT license, Apache-2.0, University of Illinois Open Source license)
 
 ## Contact
 
