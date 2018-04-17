@@ -66,6 +66,7 @@ export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/share/pkgconfig:$PKG_CONFI
 
 FROM='0'
 NO_LLVM='0'
+BUILD_KLEE="yes"
 UPDATE=
 OPTS=
 WITH_CPA='0'
@@ -124,6 +125,9 @@ while [ $# -gt 0 ]; do
 		;;
 		'no-llvm')
 			NO_LLVM=1
+		;;
+		'no-klee')
+			BUILD_KLEE=no
 		;;
 		'update')
 			UPDATE=1
@@ -452,7 +456,7 @@ fi
 ######################################################################
 #   zlib
 ######################################################################
-if [ $FROM -le 2 -a $WITH_ZLIB = "yes" ]; then
+if [ $FROM -le 2 -a $WITH_ZLIB = "yes"]; then
 	git_clone_or_pull https://github.com/madler/zlib
 	cd zlib || exit 1
 
@@ -468,7 +472,7 @@ fi
 ######################################################################
 #   minisat
 ######################################################################
-if [ $FROM -le 2 ]; then
+if [ $FROM -le 2  -a "$BUILD_KLEE" = "yes"]; then
 	git_clone_or_pull git://github.com/stp/minisat.git minisat
 	pushd minisat
 	mkdir -p build
@@ -486,7 +490,7 @@ fi
 ######################################################################
 #   STP
 ######################################################################
-if [ $FROM -le 3 ]; then
+if [ $FROM -le 3  -a "$BUILD_KLEE" = "yes"]; then
 	git_clone_or_pull git://github.com/stp/stp.git stp
 	cd stp || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
@@ -507,7 +511,7 @@ fi
 ######################################################################
 #   KLEE
 ######################################################################
-if [ $FROM -le 4 ]; then
+if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	# build klee
 	git_clone_or_pull "-b 6.0.0 https://github.com/staticafi/klee.git" klee || exitmsg "Cloning failed"
 
