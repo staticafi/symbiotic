@@ -19,6 +19,7 @@
 #  MA 02110-1301, USA.
 
 set -x
+set -e
 
 usage()
 {
@@ -406,7 +407,7 @@ if [ ! -f $LLVM_DIR/LLVMConfig.cmake ]; then
 fi
 
 ######################################################################
-#   slicer
+#   dg
 ######################################################################
 if [ $FROM -le 1 ]; then
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/dg)" ]; then
@@ -414,9 +415,12 @@ if [ $FROM -le 1 ]; then
 	fi
 
 	# download the dg library
-	cd "$SRCDIR/dg" || exitmsg "Cloning failed"
+	pushd "$SRCDIR/dg" || exitmsg "Cloning failed"
+	mkdir -p build-${LLVM_VERSION} || exit 1
+	pushd build-${LLVM_VERSION} || exit 1
+
 	if [ ! -d CMakeFiles ]; then
-		cmake . \
+		cmake .. \
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
@@ -427,16 +431,19 @@ if [ $FROM -le 1 ]; then
 	fi
 
 	(build && make install) || exit 1
-	cd -
+	popd
+	popd
 
 	# initialize instrumentation module if not done yet
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/sbt-slicer)" ]; then
 		git_submodule_init
 	fi
 
-	cd "$SRCDIR/sbt-slicer" || exitmsg "Cloning failed"
+	pushd "$SRCDIR/sbt-slicer" || exitmsg "Cloning failed"
+	mkdir -p build-${LLVM_VERSION} || exit 1
+	pushd build-${LLVM_VERSION} || exit 1
 	if [ ! -d CMakeFiles ]; then
-		cmake . \
+		cmake .. \
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
@@ -449,14 +456,18 @@ if [ $FROM -le 1 ]; then
 	fi
 
 	(build && make install) || exit 1
-	cd -
+	popd
+	popd
 fi
 
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
 
 ######################################################################
 #   zlib
 ######################################################################
-if [ $FROM -le 2 -a $WITH_ZLIB = "yes"]; then
+if [ $FROM -le 2 -a $WITH_ZLIB = "yes" ]; then
 	git_clone_or_pull https://github.com/madler/zlib
 	cd zlib || exit 1
 
@@ -472,7 +483,7 @@ fi
 ######################################################################
 #   minisat
 ######################################################################
-if [ $FROM -le 2  -a "$BUILD_KLEE" = "yes"]; then
+if [ $FROM -le 2  -a "$BUILD_KLEE" = "yes" ]; then
 	git_clone_or_pull git://github.com/stp/minisat.git minisat
 	pushd minisat
 	mkdir -p build
@@ -490,7 +501,7 @@ fi
 ######################################################################
 #   STP
 ######################################################################
-if [ $FROM -le 3  -a "$BUILD_KLEE" = "yes"]; then
+if [ $FROM -le 3  -a "$BUILD_KLEE" = "yes" ]; then
 	git_clone_or_pull git://github.com/stp/stp.git stp
 	cd stp || exitmsg "Cloning failed"
 	if [ ! -d CMakeFiles ]; then
@@ -516,14 +527,15 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	git_clone_or_pull "-b 6.0.0 https://github.com/staticafi/klee.git" klee || exitmsg "Cloning failed"
 
 	# workaround a problem with calling llvm-config from build directory
-	if [ ! -f ${ABS_SRCDIR}/llvm-3.9.1/build/lib/libgtest.a -o
-	     ! -f ${ABS_SRCDIR}/llvm-3.9.1/build/lib/libgtest_main.a ]; then
-		touch ${ABS_SRCDIR}/llvm-3.9.1/build/lib/libgtest.a
-		touch ${ABS_SRCDIR}/llvm-3.9.1/build/lib/libgtest_main.a
+	if [ ! -f ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib/libgtest.a -o \
+	     ! -f ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib/libgtest_main.a ]; then
+		touch ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib/libgtest.a
+		touch ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib/libgtest_main.a
 	fi
 
-	mkdir -p klee-build/
-	cd klee-build/
+
+	mkdir -p klee/build-${LLVM_VERSION} || exit 1
+	pushd klee/build-${LLVM_VERSION} || exit 1
 
 	if [ "x$BUILD_TYPE" = "xRelease" ]; then
 		KLEE_BUILD_TYPE="Release+Asserts"
@@ -534,17 +546,17 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	if [ ! -d CMakeFiles ]; then
 		# use our zlib, if we compiled it
 		ZLIB_FLAGS=
-		if [ -d $RUNDIR/zlib ]; then
+		if [ -d $ABS_RUNDIR/zlib ]; then
 			ZLIB_FLAGS="-DZLIB_LIBRARY=-L${PREFIX}/lib;-lz"
 			ZLIB_FLAGS="$ZLIB_FLAGS -DZLIB_INCLUDE_DIR=$PREFIX/include"
 		fi
 
-		cmake ../klee -DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
+		cmake .. -DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DKLEE_RUNTIME_BUILD_TYPE=${KLEE_BUILD_TYPE} \
 			-DENABLE_SOLVER_STP=ON \
-			-DSTP_DIR=`pwd`/../stp \
-			-DLLVM_CONFIG_BINARY=`pwd`/../llvm-${LLVM_VERSION}/build/bin/llvm-config \
+			-DSTP_DIR=${ABS_SRCDIR}/stp \
+			-DLLVM_CONFIG_BINARY=${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/bin/llvm-config \
 			-DENABLE_UNIT_TESTS=OFF \
 			$ZLIB_FLAGS \
 			|| clean_and_exit 1 "git"
@@ -559,8 +571,8 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	pwd
 	(build && make install) || exit 1
 
-	mv $LLVM_PREFIX/lib64/klee $LLVM_PREFIX/lib/klee
-	rmdir $LLVM_PREFIX/lib64
+	mv $LLVM_PREFIX/lib64/klee $LLVM_PREFIX/lib/klee || true
+	rmdir $LLVM_PREFIX/lib64 || true
 
 	# clean 64-bit build and build 32-bit version of runtime library
 	make -C runtime -f Makefile.cmake.bitcode clean \
@@ -586,7 +598,7 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
 
-	cd -
+	popd
 fi
 
 download_tar()
@@ -623,6 +635,10 @@ get_ultimize()
 	fi
 }
 
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
 ######################################################################
 #   witness checkers
 ######################################################################
@@ -637,35 +653,30 @@ if [ $FROM -le 5 ]; then
 	fi
 fi
 
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
 ######################################################################
-#   instrumentation and scripts
+#   instrumentation
 ######################################################################
 if [ $FROM -le 6 ]; then
-
-	# build prepare and install lib and scripts
-	if [ ! -d CMakeFiles ]; then
-		cmake . \
-			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
-			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
-			-DLLVM_DIR=$LLVM_DIR \
-			-DCMAKE_INSTALL_PREFIX=$PREFIX \
-			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
-			|| exit 1
-			# DONT call clean_and_exit 1 "git" here, otherwise
-			# everything that was compiled will be removed
-	fi
-
-	(build && make install) || exit 1
-
 	# initialize instrumentation module if not done yet
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/sbt-instrumentation)" ]; then
 		git_submodule_init
 	fi
 
-	cd "$SRCDIR/sbt-instrumentation" || exitmsg "Cloning failed"
-	if [ ! -d CMakeFiles ]; then
+	pushd "$SRCDIR/sbt-instrumentation" || exitmsg "Cloning failed"
+
+	# bootstrap JSON library if needed
+	if [ ! -d jsoncpp ]; then
 		./bootstrap-json.sh || exitmsg "Failed generating json files"
-		cmake . \
+	fi
+
+	mkdir -p build-${LLVM_VERSION}
+	pushd build-${LLVM_VERSION}
+	if [ ! -d CMakeFiles ]; then
+		cmake .. \
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
@@ -678,11 +689,59 @@ if [ $FROM -le 6 ]; then
 	fi
 
 	(build && make install) || exit 1
-	cd -
 
-	cd "$SRCDIR"
+	popd
+	popd
 fi
 
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+######################################################################
+#   transforms (LLVMsbt.so)
+######################################################################
+if [ $FROM -le 6 ]; then
+
+	mkdir -p transforms/build-${LLVM_VERSION}
+	pushd transforms/build-${LLVM_VERSION}
+
+	# build prepare and install lib and scripts
+	if [ ! -d CMakeFiles ]; then
+		cmake .. \
+			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
+			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
+			-DLLVM_DIR=$LLVM_DIR \
+			-DCMAKE_INSTALL_PREFIX=$PREFIX \
+			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
+			|| clean_and_exit 1
+	fi
+
+	(build && make install) || clean_and_exit 1
+	popd
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+fi
+
+######################################################################
+#   copy lib and include files
+######################################################################
+if [ $FROM -le 6 ]; then
+	if [ ! -d CMakeFiles ]; then
+		cmake . \
+			-DCMAKE_INSTALL_PREFIX=$PREFIX \
+			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
+			|| clean_and_exit 1
+	fi
+
+	(build && make install) || clean_and_exit 1
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+fi
 
 ######################################################################
 #  extract versions of components
