@@ -543,6 +543,11 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 		KLEE_BUILD_TYPE="$BUILD_TYPE"
 	fi
 
+	Z3_FLAGS=
+	if which z3 &>/dev/null; then
+		Z3_FLAGS=-DENABLE_SOLVER_Z3=ON
+	fi
+
 	if [ ! -d CMakeFiles ]; then
 		# use our zlib, if we compiled it
 		ZLIB_FLAGS=
@@ -558,7 +563,7 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 			-DSTP_DIR=${ABS_SRCDIR}/stp \
 			-DLLVM_CONFIG_BINARY=${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/bin/llvm-config \
 			-DENABLE_UNIT_TESTS=OFF \
-			$ZLIB_FLAGS \
+			$ZLIB_FLAGS $Z3_FLAGS \
 			|| clean_and_exit 1 "git"
 	fi
 
