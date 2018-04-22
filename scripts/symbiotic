@@ -665,7 +665,7 @@ if __name__ == "__main__":
             from symbiotic.integritycheck import IntegrityChecker
 
             try:
-                checker = IntegrityChecker(versions, opts.verifier)
+                checker = IntegrityChecker(versions, opts.tool_name)
                 checker.check();
             except SymbioticException as e:
                 err('{0}\nIf you are aware of this, you may use --no-integrity-check to suppress this error'.format(str(e)))
