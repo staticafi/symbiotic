@@ -1,0 +1,4 @@
+CHECK( init(main()), LTL(G valid-free) )
+CHECK( init(main()), LTL(G valid-deref) )
+CHECK( init(main()), LTL(G valid-memtrack) )
+

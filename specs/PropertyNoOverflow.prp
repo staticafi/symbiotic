@@ -1,0 +1,2 @@
+CHECK( init(main()), LTL(G ! overflow) )
+
