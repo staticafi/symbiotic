@@ -590,6 +590,9 @@ def initialize_verifier(opts):
     elif opts.tool_name == 'ceagle':
         from symbiotic.tools.ceagle import SymbioticTool
         return SymbioticTool()
+    elif opts.tool_name == 'map2check':
+        from symbiotic.tools.map2check import SymbioticTool
+        return SymbioticTool()
     elif opts.tool_name == 'cpachecker':
         opts.explicit_symbolic = True
         from symbiotic.tools.cpachecker import SymbioticTool
@@ -655,15 +658,14 @@ if __name__ == "__main__":
     try:
         symbiotic = None
 
-        # set environment. That is set PATH and LD_LIBRARY_PATH
-        # and so on
+        # set environment. That is set PATH and LD_LIBRARY_PATH and so on
         symbiotic_dir = set_environ(tool, opts)
         # this calls the tools, so it must be after setting the environ
         if not no_integrity_check:
             from symbiotic.integritycheck import IntegrityChecker
 
             try:
-                checker = IntegrityChecker(versions)
+                checker = IntegrityChecker(versions, opts.verifier)
                 checker.check();
             except SymbioticException as e:
                 err('{0}\nIf you are aware of this, you may use --no-integrity-check to suppress this error'.format(str(e)))

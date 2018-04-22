@@ -44,7 +44,7 @@ class IntegrityChecker(object):
             raise SymbioticException("The version of '{0}' is different than expected (expect {1} but got {2})".\
                                      format(component, expected_version, actual_version))
 
-    def check(self):
+    def check(self, verifier = None):
         """
         Check whether every module in Symbiotic agrees on versions
         stored in Symbiotic.
@@ -52,9 +52,11 @@ class IntegrityChecker(object):
         for (k, v) in self._versions.items():
             #print(k,v)
             if k == 'KLEE':
-                vers = self._get_klee_version()
-                expected = self._decode(v)
-                self._check(k, expected, vers)
+                # check KLEE only if we are using KLEE
+                if verifier == 'klee' or verifier == 'klee-symbiotic':
+                    vers = self._get_klee_version()
+                    expected = self._decode(v)
+                    self._check(k, expected, vers)
             elif k == 'sbt-slicer':
                 vers = self._get_slicer_version()
                 expected = self._decode(v[:8])
