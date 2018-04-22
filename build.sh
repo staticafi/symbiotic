@@ -799,18 +799,25 @@ if [ $FROM -le 7 ]; then
 	# create git repository and add all files that we need
 	# then remove the rest and create distribution
 	BINARIES="$LLVM_PREFIX/bin/clang $LLVM_PREFIX/bin/opt \
-		  $LLVM_PREFIX/bin/klee $LLVM_PREFIX/bin/llvm-link \
+		  $LLVM_PREFIX/bin/llvm-link \
 		  $LLVM_PREFIX/bin/llvm-nm $LLVM_PREFIX/bin/sbt-slicer \
 		  $LLVM_PREFIX/bin/sbt-instr"
+if [ ${BUILD_KLEE} = "yes" ];  then
+	BINARIES += $LLVM_PREFIX/bin/klee
+fi
+
 	LIBRARIES="\
 		$LLVM_PREFIX/lib/libLLVMdg.so $LLVM_PREFIX/lib/libLLVMpta.so \
 		$LLVM_PREFIX/lib/libPTA.so $LLVM_PREFIX/lib/libRD.so \
 		$LLVM_PREFIX/lib/LLVMsbt.so \
-		$LLVM_PREFIX/lib/libPoints_to_plugin.so \
+		$LLVM_PREFIX/lib/libPoints_to_plugin.so"
+if [ ${BUILD_KLEE} = "yes" ];  then
+	LIBRARIES += "\
 		$LLVM_PREFIX/lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib/klee/runtime/klee-libc.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc"
+fi
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
 
