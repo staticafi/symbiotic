@@ -803,7 +803,7 @@ if [ $FROM -le 7 ]; then
 		  $LLVM_PREFIX/bin/llvm-nm $LLVM_PREFIX/bin/sbt-slicer \
 		  $LLVM_PREFIX/bin/sbt-instr"
 if [ ${BUILD_KLEE} = "yes" ];  then
-	BINARIES += $LLVM_PREFIX/bin/klee
+	BINARIES="$BINARIES $LLVM_PREFIX/bin/klee"
 fi
 
 	LIBRARIES="\
@@ -812,7 +812,7 @@ fi
 		$LLVM_PREFIX/lib/LLVMsbt.so \
 		$LLVM_PREFIX/lib/libPoints_to_plugin.so"
 if [ ${BUILD_KLEE} = "yes" ];  then
-	LIBRARIES += "\
+	LIBRARIES="${LIBRARIES} \
 		$LLVM_PREFIX/lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib/klee/runtime/klee-libc.bc \
