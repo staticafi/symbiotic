@@ -56,12 +56,12 @@ char InstrumentAllocNeverFails::ID;
 
 static void replace_malloc(Module *M, CallInst *CI, bool never_fails)
 {
-  Constant *C = NULL;
+  Constant *C = nullptr;
 
   if (never_fails)
-    C = M->getOrInsertFunction("__VERIFIER_malloc0", CI->getType(), CI->getOperand(0)->getType(), NULL);
+    C = M->getOrInsertFunction("__VERIFIER_malloc0", CI->getType(), CI->getOperand(0)->getType(), nullptr);
   else
-    C = M->getOrInsertFunction("__VERIFIER_malloc", CI->getType(), CI->getOperand(0)->getType(), NULL);
+    C = M->getOrInsertFunction("__VERIFIER_malloc", CI->getType(), CI->getOperand(0)->getType(), nullptr);
 
   assert(C);
   Function *Malloc = cast<Function>(C);
@@ -71,11 +71,11 @@ static void replace_malloc(Module *M, CallInst *CI, bool never_fails)
 
 static void replace_calloc(Module *M, CallInst *CI, bool never_fails)
 {
-  Constant *C = NULL;
+  Constant *C = nullptr;
   if (never_fails)
-    C = M->getOrInsertFunction("__VERIFIER_calloc0", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(), NULL);
+    C = M->getOrInsertFunction("__VERIFIER_calloc0", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(), nullptr);
   else
-    C = M->getOrInsertFunction("__VERIFIER_calloc", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(), NULL);
+    C = M->getOrInsertFunction("__VERIFIER_calloc", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(), nullptr);
 
   assert(C);
   Function *Calloc = cast<Function>(C);
