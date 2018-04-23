@@ -285,6 +285,22 @@ check()
 
 }
 
+download_tar()
+{
+	$GET "$1" || exit 1
+	BASENAME="`basename $1`"
+	tar xf "$BASENAME" || exit 1
+	rm -f "BASENAME"
+}
+
+download_zip()
+{
+	$GET "$1" || exit 1
+	BASENAME="`basename $1`"
+	unzip "$BASENAME" || exit 1
+	rm -f "BASENAME"
+}
+
 # check if we have everything we need
 check
 
@@ -519,6 +535,35 @@ if [ $FROM -le 3  -a "$BUILD_KLEE" = "yes" ]; then
 	cd -
 fi
 
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+######################################################################
+#   googletest
+######################################################################
+if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
+	if [ ! -d googletest ]; then
+		download_zip https://github.com/google/googletest/archive/release-1.7.0.zip || exit 1
+		mv googletest-release-1.7.0 googletest ||exit 1
+	fi
+
+	pushd googletest
+	mkdir -p build
+	pushd build
+	if [ ! -d CMakeFiles ]; then
+		cmake ..
+	fi
+
+	build || clean_and_exit 1
+	popd; popd
+fi
+
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
 ######################################################################
 #   KLEE
 ######################################################################
@@ -533,7 +578,6 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 		touch ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib/libgtest_main.a
 	fi
 
-
 	mkdir -p klee/build-${LLVM_VERSION} || exit 1
 	pushd klee/build-${LLVM_VERSION} || exit 1
 
@@ -544,9 +588,9 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	fi
 
 	Z3_FLAGS=
-	if which z3 &>/dev/null; then
-		Z3_FLAGS=-DENABLE_SOLVER_Z3=ON
-	fi
+	#if which z3 &>/dev/null; then
+	#	Z3_FLAGS=-DENABLE_SOLVER_Z3=ON
+	#fi
 
 	if [ ! -d CMakeFiles ]; then
 		# use our zlib, if we compiled it
@@ -562,7 +606,8 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 			-DENABLE_SOLVER_STP=ON \
 			-DSTP_DIR=${ABS_SRCDIR}/stp \
 			-DLLVM_CONFIG_BINARY=${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/bin/llvm-config \
-			-DENABLE_UNIT_TESTS=OFF \
+			-DGTEST_SRC_DIR=$ABS_SRCDIR/googletest \
+			-DENABLE_UNIT_TESTS=ON \
 			$ZLIB_FLAGS $Z3_FLAGS \
 			|| clean_and_exit 1 "git"
 	fi
@@ -605,22 +650,6 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 
 	popd
 fi
-
-download_tar()
-{
-	$GET "$1" || exit 1
-	BASENAME="`basename $1`"
-	tar xf "$BASENAME" || exit 1
-	rm -f "BASENAME"
-}
-
-download_zip()
-{
-	$GET "$1" || exit 1
-	BASENAME="`basename $1`"
-	unzip "$BASENAME" || exit 1
-	rm -f "BASENAME"
-}
 
 get_cpa()
 {
