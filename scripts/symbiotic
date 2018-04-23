@@ -592,7 +592,7 @@ def initialize_verifier(opts):
         return SymbioticTool()
     elif opts.tool_name == 'map2check':
         from symbiotic.tools.map2check import SymbioticTool
-        return SymbioticTool()
+        return SymbioticTool(opts)
     elif opts.tool_name == 'cpachecker':
         opts.explicit_symbolic = True
         from symbiotic.tools.cpachecker import SymbioticTool
@@ -644,6 +644,18 @@ if __name__ == "__main__":
         # this is whole memsafety
         # FIXME: create a new class for property
         opts.prp.append('MEMSAFETY')
+
+    if opts.prpfile is None:
+        if 'MEMSAFETY' in opts.prp:
+            prpfile = 'specs/PropertyMemSafety.prp'
+        elif 'SIGNED-OVERFLOW' in opts.prp:
+            prpfile = 'specs/PropertyNoOverflow.prp'
+        elif 'UNDEF-BEHAVIOR' in opts.prp:
+            prpfile = 'specs/PropertyDefBehavior.prp'
+        else:
+            prpfile = 'specs/PropertyUnreachCall.prp'
+
+        opts.prpfile = os.path.abspath(prpfile)
 
     sources = args
 

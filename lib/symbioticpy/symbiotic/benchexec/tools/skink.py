@@ -11,7 +11,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
 try:
     import benchexec.util as util
     import benchexec.result as result
@@ -25,21 +24,20 @@ except ImportError:
 class Tool(BaseTool):
 
     REQUIRED_PATHS = [
-        "bin/*",
-        "lib/*",
-        "skink.sh",
-        "skink.jar"
-    ]
+                  "bin",
+                  "lib",
+                  "include",
+                  "logback-test.xml",
+                  "skink.sh",
+                  "skink.jar",
+                  "application.conf"
+                  ]
 
     def executable(self):
-        return 'java'
+        return util.find_executable('skink.sh')
 
     def cmdline(self, executable, options, tasks, propertyfile, rlimits):
-        from os.path import abspath, join
-        dr = abspath(join(__file__, '../../../../..'))
-        return [executable, '-Xmx140m', '-Xss5m', '-cp',
-                '{0}/skink-v2.0/:{0}/skink-v2.0/skink.jar'.format(dr),
-                'au.edu.mq.comp.skink.Main', '-f', 'LLVM', '--verify'] + tasks
+        return [self.executable(), '-f', 'LLVM'] + tasks
 
     def name(self):
         return 'skink'
