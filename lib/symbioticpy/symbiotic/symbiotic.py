@@ -492,6 +492,14 @@ class Symbiotic(object):
                   'Failed preprocessing the llvm code')
         self.llvmfile = output
 
+    def get_klee_functions(self, bitcode):
+        """ Check whether the code contains any KLEE functions """
+        kf = []
+        for f in self._get_undefined(bitcode):
+            if f.startswith('klee_'):
+                kf.append(f)
+        return kf
+
     def run_verification(self):
         cmd = self._tool.cmdline(self._tool.executable(),
                                  self.options.tool_params, [self.llvmfile],
@@ -732,6 +740,12 @@ class Symbiotic(object):
         # XXX: we could optimize the code again here...
         print_elapsed_time('INFO: After-slicing optimizations and preparation time',
                            color='WHITE')
+
+        # check that if we do not use KLEE, we do not have any klee functions in the code
+        if self._tool.name() != "klee":
+            kf = self.get_klee_functions(self.llvmfile)
+            if kf:
+                raise SymbioticException('Code contains KLEE functions, but the verifier is not KLEE ({0})'.format(' '.join(kf)))
 
         # tool's specific preprocessing steps
         self.preprocess_llvm()
