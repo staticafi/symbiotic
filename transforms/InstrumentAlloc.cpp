@@ -60,13 +60,13 @@ static void replace_malloc(Module *M, CallInst *CI, bool never_fails)
 
   if (never_fails)
     C = M->getOrInsertFunction("__VERIFIER_malloc0", CI->getType(), CI->getOperand(0)->getType()
-#if LLVM_VERSION_MAJOR >= 5
+#if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
     );
   else
     C = M->getOrInsertFunction("__VERIFIER_malloc", CI->getType(), CI->getOperand(0)->getType()
-#if LLVM_VERSION_MAJOR >= 5
+#if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
     );
@@ -82,13 +82,13 @@ static void replace_calloc(Module *M, CallInst *CI, bool never_fails)
   Constant *C = nullptr;
   if (never_fails)
     C = M->getOrInsertFunction("__VERIFIER_calloc0", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType()
-#if LLVM_VERSION_MAJOR >= 5
+#if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
     );
   else
     C = M->getOrInsertFunction("__VERIFIER_calloc", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType()
-#if LLVM_VERSION_MAJOR >= 5
+#if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
     );
