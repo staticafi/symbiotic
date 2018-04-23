@@ -738,10 +738,10 @@ if [ $FROM -le 6 ]; then
 		cmake . \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
-			|| clean_and_exit 1
+			|| exit 1
 	fi
 
-	(build && make install) || clean_and_exit 1
+	(build && make install) || exit 1
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
