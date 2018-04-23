@@ -69,12 +69,6 @@ class SymbioticTool(BaseTool):
 
     def __init__(self, opts):
         self._options = opts
-        self._memsafety = 'MEMSAFETY' in self._options.prp
-        self._overflow = 'SIGNED-OVERFLOW' in self._options.prp
-        self._undefined = 'UNDEF-BEHAVIOR' in self._options.prp
-        assert not (self._memsafety and self._overflow)
-        assert not (self._memsafety and self._undefined)
-        assert not (self._overflow and self._undefined)
 
         # define and compile regular expressions for parsing klee's output
         self._patterns = [
@@ -105,7 +99,7 @@ class SymbioticTool(BaseTool):
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*'))
         ]
 
-        if not self._memsafety:
+        if not self._options.property.memsafety():
             # we do not want this pattern to be found in memsafety benchmarks,
             # because we insert our own check that do not care about what KLEE
             # really allocated underneath
@@ -162,10 +156,10 @@ class SymbioticTool(BaseTool):
     List of compilation options specific for this tool
     """
         opts = []
-        if self._undefined:
+        if self._options.property.undefinedness():
                 opts.append('-fsanitize=undefined')
                 opts.append('-fno-sanitize=unsigned-integer-overflow')
-        elif self._overflow:
+        elif self._options.property.signedoverflow():
                 opts.append('-fsanitize=signed-integer-overflow')
                 opts.append('-fsanitize=shift')
 
@@ -183,7 +177,8 @@ class SymbioticTool(BaseTool):
         ['-rename-verifier-funs',
          '-rename-verifier-funs-source={0}'.format(self._options.sources[0])]
 
-        if self._overflow or self._undefined:
+        if self._options.property.undefinedness() or \
+           self._options.property.signedoverflow():
             passes.append('-replace-ubsan')
 
         if not self._options.explicit_symbolic:
@@ -201,7 +196,7 @@ class SymbioticTool(BaseTool):
         instrumentation (and False otherwise)
         """
 
-        if self._memsafety:
+        if self._options.property.memsafety():
             # default config file is 'config.json'
             return (self._options.memsafety_config_file, 'memsafety.c', True)
 
@@ -253,12 +248,12 @@ class SymbioticTool(BaseTool):
             if pattern.match(line):
                 # return True so that we know we should terminate
                 if key == 'ASSERTIONFAILED':
-                    if self._memsafety:
+                    if self._options.property.memsafety():
                         return result.RESULT_FALSE_DEREF
-                    elif self._overflow:
+                    elif self._options.property.signedoverflow():
                         return result.RESULT_FALSE_OVERFLOW
                     return result.RESULT_FALSE_REACH
-                elif self._memsafety:
+                elif self._options.property.memsafety():
                     if key == 'EDOUBLEFREE' or key == 'EINVALFREE':
                         return result.RESULT_FALSE_FREE
                     if key == 'EMEMLEAK':

@@ -1,10 +1,13 @@
 #!/usr/bin/python
 
-from . symbiotic import SymbioticException
+from . exceptions import SymbioticException
+from os.path import abspath
 
 class Property:
     def __init__(self, prpfile = None):
         self._prpfile = prpfile
+        # property as LTL formulae (if available)
+        self._ltl = []
 
     def memsafety(self):
         """ Check for memory safety violations """
@@ -21,6 +24,17 @@ class Property:
     def undefinedness(self):
         """ Check for undefined behavior """
         return False
+
+    def ltl(self):
+        """ Is the property described by a generic LTL formula(e)? """
+        return False
+
+    def getPrpFile(self):
+        return self._prpfile
+
+    def getLTL(self):
+        return self._ltl
+
 
 class PropertyMemSafety(Property):
     def __init__(self, prpfile = None):
@@ -53,16 +67,19 @@ class PropertyUnreachCall(Property):
     def assertions(self):
         return True
 
-supported_properties = {
+supported_ltl_properties = {
     'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )' : 'REACHCALL',
-    'CHECK( init(main()), LTL(G valid-free) )'                 : 'VALID-FREE',
-    'CHECK( init(main()), LTL(G valid-deref) )'                : 'VALID-DEREF',
-    'CHECK( init(main()), LTL(G valid-memtrack) )'             : 'MEM-TRACK',
+    'CHECK( init(main()), LTL(G valid-free) )'                 : 'MEMSAFETY',
+    'CHECK( init(main()), LTL(G valid-deref) )'                : 'MEMSAFETY',
+    'CHECK( init(main()), LTL(G valid-memtrack) )'             : 'MEMSAFETY',
     'CHECK( init(main()), LTL(G ! overflow) )'                 : 'SIGNED-OVERFLOW',
     'CHECK( init(main()), LTL(G def-behavior) )'               : 'UNDEF-BEHAVIOR',
-    'valid-deref'                                              : 'VALID-DEREF',
-    'valid-free'                                               : 'VALID-FREE',
-    'valid-memtrack'                                           : 'MEM-TRACK',
+}
+
+supported_properties = {
+    'valid-deref'                                              : 'MEMSAFETY',
+    'valid-free'                                               : 'MEMSAFETY',
+    'valid-memtrack'                                           : 'MEMSAFETY',
     'null-deref'                                               : 'NULL-DEREF',
     'undefined-behavior'                                       : 'UNDEF-BEHAVIOR',
     'undef-behavior'                                           : 'UNDEF-BEHAVIOR',
@@ -70,10 +87,8 @@ supported_properties = {
     'memsafety'                                                : 'MEMSAFETY',
 }
 
-
-
 def _get_prp(prp):
-    from os.path import abspath, expanduser, isfile
+    from os.path import expanduser, isfile
     # if property is given in file, read the file
     epath = abspath(expanduser(prp))
     if isfile(epath):
@@ -95,30 +110,43 @@ def _get_prp(prp):
 
 def _map_property(prps):
     mapped_prps = []
-    try:
-        for prp in prps:
-            prp_key = supported_properties[prp]
-            mapped_prps.append(prp_key)
-    except KeyError as ke:
-        raise SymbioticException('Unknown or unsupported property: {0}'.format(ke.message))
+    ltl_prps = []
+    for prp in prps:
+        prp_key = supported_properties.get(prp)
+        if not prp_key:
+            prp_key = supported_ltl_properties.get(prp)
+            if prp_key:
+                ltl_prps.append(prp)
 
-    return mapped_prps
+        if prp_key:
+            mapped_prps.append(prp_key)
+        else:
+            raise SymbioticException('Unknown or unsupported property: {0}'.format(ke.message))
+
+    return (mapped_prps, ltl_prps)
 
 def get_property(prp):
     if prp is None:
         return PropertyUnreachCall()
 
     prps, prpfile = _get_prp(prp)
-    prps = _map_property(prps)
+    prps, ltl_prps = _map_property(prps)
+    prop = None
 
-    if 'MEMSAFETY' in prps or\
-       ('VALID-FREE' in prps and 'MEM-TRACK' in prps and 'VALID-DEREF' in prprs):
-       return PropertyMemSafety(prpfile)
+    if 'MEMSAFETY' in prps:
+        prop = PropertyMemSafety(prpfile)
+        if prpfile is None:
+            prop._prpfile = abspath('specs/PropertyMemSafety.prp')
 
     if 'UNDEF-BEHAVIOR' is prps:
-        return PropertyUnreachCall(prpfile)
+        prop = PropertyDefBehavior(prpfile)
+        if prpfile is None:
+            prop._prpfile = abspath('specs/PropertyDefBehavior.prp')
 
     if 'SIGNED-OVERFLOW' in prps:
-        return PropertyNoOverflow(prpfile)
+        prop = PropertyNoOverflow(prpfile)
+        if prpfile is None:
+            prop._prpfile = abspath('specs/PropertyNoOverflow.prp')
 
-    return None
+    prop._ltl = ltl_prps
+    return prop

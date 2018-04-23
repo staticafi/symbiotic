@@ -260,7 +260,7 @@ class Symbiotic(object):
             # not fatal, continue working
             dbg('Failed getting statistics')
 
-    def _instrument(self, prp):
+    def _instrument(self):
         if not hasattr(self._tool, 'instrumentation_options'):
             return
 
@@ -280,7 +280,7 @@ class Symbiotic(object):
         prefix = self.options.instrumentation_files_path
 
         definitionsbc = None
-        if prp == 'MEMSAFETY':
+        if self.options.property.memsafety():
             # default config file is 'config.json'
             config = prefix + 'memsafety/' + config_file
             assert os.path.isfile(config)
@@ -324,12 +324,7 @@ class Symbiotic(object):
         """
         Instrument the code.
         """
-
-        # FIXME: do not compare the strings all the time...
-        if 'MEMSAFETY' in self.options.prp:
-            self._instrument('MEMSAFETY')
-        elif 'NULL-DEREF' in self.options.prp:
-                self._instrument('NULL-DEREF')
+        self._instrument()
 
     def _get_libraries(self, which=[]):
         files = []
@@ -500,7 +495,7 @@ class Symbiotic(object):
     def run_verification(self):
         cmd = self._tool.cmdline(self._tool.executable(),
                                  self.options.tool_params, [self.llvmfile],
-                                 self.options.prpfile, [])
+                                 self.options.property.getPrpFile(), [])
 
         returncode = 0
         watch = ToolWatch(self._tool)
@@ -548,7 +543,7 @@ class Symbiotic(object):
             if hasattr(self._tool, 'compilation_options'):
                 opts += self._tool.compilation_options()
 
-            if 'SIGNED-OVERFLOW' in self.options.prp:
+            if self.options.property.signedoverflow():
                 # FIXME: this is a hack, remove once we have better CD algorithm
                 self.options.disabled_optimizations = ['-instcombine']
 
@@ -647,9 +642,9 @@ class Symbiotic(object):
         self.link_unconditional()
 
         passes = []
-        if 'MEMSAFETY' in self.options.prp or \
-           'UNDEF-BEHAVIOR' in self.options.prp or\
-           'SIGNED-OVERFLOW' in self.options.prp:
+        if self.options.property.memsafety() or \
+           self.options.property.undefinedness() or \
+           self.options.property.signedoverflow():
             # remove the original calls to __VERIFIER_error
             passes.append('-remove-error-calls')
 
@@ -659,7 +654,7 @@ class Symbiotic(object):
 
         # we want to link memsafety functions before instrumentation,
         # because we need to check for invalid dereferences in them
-        if 'MEMSAFETY' in self.options.prp:
+        if self.options.property.memsafety():
             self.link_undefined()
 
         #################### #################### ###################
@@ -686,7 +681,7 @@ class Symbiotic(object):
         # for the memsafety property, make functions behave like they have
         # side-effects, because LLVM instrumentations could remove them otherwise,
         # even though they contain calls to assert
-        if 'MEMSAFETY' in self.options.prp:
+        if self.options.property.memsafety():
             self.run_opt(['-remove-readonly-attr'])
 
         # start a new time era

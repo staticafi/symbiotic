@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+from . property import Property
 
 class SymbioticOptions(object):
     def __init__(self, symbiotic_dir=None):
@@ -14,11 +15,8 @@ class SymbioticOptions(object):
 
         self.tool_name = 'klee-symbiotic'
         self.is32bit = False
-        # properties as we get then on input
-        self.orig_prp = []
         # properties mapped to our names
-        self.prp = []
-        self.prpfile = None
+        self.property = Property()
         self.noslice = False
         # FIXME: make it False, this is just a temporary
         # switch for SV-COMP, since I do not want to send another

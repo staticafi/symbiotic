@@ -12,7 +12,7 @@ class SymbioticTool(Map2CheckTool):
 
     def __init__(self, opts):
         self._options = opts
-        self._memsafety = 'MEMSAFETY' in self._options.prp
+        self._memsafety = self._options.property.memsafety()
 
     def llvm_version(self):
         return '3.8.1'

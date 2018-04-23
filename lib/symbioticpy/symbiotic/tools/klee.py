@@ -68,12 +68,6 @@ class SymbioticTool(BaseTool):
 
     def __init__(self, opts):
         self._options = opts
-        self._memsafety = 'MEMSAFETY' in self._options.prp
-        self._overflow = 'SIGNED-OVERFLOW' in self._options.prp
-        self._undefined = 'UNDEF-BEHAVIOR' in self._options.prp
-        assert not (self._memsafety and self._overflow)
-        assert not (self._memsafety and self._undefined)
-        assert not (self._overflow and self._undefined)
 
         # define and compile regular expressions for parsing klee's output
         self._patterns = [
@@ -151,10 +145,10 @@ class SymbioticTool(BaseTool):
         List of compilation options specific for this tool
         """
         opts = []
-        if self._undefined:
+        if self._options.property.undefinedness():
                 opts.append('-fsanitize=undefined')
                 opts.append('-fno-sanitize=unsigned-integer-overflow')
-        elif self._overflow:
+        elif self._options.property.signedoverflow():
                 opts.append('-fsanitize=signed-integer-overflow')
                 opts.append('-fsanitize=shift')
 
@@ -172,7 +166,8 @@ class SymbioticTool(BaseTool):
         ['-rename-verifier-funs',
          '-rename-verifier-funs-source={0}'.format(self._options.sources[0])]
 
-        if self._overflow or self._undefined:
+        if self._options.property.undefinedness() or \
+           self._options.property.signedoverflow():
             passes.append('-replace-ubsan')
 
         if not self._options.explicit_symbolic:
@@ -190,7 +185,7 @@ class SymbioticTool(BaseTool):
         instrumentation (and False otherwise)
         """
 
-        if self._memsafety:
+        if self._options.property.memsafety():
             # default config file is 'config.json'
             return ('config-marker.json', 'marker.c', False)
 
@@ -202,7 +197,7 @@ class SymbioticTool(BaseTool):
         criterion and opts is a list of options
         """
 
-        if self._memsafety:
+        if self._options.property.memsafety():
             # default config file is 'config.json'
             # slice with respect to the memory handling operations
             return ('__INSTR_mark_pointer', ['-criteria-are-next-instr'])
@@ -216,7 +211,7 @@ class SymbioticTool(BaseTool):
         return []
 
     def describe_error(self, llvmfile):
-        dump_error(dirname(llvmfile), self._memsafety)
+        dump_error(dirname(llvmfile), self._options.property.memsafety())
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
@@ -227,7 +222,7 @@ class SymbioticTool(BaseTool):
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
                '-output-stats=0', '-disable-opt', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self._options.timeout)]
-        if self._memsafety:
+        if self._options.property.memsafety():
             cmd.append('-check-leaks')
             cmd.append('-exit-on-error-type=Ptr')
             cmd.append('-exit-on-error-type=ReadOnly')
