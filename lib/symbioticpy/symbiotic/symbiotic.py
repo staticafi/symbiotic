@@ -630,10 +630,6 @@ class Symbiotic(object):
             print('Unsupported call (probably pthread API or floating point stdlib functions)')
             return report_results('unknown')
 
-        # remove definitions of __VERIFIER_* that are not created by us,
-        # make extern globals local, etc. Also remove syntactically infinite loops.
-        self._run_opt(['-prepare', '-remove-infinite-loops'])
-
         # link the files that we got on the command line
         # and that we are required to link in on any circumstances
         self.link_unconditional()
@@ -676,7 +672,7 @@ class Symbiotic(object):
                                'instrumentation time', color='WHITE')
 
         # for the memsafety property, make functions behave like they have
-        # side-effects, because LLVM instrumentations could remove them otherwise,
+        # side-effects, because LLVM optimizations could remove them otherwise,
         # even though they contain calls to assert
         if self.options.property.memsafety():
             self.run_opt(['-remove-readonly-attr'])
@@ -684,33 +680,18 @@ class Symbiotic(object):
         # start a new time era
         restart_counting_time()
 
-        # optimize the code after slicing and
-        # before verification
+        # optimize the code after slicing and before verification
         opt = get_optlist_after(self.options.optlevel)
         if opt:
             self.optimize(passes=opt)
 
-        if not self.check_llvmfile(self.llvmfile):
+        # FIXME: move these checks to tool specific code
+        if self._tool.name() == 'klee' and not self.check_llvmfile(self.llvmfile):
             dbg('Unsupported call (probably floating handling)')
             return report_results('unsupported call')
 
         # there may have been created new loops
         passes = ['-remove-infinite-loops']
-
-        # instrument our malloc -- either the version that can fail,
-        # or the version that can not fail.
-        if self.options.malloc_never_fails:
-            passes += ['-instrument-alloc-nf']
-        else:
-            passes += ['-instrument-alloc']
-
-        # remove/replace the rest of undefined functions
-        # for which we do not have a definition and
-        # that has not been removed
-        if self.options.undef_retval_nosym:
-            passes += ['-delete-undefined-nosym']
-        else:
-            passes += ['-delete-undefined']
 
         if hasattr(self._tool, 'prepare_after'):
             passes += self._tool.prepare_after()

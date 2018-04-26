@@ -19,6 +19,7 @@ limitations under the License.
 """
 from os.path import dirname, abspath
 from symbiotic.utils.utils import print_stdout
+
 try:
     from symbiotic.versions import llvm_version
 except ImportError:
@@ -128,19 +129,45 @@ class SymbioticTool(BaseTool):
         Prepare the bitcode for verification - return a list of
         LLVM passes that should be run on the code
         """
-        # make all memory symbolic (if desired)
-        # and then delete undefined function calls
-        # and replace them by symbolic stuff
+        # remove definitions of __VERIFIER_* that are not created by us,
+        # make extern globals local, etc. Also remove syntactically infinite loops.
         passes = \
-        ['-rename-verifier-funs',
+        ['-remove-infinite-loops', '-rename-verifier-funs',
          '-rename-verifier-funs-source={0}'.format(self._options.sources[0])]
+
+        if not self._options.noprepare:
+            passes.append('-prepare')
 
         if self._options.property.undefinedness() or \
            self._options.property.signedoverflow():
             passes.append('-replace-ubsan')
 
+        # make all memory symbolic (if desired)
         if not self._options.explicit_symbolic:
             passes.append('-initialize-uninitialized')
+
+        return passes
+
+    def prepare_after(self):
+        """
+        Prepare the bitcode for verification after slicing:
+        \return a list of LLVM passes that should be run on the code
+        """
+        # instrument our malloc -- either the version that can fail,
+        # or the version that can not fail.
+        passes = []
+        if self._options.malloc_never_fails:
+            passes += ['-instrument-alloc-nf']
+        else:
+            passes += ['-instrument-alloc']
+
+        # remove/replace the rest of undefined functions
+        # for which we do not have a definition and
+        # that has not been removed
+        if self._options.undef_retval_nosym:
+            passes += ['-delete-undefined-nosym']
+        else:
+            passes += ['-delete-undefined']
 
         return passes
 
