@@ -28,7 +28,7 @@ Only in clang/include/clang/Driver: tags
                                        const LangOptions &LangOpts) {
 +  // ForceLifetimeMarkers overrides DisableLifetimeMarkers
 +  if (CGOpts.ForceLifetimeMarkers)
-+    return false;
++    return true;
 +
    if (CGOpts.DisableLifetimeMarkers)
      return false;
