@@ -104,6 +104,8 @@ class Tool(BaseTool):
                 status = result.RESULT_FALSE_TERMINATION
             else:
                 status = result.RESULT_FALSE_REACH
+        elif "BRUNCH_STAT Result UNKNOWN" in output:
+            status = result.RESULT_UNKNOWN
         elif returnsignal == 9 or returnsignal == (128+9):
             if isTimeout:
                 status = "TIMEOUT"
