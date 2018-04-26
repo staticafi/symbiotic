@@ -6,15 +6,10 @@ import re
 
 from . options import SymbioticOptions
 from . utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
-from . utils.process import ProcessRunner
+from . utils.process import ProcessRunner, runcmd, getCurrentProcess
 from . utils.watch import ProcessWatch, DbgWatch
 from . utils.utils import print_stdout, print_stderr, get_symbiotic_dir
 from . exceptions import SymbioticException
-
-try:
-    from benchexec.util import find_executable
-except ImportError:
-    from . benchexec.util import find_executable
 
 class PrepareWatch(ProcessWatch):
     def __init__(self, lines=100):
@@ -179,8 +174,6 @@ class Symbiotic(object):
         self.llvmfile = None
         # the file that will be used for symbolic execution
         self.runfile = None
-        # currently running process
-        self.current_process = None
         # the directory that symbiotic script is located
         if symb_dir:
             self.symbiotic_dir = symb_dir
@@ -197,16 +190,6 @@ class Symbiotic(object):
 
         # tool to use
         self._tool = tool
-
-    def _run(self, cmd, watch, err_msg):
-        dbg("'{0}' is '{1}'".format(cmd[0], find_executable(cmd[0])))
-        self.current_process = ProcessRunner(cmd, watch)
-        if self.current_process.run() != 0:
-            self.current_process.printOutput(sys.stderr, 'RED')
-            self.current_process = None
-            raise SymbioticException(err_msg)
-
-        self.current_process = None
 
     def _compile_to_llvm(self, source, output=None, with_g=True, opts=[]):
         """
@@ -235,8 +218,8 @@ class Symbiotic(object):
         cmd.append(llvmfile)
         cmd.append(source)
 
-        self._run(cmd, CompileWatch(),
-                  "Compiling source '{0}' failed".format(source))
+        runcmd(cmd, CompileWatch(),
+               "Compiling source '{0}' failed".format(source))
 
         return llvmfile
 
@@ -248,14 +231,14 @@ class Symbiotic(object):
         cmd = ['opt', '-load', 'LLVMsbt.so',
                self.llvmfile, '-o', output] + passes
 
-        self._run(cmd, PrepareWatch(), 'Prepare phase failed')
+        runcmd(cmd, PrepareWatch(), 'Prepare phase failed')
         self.llvmfile = output
 
     def _get_stats(self, prefix=''):
         cmd = ['opt', '-load', 'LLVMsbt.so', '-count-instr',
                '-o', '/dev/null', self.llvmfile]
         try:
-            self._run(cmd, PrintWatch('INFO: ' + prefix), 'Failed running opt')
+            runcmd(cmd, PrintWatch('INFO: ' + prefix), 'Failed running opt')
         except SymbioticException:
             # not fatal, continue working
             dbg('Failed getting statistics')
@@ -308,7 +291,7 @@ class Symbiotic(object):
 
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['sbt-instr', config, self.llvmfile, definitionsbc, output]
-        self._run(cmd, InstrumentationWatch(), 'Instrumenting the code failed')
+        runcmd(cmd, InstrumentationWatch(), 'Instrumenting the code failed')
 
         self.llvmfile = output
         self._get_stats('After instrumentation ')
@@ -352,8 +335,8 @@ class Symbiotic(object):
         if self.llvmfile:
             cmd.append(self.llvmfile)
 
-        self._run(cmd, DbgWatch('compile'),
-                  'Failed linking llvm file with libraries')
+        runcmd(cmd, DbgWatch('compile'),
+               'Failed linking llvm file with libraries')
         self.llvmfile = output
 
     def _link_undefined(self, undefs):
@@ -398,7 +381,7 @@ class Symbiotic(object):
     def _get_undefined(self, bitcode, only_func=[]):
         cmd = ['llvm-nm', '-undefined-only', '-just-symbol-name', bitcode]
         watch = ProcessWatch(None)
-        self._run(cmd, watch, 'Failed getting undefined symbols from bitcode')
+        runcmd(cmd, watch, 'Failed getting undefined symbols from bitcode')
         undefs = map(lambda s: s.strip(), watch.getLines())
         if only_func:
             return filter(set(only_func).__contains__, undefs)
@@ -443,7 +426,7 @@ class Symbiotic(object):
 
         cmd.append(self.llvmfile)
 
-        self._run(cmd, SlicerWatch(), 'Slicing failed')
+        runcmd(cmd, SlicerWatch(), 'Slicing failed')
         self.llvmfile = output
 
     def optimize(self, passes, disable=[]):
@@ -459,7 +442,7 @@ class Symbiotic(object):
         cmd = ['opt', '-o', output, self.llvmfile]
         cmd += passes
 
-        self._run(cmd, CompileWatch(), 'Optimizing the code failed')
+        runcmd(cmd, CompileWatch(), 'Optimizing the code failed')
         self.llvmfile = output
 
     def check_llvmfile(self, llvmfile, check='-check-unsupported'):
@@ -470,7 +453,7 @@ class Symbiotic(object):
         cmd = ['opt', '-load', 'LLVMsbt.so', check,
                '-o', '/dev/null', llvmfile]
         try:
-            self._run(cmd, UnsuppWatch(), 'Failed checking the code')
+            runcmd(cmd, UnsuppWatch(), 'Failed checking the code')
         except SymbioticException:
             return False
 
@@ -488,7 +471,7 @@ class Symbiotic(object):
         if not cmd:
             return
 
-        self._run(cmd, DbgWatch('compile'),
+        runcmd(cmd, DbgWatch('compile'),
                   'Failed preprocessing the llvm code')
         self.llvmfile = output
 
@@ -508,7 +491,7 @@ class Symbiotic(object):
         returncode = 0
         watch = ToolWatch(self._tool)
         try:
-            self._run(cmd, watch, 'Running the verifier failed')
+            runcmd(cmd, watch, 'Running the verifier failed')
         except SymbioticException as e:
             print_stderr(str(e), color='RED')
             returncode = 1
@@ -517,18 +500,21 @@ class Symbiotic(object):
                                            watch.getLines(), False)
 
     def terminate(self):
-        if self.current_process:
-            self.current_process.terminate()
+        current_process = getCurrentProcess()
+        if current_process:
+            current_process.terminate()
 
     def kill(self):
-        if self.current_process:
-            self.current_process.kill()
+        current_process = getCurrentProcess()
+        if current_process:
+            current_process.kill()
 
     def kill_wait(self):
-        if self.current_process and self.current_process.exitStatus() is None:
+        current_process = getCurrentProcess()
+        if current_process and current_process.exitStatus() is None:
             from time import sleep
-            while self.current_process.exitStatus() is None:
-                self.current_process.kill()
+            while current_process.exitStatus() is None:
+                current_process.kill()
 
                 print('Waiting for the child process to terminate')
                 sleep(0.5)

@@ -29,9 +29,7 @@ sys.path.append(os.path.abspath(pth))
 
 from symbiotic.utils import err, dbg, enable_debug
 from symbiotic.utils.utils import print_stdout, print_stderr, get_symbiotic_dir, process_grep
-from symbiotic.utils.watch import ProcessWatch
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
-from symbiotic.utils.process import ProcessRunner
 from symbiotic import SymbioticException, Symbiotic
 from symbiotic.options import SymbioticOptions
 from symbiotic.property import get_property

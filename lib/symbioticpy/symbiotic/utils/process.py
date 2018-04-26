@@ -6,10 +6,17 @@ from . watch import ProcessWatch, DbgWatch
 from .. import SymbioticException
 from sys import stdout, stderr
 
+try:
+    from benchexec.util import find_executable
+except ImportError:
+    from . benchexec.util import find_executable
+
+
 
 class ProcessRunner(object):
     def __init__(self, cmd, watch=ProcessWatch()):
         self._cmd = cmd
+        assert isinstance(watch, ProcessWatch)
         self._watch = watch
         self._process = None
 
@@ -71,11 +78,22 @@ class ProcessRunner(object):
                          color=clr, print_nl=False)
 
 
-def run_checked(cmd, error_msg, dbg_domain='all'):
-    """
-    Run command and raise an exeception on error
-    """
-    pr = ProcessRunner(cmd, DbgWatch(dbg_domain, None))
-    if pr.run() != 0:
-        pr.printOutput(stderr)
-        raise SymbioticException(error_msg)
+# we have one global process so that we can kill it anytime
+# (there's always at most one process running anyway)
+current_process = None
+
+def getCurrentProcess():
+    global current_process
+    return current_process
+
+def runcmd(cmd, watch = ProcessWatch(), err_msg = ""):
+    dbg("'{0}' is '{1}'".format(cmd[0], find_executable(cmd[0])))
+    global current_process
+    current_process = ProcessRunner(cmd, watch)
+    if current_process.run() != 0:
+        current_process.printOutput(sys.stderr, 'RED')
+        current_process = None
+        raise SymbioticException(err_msg)
+
+    current_process = None
+
