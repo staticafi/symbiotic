@@ -634,6 +634,9 @@ class Symbiotic(object):
         else:
             self._compile_sources()
 
+        # make the path absolute
+        self.llvmfile = os.path.abspath(self.llvmfile)
+
         self._get_stats('After compilation ')
 
         # FIXME: make tool-specific

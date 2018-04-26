@@ -127,26 +127,33 @@ def _map_property(prps):
 
 def get_property(prp):
     if prp is None:
-        return PropertyUnreachCall()
+        prop = PropertyUnreachCall()
+        prop._prpfile = abspath('specs/PropertyUnreachCall.prp')
+        return prop
 
     prps, prpfile = _get_prp(prp)
     prps, ltl_prps = _map_property(prps)
     prop = None
 
-    if 'MEMSAFETY' in prps:
+    if 'REACHCALL' in prps:
+        prop = PropertyUnreachCall(prpfile)
+        if prpfile is None:
+            prop._prpfile = abspath('specs/PropertyUnreachCall.prp')
+    elif 'MEMSAFETY' in prps:
         prop = PropertyMemSafety(prpfile)
         if prpfile is None:
             prop._prpfile = abspath('specs/PropertyMemSafety.prp')
 
-    if 'UNDEF-BEHAVIOR' is prps:
+    elif 'UNDEF-BEHAVIOR' is prps:
         prop = PropertyDefBehavior(prpfile)
         if prpfile is None:
             prop._prpfile = abspath('specs/PropertyDefBehavior.prp')
 
-    if 'SIGNED-OVERFLOW' in prps:
+    elif 'SIGNED-OVERFLOW' in prps:
         prop = PropertyNoOverflow(prpfile)
         if prpfile is None:
             prop._prpfile = abspath('specs/PropertyNoOverflow.prp')
 
-    prop._ltl = ltl_prps
+    if prop:
+        prop._ltl = ltl_prps
     return prop

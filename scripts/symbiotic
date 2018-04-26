@@ -566,13 +566,13 @@ def initialize_verifier(opts):
         return SymbioticTool(opts)
     elif opts.tool_name == 'skink':
         from symbiotic.tools.skink import SymbioticTool
-        return SymbioticTool()
+        return SymbioticTool(opts)
     elif opts.tool_name == 'smack':
         from symbiotic.tools.smack import SymbioticTool
-        return SymbioticTool()
+        return SymbioticTool(opts)
     elif opts.tool_name == 'seahorn':
         from symbiotic.tools.seahorn import SymbioticTool
-        return SymbioticTool()
+        return SymbioticTool(opts)
     else:
         raise SymbioticException('Unknown verifier: {0}'.format(opts.tool_name))
 

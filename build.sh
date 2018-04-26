@@ -881,7 +881,7 @@ fi
 		$CPACHECKER \
 		$ULTIAUTO
 
-	git commit -m "Create Symbiotic distribution `date`"
+	git commit -m "Create Symbiotic distribution `date`" || true
 	# remove unnecessary files
 # DO NOT: so that the tools are not rebuilt over and over
 # They depend on the installed headers and libs.
