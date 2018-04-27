@@ -29,7 +29,7 @@ class ProcessRunner(object):
         \return return code of the process or -1 on watch error
         """
 
-        dbg('|> {0}'.format(' '.join(self._cmd)), prefix='')
+        dbg('|> {0}'.format(' '.join(self._cmd)), prefix='', color='CYAN')
 
         # run the command and store handle into global variable
         # current_process, so that we can easily kill this process
@@ -86,7 +86,9 @@ def getCurrentProcess():
     return current_process
 
 def runcmd(cmd, watch = ProcessWatch(), err_msg = ""):
-    dbg("'{0}' is '{1}'".format(cmd[0], find_executable(cmd[0])))
+    # if the binary does not have absolute path, tell us which binary it is
+    if cmd[0][0] != '/':
+        dbg("'{0}' is '{1}'".format(cmd[0], find_executable(cmd[0])), color='DARK_GRAY')
     global current_process
     current_process = ProcessRunner(cmd, watch)
     if current_process.run() != 0:
