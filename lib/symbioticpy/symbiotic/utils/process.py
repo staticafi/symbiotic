@@ -56,16 +56,15 @@ class ProcessRunner(object):
         return self._process.wait()
 
     def terminate(self):
-        if self._process:
+        if self._process and self.exitStatus() is None:
             self._process.terminate()
 
     def kill(self):
-        if self._process:
+        if self._process and self.exitStatus() is None:
             self._process.kill()
 
     def exitStatus(self):
         assert self._process
-
         return self._process.poll()
 
     def getOutput(self):
@@ -92,7 +91,7 @@ def runcmd(cmd, watch = ProcessWatch(), err_msg = ""):
     global current_process
     current_process = ProcessRunner(cmd, watch)
     if current_process.run() != 0:
-        current_process.printOutput(sys.stderr, 'RED')
+        current_process.printOutput(stderr, 'RED')
         current_process = None
         raise SymbioticException(err_msg)
 
