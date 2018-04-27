@@ -9,8 +9,7 @@ from sys import stdout, stderr
 try:
     from benchexec.util import find_executable
 except ImportError:
-    from . benchexec.util import find_executable
-
+    from symbiotic.benchexec.util import find_executable
 
 
 class ProcessRunner(object):
