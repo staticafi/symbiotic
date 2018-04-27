@@ -128,6 +128,7 @@ where OPTS can be following:
     --no-integrity-check      Does not run integrity check. For development only.
     --dump-env                Only dump environment variables (for debugging)
     --dump-env-cmd            Dump environment variables for using them in command line
+    --statistics              Dump statistics about bitcode
 
     One (and only one) of the sources must contain 'main' function
 """
@@ -337,7 +338,7 @@ def parse_command_line():
                                     'witness-with-source-lines', 'dont-exit-on-error',
                                     'undefined-are-pure', 'no-svcomp-funs',
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
-                                    'memsafety-config-file='])
+                                    'memsafety-config-file=', 'statistics'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -482,6 +483,8 @@ def parse_command_line():
             witness_with_source_lines = True
         elif opt == '--dont-exit-on-error':
             options.dont_exit_on_error = True
+        elif opt == '--statistics':
+            options.stats = True
         elif opt == '--memsafety-config-file':
             options.memsafety_config_file = arg
         elif opt == '--dump-env':

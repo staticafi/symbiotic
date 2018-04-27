@@ -235,6 +235,9 @@ class Symbiotic(object):
         self.llvmfile = output
 
     def _get_stats(self, prefix=''):
+        if not self.options.stats:
+            return
+
         cmd = ['opt', '-load', 'LLVMsbt.so', '-count-instr',
                '-o', '/dev/null', self.llvmfile]
         try:
@@ -438,11 +441,17 @@ class Symbiotic(object):
             ds = set(disable)
             passes = filter(lambda x: not ds.__contains__(x), passes)
 
+        if not passes:
+            dbg("No passes available for optimizations")
+
         output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['opt', '-o', output, self.llvmfile]
         cmd += passes
 
+        restart_counting_time()
         runcmd(cmd, CompileWatch(), 'Optimizing the code failed')
+        print_elapsed_time('INFO: Optimizing the code', color='WHITE')
+
         self.llvmfile = output
 
     def check_llvmfile(self, llvmfile, check='-check-unsupported'):
