@@ -224,6 +224,9 @@ class Symbiotic(object):
         return llvmfile
 
     def run_opt(self, passes):
+        if not passes:
+            return
+
         self._run_opt(passes)
 
     def _run_opt(self, passes):
