@@ -837,6 +837,7 @@ fi
 
 	LIBRARIES="\
 		$LLVM_PREFIX/lib/libLLVMdg.so $LLVM_PREFIX/lib/libLLVMpta.so \
+		$LLVM_PREFIX/lib/libLLVMrd.so \
 		$LLVM_PREFIX/lib/libPTA.so $LLVM_PREFIX/lib/libRD.so \
 		$LLVM_PREFIX/lib/LLVMsbt.so \
 		$LLVM_PREFIX/lib/libPoints_to_plugin.so"
@@ -872,6 +873,7 @@ fi
 		include/symbiotic-size_t.h \
 		$LLVM_PREFIX/include/stddef.h \
 		lib/*.c \
+		specs/* \
 		lib/symbioticpy/symbiotic/*.py \
 		lib/symbioticpy/symbiotic/benchexec/*.py \
 		lib/symbioticpy/symbiotic/benchexec/tools/*.py \
