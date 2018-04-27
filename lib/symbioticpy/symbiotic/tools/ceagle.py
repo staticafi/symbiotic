@@ -9,7 +9,7 @@ class SymbioticTool(CeagleTool):
     REQUIRED_PATHS = CeagleTool.REQUIRED_PATHS
 
     def llvm_version(self):
-        return '3.7.1'
+        return '3.8.1'
 
     def preprocess_llvm(self, infile):
         """
