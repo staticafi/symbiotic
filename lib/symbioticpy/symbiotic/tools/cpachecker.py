@@ -144,6 +144,13 @@ class SymbioticTool(BaseTool):
 
         return (self._options.slicing_criterion,[])
 
+    def set_environment(self, symbiotic_dir, opts):
+        """
+        Set environment for the tool
+        """
+        # do not link any functions
+        opts.linkundef = []
+
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         additional_options = self._get_additional_options(options, propertyfile, rlimits)
         # use a default configuration if no other is specicied

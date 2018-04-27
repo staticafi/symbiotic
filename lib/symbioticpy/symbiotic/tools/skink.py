@@ -41,5 +41,11 @@ class SymbioticTool(SkinkTool):
 
         return opts
 
+    def set_environment(self, symbiotic_dir, opts):
+        """
+        Set environment for the tool
+        """
+        # do not link any functions
+        opts.linkundef = []
 
 

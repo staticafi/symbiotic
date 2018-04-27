@@ -31,6 +31,9 @@ class SymbioticTool(SeaTool):
 
         return (None, None, None)
 
+    def compilation_options(self):
+        return ['-D__SEAHORN__','-fgnu89-inline']
+
     def slicer_options(self):
         """
         Returns tuple (c, opts) where c is the slicing
@@ -44,4 +47,10 @@ class SymbioticTool(SeaTool):
 
         return (self._options.slicing_criterion,[])
 
+    def set_environment(self, symbiotic_dir, opts):
+        """
+        Set environment for the tool
+        """
+        # do not link any functions
+        opts.linkundef = []
 
