@@ -73,6 +73,8 @@ OPTS=
 WITH_CPA='0'
 WITH_ULTIMATEAUTOMIZER='0'
 LLVM_VERSION=`get_llvm_version`
+# LLVM tools that we need
+LLVM_TOOLS="opt clang llvm-link llvm-dis llvm-nm"
 WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
@@ -358,7 +360,7 @@ build_llvm()
 	fi
 
 	# build llvm
-	ONLY_TOOLS='opt clang llvm-link llvm-dis llvm-nm' build
+	ONLY_TOOLS="$LLVM_TOOLS" build
 	# copy the generated stddef.h due to compilation of instrumentation libraries
 	mkdir -p "$LLVM_PREFIX/include"
 	cp "lib/clang/${LLVM_VERSION}/include/stddef.h" "$LLVM_PREFIX/include" || exit 1
@@ -378,12 +380,12 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 		LLVM_LOCATION=$WITH_LLVM
 	fi
 
-	# we need these binaries in symbiotic
+	# we need these binaries in symbiotic, copy them
+	# to instalation prefix there
 	mkdir -p $LLVM_PREFIX/bin
-	cp $LLVM_LOCATION/bin/clang $LLVM_PREFIX/bin/clang || exit 1
-	cp $LLVM_LOCATION/bin/opt $LLVM_PREFIX/bin/opt || exit 1
-	cp $LLVM_LOCATION/bin/llvm-link $LLVM_PREFIX/bin/llvm-link || exit 1
-	cp $LLVM_LOCATION/bin/llvm-nm $LLVM_PREFIX/bin/llvm-nm || exit 1
+	for B in $LLVM_TOOLS; do
+		cp $LLVM_LOCATION/bin/${B} $LLVM_PREFIX/bin/${B} || exit 1
+	done
 fi
 
 
@@ -825,12 +827,12 @@ if [ $FROM -le 7 ]; then
 
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
 
-	# create git repository and add all files that we need
-	# then remove the rest and create distribution
-	BINARIES="$LLVM_PREFIX/bin/clang $LLVM_PREFIX/bin/opt \
-		  $LLVM_PREFIX/bin/llvm-link \
-		  $LLVM_PREFIX/bin/llvm-nm $LLVM_PREFIX/bin/sbt-slicer \
+	BINARIES="$LLVM_PREFIX/bin/sbt-slicer \
 		  $LLVM_PREFIX/bin/sbt-instr"
+	for B in $LLVM_TOOLS; do
+		BINARIES="$LLVM_PREFIX/bin/${B} $BINARIES"
+	done
+
 if [ ${BUILD_KLEE} = "yes" ];  then
 	BINARIES="$BINARIES $LLVM_PREFIX/bin/klee"
 fi
@@ -850,15 +852,6 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 fi
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
-
-#CPACHECKER=
-#ULTIAUTO=
-#if [ $WITH_CPA -eq 1 ]; then
-#	CPACHECKER=`find CPAchecker/ -type f`
-#fi
-#if [ $WITH_ULTIMATEAUTOMIZER -eq 1 ]; then
-#	ULTIAUTO=`find UltimateAutomizer/ -type f`
-#fi
 
 	#strip binaries, it will save us 500 MB!
 	strip $BINARIES
