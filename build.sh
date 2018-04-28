@@ -915,4 +915,5 @@ fi
 
 if [ "x$ARCHIVE" = "xyes" ]; then
 	git archive --prefix "symbiotic/" -o symbiotic.zip -9 --format zip HEAD
+	mv symbiotic.zip ..
 fi
