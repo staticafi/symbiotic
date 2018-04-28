@@ -831,7 +831,6 @@ get_library()
 get_dependencies()
 {
 	LIBS=`get_library $1 libstdc++`
-	LIBS="$LIBS `get_library $1 libc`"
 	LIBS="$LIBS `get_library $1 tinfo`"
 	# FIXME: remove once we build/download our z3
 	LIBS="$LIBS `get_library $1 libz3`"
