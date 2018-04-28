@@ -129,6 +129,7 @@ where OPTS can be following:
     --dump-env                Only dump environment variables (for debugging)
     --dump-env-cmd            Dump environment variables for using them in command line
     --statistics              Dump statistics about bitcode
+    --working-dir-prefix      Where to create the temporary directory (defaults to /tmp)
 
     One (and only one) of the sources must contain 'main' function
 """
@@ -340,7 +341,7 @@ def parse_command_line():
                                     'undefined-are-pure', 'no-svcomp-funs',
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file=', 'statistics',
-                                    'working-directory-prefix='])
+                                    'working-dir-prefix='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -472,8 +473,12 @@ def parse_command_line():
             options.link_files += arg.split(',')
         elif opt == '--save-files':
             save_files = True
-        elif opt == '--working-directory-prefix':
-            working_dir_prefix = arg
+        elif opt == '--working-dir-prefix':
+            wdr = os.path.abspath(arg)
+            if not os.path.isdir(wdr):
+                # we should check also for writebility
+                err("'{0}' is not valid prefix for working directory".format(arg))
+            working_dir_prefix = wdr
         elif opt == '--no-posix':
             remove_linkundef(options, 'posix')
         elif opt == '--no-kernel':
