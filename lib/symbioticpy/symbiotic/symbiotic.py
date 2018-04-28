@@ -211,7 +211,8 @@ class Symbiotic(object):
 
         cmd.append('-o')
         if output is None:
-            llvmfile = '{0}.bc'.format(source[:source.rfind('.')])
+            basename = os.path.basename(source)
+            llvmfile = '{0}.bc'.format(basename[:basename.rfind('.')])
         else:
             llvmfile = output
 

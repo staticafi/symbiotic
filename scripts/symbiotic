@@ -303,6 +303,7 @@ def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, 
 
 # do not remove working files after running
 save_files = False
+working_dir_prefix = '/tmp'
 
 def print_short_vers():
     vers = '{0}-'.format(VERSION)
@@ -497,7 +498,7 @@ def parse_command_line():
 
     return options, args
 def on_rm_error(func, pth, exc):
-    dbg('Failed removing tmp dir: {0})'.format(str(exc[1])))
+    print_stderr('Failed removing tmp dir: {0})'.format(str(exc[1])), color='RED')
 
 def rm_tmp_dir(d, force = False):
     if save_files and not force:
@@ -506,10 +507,10 @@ def rm_tmp_dir(d, force = False):
     from shutil import rmtree
     rmtree(d, onerror=on_rm_error)
 
-def copy_sources_to_tmp(sources):
+def setup_working_directory():
     """
-    Create temporary directory and copy sources there.
-    Returns the new paths to sources
+    Create temporary directory, either in the current folder or on tmp.
+    Return the path to that directory.
     """
 
     from tempfile import mkdtemp
@@ -523,22 +524,13 @@ def copy_sources_to_tmp(sources):
             rm_tmp_dir(tmpdir, True)
             os.mkdir(tmpdir)
     else:
-        if os.path.isdir('/tmp'):
-            prefix = '/tmp/symbiotic-'
+        if os.path.isdir(working_dir_prefix):
+            prefix = os.path.join(working_dir_prefix, 'symbiotic-')
         else:
-            dbg('Found no /tmp dir, falling-back to curdir: {0}'.format(os.getcwd()))
+            dbg('Found no {0} dir, falling-back to curdir: {1}'.format(working_dir_prefix, os.getcwd()))
             prefix = 'symbiotic-'
 
         tmpdir = mkdtemp(prefix=prefix, dir='.')
-
-    for s in sources:
-        t = os.path.join(tmpdir, os.path.basename(s))
-        target = os.path.abspath(t)
-        try:
-            copy(s, target)
-        except IOError as e:
-            rm_tmp_dir(tmpdir, True)
-            err('Failed copying sources to a tmp directory: {0}'.format(str(e)))
 
     return tmpdir
 
@@ -623,38 +615,13 @@ if __name__ == "__main__":
         # set CFLAGS and CPPFLAGS for compilation
         parse_environ(opts)
 
-        # save original sources for later use
-        original_sources = []
-        for s in sources:
-            original_sources.append(os.path.abspath(s))
+        # get absolute paths to sources
+        sources = opts.sources = list(map(os.path.abspath, sources))
 
-        working_dir = copy_sources_to_tmp(sources)
+        # change working directory so that we do not mess up the current directory much
+        working_dir = setup_working_directory()
         os.chdir(working_dir)
         dbg('Working directory: {0}'.format(working_dir))
-
-        from symbiotic.filetransform import InlineRemove, NondetSimplify, InfiniteLoopsRemover #, ReplaceNamedNondet
-        transformations = [InlineRemove(), NondetSimplify(),
-                           #ReplaceNamedNondet(),
-                           InfiniteLoopsRemover()]
-        for trans in transformations:
-            # remove __inline from the source
-            new_sources = []
-            for s in sources:
-                # we changed directory to our tmpdir,
-                # so now the sources have only basenames
-                s = os.path.basename(s)
-                new_s = '{0}-trans.c'.format(s)
-                trans.run(s, new_s)
-                # move the temporary file to the original file
-                os.rename(new_s, s)
-                # we renamed the sources to be in the temporary directory,
-                # so we must update the names
-                new_sources.append(s)
-
-            assert len(sources) == len(new_sources)
-            sources = new_sources
-
-        opts.sources = sources
 
         # let the show begin!
         try:
@@ -676,10 +643,10 @@ if __name__ == "__main__":
                 symbiotic._tool.describe_error(symbiotic.llvmfile)
 
             if not no_witness:
-                generate_counterexample(srcdir, original_sources, opts.property.getLTL(),
+                generate_counterexample(srcdir, sources, opts.property.getLTL(),
                                         opts.is32bit, False, opts.witness_output)
         elif res == 'true' and not no_witness:
-            generate_counterexample(srcdir, original_sources, opts.property.getLTL(),
+            generate_counterexample(srcdir, sources, opts.property.getLTL(),
                                     opts.is32bit, True, opts.witness_output)
     except Timeout:
         sys.stdout.flush()
