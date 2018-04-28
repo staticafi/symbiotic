@@ -819,11 +819,35 @@ if [ $FROM -le 7 ]; then
 	echo -e "}\n\n" >> $VERSFILE
 	echo "llvm_version = '${LLVM_VERSION}'" >> $VERSFILE
 
+get_library()
+{
+	LIB=`ldd $1 | grep $2 | cut -d ' ' -f 3`
+	# if this is not library in our installation, return it
+	if echo $LIB | grep -v -q $PREFIX; then
+		echo $LIB
+	fi
+}
+
+get_dependencies()
+{
+	LIBS=`get_library $1 libstdc++`
+	LIBS="$LIBS `get_library $1 libc`"
+	LIBS="$LIBS `get_library $1 tinfo`"
+	# FIXME: remove once we build/download our z3
+	LIBS="$LIBS `get_library $1 libz3`"
+	echo $LIBS
+}
 ######################################################################
 #  create distribution
 ######################################################################
 	# copy the symbiotic python module
 	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
+
+	# copy dependencies
+	DEPS=`get_dependencies $LLVM_PREFIX/bin/klee`
+	if [ ! -z "$DEPS" ]; then
+		cp -u $DEPS $PREFIX/lib
+	fi
 
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
 
@@ -853,6 +877,11 @@ fi
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
 
+	for D in $DEPS; do
+		DEPENDENCIES="$PREFIX/lib/`basename $D` $DEPENDENCIES"
+	done
+
+
 	#strip binaries, it will save us 500 MB!
 	strip $BINARIES
 
@@ -860,6 +889,7 @@ fi
 	git add \
 		$BINARIES \
 		$LIBRARIES \
+		$DEPENDENCIES \
 		$INSTR\
 		bin/symbiotic \
 		include/symbiotic.h \
