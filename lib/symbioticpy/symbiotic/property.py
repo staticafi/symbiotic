@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from . exceptions import SymbioticException
-from os.path import abspath
+from os.path import abspath, join
 
 class Property:
     def __init__(self, prpfile = None):
@@ -125,10 +125,10 @@ def _map_property(prps):
 
     return (mapped_prps, ltl_prps)
 
-def get_property(prp):
+def get_property(symbiotic_dir, prp):
     if prp is None:
         prop = PropertyUnreachCall()
-        prop._prpfile = abspath('specs/PropertyUnreachCall.prp')
+        prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyUnreachCall.prp'))
         return prop
 
     prps, prpfile = _get_prp(prp)
@@ -138,21 +138,21 @@ def get_property(prp):
     if 'REACHCALL' in prps:
         prop = PropertyUnreachCall(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath('specs/PropertyUnreachCall.prp')
+            prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyUnreachCall.prp'))
     elif 'MEMSAFETY' in prps:
         prop = PropertyMemSafety(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath('specs/PropertyMemSafety.prp')
+            prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyMemSafety.prp'))
 
     elif 'UNDEF-BEHAVIOR' is prps:
         prop = PropertyDefBehavior(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath('specs/PropertyDefBehavior.prp')
+            prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyDefBehavior.prp'))
 
     elif 'SIGNED-OVERFLOW' in prps:
         prop = PropertyNoOverflow(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath('specs/PropertyNoOverflow.prp')
+            prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyNoOverflow.prp'))
 
     if prop:
         prop._ltl = ltl_prps

@@ -17,7 +17,7 @@ class SymbioticOptions(object):
         self.is32bit = False
         self.stats = False
         # properties mapped to our names
-        self.property = get_property(None)
+        self.property = get_property(self.symbiotic_dir, None)
         self.noslice = False
         # FIXME: make it False, this is just a temporary
         # switch for SV-COMP, since I do not want to send another

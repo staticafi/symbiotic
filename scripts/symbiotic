@@ -424,7 +424,7 @@ def parse_command_line():
                     break
         elif opt == '--prp':
             try:
-                options.property = get_property(arg)
+                options.property = get_property(options.symbiotic_dir, arg)
                 if options.property is None:
                     err('Could not derive the right property')
             except SymbioticException as e:
