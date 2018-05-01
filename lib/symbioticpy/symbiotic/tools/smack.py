@@ -54,3 +54,10 @@ class SymbioticTool(SmackTool):
         # do not link any functions
         opts.linkundef = []
 
+
+    def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
+        cmd = SmackTool.cmdline(self, executable, options, tasks, propertyfile, rlimits)
+        if self._options.is32bit:
+            cmd.append("--clang-options=-m32")
+        return cmd
+
