@@ -28,6 +28,8 @@ except ImportError:
     import symbiotic.benchexec.result as result
 
 from . kleebase import SymbioticTool as KleeBase
+from . kleebase import dump_error
+from os.path import dirname
 
 class SymbioticTool(KleeBase):
     """
@@ -166,3 +168,7 @@ class SymbioticTool(KleeBase):
             return result.RESULT_UNKNOWN
 
         return result.RESULT_ERROR
+
+    def describe_error(self, llvmfile):
+        dump_error(dirname(llvmfile))
+
