@@ -906,10 +906,9 @@ fi
 		$ULTIAUTO
 
 	git commit -m "Create Symbiotic distribution `date`" || true
+
 	# remove unnecessary files
-# DO NOT: so that the tools are not rebuilt over and over
-# They depend on the installed headers and libs.
-#	git clean -xdf
+	git clean -xdf
 fi
 
 if [ "x$ARCHIVE" = "xyes" ]; then
