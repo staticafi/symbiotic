@@ -28,16 +28,41 @@
 
 using namespace llvm;
 
-static void CallAddMetadata(CallInst *CI, Instruction *I)
-{
-  // FIXME: this is just a quick hack, it just makes inliner work,
-  // but it gives some spurious lines in witnesses
-  if (const DISubprogram *DS = I->getParent()->getParent()->getSubprogram()) {
-    // no metadata? then it is going to be the instrumentation
-    // of alloca or such at the beggining of function,
-    // so just add debug loc of the beginning of the function
-    CI->setDebugLoc(DebugLoc::get(DS->getLine(), 0, DS));
-  }
+/** Clone metadata from one instruction to another.
+ * If i1 does not contain any metadata, then the instruction
+ * that is closest to i1 is picked (we prefer the one that is after
+ * and if there is none, then use the closest one before).
+ *
+ * @param i1 the first instruction
+ * @param i2 the second instruction without any metadata
+ */
+static void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2) {
+    if (i1->hasMetadata()) {
+        i2->setDebugLoc(i1->getDebugLoc());
+        return;
+    }
+
+    const llvm::Instruction *metadataI = nullptr;
+    bool after = false;
+    for (const llvm::Instruction& I : *i1->getParent()) {
+        if (&I == i1) {
+            after = true;
+            continue;
+        }
+
+        if (I.hasMetadata()) {
+            // store every "last" instruction with metadata,
+            // so that in the case that we won't find anything
+            // after i1, we can use metadata that are the closest
+            // "before" i1
+            metadataI = &I;
+            if (after)
+                break;
+        }
+    }
+
+    assert(metadataI && "Did not find dbg in any instruction of a block");
+    i2->setDebugLoc(metadataI->getDebugLoc());
 }
 
 class InitializeUninitialized : public ModulePass {
@@ -152,7 +177,7 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
     CI->insertBefore(&Inst);
 
     // add metadata due to the inliner pass
-    CallAddMetadata(CI, &Inst);
+    CloneMetadata(&Inst, CI);
 
     modified = true;
 
@@ -235,8 +260,8 @@ GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::M
   CI->insertBefore(&I);
 
   // add metadata due to the inliner pass
-  CallAddMetadata(CI, &I);
-  //CloneMetadata(&I, CastI);
+  CloneMetadata(&I, CI);
+  CloneMetadata(&I, CastI);
 
   return G;
 }
@@ -333,7 +358,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             // we must add these metadata due to the inliner pass, that
             // corrupts the code when metada are missing
             //CloneMetadata(AI, CastI);
-	        CallAddMetadata(CI, AI);
+	        CloneMetadata(AI, CI);
         } else if (AI->isArrayAllocation()) {
             CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(Ctx));
             MulI = BinaryOperator::CreateMul(AI->getArraySize(),
@@ -348,9 +373,9 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             MulI->insertAfter(CastI);
             CI->insertAfter(MulI);
 
-            //CloneMetadata(AI, CastI);
-            //CloneMetadata(AI, MulI);
-	        CallAddMetadata(CI, AI);
+            CloneMetadata(AI, CastI);
+            CloneMetadata(AI, MulI);
+	        CloneMetadata(AI, CI);
         } else {
             // when this is not an array allocation,
             // store the symbolic value into the allocated memory using normal StoreInst.
@@ -361,8 +386,8 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             LI->insertAfter(AI);
             SI->insertAfter(LI);
 
-	        //CloneMetadata(AI, LI);
-            //CloneMetadata(AI, LI);
+	        CloneMetadata(AI, LI);
+            CloneMetadata(AI, LI);
         }
 
         modified = true;

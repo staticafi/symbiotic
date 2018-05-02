@@ -28,19 +28,45 @@
 
 using namespace llvm;
 
-void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2);
-
 namespace {
 
-static void CallAddMetadata(CallInst *CI, Instruction *I)
-{
-  if (const DISubprogram *DS = I->getParent()->getParent()->getSubprogram()) {
-    // no metadata? then it is going to be the instrumentation
-    // of alloca or such at the beggining of function,
-    // so just add debug loc of the beginning of the function
-    CI->setDebugLoc(DebugLoc::get(DS->getLine(), 0, DS));
-  }
+/** Clone metadata from one instruction to another.
+ * If i1 does not contain any metadata, then the instruction
+ * that is closest to i1 is picked (we prefer the one that is after
+ * and if there is none, then use the closest one before).
+ *
+ * @param i1 the first instruction
+ * @param i2 the second instruction without any metadata
+ */
+static void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2) {
+    if (i1->hasMetadata()) {
+        i2->setDebugLoc(i1->getDebugLoc());
+        return;
+    }
+
+    const llvm::Instruction *metadataI = nullptr;
+    bool after = false;
+    for (const llvm::Instruction& I : *i1->getParent()) {
+        if (&I == i1) {
+            after = true;
+            continue;
+        }
+
+        if (I.hasMetadata()) {
+            // store every "last" instruction with metadata,
+            // so that in the case that we won't find anything
+            // after i1, we can use metadata that are the closest
+            // "before" i1
+            metadataI = &I;
+            if (after)
+                break;
+        }
+    }
+
+    assert(metadataI && "Did not find dbg in any instruction of a block");
+    i2->setDebugLoc(metadataI->getDebugLoc());
 }
+
 
 class ReplaceUBSan : public FunctionPass {
   public:
@@ -84,7 +110,7 @@ bool ReplaceUBSan::runOnFunction(Function &F)
         }
 
         auto CI2 = CallInst::Create(ver_err);
-        CallAddMetadata(CI2, CI);
+        CloneMetadata(CI, CI2);
 
         CI2->insertAfter(CI);
         CI->eraseFromParent();
@@ -210,7 +236,7 @@ bool ReplaceAsserts::runOnFunction(Function &F)
       }
 
       auto CI2 = CallInst::Create(ver_err);
-      CallAddMetadata(CI2, CI);
+      CloneMetadata(CI, CI2);
 
       CI2->insertAfter(CI);
       CI->eraseFromParent();

@@ -133,34 +133,41 @@ bool DeleteUndefined::runOnModule(Module& M) {
     return modified;
 }
 
-#if 0
-/** Clone metadata from one instruction to another
+/** Clone metadata from one instruction to another.
+ * If i1 does not contain any metadata, then the instruction
+ * that is closest to i1 is picked (we prefer the one that is after
+ * and if there is none, then use the closest one before).
+ *
  * @param i1 the first instruction
  * @param i2 the second instruction without any metadata
-*/
-static void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2)
-{
-    if (!i1->hasMetadata())
+ */
+static void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2) {
+    if (i1->hasMetadata()) {
+        i2->setDebugLoc(i1->getDebugLoc());
         return;
-
-    assert(!i2->hasMetadata());
-    llvm::SmallVector< std::pair< unsigned, llvm::MDNode * >, 2> mds;
-    i1->getAllMetadata(mds);
-
-    for (const auto& it : mds) {
-        i2->setMetadata(it.first, it.second->clone().release());
     }
-}
-#endif
 
-static void CallAddMetadata(CallInst *CI, Instruction *I)
-{
-  if (const DISubprogram *DS = I->getParent()->getParent()->getSubprogram()) {
-    // no metadata? then it is going to be the instrumentation
-    // of alloca or such at the beggining of function,
-    // so just add debug loc of the beginning of the function
-    CI->setDebugLoc(DebugLoc::get(DS->getLine(), 0, DS));
-  }
+    const llvm::Instruction *metadataI = nullptr;
+    bool after = false;
+    for (const llvm::Instruction& I : *i1->getParent()) {
+        if (&I == i1) {
+            after = true;
+            continue;
+        }
+
+        if (I.hasMetadata()) {
+            // store every "last" instruction with metadata,
+            // so that in the case that we won't find anything
+            // after i1, we can use metadata that are the closest
+            // "before" i1
+            metadataI = &I;
+            if (after)
+                break;
+        }
+    }
+
+    assert(metadataI && "Did not find dbg in any instruction of a block");
+    i2->setDebugLoc(metadataI->getDebugLoc());
 }
 
 Function *DeleteUndefined::get_verifier_make_nondet(llvm::Module *M)
@@ -242,8 +249,8 @@ GlobalVariable *DeleteUndefined::getGlobalNondet(llvm::Type *Ty, llvm::Module *M
   CI->insertBefore(&I);
 
   // add metadata due to the inliner pass
-  CallAddMetadata(CI, &I);
-  //CloneMetadata(&I, CastI);
+  CloneMetadata(&I, CI);
+  CloneMetadata(&I, CastI);
 
   return G;
 }
