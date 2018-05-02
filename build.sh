@@ -59,7 +59,6 @@ get_llvm_version()
 }
 
 export PREFIX=`pwd`/install
-export SYMBIOTIC_ENV=1
 
 export LD_LIBRARY_PATH="$PREFIX/lib:$LD_LIBRARY_PATH"
 export C_INCLUDE_PATH="$PREFIX/include:$C_INCLUDE_PATH"
@@ -79,6 +78,7 @@ WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
 WITH_ZLIB='no'
+
 [ -z $BUILD_TYPE ] && BUILD_TYPE="Release"
 
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
