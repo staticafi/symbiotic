@@ -653,42 +653,6 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	popd
 fi
 
-get_cpa()
-{
-	if [ ! -d CPAchecker ]; then
-		CPA_VERSION="CPAchecker-1.6.12-svcomp17-unix"
-		download_tar https://cpachecker.sosy-lab.org/${CPA_VERSION}.tar.bz2
-		mv "$CPA_VERSION" "CPAchecker" || exit 1
-	fi
-}
-
-get_ultimize()
-{
-	if [ ! -d UltimateAutomizer ]; then
-		ULTIMATE_VERSION=UltimateAutomizer-linux
-		download_zip https://ultimate.informatik.uni-freiburg.de/downloads/svcomp2017/${ULTIMATE_VERSION}.zip
-		mv "UAutomizer-linux" "UltimateAutomizer" || exit 1
-	fi
-}
-
-if [ "`pwd`" != $ABS_SRCDIR ]; then
-	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
-fi
-
-######################################################################
-#   witness checkers
-######################################################################
-if [ $FROM -le 5 ]; then
-	if [ $WITH_CPA -eq 1 ]; then
-		get_cpa
-		rsync -a CPAchecker $PREFIX/
-	fi
-	if [ $WITH_ULTIMATEAUTOMIZER -eq 1 ]; then
-		get_ultimize
-		rsync -a UltimateAutomizer $PREFIX/
-	fi
-fi
-
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
@@ -901,9 +865,7 @@ fi
 		lib/symbioticpy/symbiotic/benchexec/tools/*.py \
 		lib/symbioticpy/symbiotic/tools/*.py \
 		lib/symbioticpy/symbiotic/utils/*.py \
-		lib/symbioticpy/symbiotic/witnesses/*.py \
-		$CPACHECKER \
-		$ULTIAUTO
+		lib/symbioticpy/symbiotic/witnesses/*.py
 
 	git commit -m "Create Symbiotic distribution `date`" || true
 
