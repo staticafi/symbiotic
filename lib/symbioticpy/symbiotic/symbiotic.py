@@ -196,7 +196,8 @@ class Symbiotic(object):
         Compile given source to LLVM bytecode
         """
 
-        cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h'] + opts
+        # __inline attribute is buggy in clang, remove it using -D__inline
+        cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h', '-D__inline=static'] + opts
 
         if with_g:
             cmd.append('-g')
