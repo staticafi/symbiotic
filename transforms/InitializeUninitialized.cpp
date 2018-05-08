@@ -69,11 +69,8 @@ class InitializeUninitialized : public ModulePass {
     Function *_vms = nullptr; // verifier_make_nondet function
     Type *_size_t_Ty = nullptr; // type of size_t
 
-    std::unordered_map<Type *, GlobalVariable *> added_globals;
     std::unique_ptr<DataLayout> DL;
 
-    // add global of given type and initialize it in may as nondeterministic
-    GlobalVariable *getGlobalNondet(Type *, Module *);
     Function *get_verifier_make_nondet(Module *);
     Type *get_size_t(Module *);
     bool initializeExternalGlobals(Module&);
@@ -220,52 +217,6 @@ Type *InitializeUninitialized::get_size_t(llvm::Module *M)
   return _size_t_Ty;
 }
 
-// add global of given type and initialize it in may as nondeterministic
-GlobalVariable *InitializeUninitialized::getGlobalNondet(llvm::Type *Ty, llvm::Module *M)
-{
-  auto it = added_globals.find(Ty);
-  if (it != added_globals.end())
-    return it->second;
-
-  LLVMContext& Ctx = M->getContext();
-  GlobalVariable *G = new GlobalVariable(*M, Ty, false /* constant */,
-                                         GlobalValue::PrivateLinkage,
-                                         /* initializer */
-                                         Constant::getNullValue(Ty),
-                                         "nondet_gl");
-
-  added_globals.emplace(Ty, G);
-
-  // insert initialization of the new global variable
-  // at the beginning of main
-  Function *vms = get_verifier_make_nondet(M);
-  CastInst *CastI = CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Ctx));
-
-  std::vector<Value *> args;
-  args.push_back(CastI);
-  args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
-  Constant *name = ConstantDataArray::getString(Ctx, "nondet");
-  GlobalVariable *nameG = new GlobalVariable(*M, name->getType(), true /*constant */,
-                                             GlobalVariable::PrivateLinkage, name);
-  args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
-  CallInst *CI = CallInst::Create(vms, args);
-
-  Function *main = M->getFunction("main");
-  assert(main && "Do not have main");
-  BasicBlock& block = main->getBasicBlockList().front();
-  // there must be some instruction, otherwise we would not be calling
-  // this function
-  Instruction& I = *(block.begin());
-  CastI->insertBefore(&I);
-  CI->insertBefore(&I);
-
-  // add metadata due to the inliner pass
-  CloneMetadata(&I, CI);
-  CloneMetadata(&I, CastI);
-
-  return G;
-}
-
 // no hard analysis, just check wether the alloca is initialized
 // in the same block. (we could do an O(n) analysis that would
 // do DFS and if the alloca would be initialized on every path
@@ -305,6 +256,24 @@ static bool mayBeUnititialized(const llvm::AllocaInst *AI)
     return true;
 }
 
+GlobalVariable *getNameGlobal(Module *M, const std::string& name)
+{
+  static std::map<const std::string, GlobalVariable *> variables;
+  auto GI = variables.find(name);
+  if (GI != variables.end())
+      return GI->second;
+
+  LLVMContext& Ctx = M->getContext();
+  Constant *name_init = ConstantDataArray::getString(Ctx, name);
+  GlobalVariable *G = new GlobalVariable(*M, name_init->getType(), true,
+                                          GlobalValue::PrivateLinkage,
+                                          name_init);
+
+
+  variables[name] = G;
+  return G;
+}
+
 bool InitializeUninitialized::runOnFunction(Function &F)
 {
   // do not run the initializer on __VERIFIER and __INSTR functions
@@ -315,10 +284,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
   bool modified = false;
   Module *M = F.getParent();
   LLVMContext& Ctx = M->getContext();
-  Constant *name_init = ConstantDataArray::getString(Ctx, "nondet");
-  GlobalVariable *name = new GlobalVariable(*M, name_init->getType(), true,
-                                            GlobalValue::PrivateLinkage,
-                                            name_init);
+  GlobalVariable *name = getNameGlobal(M, "nondet");
 
   Function *C = get_verifier_make_nondet(M);
 
@@ -357,7 +323,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
 
             // we must add these metadata due to the inliner pass, that
             // corrupts the code when metada are missing
-            //CloneMetadata(AI, CastI);
+            CloneMetadata(AI, CastI);
 	        CloneMetadata(AI, CI);
         } else if (AI->isArrayAllocation()) {
             CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(Ctx));
@@ -380,14 +346,31 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             // when this is not an array allocation,
             // store the symbolic value into the allocated memory using normal StoreInst.
             // That will allow slice away more unneeded allocations
-            LI = new LoadInst(getGlobalNondet(Ty, M));
-            SI = new StoreInst(LI, AI);
+            auto AIS = new AllocaInst(AI->getAllocatedType());
+            AIS->insertAfter(AI);
 
-            LI->insertAfter(AI);
+            // we created a new allocation, so now we will make it nondeterministic
+            // and store its value into the original allocation
+            CastI = CastInst::CreatePointerCast(AIS, Type::getInt8PtrTy(Ctx));
+            args.push_back(CastI);
+            args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
+            args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
+
+            CI = CallInst::Create(C, args);
+            CastI->insertAfter(AIS);
+            CI->insertAfter(CastI);
+
+
+            LI = new LoadInst(AIS);
+            SI = new StoreInst(LI, AI);
+            LI->insertAfter(CI);
             SI->insertAfter(LI);
 
+	        CloneMetadata(AI, AIS);
+	        CloneMetadata(AI, CI);
+	        CloneMetadata(AI, CastI);
 	        CloneMetadata(AI, LI);
-            CloneMetadata(AI, LI);
+            CloneMetadata(AI, SI);
         }
 
         modified = true;
