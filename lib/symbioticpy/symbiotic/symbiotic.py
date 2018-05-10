@@ -197,7 +197,7 @@ class Symbiotic(object):
         """
 
         # __inline attribute is buggy in clang, remove it using -D__inline
-        cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h', '-D__inline=static'] + opts
+        cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h', '-D__inline='] + opts
 
         if with_g:
             cmd.append('-g')
