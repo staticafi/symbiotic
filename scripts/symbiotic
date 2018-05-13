@@ -136,7 +136,6 @@ where OPTS can be following:
 
 # whether to dump source lines into the witness
 witness_with_source_lines = False
-no_witness = False
 no_integrity_check = False
 dump_env_only = False
 dump_env_cmd = False
@@ -381,8 +380,7 @@ def parse_command_line():
             options.noslice = True
         elif opt == '--no-witness':
             dbg('Will not create a witness')
-            global no_witness
-            no_witness = True
+            options.nowitness = True
         elif opt == '--no-prepare':
             dbg('Will not prepare code')
             options.noprepare = True
@@ -651,10 +649,10 @@ if __name__ == "__main__":
             if hasattr(symbiotic._tool, "describe_error"):
                 symbiotic._tool.describe_error(symbiotic.llvmfile)
 
-            if not no_witness:
+            if not opts.nowitness:
                 generate_counterexample(srcdir, sources, opts.property.getLTL(),
                                         opts.is32bit, False, opts.witness_output)
-        elif res == 'true' and not no_witness:
+        elif res == 'true' and not opts.nowitness:
             generate_counterexample(srcdir, sources, opts.property.getLTL(),
                                     opts.is32bit, True, opts.witness_output)
     except Timeout:

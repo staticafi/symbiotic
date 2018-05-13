@@ -56,3 +56,4 @@ class SymbioticOptions(object):
         self.CPPFLAGS = []
         self.devel_mode = False
         self.instrumentation_files_path = None
+        self.nowitness = False

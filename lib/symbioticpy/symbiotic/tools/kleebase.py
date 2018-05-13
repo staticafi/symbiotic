@@ -131,9 +131,10 @@ class SymbioticTool(BaseTool):
         """
         # remove definitions of __VERIFIER_* that are not created by us,
         # make extern globals local, etc. Also remove syntactically infinite loops.
-        passes = \
-        ['-remove-infinite-loops', '-rename-verifier-funs',
-         '-rename-verifier-funs-source={0}'.format(self._options.sources[0])]
+        passes =  ['-remove-infinite-loops']
+        if not self._options.nowitness:
+            passes.append('-rename-verifier-funs')
+            passes.append('-rename-verifier-funs-source={0}'.format(self._options.sources[0]))
 
         if not self._options.noprepare:
             passes.append('-prepare')
