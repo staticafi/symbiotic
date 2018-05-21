@@ -11,9 +11,10 @@ class IncludePathsSearcher:
         """
         Find paths where standard headers are located
         """
-        pr = ProcessRunner(cmd, ProcessWatch(lines_limit = None))
-        if pr.run() == 0:
-            lines_iter = iter(pr.getOutput())
+        pr = ProcessRunner()
+        watch = ProcessWatch(lines_limit = None)
+        if pr.run(cmd, watch) == 0:
+            lines_iter = iter(watch.getLines())
             # find the beginning of include paths
             for line in lines_iter:
                 if line == b'#include <...> search starts here:\n':

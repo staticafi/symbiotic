@@ -71,9 +71,9 @@ def process_grep(cmd, pattern):
     from . watch import GrepWatch
     from . process import ProcessRunner
 
-    p = ProcessRunner(cmd, GrepWatch(pattern))
-    retval = p.run()
-    return (retval, p.getOutput())
+    watch = GrepWatch(pattern)
+    retval = ProcessRunner().run(cmd, watch)
+    return (retval, watch.getLines())
 
 
 debug_enabled = False

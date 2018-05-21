@@ -6,7 +6,7 @@ import re
 
 from . options import SymbioticOptions
 from . utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
-from . utils.process import ProcessRunner, runcmd, getCurrentProcess
+from . utils.process import ProcessRunner, runcmd
 from . utils.watch import ProcessWatch, DbgWatch
 from . utils.utils import print_stdout, print_stderr, get_symbiotic_dir
 from . exceptions import SymbioticException
@@ -514,21 +514,24 @@ class Symbiotic(object):
                                            watch.getLines(), False)
 
     def terminate(self):
-        current_process = getCurrentProcess()
-        if current_process:
-            current_process.terminate()
+        pr = ProcessRunner()
+        if pr.hasProcess():
+            pr().terminate()
 
     def kill(self):
-        current_process = getCurrentProcess()
-        if current_process:
-            current_process.kill()
+        pr = ProcessRunner()
+        if pr.hasProcess():
+            pr.kill()
 
     def kill_wait(self):
-        current_process = getCurrentProcess()
-        if current_process and current_process.exitStatus() is None:
+        pr = ProcessRunner()
+        if not pr.hasProcess():
+            return
+
+        if pr.exitStatus() is None:
             from time import sleep
-            while current_process.exitStatus() is None:
-                current_process.kill()
+            while pr.exitStatus() is None:
+                pr.kill()
 
                 print('Waiting for the child process to terminate')
                 sleep(0.5)

@@ -7,6 +7,7 @@ from . utils.watch import ProcessWatch
 class IntegrityChecker(object):
     def __init__(self, versions):
         self._versions = versions
+        self._process = ProcessRunner()
 
     def _decode(self, vers):
         if version_info < (3,0):
@@ -22,19 +23,19 @@ class IntegrityChecker(object):
         return lines[0].split(b':')[1].strip()
 
     def _get_slicer_version(self):
-        pr = ProcessRunner(['sbt-slicer', '-version'], ProcessWatch(1))
-        retval = pr.run()
+        watch = ProcessWatch(1)
+        retval = self._process.run(['sbt-slicer', '-version'], watch)
         assert retval == 0
-        lines = pr.getOutput()
+        lines = watch.getLines()
         assert(len(lines) == 1)
 
         return lines[0].strip()[:8]
 
     def _get_instr_version(self):
-        pr = ProcessRunner(['sbt-instr', '--version'], ProcessWatch(1))
-        retval = pr.run()
+        watch = ProcessWatch(1)
+        retval = self._process.run(['sbt-instr', '--version'])
         assert retval == 0
-        lines = pr.getOutput()
+        lines = watch.getLines()
         assert(len(lines) == 1)
 
         return lines[0].strip()
