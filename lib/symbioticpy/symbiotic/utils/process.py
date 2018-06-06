@@ -53,8 +53,6 @@ class ProcessRunner(object):
                 # watch told us to kill the process for some reason
                 ProcessRunner.current_process.terminate()
                 ProcessRunner.current_process.kill()
-
-                assert self.exitStatus() is not None
                 ProcessRunner.current_process = None
                 return None
 

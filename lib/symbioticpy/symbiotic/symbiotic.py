@@ -516,7 +516,7 @@ class Symbiotic(object):
     def terminate(self):
         pr = ProcessRunner()
         if pr.hasProcess():
-            pr().terminate()
+            pr.terminate()
 
     def kill(self):
         pr = ProcessRunner()
