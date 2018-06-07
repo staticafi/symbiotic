@@ -265,4 +265,5 @@ class SymbioticTool(BaseTool):
         """
         Same as prepare, but runs after slicing
         """
-        return ["-reg2mem"]
+        # LLVM backend in CPAchecker does not handle switches correctly yet
+        return ["-reg2mem", "-lowerswitch", "-simplifycfg"]
