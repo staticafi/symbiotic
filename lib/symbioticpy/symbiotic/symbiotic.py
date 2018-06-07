@@ -571,12 +571,13 @@ class Symbiotic(object):
         if opt:
             self.optimize(passes=opt)
 
-        # break the infinite loops just before slicing
-        # so that the optimizations won't make them syntactically infinite again
-        # self.run_opt(['-reg2mem', '-break-infinite-loops', '-remove-infinite-loops',
-        self.run_opt(['-break-infinite-loops', '-remove-infinite-loops',
-                      # this somehow break the bitcode
-                      #'-mem2reg'
+        # Break the infinite loops just before slicing so that the
+        # optimizations won't make them syntactically infinite again. We must
+        # run reg2mem before breaking to loops, because breaking the loops can
+        # not handle PHI nodes well.
+        self.run_opt(['-reg2mem', '-break-infinite-loops',
+                      '-remove-infinite-loops',
+                      '-mem2reg'
                       ])
 
         self._get_stats('Before slicing ')
