@@ -46,13 +46,8 @@ struct PrepareOverflows : public FunctionPass {
   }
 
   void handleCall(CallInst* CI) {
-      std::set<std::string> relevantFunctions {
-          "__ubsan_handle_add_overflow",
-          "__ubsan_handle_sub_overflow",
-          "__ubsan_handle_mul_overflow",
-          "__ubsan_handle_divrem_overflow",
-          "__ubsan_handle_negate_overflow"
-      };
+      if (!CI->getCalledFunction() || !CI->getCalledFunction()->hasName())
+          return;
 
       auto search = relevantFunctions.find(CI->getCalledFunction()->getName());
       if(search != relevantFunctions.end()) {
@@ -92,6 +87,9 @@ struct PrepareOverflows : public FunctionPass {
       }
 
       for (const auto& p : replaceMap) {
+         if (!p.first || !p.second)
+             continue;
+
          Instruction* I = dyn_cast<Instruction>(p.second);
          if (I)
             ReplaceInstWithInst(p.first, I);
@@ -101,14 +99,14 @@ struct PrepareOverflows : public FunctionPass {
          }
       }
 
-      for (const auto& p : insertAfterMap) {
-          p.second->insertAfter(p.first);
-      }
-
       // delete instructions that should be removed
       for (auto i = deleteInsts.rbegin(); i != deleteInsts.rend(); ++i ) {
           (*i)->eraseFromParent();
       }
+
+      deleteInsts.clear();
+      binOpsMap.clear();
+      replaceMap.clear();
       return false;
   }
 
@@ -116,7 +114,13 @@ struct PrepareOverflows : public FunctionPass {
    std::set<Instruction*> deleteInsts;
    std::map<Instruction*, Instruction::BinaryOps> binOpsMap;
    std::map<Instruction*, Value*> replaceMap;
-   std::map<Instruction*, Instruction*> insertAfterMap;
+   std::set<std::string> relevantFunctions {
+          "__ubsan_handle_add_overflow",
+          "__ubsan_handle_sub_overflow",
+          "__ubsan_handle_mul_overflow",
+          "__ubsan_handle_divrem_overflow",
+          "__ubsan_handle_negate_overflow"
+   };
 };
 } // end of anonymous namespace
 
