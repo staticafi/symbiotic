@@ -94,6 +94,8 @@ where OPTS can be following:
                               The string can be given on line or in a file.
     --memsafety-config-file   Set the configuration file for memsafety. The files
                               can be found in share/sbt-instrumentation/memsafety/
+    --overflow-config-file    Set the configuration file for overflows. The files
+                              can be found in share/sbt-instrumentation/int_overflows/
     --pta=[fs|fi|old]         Use flow-sensitive/flow-insensitive or old
                               (flow-insensitive too) points-to analysis when slicing.
                               Default is the old
@@ -229,6 +231,7 @@ def set_environ(tool, opts):
 
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(llvm_prefix))
+    prepend('LD_LIBRARY_PATH', '{0}/minisat/build'.format(symbiotic_dir))
 
     prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
     prepend('C_INCLUDE_DIR', '{0}/include'.format(llvm_prefix))
@@ -347,8 +350,8 @@ def parse_command_line():
                                     'witness-with-source-lines', 'dont-exit-on-error',
                                     'undefined-are-pure', 'no-svcomp-funs',
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
-                                    'memsafety-config-file=', 'statistics',
-                                    'working-dir-prefix=', 'sv-comp'])
+                                    'memsafety-config-file=', 'overflow-config-file=',
+                                    'statistics', 'working-dir-prefix=', 'sv-comp'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -513,6 +516,8 @@ def parse_command_line():
             options.stats = True
         elif opt == '--memsafety-config-file':
             options.memsafety_config_file = arg
+        elif opt == '--overflow-config-file':
+            options.overflow_config_file = arg
         elif opt == '--dump-env':
             dump_env_only = True
         elif opt == '--dump-env-cmd':

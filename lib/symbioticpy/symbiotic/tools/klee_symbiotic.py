@@ -89,6 +89,10 @@ class SymbioticTool(KleeBase):
             # default config file is 'config.json'
             return (self._options.memsafety_config_file, 'memsafety.c', True)
 
+        if self._options.property.signedoverflow():
+            # default config file is 'config.json'
+			return (self._options.overflow_config_file, 'overflows.c', True)
+
         return (None, None, None)
 
     def slicer_options(self):

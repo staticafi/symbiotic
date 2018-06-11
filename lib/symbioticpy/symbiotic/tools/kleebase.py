@@ -125,9 +125,9 @@ class SymbioticTool(BaseTool):
         if self._options.property.undefinedness():
                 opts.append('-fsanitize=undefined')
                 opts.append('-fno-sanitize=unsigned-integer-overflow')
-        elif self._options.property.signedoverflow():
-                opts.append('-fsanitize=signed-integer-overflow')
-                opts.append('-fsanitize=shift')
+        #elif self._options.property.signedoverflow():
+        #        opts.append('-fsanitize=signed-integer-overflow')
+        #        opts.append('-fsanitize=shift')
 
         return opts
 

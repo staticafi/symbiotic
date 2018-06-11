@@ -39,6 +39,7 @@ class SymbioticOptions(object):
         self.slicer_pta = 'fi'
         self.slicing_criterion = '__assert_fail,__VERIFIER_error'
         self.memsafety_config_file = 'config.json'
+        self.overflow_config_file = 'config.json'
         self.repeat_slicing = 1
         self.dont_exit_on_error = False
         # these files will be linked unconditionally
