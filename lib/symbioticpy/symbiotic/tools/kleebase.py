@@ -125,9 +125,9 @@ class SymbioticTool(BaseTool):
         if self._options.property.undefinedness():
                 opts.append('-fsanitize=undefined')
                 opts.append('-fno-sanitize=unsigned-integer-overflow')
-        #elif self._options.property.signedoverflow():
-        #        opts.append('-fsanitize=signed-integer-overflow')
-        #        opts.append('-fsanitize=shift')
+        elif self._options.property.signedoverflow():
+                opts.append('-fsanitize=signed-integer-overflow')
+                opts.append('-fsanitize=shift')
 
         return opts
 
@@ -149,6 +149,9 @@ class SymbioticTool(BaseTool):
         if self._options.property.undefinedness() or \
            self._options.property.signedoverflow():
             passes.append('-replace-ubsan')
+
+        if self._options.property.signedoverflow():
+            passes.append('-prepare-overflows')
 
         # make all memory symbolic (if desired)
         if not self._options.explicit_symbolic:
