@@ -4,9 +4,21 @@ instrumentation, static program slicing and symbolic execution.
 Symbiotic is highly modular and most of its components are self-standing programs of LLVM passes that have their own repositories at https://github.com/staticafi.
 
 ## Getting started
+
 ### Downloading Symbiotic
-Tarball with Symbiotic distribution can be downloaded from https://github.com/staticafi/symbiotic/releases
+The archive used in SV-COMOP 2018 can be downloaded from [https://gitlab.com/sosy-lab/sv-comp/archives/raw/svcomp18/2018/symbiotic.zip](https://gitlab.com/sosy-lab/sv-comp/archives/raw/svcomp18/2018/symbiotic.zip)
+
+Other tarballs with Symbiotic distribution (not updated reguralry) can be downloaded from https://github.com/staticafi/symbiotic/releases
 After unpacking, Symbiotic is ready to go.
+
+### Docker image
+
+You can use also the docker image:
+
+```
+docker pull mchalupa/symbiotic
+docker run -ti mchalupa/symbiotic
+```
 
 ### Building Symbiotic from Sources
 
