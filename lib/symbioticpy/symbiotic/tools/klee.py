@@ -111,6 +111,7 @@ class SymbioticTool(KleeBase):
         if self._options.property.memsafety():
             cmd.append('-check-leaks')
             cmd.append('-exit-on-error-type=Ptr')
+            cmd.append('-exit-on-error-type=Leak')
             cmd.append('-exit-on-error-type=ReadOnly')
             cmd.append('-exit-on-error-type=Free')
             cmd.append('-exit-on-error-type=BadVectorAccess')
