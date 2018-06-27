@@ -17,7 +17,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from os.path import dirname, abspath
+from os.path import dirname, abspath, isfile
 from symbiotic.utils.utils import print_stdout
 
 try:
@@ -38,8 +38,14 @@ def dump_error(bindir, ismem=False):
     abd = abspath(bindir)
     if ismem:
         pth = abspath('{0}/klee-last/test000001.ptr.err'.format(abd))
+        if not isfile(pth):
+            pth = abspath('{0}/klee-last/test000001.leak.err'.format(abd))
     else:
         pth = abspath('{0}/klee-last/test000001.assert.err'.format(abd))
+
+    if not isfile(pth):
+        dbg("Couldn't find the file with error description")
+        return
 
     try:
         f = open(pth, 'r')
