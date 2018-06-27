@@ -93,6 +93,12 @@ class SymbioticTool(KleeBase):
 
         return (self._options.slicing_criterion,[])
 
+    def passes_after_instrumentation(self):
+        if self._options.property.memsafety():
+            # make all store/load insts that are marked by instrumentation
+            # volatile, so that we can run optimizations later on them
+            return ['-mark-volatile']
+
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
         Compose the command line to execute from the name of the executable

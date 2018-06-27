@@ -66,6 +66,7 @@ add_llvm_loadable_module(LLVMsbt
 				ReplaceUBSan.cpp
 				InstrumentAlloc.cpp
 				CountInstr.cpp
+				MarkVolatile.cpp
 				CheckUnsupported.cpp)
 
 install(TARGETS LLVMsbt

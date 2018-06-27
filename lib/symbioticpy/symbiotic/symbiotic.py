@@ -674,6 +674,10 @@ class Symbiotic(object):
         #################### #################### ###################
         self.instrument()
 
+        if hasattr(self._tool, 'passes_after_instrumentation'):
+            passes = self._tool.passes_after_instrumentation()
+            self.run_opt(passes)
+
         # link with the rest of libraries if needed (klee-libc)
         self.link()
 
@@ -688,6 +692,10 @@ class Symbiotic(object):
         else:
             print_elapsed_time('INFO: Compilation, preparation and '
                                'instrumentation time', color='WHITE')
+
+        if hasattr(self._tool, 'prepare_after'):
+            passes += self._tool.prepare_after()
+        self.run_opt(passes)
 
         # for the memsafety property, make functions behave like they have
         # side-effects, because LLVM optimizations could remove them otherwise,
@@ -710,10 +718,6 @@ class Symbiotic(object):
 
         # there may have been created new loops
         passes = ['-remove-infinite-loops']
-
-        if hasattr(self._tool, 'prepare_after'):
-            passes += self._tool.prepare_after()
-        self.run_opt(passes)
 
         # delete-undefined may insert __VERIFIER_make_nondet
         # and also other funs like __errno_location may be included
