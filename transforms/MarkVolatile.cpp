@@ -13,6 +13,7 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 #include "llvm/IR/Type.h"
@@ -42,6 +43,7 @@ class MarkVolatile : public FunctionPass {
 bool MarkVolatile::runOnFunction(Function &F)
 {
   bool modified = false;
+  LLVMContext& ctx = F.getParent()->getContext();
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
     Instruction *ins = &*I;
@@ -69,6 +71,9 @@ bool MarkVolatile::runOnFunction(Function &F)
           modified = true;
       } else if (LoadInst *LI = dyn_cast<LoadInst>(&*nextIt)) {
           LI->setVolatile(true);
+          modified = true;
+      } else if (MemIntrinsic *MI = dyn_cast<MemIntrinsic>(&*nextIt)) {
+          MI->setVolatile(ConstantInt::getTrue(ctx));
           modified = true;
       } else {
           errs() << "[Warning]: this marked instruction was not made volatile:\n";
