@@ -108,8 +108,8 @@ class SymbioticTool(BaseTool):
         #         heapsize = rlimits[MEMLIMIT]*0.8 # 20% overhead for non-java-memory
         #         options = options + ["-heap", str(int(heapsize))]
 
-        if ("-stats" not in existing_options):
-            options = options + ["-stats"]
+        #if ("-stats" not in existing_options):
+        #    options = options + ["-stats"]
 
         spec = ["-spec", propertyfile] if propertyfile is not None else []
 
@@ -261,9 +261,9 @@ class SymbioticTool(BaseTool):
         """
         return '3.9.1'
 
-    def prepare_after(self):
+    def passes_after_slicing(self):
         """
-        Same as prepare, but runs after slicing
+        Passes that should be run after slicing
         """
         # LLVM backend in CPAchecker does not handle switches correctly yet
         return ["-reg2mem", "-lowerswitch", "-simplifycfg"]

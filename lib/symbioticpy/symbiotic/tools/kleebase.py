@@ -124,7 +124,7 @@ class SymbioticTool(BaseTool):
 
         return opts
 
-    def prepare(self):
+    def passes_after_compilation(self):
         """
         Prepare the bitcode for verification - return a list of
         LLVM passes that should be run on the code
@@ -149,7 +149,7 @@ class SymbioticTool(BaseTool):
 
         return passes
 
-    def prepare_after(self):
+    def passes_after_slicing(self):
         """
         Prepare the bitcode for verification after slicing:
         \return a list of LLVM passes that should be run on the code

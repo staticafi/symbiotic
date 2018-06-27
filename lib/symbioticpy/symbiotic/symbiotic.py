@@ -631,6 +631,11 @@ class Symbiotic(object):
 
         self._disable_some_optimizations(self._tool.llvm_version())
 
+        #################### #################### ###################
+        # COMPILATION
+        #  - compile the code into LLVM bitcode
+        #################### #################### ###################
+
         # compile all sources if the file is not given
         # as a .bc file
         if self.options.source_is_bc:
@@ -658,9 +663,9 @@ class Symbiotic(object):
            self.options.property.signedoverflow():
             # remove the original calls to __VERIFIER_error
             passes.append('-remove-error-calls')
+        if hasattr(self._tool, 'passes_after_compilation'):
+            passes += self._tool.passes_after_compilation()
 
-        if hasattr(self._tool, 'prepare'):
-            passes += self._tool.prepare()
         self.run_opt(passes)
 
         # we want to link memsafety functions before instrumentation,
@@ -670,7 +675,7 @@ class Symbiotic(object):
 
         #################### #################### ###################
         # INSTRUMENTATION
-        #  - now instrument the code according to properties
+        #  - now instrument the code according to the given property
         #################### #################### ###################
         self.instrument()
 
@@ -686,22 +691,18 @@ class Symbiotic(object):
         # can link __VERIFIER_malloc0.c or similar)
         self.link_undefined()
 
-        # slice the code
+        #################### #################### ###################
+        # SLICING
+        #  - slice the code w.r.t error sites
+        #################### #################### ###################
         if not self.options.noslice:
             self.perform_slicing()
         else:
             print_elapsed_time('INFO: Compilation, preparation and '
                                'instrumentation time', color='WHITE')
 
-        if hasattr(self._tool, 'prepare_after'):
-            passes += self._tool.prepare_after()
-        self.run_opt(passes)
-
-        # for the memsafety property, make functions behave like they have
-        # side-effects, because LLVM optimizations could remove them otherwise,
-        # even though they contain calls to assert
-        if self.options.property.memsafety():
-            self.run_opt(['-remove-readonly-attr'])
+        if hasattr(self._tool, 'passes_after_slicing'):
+            self.run_opt(self._tool.passes_after_slicing())
 
         # start a new time era
         restart_counting_time()
@@ -752,6 +753,10 @@ class Symbiotic(object):
                     self.options.final_output, e.message)
                 raise SymbioticException(msg)
 
+        #################### #################### ###################
+        # VERIFICATION
+        #  - run the verification backend
+        #################### #################### ###################
         if not self.options.no_verification:
             self._get_stats('Before verification ')
             print_stdout('INFO: Starting verification', color='WHITE')
