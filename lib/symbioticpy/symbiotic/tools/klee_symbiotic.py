@@ -121,15 +121,6 @@ class SymbioticTool(KleeBase):
         if self._options.property.memsafety():
             return ['-remove-readonly-attr']
 
-    def preprocess_llvm(self, infile):
-        """
-        A tool's specific preprocessing steps for llvm file
-        before verification itself. Returns a pair (cmd, outputfile),
-        where cmd is the list suitable to pass to Popen and outputfile
-        is the resulting file from the preprocessing
-        """
-        return (None, None)
-
     def _parse_klee_output_line(self, line):
         for (key, pattern) in self._patterns:
             if pattern.match(line):

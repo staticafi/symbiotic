@@ -473,15 +473,15 @@ class Symbiotic(object):
 
         return True
 
-    def preprocess_llvm(self):
+    def postprocess_llvm(self):
         """
         Run a command that proprocesses the llvm code
         for a particular tool
         """
-        if not hasattr(self._tool, 'preprocess_llvm'):
+        if not hasattr(self._tool, 'postprocess_llvm'):
             return
 
-        cmd, output = self._tool.preprocess_llvm(self.llvmfile)
+        cmd, output = self._tool.postprocess_llvm(self.llvmfile)
         if not cmd:
             return
 
@@ -701,9 +701,6 @@ class Symbiotic(object):
             print_elapsed_time('INFO: Compilation, preparation and '
                                'instrumentation time', color='WHITE')
 
-        if hasattr(self._tool, 'passes_after_slicing'):
-            self.run_opt(self._tool.passes_after_slicing())
-
         # start a new time era
         restart_counting_time()
 
@@ -712,13 +709,17 @@ class Symbiotic(object):
         if opt:
             self.optimize(passes=opt)
 
+
+        # there may have been created new loops
+        passes = ['-remove-infinite-loops']
+        if hasattr(self._tool, 'passes_after_slicing'):
+            passes += self._tool.passes_after_slicing()
+        self.run_opt(passes)
+
         # FIXME: move these checks to tool specific code
         if self._tool.name() == 'klee' and not self.check_llvmfile(self.llvmfile):
             dbg('Unsupported call (probably floating handling)')
             return report_results('unsupported call')
-
-        # there may have been created new loops
-        passes = ['-remove-infinite-loops']
 
         # delete-undefined may insert __VERIFIER_make_nondet
         # and also other funs like __errno_location may be included
@@ -741,7 +742,7 @@ class Symbiotic(object):
                 raise SymbioticException('Code contains KLEE functions, but the verifier is not KLEE ({0})'.format(' '.join(kf)))
 
         # tool's specific preprocessing steps
-        self.preprocess_llvm()
+        self.postprocess_llvm()
 
         if not self.options.final_output is None:
             # copy the file to final_output

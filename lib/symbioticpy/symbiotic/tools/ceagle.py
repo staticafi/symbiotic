@@ -11,7 +11,7 @@ class SymbioticTool(CeagleTool):
     def llvm_version(self):
         return '3.8.1'
 
-    def preprocess_llvm(self, infile):
+    def postprocess_llvm(self, infile):
         """
         A tool's specific preprocessing steps for llvm file
         before verification itself. Returns a pair (cmd, outputfile),
