@@ -176,6 +176,12 @@ class SymbioticTool(BaseTool):
         else:
             passes += ['-delete-undefined']
 
+        # for the memsafety property, make functions behave like they have
+        # side-effects, because LLVM optimizations could remove them otherwise,
+        # even though they contain calls to assert
+        if self._options.property.memsafety():
+            passes.append('-remove-readonly-attr')
+
         return passes
 
     def describe_error(self, llvmfile):

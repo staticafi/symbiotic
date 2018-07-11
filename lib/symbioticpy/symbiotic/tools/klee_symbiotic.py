@@ -114,13 +114,6 @@ class SymbioticTool(KleeBase):
 
         return cmd + options + tasks
 
-    def passes_after_slicing(self):
-        # for the memsafety property, make functions behave like they have
-        # side-effects, because LLVM optimizations could remove them otherwise,
-        # even though they contain calls to assert
-        if self._options.property.memsafety():
-            return ['-remove-readonly-attr']
-
     def _parse_klee_output_line(self, line):
         for (key, pattern) in self._patterns:
             if pattern.match(line):
