@@ -3,6 +3,8 @@
 # Build Symbiotic from scratch and setup environment for
 # development if needed
 #
+#  (c) Marek Chalupa, 2016 - 2018
+#
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
 #  the Free Software Foundation; either version 2 of the License, or
@@ -28,8 +30,6 @@ usage()
 	echo -e "shell    - run shell with environment set"
 	echo -e "no-llvm  - skip compiling llvm"
 	echo -e "update   - update repositories"
-	echo -e "with-cpa - download CPAchecker (due to witness checking)"
-	echo -e "with-ultimate-automizer - download UltimateAutomizer (due to witness checking)"
 	echo -e "with-zlib          - compile zlib"
 	echo -e "with-llvm=path     - use llvm from path"
 	echo -e "with-llvm-dir=path - use llvm from path"
@@ -69,8 +69,6 @@ NO_LLVM='0'
 BUILD_KLEE="yes"
 UPDATE=
 OPTS=
-WITH_CPA='0'
-WITH_ULTIMATEAUTOMIZER='0'
 LLVM_VERSION=`get_llvm_version`
 # LLVM tools that we need
 LLVM_TOOLS="opt clang llvm-link llvm-dis llvm-nm"
@@ -134,12 +132,6 @@ while [ $# -gt 0 ]; do
 		;;
 		'update')
 			UPDATE=1
-		;;
-		'with-cpa')
-			WITH_CPA='1'
-		;;
-		'with-ultimate-automizer')
-			WITH_ULTIMATEAUTOMIZER='1'
 		;;
 		with-zlib)
 			WITH_ZLIB="yes"
