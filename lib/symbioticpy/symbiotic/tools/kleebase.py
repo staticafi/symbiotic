@@ -44,6 +44,7 @@ def dump_error(bindir, ismem=False):
         pth = abspath('{0}/klee-last/test000001.assert.err'.format(abd))
 
     if not isfile(pth):
+        from symbiotic.utils import dbg
         dbg("Couldn't find the file with error description")
         return
 
