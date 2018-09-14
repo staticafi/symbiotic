@@ -673,7 +673,11 @@ if [ $FROM -le 6 ]; then
 
 		mkdir -p ra/build-${LLVM_VERSION}
 		pushd ra/build-${LLVM_VERSION}
-		cmake .. && make
+		cmake .. \
+			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
+			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
+		|| clean_and_exit 1 "git"
+		make && make install
 		popd;
 	fi
 
@@ -836,7 +840,8 @@ fi
 		$LLVM_PREFIX/lib/libPTA.so $LLVM_PREFIX/lib/libRD.so \
 		$LLVM_PREFIX/lib/LLVMsbt.so \
 		$LLVM_PREFIX/lib/libPointsToPlugin.so \
-		$LLVM_PREFIX/lib/libRangeAnalysisPlugin.so"
+		$LLVM_PREFIX/lib/libRangeAnalysisPlugin.so \
+		$LLVM_PREFIX/lib/libRA.so"
 
 if [ ${BUILD_KLEE} = "yes" ];  then
 	LIBRARIES="${LIBRARIES} \
