@@ -83,6 +83,7 @@ supported_properties = {
     'null-deref'                                               : 'NULL-DEREF',
     'undefined-behavior'                                       : 'UNDEF-BEHAVIOR',
     'undef-behavior'                                           : 'UNDEF-BEHAVIOR',
+    'undefined'                                                : 'UNDEF-BEHAVIOR',
     'signed-overflow'                                          : 'SIGNED-OVERFLOW',
     'memsafety'                                                : 'MEMSAFETY',
 }
