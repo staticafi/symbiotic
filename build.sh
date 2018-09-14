@@ -821,7 +821,8 @@ fi
 		$LLVM_PREFIX/lib/libLLVMrd.so \
 		$LLVM_PREFIX/lib/libPTA.so $LLVM_PREFIX/lib/libRD.so \
 		$LLVM_PREFIX/lib/LLVMsbt.so \
-		$LLVM_PREFIX/lib/libPoints_to_plugin.so"
+		$LLVM_PREFIX/lib/libPointsToPlugin.so"
+
 if [ ${BUILD_KLEE} = "yes" ];  then
 	LIBRARIES="${LIBRARIES} \
 		$LLVM_PREFIX/lib/klee/runtime/kleeRuntimeIntrinsic.bc \
