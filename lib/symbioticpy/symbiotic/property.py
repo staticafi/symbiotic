@@ -121,7 +121,16 @@ def _map_property(prps):
         if prp_key:
             mapped_prps.append(prp_key)
         else:
-            raise SymbioticException('Unknown or unsupported property: {0}'.format(ke.message))
+            msg  = 'Unknown or unsupported property: {0}\n'.format(prp)
+            msg += 'Supported properties are:\n'
+            for k in supported_ltl_properties.keys():
+                msg += '    {0}\n'.format(k)
+            msg += "or use shortcuts:\n"
+            for k in supported_properties.keys():
+                msg += '    {0}\n'.format(k)
+            msg += '\nBy default, we are looking just for assertion violations.\n'
+
+            raise SymbioticException(msg)
 
     return (mapped_prps, ltl_prps)
 
