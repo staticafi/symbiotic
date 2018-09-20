@@ -11,16 +11,19 @@ fi
 FILES=
 for LLVM in $PREFIX/llvm-*; do
 	CLANG=$LLVM/bin/clang
+	LLVM_VERSION=${LLVM#*llvm-*}
+	INCLUDE_DIR="llvm-${LLVM_VERSION}/build/lib/clang/${LLVM_VERSION}/include/"
+	CPPFLAGS="-I ${INCLUDE_DIR}"
 	for F in `find $INSTR/instrumentations/ -name '*.c'`; do
 		NAME=`basename $F`
 		OUT=${NAME%*.c}.bc
 		mkdir -p "$LLVM/lib" "$LLVM/lib32"
 
 		FILES="$FILES ${LLVM#install/}/lib/$OUT"
-		$CLANG -emit-llvm -c $F -o $LLVM/lib/$OUT $CPPFLAGS $CFLAGS $LDFLAGS
+		$CLANG $CPPFLAGS -emit-llvm -c $F -o $LLVM/lib/$OUT $CPPFLAGS $CFLAGS $LDFLAGS
 
 		FILES="$FILES ${LLVM#install/}/lib32/$OUT"
-		$CLANG -emit-llvm -c $F -m32 -o $LLVM/lib32/$OUT $CPPFLAGS $CFLAGS $LDFLAGS
+		$CLANG $CPPFLAGS -emit-llvm -c $F -m32 -o $LLVM/lib32/$OUT $CPPFLAGS $CFLAGS $LDFLAGS
 	done
 done
 
