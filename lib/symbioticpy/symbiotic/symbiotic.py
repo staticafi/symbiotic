@@ -299,17 +299,12 @@ class Symbiotic(object):
 
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['sbt-instr', config, self.llvmfile, definitionsbc, output]
+        if not shouldlink:
+            cmd.append('--no-linking')
         runcmd(cmd, InstrumentationWatch(), 'Instrumenting the code failed')
 
         self.llvmfile = output
         self._get_stats('After instrumentation ')
-
-        # once we instrumented the code, we can link the definitions
-        # of functions
-        if shouldlink:
-            self.link(libs=[definitionsbc])
-
-        self._get_stats('After instrumentation and linking ')
 
     def instrument(self):
         """
