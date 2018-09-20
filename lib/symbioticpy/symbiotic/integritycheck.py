@@ -15,6 +15,15 @@ class IntegrityChecker(object):
         else:
             return bytes(vers, 'utf-8')
 
+    def _get_output(self, cmd):
+        watch = ProcessWatch(1)
+        retval = self._process.run(cmd, watch)
+        assert retval == 0
+        lines = watch.getLines()
+        assert(len(lines) == 1)
+        return lines
+
+
     def _get_klee_version(self):
         (retval, lines) = process_grep(['klee', '-version'], 'revision')
         assert retval == 0
@@ -23,21 +32,12 @@ class IntegrityChecker(object):
         return lines[0].split(b':')[1].strip()
 
     def _get_slicer_version(self):
-        watch = ProcessWatch(1)
-        retval = self._process.run(['sbt-slicer', '-version'], watch)
-        assert retval == 0
-        lines = watch.getLines()
-        assert(len(lines) == 1)
-
+        lines = self._get_output(['sbt-slicer', '-version'])
         return lines[0].strip()[:8]
 
     def _get_instr_version(self):
-        watch = ProcessWatch(1)
-        retval = self._process.run(['sbt-instr', '--version'])
-        assert retval == 0
-        lines = watch.getLines()
-        assert(len(lines) == 1)
-
+        lines = self._get_output(['sbt-instr', '--version'])
+        return lines[0].strip()[:8]
         return lines[0].strip()
 
     def _check(self, component, expected_version, actual_version):
