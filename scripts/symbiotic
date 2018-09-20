@@ -181,7 +181,10 @@ def _find_library(lib):
     return None
 
 def perform_libraries_check():
-    libraries = ['LLVMsbt.so', 'libPoints_to_plugin.so']
+    libraries = ['LLVMsbt.so',
+                 'libPointsToPlugin.so', 'libRA.so',
+                 'libLLVMdg.so', 'libLLVMpta.so', 'libLLVMrd.so',
+                 'libPTA.so', 'libRD.so']
     for lib in libraries:
         if not _find_library(lib):
             err("Cannot find library '{0}'".format(lib))
@@ -237,7 +240,9 @@ def set_environ(tool, opts):
         prepend('PATH', '{0}/klee/build-{1}/bin'.format(symbiotic_dir, llvm_version))
 
         prepend('LD_LIBRARY_PATH', '{0}/transforms/build-{1}/'.format(symbiotic_dir,llvm_version))
+        prepend('LD_LIBRARY_PATH', '{0}/dg/build-{1}/src'.format(symbiotic_dir, llvm_version))
         prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/build-{1}/analyses'.format(symbiotic_dir, llvm_version))
+        prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/ra/build-{1}/'.format(symbiotic_dir, llvm_version))
         opts.instrumentation_files_path = '{0}/sbt-instrumentation/instrumentations/'.format(symbiotic_dir)
     else:
         opts.instrumentation_files_path = '{0}/share/sbt-instrumentation/'.format(llvm_prefix)
