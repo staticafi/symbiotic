@@ -3,6 +3,7 @@
 import sys
 import os
 from time import time
+from distutils.version import LooseVersion
 
 COLORS = {
     'DARK_BLUE': '\033[0;34m',
@@ -122,3 +123,13 @@ def get_symbiotic_dir():
     # get real path (strip off links)
     realpath = os.path.realpath(os.path.join(sys.argv[0], '..'))
     return os.path.abspath(os.path.dirname(realpath))
+
+def required_version(actual, required):
+    return LooseVersion(actual) >= LooseVersion(required)
+
+def get_clang_version():
+    (retval, lines) = process_grep(['clang', '-v'], 'version')
+    assert(retval == 0)
+    assert(len(lines) == 1)
+
+    return lines[0].split()[2].strip()

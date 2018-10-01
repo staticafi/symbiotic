@@ -8,7 +8,7 @@ from . options import SymbioticOptions
 from . utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
 from . utils.process import ProcessRunner, runcmd
 from . utils.watch import ProcessWatch, DbgWatch
-from . utils.utils import print_stdout, print_stderr, get_symbiotic_dir
+from . utils.utils import print_stdout, print_stderr, get_symbiotic_dir, get_clang_version, required_version
 from . exceptions import SymbioticException
 
 class PrepareWatch(ProcessWatch):
@@ -209,6 +209,10 @@ class Symbiotic(object):
 
         if self.options.is32bit:
             cmd.append('-m32')
+
+        if self.options.property.memsafety() and required_version(get_clang_version(), "4.0.1"):
+            cmd.append('-Xclang')
+            cmd.append('-force-lifetime-markers')
 
         cmd.append('-o')
         if output is None:
