@@ -240,7 +240,7 @@ def set_environ(tool, opts):
         prepend('PATH', '{0}/klee/build-{1}/bin'.format(symbiotic_dir, llvm_version))
 
         prepend('LD_LIBRARY_PATH', '{0}/transforms/build-{1}/'.format(symbiotic_dir,llvm_version))
-        prepend('LD_LIBRARY_PATH', '{0}/dg/build-{1}/src'.format(symbiotic_dir, llvm_version))
+        prepend('LD_LIBRARY_PATH', '{0}/dg/build-{1}/lib'.format(symbiotic_dir, llvm_version))
         prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/build-{1}/analyses'.format(symbiotic_dir, llvm_version))
         prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/ra/build-{1}/'.format(symbiotic_dir, llvm_version))
         opts.instrumentation_files_path = '{0}/sbt-instrumentation/instrumentations/'.format(symbiotic_dir)
