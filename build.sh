@@ -843,10 +843,20 @@ get_klee_dependencies()
 	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
 
 	# copy dependencies
+	DEPENDENCIES=""
 	DEPS=`get_klee_dependencies $LLVM_PREFIX/bin/klee`
 	if [ ! -z "$DEPS" ]; then
 		for D in $DEPS; do
-			cmp "$D" "$PREFIX/lib/$(basename $D)" || cp -u "$D" $PREFIX/lib
+			DEST="$PREFIX/lib/$(basename $D)"
+			cmp "$D" "$DEST" || cp -u "$D" "$DEST"
+			DEPENDENCIES="$DEST $DEPENDENCIES"
+
+			# we want also the minisat in generic version
+			if echo "$D" | grep -q "libminisat"; then
+				cmp "$D" "$PREFIX/lib/libminisat.so"\
+					 || cp -u "$D" "$PREFIX/lib/libminisat.so"
+				DEPENDENCIES="$PREFIX/lib/libminisat.so $DEPENDENCIES"
+			fi
 		done
 	fi
 
@@ -880,12 +890,6 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 fi
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
-
-	for D in $DEPS; do
-		echo "Adding $DEPS to archive"
-		DEPENDENCIES="$PREFIX/lib/`basename $D` $DEPENDENCIES"
-	done
-
 
 	#strip binaries, it will save us 500 MB!
 	strip $BINARIES
