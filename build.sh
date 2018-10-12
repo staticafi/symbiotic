@@ -827,11 +827,7 @@ get_klee_dependencies()
 	LIBS="$LIBS $(get_external_library $KLEE_BIN tinfo)"
 	# FIXME: remove once we build/download our z3
 	LIBS="$LIBS $(get_any_library $KLEE_BIN libz3)"
-
-	LIBSTP="$(get_any_library $KLEE_BIN libstp)"
-	LIBS="$LIBS $LIBSTP"
-
-	LIBS="$LIBS $(get_any_library $LIBSTP libminisat)"
+	LIBS="$LIBS $(get_any_library $KLEE_BIN libstp)"
 
 	echo $LIBS
 }
@@ -850,13 +846,6 @@ get_klee_dependencies()
 			DEST="$PREFIX/lib/$(basename $D)"
 			cmp "$D" "$DEST" || cp -u "$D" "$DEST"
 			DEPENDENCIES="$DEST $DEPENDENCIES"
-
-			# we want also the minisat in generic version
-			if echo "$D" | grep -q "libminisat"; then
-				cmp "$D" "$PREFIX/lib/libminisat.so"\
-					 || cp -u "$D" "$PREFIX/lib/libminisat.so"
-				DEPENDENCIES="$PREFIX/lib/libminisat.so $DEPENDENCIES"
-			fi
 		done
 	fi
 
@@ -886,7 +875,8 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 		$LLVM_PREFIX/lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib/klee/runtime/klee-libc.bc \
-		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc"
+		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc \
+		$PREFIX/lib/libminisat*.so"
 fi
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
