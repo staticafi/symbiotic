@@ -21,7 +21,16 @@
 #  MA 02110-1301, USA.
 
 set -x
-set -e
+
+#https://unix.stackexchange.com/a/48550
+set -E
+trap '[ "$?" -ne 77 ] || exit 77' ERR
+
+exitmsg()
+{
+	echo "$1" >/dev/stderr
+	exit 77
+}
 
 usage()
 {
@@ -187,12 +196,6 @@ clean_and_exit()
 	fi
 
 	exit $CODE
-}
-
-exitmsg()
-{
-	echo "$1" >/dev/stderr
-	exit 1
 }
 
 build()
@@ -793,23 +796,46 @@ if [ $FROM -le 7 ]; then
 	echo -e "}\n\n" >> $VERSFILE
 	echo "llvm_version = '${LLVM_VERSION}'" >> $VERSFILE
 
-get_library()
+get_external_library()
 {
-	LIB=`ldd $1 | grep $2 | cut -d ' ' -f 3`
+	LIB="$(ldd $1 | grep $2 | cut -d ' ' -f 3)"
 	# if this is not library in our installation, return it
-	if echo $LIB | grep -v -q $PREFIX; then
-		echo $LIB
+	if [ "$LIB" != "not" ]; then # not found
+		if echo "$LIB" | grep -v -q "$PREFIX"; then
+			echo "$LIB"
+		fi
+	else
+		exitmsg "Did not find library matching $2"
 	fi
 }
 
-get_dependencies()
+get_any_library()
 {
-	LIBS=`get_library $1 libstdc++`
-	LIBS="$LIBS `get_library $1 tinfo`"
+	LIB="$(ldd $1 | grep $2 | cut -d ' ' -f 3)"
+	# if this is not library in our installation, return it
+	if [ "$LIB" != "not" ]; then # not found
+		echo "$LIB"
+	else
+		exitmsg "Did not find library matching $2"
+	fi
+}
+
+get_klee_dependencies()
+{
+	KLEE_BIN="$1"
+	LIBS=$(get_external_library $KLEE_BIN libstdc++)
+	LIBS="$LIBS $(get_external_library $KLEE_BIN tinfo)"
 	# FIXME: remove once we build/download our z3
-	LIBS="$LIBS `get_library $1 libz3`"
+	LIBS="$LIBS $(get_any_library $KLEE_BIN libz3)"
+
+	LIBSTP="$(get_any_library $KLEE_BIN libstp)"
+	LIBS="$LIBS $LIBSTP"
+
+	LIBS="$LIBS $(get_any_library $LIBSTP libminisat)"
+
 	echo $LIBS
 }
+
 ######################################################################
 #  create distribution
 ######################################################################
@@ -817,9 +843,11 @@ get_dependencies()
 	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
 
 	# copy dependencies
-	DEPS=`get_dependencies $LLVM_PREFIX/bin/klee`
+	DEPS=`get_klee_dependencies $LLVM_PREFIX/bin/klee`
 	if [ ! -z "$DEPS" ]; then
-		cp -u $DEPS $PREFIX/lib
+		for D in $DEPS; do
+			cmp "$D" "$PREFIX/lib/$(basename $D)" || cp -u "$D" $PREFIX/lib
+		done
 	fi
 
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."
@@ -836,7 +864,7 @@ fi
 
 	LIBRARIES="\
 		$LLVM_PREFIX/lib/libLLVMdg.so $LLVM_PREFIX/lib/libLLVMpta.so \
-		$LLVM_PREFIX/lib/libLLVMrd.so \
+		$LLVM_PREFIX/lib/libLLVMrd.so $LLVM_PREFIX/lib/libDGAnalysis.so \
 		$LLVM_PREFIX/lib/libPTA.so $LLVM_PREFIX/lib/libRD.so \
 		$LLVM_PREFIX/lib/LLVMsbt.so \
 		$LLVM_PREFIX/lib/libPointsToPlugin.so \
@@ -854,6 +882,7 @@ fi
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
 
 	for D in $DEPS; do
+		echo "Adding $DEPS to archive"
 		DEPENDENCIES="$PREFIX/lib/`basename $D` $DEPENDENCIES"
 	done
 
