@@ -566,7 +566,7 @@ fi
 ######################################################################
 if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	# build klee
-	git_clone_or_pull "-b 6.0.0 https://github.com/staticafi/klee.git" klee || exitmsg "Cloning failed"
+	git_clone_or_pull "-b 6.0.1 https://github.com/staticafi/klee.git" klee || exitmsg "Cloning failed"
 
 	# workaround a problem with calling llvm-config from build directory
 	if [ ! -f ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib/libgtest.a -o \
