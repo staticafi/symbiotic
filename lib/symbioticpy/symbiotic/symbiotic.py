@@ -300,12 +300,16 @@ class Symbiotic(object):
         assert definitionsbc
 
         self._get_stats('Before instrumentation ')
+        print_stdout('INFO: Starting instrumentation', color='WHITE')
 
         output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
         cmd = ['sbt-instr', config, self.llvmfile, definitionsbc, output]
         if not shouldlink:
             cmd.append('--no-linking')
+
+        restart_counting_time()
         runcmd(cmd, InstrumentationWatch(), 'Instrumenting the code failed')
+        print_elapsed_time('INFO: Instrumentation time', color='WHITE')
 
         self.llvmfile = output
         self._get_stats('After instrumentation ')
@@ -454,7 +458,7 @@ class Symbiotic(object):
 
         restart_counting_time()
         runcmd(cmd, CompileWatch(), 'Optimizing the code failed')
-        print_elapsed_time('INFO: Optimizing the code', color='WHITE')
+        print_elapsed_time('INFO: Optimizations time', color='WHITE')
 
         self.llvmfile = output
 
@@ -581,10 +585,8 @@ class Symbiotic(object):
 
         self._get_stats('Before slicing ')
 
-        # print info about time
-        print_elapsed_time('INFO: Compilation, preparation and '
-                           'instrumentation time', color='WHITE')
-
+        print_stdout('INFO: Starting slicing', color='WHITE')
+        restart_counting_time()
         for n in range(0, self.options.repeat_slicing):
             dbg('Slicing the code for the {0}. time'.format(n + 1))
             add_params = []
@@ -696,9 +698,6 @@ class Symbiotic(object):
         #################### #################### ###################
         if not self.options.noslice:
             self.perform_slicing()
-        else:
-            print_elapsed_time('INFO: Compilation, preparation and '
-                               'instrumentation time', color='WHITE')
 
         # start a new time era
         restart_counting_time()
@@ -731,7 +730,7 @@ class Symbiotic(object):
                 print_stdout(f)
 
         # XXX: we could optimize the code again here...
-        print_elapsed_time('INFO: After-slicing optimizations and preparation time',
+        print_elapsed_time('INFO: After-slicing optimizations and transformations time',
                            color='WHITE')
 
         # check that if we do not use KLEE, we do not have any klee functions in the code
@@ -760,7 +759,11 @@ class Symbiotic(object):
         if not self.options.no_verification:
             self._get_stats('Before verification ')
             print_stdout('INFO: Starting verification', color='WHITE')
+
+            restart_counting_time()
             found = self.run_verification()
+
+            print_elapsed_time('INFO: Verification time', color='WHITE')
         else:
             found = 'Did not run verification'
 
