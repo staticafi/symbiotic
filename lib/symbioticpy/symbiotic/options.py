@@ -19,10 +19,7 @@ class SymbioticOptions(object):
         # properties mapped to our names
         self.property = get_property(self.symbiotic_dir, None)
         self.noslice = False
-        # FIXME: make it False, this is just a temporary
-        # switch for SV-COMP, since I do not want to send another
-        # PR to change switches
-        self.malloc_never_fails = True
+        self.malloc_never_fails = False
         self.noprepare = False
         self.explicit_symbolic = False
         self.undef_retval_nosym = False
