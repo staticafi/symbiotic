@@ -835,6 +835,9 @@ get_klee_dependencies()
 ######################################################################
 #  create distribution
 ######################################################################
+	# copy license
+	cp LICENSE.txt $PREFIX/
+
 	# copy the symbiotic python module
 	cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
 
@@ -901,7 +904,8 @@ fi
 		lib/symbioticpy/symbiotic/benchexec/tools/*.py \
 		lib/symbioticpy/symbiotic/tools/*.py \
 		lib/symbioticpy/symbiotic/utils/*.py \
-		lib/symbioticpy/symbiotic/witnesses/*.py
+		lib/symbioticpy/symbiotic/witnesses/*.py \
+		LICENSE.txt
 
 	git commit -m "Create Symbiotic distribution `date`" || true
 
