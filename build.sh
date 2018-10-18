@@ -85,15 +85,20 @@ LLVM_TOOLS="opt clang llvm-link llvm-dis llvm-nm"
 WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
-WITH_ZLIB='no'
-BUILD_STP='no'
+BUILD_STP='yes'
+[ -z $BUILD_TYPE ] && BUILD_TYPE="Release"
 
 check_z3() {
 	echo "#include <z3.h>" | gcc - -E &>/dev/null
 }
 
+check_zlib() {
+	echo "#include <zlib.h>" | gcc - -E &>/dev/null
+}
+
+
 HAVE_Z3=$(if check_z3; then echo "yes"; else echo "no"; fi)
-[ -z $BUILD_TYPE ] && BUILD_TYPE="Release"
+WITH_ZLIB=$(if check_zlib; then echo "no"; else echo "yes"; fi)
 
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
