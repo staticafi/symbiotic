@@ -87,8 +87,12 @@ WITH_LLVM_DIR=
 WITH_ZLIB='no'
 BUILD_STP='no'
 
+check_z3() {
+	echo "#include <z3.h>" | gcc - -E &>/dev/null
+}
+
+HAVE_Z3=$(if check_z3; then echo "yes"; else echo "no"; fi)
 [ -z $BUILD_TYPE ] && BUILD_TYPE="Release"
-[ -z $Z3_BINARY ] && Z3_BINARY=$(which z3)
 
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
@@ -247,6 +251,12 @@ check()
 		exit 1
 	fi
 
+	if ! rsync --version &>/dev/null; then
+		# TODO: fix the bootstrap script to use also cp
+		echo "sbt-instrumentation needs rsync when bootstrapping json. "
+		exit 1
+	fi
+
 	if [ "$BUILD_STP" = "yes" ]; then
 		if ! bison --version &>/dev/null; then
 			echo "STP needs bison program"
@@ -275,7 +285,7 @@ check()
 		fi
 	fi
 
-	if [ "$BUILD_STP" != "yes" -a ! -f "$Z3_BINARY" ]; then
+	if [ "$BUILD_STP" != "yes" -a "$HAVE_Z3" != "yes" ]; then
 		exitmsg "Need z3 from package or enable building STP."
 	fi
 
@@ -543,7 +553,8 @@ fi
 if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	if [ ! -d googletest ]; then
 		download_zip https://github.com/google/googletest/archive/release-1.7.0.zip || exit 1
-		mv googletest-release-1.7.0 googletest ||exit 1
+		mv googletest-release-1.7.0 googletest || exit 1
+		rm -f release-1.7.0.zip
 	fi
 
 	pushd googletest
@@ -591,7 +602,7 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 		STP_FLAGS="-DENABLE_SOLVER_STP=ON -DSTP_DIR=${ABS_SRCDIR}/stp"
 	fi
 
-	if [ -f $Z3_BINARY ]; then
+	if [ "$HAVE_Z3" = "yes" ]; then
 		Z3_FLAGS=-DENABLE_SOLVER_Z3=ON
 	fi
 
