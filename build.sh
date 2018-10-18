@@ -639,8 +639,8 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 
 	# clean runtime libs, it may be 32-bit from last build
 	make -C runtime -f Makefile.cmake.bitcode clean 2>/dev/null
-	rm -f ${KLEE_BUILD_TYPE}/lib/kleeRuntimeIntrinsic.bc* 2>/dev/null
-	rm -f ${KLEE_BUILD_TYPE}/lib/klee-libc.bc* 2>/dev/null
+	rm -f ${KLEE_BUILD_TYPE}/lib/*kleeRuntimeIntrinsic.bc* 2>/dev/null
+	rm -f ${KLEE_BUILD_TYPE}/lib/*klee-libc.bc* 2>/dev/null
 
 	# build 64-bit libs and install them to prefix
 	pwd
@@ -652,8 +652,8 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	# clean 64-bit build and build 32-bit version of runtime library
 	make -C runtime -f Makefile.cmake.bitcode clean \
 		|| exitmsg "Failed building klee 32-bit runtime library"
-	rm -f ${KLEE_BUILD_TYPE}/lib/kleeRuntimeIntrinsic.bc*
-	rm -f ${KLEE_BUILD_TYPE}/lib/klee-libc.bc*
+	rm -f ${KLEE_BUILD_TYPE}/lib/*kleeRuntimeIntrinsic.bc*
+	rm -f ${KLEE_BUILD_TYPE}/lib/*klee-libc.bc*
 	# EXTRA_LLVMCC.Flags is obsolete and to be removed soon
 	make -C runtime/Intrinsic -f Makefile.cmake.bitcode \
 		LLVMCC.ExtraFlags=-m32 \
@@ -666,11 +666,11 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 
 	# copy 32-bit library version to prefix
 	mkdir -p $LLVM_PREFIX/lib32/klee/runtime
-	cp ${KLEE_BUILD_TYPE}/lib/kleeRuntimeIntrinsic.bc \
-		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
+	cp ${KLEE_BUILD_TYPE}/lib/*kleeRuntimeIntrinsic.bc* \
+		$LLVM_PREFIX/lib32/klee/runtime/ \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
-	cp ${KLEE_BUILD_TYPE}/lib/klee-libc.bc \
-		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc \
+	cp ${KLEE_BUILD_TYPE}/lib/*klee-libc.bc* \
+		$LLVM_PREFIX/lib32/klee/runtime/ \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
 
 	popd
@@ -907,10 +907,10 @@ fi
 
 if [ ${BUILD_KLEE} = "yes" ];  then
 	LIBRARIES="${LIBRARIES} \
-		$LLVM_PREFIX/lib/klee/runtime/kleeRuntimeIntrinsic.bc \
-		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
-		$LLVM_PREFIX/lib/klee/runtime/klee-libc.bc \
-		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc"
+		$LLVM_PREFIX/lib/klee/runtime/*kleeRuntimeIntrinsic.bc* \
+		$LLVM_PREFIX/lib32/klee/runtime/*kleeRuntimeIntrinsic.bc* \
+		$LLVM_PREFIX/lib/klee/runtime/*klee-libc.bc* \
+		$LLVM_PREFIX/lib32/klee/runtime/*klee-libc.bc*"
 fi
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
