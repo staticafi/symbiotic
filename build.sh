@@ -45,6 +45,7 @@ usage()
 	echo -e "with-llvm-src=path - use llvm sources from path"
 	echo -e "llvm-version=ver   - use this version of llvm"
 	echo -e "build-type=TYPE    - set Release/Debug build"
+	echo -e "build-stp          - build and use STP in KLEE"
 	echo "" # new line
 	echo -e "slicer, scripts,"
 	echo -e "klee, witness"
@@ -286,7 +287,7 @@ check()
 	fi
 
 	if [ "$BUILD_STP" != "yes" -a "$HAVE_Z3" != "yes" ]; then
-		exitmsg "Need z3 from package or enable building STP."
+		exitmsg "Need z3 from package or enable building STP by using 'build-stp' argument."
 	fi
 
 }
@@ -512,9 +513,16 @@ if [ "$BUILD_STP" = "yes" ]; then
 		mkdir -p build
 		cd build || exit 1
 
+		# use our zlib, if we compiled it
+		ZLIB_FLAGS=
+		if [ -d $ABS_RUNDIR/zlib ]; then
+			ZLIB_FLAGS="-DZLIB_LIBRARY=-L${PREFIX}/lib;-lz"
+			ZLIB_FLAGS="$ZLIB_FLAGS -DZLIB_INCLUDE_DIR=$PREFIX/include"
+		fi
+
 		if [ ! -d CMakeFiles ]; then
 			cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX \
-					 -DSTATICCOMPILE=ON
+					 -DSTATICCOMPILE=ON $ZLIB_FLAGS
 		fi
 
 		(make "$OPTS" && make install) || exit 1
@@ -598,7 +606,7 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 
 	STP_FLAGS=
 	Z3_FLAGS=
-	if [ "$BUILD_STP" = "yes" ]; then
+	if [ "$BUILD_STP" = "yes" -o -d $ABS_SRCDIR/stp ]; then
 		STP_FLAGS="-DENABLE_SOLVER_STP=ON -DSTP_DIR=${ABS_SRCDIR}/stp"
 	fi
 
@@ -932,7 +940,7 @@ fi
 	git commit -m "Create Symbiotic distribution `date`" || true
 
 	# remove unnecessary files
-	git clean -xdf
+	# git clean -xdf
 fi
 
 if [ "x$ARCHIVE" = "xyes" ]; then
