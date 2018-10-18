@@ -34,7 +34,7 @@ exitmsg()
 
 usage()
 {
-	echo "$0 [shell] [no-llvm] [update] [slicer | scripts | minisat | stp | klee | witness | bin] OPTS"
+	echo "$0 [shell] [no-llvm] [update] [slicer | scripts | klee | witness | bin] OPTS"
 	echo "" # new line
 	echo -e "shell    - run shell with environment set"
 	echo -e "no-llvm  - skip compiling llvm"
@@ -47,7 +47,7 @@ usage()
 	echo -e "build-type=TYPE    - set Release/Debug build"
 	echo "" # new line
 	echo -e "slicer, scripts,"
-	echo -e "minisat, stp, klee, witness"
+	echo -e "klee, witness"
 	echo -e "bin     - run compilation _from_ this point"
 	echo "" # new line
 	echo -e "OPTS = options for make (i. e. -j8)"
@@ -85,8 +85,10 @@ WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
 WITH_ZLIB='no'
+BUILD_STP='no'
 
 [ -z $BUILD_TYPE ] && BUILD_TYPE="Release"
+[ -z $Z3_BINARY ] && Z3_BINARY=$(which z3)
 
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
@@ -115,12 +117,6 @@ while [ $# -gt 0 ]; do
 		'slicer')
 			FROM='1'
 		;;
-		'minisat')
-			FROM='2'
-		;;
-		'stp')
-			FROM='3'
-		;;
 		'klee')
 			FROM='4'
 		;;
@@ -144,6 +140,9 @@ while [ $# -gt 0 ]; do
 		;;
 		with-zlib)
 			WITH_ZLIB="yes"
+		;;
+		build-stp)
+			BUILD_STP="yes"
 		;;
 		archive)
 			ARCHIVE="yes"
@@ -248,14 +247,16 @@ check()
 		exit 1
 	fi
 
-	if ! bison --version &>/dev/null; then
-		echo "STP needs bison program"
-		exit 1
-	fi
+	if [ "$BUILD_STP" = "yes" ]; then
+		if ! bison --version &>/dev/null; then
+			echo "STP needs bison program"
+			exit 1
+		fi
 
-	if ! flex --version &>/dev/null; then
-		echo "STP needs flex program"
-		exit 1
+		if ! flex --version &>/dev/null; then
+			echo "STP needs flex program"
+			exit 1
+		fi
 	fi
 
 	if [ "x$WITH_LLVM" != "x" ]; then
@@ -272,6 +273,10 @@ check()
 		if [ ! -d "$WITH_LLVM_DIR" ]; then
 			exitmsg "Invalid LLVM src directory given: $WITH_LLVM_DIR"
 		fi
+	fi
+
+	if [ "$BUILD_STP" != "yes" -a ! -f "$Z3_BINARY" ]; then
+		exitmsg "Need z3 from package or enable building STP."
 	fi
 
 }
@@ -487,44 +492,46 @@ if [ $FROM -le 2 -a $WITH_ZLIB = "yes" ]; then
 	cd -
 fi
 
-######################################################################
-#   minisat
-######################################################################
-if [ $FROM -le 2  -a "$BUILD_KLEE" = "yes" ]; then
-	git_clone_or_pull git://github.com/stp/minisat.git minisat
-	pushd minisat
-	mkdir -p build
-	cd build || exit 1
+if [ "$BUILD_STP" = "yes" ]; then
+	######################################################################
+	#   minisat
+	######################################################################
+	if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
+		git_clone_or_pull git://github.com/stp/minisat.git minisat
+		pushd minisat
+		mkdir -p build
+		cd build || exit 1
 
-	if [ ! -d CMakeFiles ]; then
-		cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX \
-				 -DSTATICCOMPILE=ON
+		if [ ! -d CMakeFiles ]; then
+			cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX \
+					 -DSTATICCOMPILE=ON
+		fi
+
+		(make "$OPTS" && make install) || exit 1
+		popd
 	fi
 
-	(make "$OPTS" && make install) || exit 1
-	popd
-fi
+	######################################################################
+	#   STP
+	######################################################################
+	if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
+		git_clone_or_pull git://github.com/stp/stp.git stp
+		cd stp || exitmsg "Cloning failed"
+		if [ ! -d CMakeFiles ]; then
+			cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
+				-DCMAKE_INSTALL_LIBDIR:PATH=lib \
+				-DSTP_TIMESTAMPS:BOOL="OFF" \
+				-DCMAKE_CXX_FLAGS_RELEASE=-O2 \
+				-DCMAKE_C_FLAGS_RELEASE=-O2 \
+				-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
+				-DBUILD_SHARED_LIBS:BOOL=OFF \
+				-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
+		fi
 
-######################################################################
-#   STP
-######################################################################
-if [ $FROM -le 3  -a "$BUILD_KLEE" = "yes" ]; then
-	git_clone_or_pull git://github.com/stp/stp.git stp
-	cd stp || exitmsg "Cloning failed"
-	if [ ! -d CMakeFiles ]; then
-		cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
-			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
-			-DSTP_TIMESTAMPS:BOOL="OFF" \
-			-DCMAKE_CXX_FLAGS_RELEASE=-O2 \
-			-DCMAKE_C_FLAGS_RELEASE=-O2 \
-			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
-			-DBUILD_SHARED_LIBS:BOOL=OFF \
-			-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
+		(build "OPTIMIZE=-O2 CFLAGS_M32=install" && make install) || exit 1
+		cd -
 	fi
-
-	(build "OPTIMIZE=-O2 CFLAGS_M32=install" && make install) || exit 1
-	cd -
-fi
+fi # BUILD_STP
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
@@ -578,10 +585,15 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 		KLEE_BUILD_TYPE="$BUILD_TYPE"
 	fi
 
+	STP_FLAGS=
 	Z3_FLAGS=
-	#if which z3 &>/dev/null; then
-	#	Z3_FLAGS=-DENABLE_SOLVER_Z3=ON
-	#fi
+	if [ "$BUILD_STP" = "yes" ]; then
+		STP_FLAGS="-DENABLE_SOLVER_STP=ON -DSTP_DIR=${ABS_SRCDIR}/stp"
+	fi
+
+	if [ -f $Z3_BINARY ]; then
+		Z3_FLAGS=-DENABLE_SOLVER_Z3=ON
+	fi
 
 	if [ ! -d CMakeFiles ]; then
 		# use our zlib, if we compiled it
@@ -594,12 +606,10 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 		cmake .. -DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DKLEE_RUNTIME_BUILD_TYPE=${KLEE_BUILD_TYPE} \
-			-DENABLE_SOLVER_STP=ON \
-			-DSTP_DIR=${ABS_SRCDIR}/stp \
 			-DLLVM_CONFIG_BINARY=${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/bin/llvm-config \
 			-DGTEST_SRC_DIR=$ABS_SRCDIR/googletest \
 			-DENABLE_UNIT_TESTS=ON \
-			$ZLIB_FLAGS $Z3_FLAGS \
+			$ZLIB_FLAGS $Z3_FLAGS $STP_FLAGS \
 			|| clean_and_exit 1 "git"
 	fi
 
@@ -765,12 +775,14 @@ if [ $FROM -le 7 ]; then
 	cd sbt-instrumentation || exit 1
 	INSTRUMENTATION_VERSION=`git rev-parse HEAD`
 	cd -
+if [ "$BUILD_STP" = "yes" ]; then
 	cd minisat || exit 1
 	MINISAT_VERSION=`git rev-parse HEAD`
 	cd -
 	cd stp || exit 1
 	STP_VERSION=`git rev-parse HEAD`
 	cd -
+fi
 	cd klee || exit 1
 	KLEE_VERSION=`git rev-parse HEAD`
 	cd -
@@ -784,8 +796,10 @@ if [ $FROM -le 7 ]; then
 	echo -e "\t'dg' : '$DG_VERSION'," >> $VERSFILE
 	echo -e "\t'sbt-slicer' : '$SBT_SLICER_VERSION'," >> $VERSFILE
 	echo -e "\t'sbt-instrumentation' : '$INSTRUMENTATION_VERSION'," >> $VERSFILE
+if [ "$BUILD_STP" = "yes" ]; then
 	echo -e "\t'minisat' : '$MINISAT_VERSION'," >> $VERSFILE
 	echo -e "\t'stp' : '$STP_VERSION'," >> $VERSFILE
+fi
 	echo -e "\t'KLEE' : '$KLEE_VERSION'," >> $VERSFILE
 	echo -e "}\n\n" >> $VERSFILE
 	echo "llvm_version = '${LLVM_VERSION}'" >> $VERSFILE
@@ -872,11 +886,14 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 		$LLVM_PREFIX/lib/klee/runtime/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib32/klee/runtime/kleeRuntimeIntrinsic.bc \
 		$LLVM_PREFIX/lib/klee/runtime/klee-libc.bc \
-		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc \
-		$PREFIX/lib/libminisat*.so"
+		$LLVM_PREFIX/lib32/klee/runtime/klee-libc.bc"
 fi
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
+
+if [ "$BUILD_STP" = "yes" ]; then
+		LIBRARIES="$LIBRARIES $PREFIX/lib/libminisat*.so"
+fi
 
 	#strip binaries, it will save us 500 MB!
 	strip $BINARIES
