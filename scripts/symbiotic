@@ -130,6 +130,7 @@ where OPTS can be following:
     --dump-env-cmd            Dump environment variables for using them in command line
     --statistics              Dump statistics about bitcode
     --working-dir-prefix      Where to create the temporary directory (defaults to /tmp)
+    --sv-comp                 Shortcut for SV-COMP settings (malloc-never-fails, etc.)
 
     One (and only one) of the sources must contain 'main' function
 """
@@ -346,7 +347,7 @@ def parse_command_line():
                                     'undefined-are-pure', 'no-svcomp-funs',
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file=', 'statistics',
-                                    'working-dir-prefix='])
+                                    'working-dir-prefix=', 'sv-comp'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -357,6 +358,7 @@ def parse_command_line():
     global dump_env_only
     global dump_env_cmd
     global no_integrity_check
+    global sv_comp
 
     for opt, arg in opts:
         if opt == '--help':
@@ -384,6 +386,9 @@ def parse_command_line():
         elif opt == '--no-slice':
             dbg('Will not slice')
             options.noslice = True
+        elif opt == '--sv-comp':
+            dbg('Using SV-COMP settings')
+            sv_comp = True
         elif opt == '--no-witness':
             dbg('Will not create a witness')
             options.nowitness = True
@@ -432,6 +437,12 @@ def parse_command_line():
                 if options.property is None:
                     err('Could not derive the right property')
             except SymbioticException as e:
+                stre = str(e)
+                if sv_comp:
+                    if 'unsupported property' in stre:
+                        print(stre)
+                        print_stdout('RESULT: unknown')
+                        sys.exit(0)
                 err(str(e))
 
         elif opt == '--pta':
