@@ -154,7 +154,7 @@ def get_property(symbiotic_dir, prp):
         if prpfile is None:
             prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyMemSafety.prp'))
 
-    elif 'UNDEF-BEHAVIOR' is prps:
+    elif 'UNDEF-BEHAVIOR' in prps:
         prop = PropertyDefBehavior(prpfile)
         if prpfile is None:
             prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyDefBehavior.prp'))
