@@ -54,3 +54,5 @@ class SymbioticOptions(object):
         self.devel_mode = False
         self.instrumentation_files_path = None
         self.nowitness = False
+        # try to automatically find paths with common header files
+        self.search_include_paths = True

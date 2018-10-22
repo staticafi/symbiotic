@@ -208,10 +208,10 @@ def set_environ(tool, opts):
 
         os.environ[env] = newenv
 
-    path_searcher = IncludePathsSearcher()
-    additional_include_paths = path_searcher.get()
-    for p in additional_include_paths:
-        prepend('C_INCLUDE_DIR', p)
+    if opts.search_include_paths:
+        additional_include_paths = IncludePathsSearcher().get()
+        for p in additional_include_paths:
+            prepend('C_INCLUDE_DIR', p)
 
     symbiotic_dir = get_symbiotic_dir()
 
@@ -252,9 +252,10 @@ def set_environ(tool, opts):
     # Get include paths again now when we have our clang in the path,
     # so that we have at least includes from our clang's instalation
     # (these has the lowest prefs., so just append them
-    additional_include_paths = path_searcher.get()
-    for p in additional_include_paths:
-        append('C_INCLUDE_DIR', p)
+    if opts.search_include_paths:
+        additional_include_paths = IncludePathsSearcher().get()
+        for p in additional_include_paths:
+            append('C_INCLUDE_DIR', p)
 
     # let the tool set its specific environment
     if hasattr(tool, 'set_environment'):
@@ -593,16 +594,25 @@ def initialize_verifier(opts):
     else:
         raise SymbioticException('Unknown verifier: {0}'.format(opts.tool_name))
 
+def set_svcomp(opts):
+    global no_integrity_check
+    no_integrity_check = True
+
+    opts.malloc_never_fails = True
+    opts.explicit_symbolic = True
+    opts.search_include_paths = False
+
+    enable_debug('all')
+
 if __name__ == "__main__":
     # store time when we have started, so that we can
     # measure how long Symbiotic ran
     start_time = time()
 
     opts, args = parse_command_line()
+
     if sv_comp:
-        opts.malloc_never_fails = True
-        opts.explicit_symbolic = True
-        enable_debug('all')
+        set_svcomp(opts)
 
     if dump_env_only:
         tool = initialize_verifier(opts)
