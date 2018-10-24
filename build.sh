@@ -86,7 +86,6 @@ WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
 BUILD_STP='yes'
-[ -z $BUILD_TYPE ] && BUILD_TYPE="Release"
 
 check_z3() {
 	echo "#include <z3.h>" | gcc - -E &>/dev/null
@@ -186,6 +185,26 @@ done
 
 if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
+fi
+
+
+# Try to get the previous build type if no is given
+if [ -z "$BUILD_TYPE" ]; then
+	if [ -f "CMakeCache.txt" ]; then
+		BUILD_TYPE=$(cat CMakeCache.txt | grep CMAKE_BUILD_TYPE | cut -f 2 -d '=')
+	fi
+
+	# no build type means Release
+	[ -z "$BUILD_TYPE" ] && BUILD_TYPE="Release"
+
+	echo "Previous build type identified as $BUILD_TYPE"
+fi
+
+if [ "$BUILD_TYPE" != "Debug" -a \
+     "$BUILD_TYPE" != "Release" -a \
+     "$BUILD_TYPE" != "RelWithDebInfo" -a \
+     "$BUILD_TYPE" != "MinSizeRel" ]; then
+	exitmsg "Invalid type of build: $BUILD_TYPE";
 fi
 
 # create prefix directory
@@ -527,6 +546,7 @@ if [ "$BUILD_STP" = "yes" ]; then
 
 		if [ ! -d CMakeFiles ]; then
 			cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX \
+				  -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 					 -DSTATICCOMPILE=ON $ZLIB_FLAGS
 		fi
 
@@ -694,6 +714,7 @@ if [ $FROM -le 6 ]; then
 		mkdir -p ra/build-${LLVM_VERSION}
 		pushd ra/build-${LLVM_VERSION}
 		cmake .. \
+			-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 		|| clean_and_exit 1 "git"
@@ -742,6 +763,7 @@ if [ $FROM -le 6 ]; then
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
+			-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
 			|| clean_and_exit 1
@@ -761,6 +783,7 @@ fi
 if [ $FROM -le 6 ]; then
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
+			-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
 			|| exit 1
