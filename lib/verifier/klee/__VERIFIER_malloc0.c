@@ -11,7 +11,7 @@ void *__VERIFIER_malloc0(size_t size)
 	// NOTE: klee already assumes that
 	//klee_assume(mem != (void *) 0);
 	if (size > 0)
-		klee_make_symbolic(mem, 0, "malloc0");
+		klee_make_symbolic(mem, size, "malloc0");
 
 	return mem;
 }
