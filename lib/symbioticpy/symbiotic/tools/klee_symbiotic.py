@@ -91,7 +91,7 @@ class SymbioticTool(KleeBase):
 
         if self._options.property.signedoverflow():
             # default config file is 'config.json'
-			return (self._options.overflow_config_file, 'overflows.c', True)
+            return (self._options.overflow_config_file, 'overflows.c', True)
 
         return (None, None, None)
 
