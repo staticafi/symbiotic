@@ -288,7 +288,8 @@ class Symbiotic(object):
             else:
                 definitions = prefix + 'memsafety/{0}'.format(definitions)
                 assert os.path.isfile(definitions)
-        elif self.options.property.signedoverflow():
+        elif self.options.property.signedoverflow() and \
+             not self.options.overflow_with_clang:
             # default config file is 'config.json'
             config = prefix + 'int_overflows/' + config_file
             assert os.path.isfile(config)
@@ -301,6 +302,8 @@ class Symbiotic(object):
             else:
                 definitions = prefix + 'int_overflows/{0}'.format(definitions)
                 assert os.path.isfile(definitions)
+        elif self.options.property.signedoverflow():
+            return
         else:
             raise SymbioticException('BUG: Unhandled property')
 
@@ -680,7 +683,8 @@ class Symbiotic(object):
         if hasattr(self._tool, 'passes_after_compilation'):
             passes += self._tool.passes_after_compilation()
 
-        if self.options.property.signedoverflow():
+        if self.options.property.signedoverflow() and \
+           not self.options.overflow_with_clang:
             passes.append('-mem2reg')
             passes.append('-break-crit-edges')
 
@@ -691,7 +695,8 @@ class Symbiotic(object):
         if self.options.property.memsafety():
             self.link_undefined()
 
-        if self.options.property.signedoverflow():
+        if self.options.property.signedoverflow() and \
+           not self.options.overflow_with_clang:
 			self.link_undefined()
 
         #################### #################### ###################

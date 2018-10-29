@@ -96,6 +96,8 @@ where OPTS can be following:
                               can be found in share/sbt-instrumentation/memsafety/
     --overflow-config-file    Set the configuration file for overflows. The files
                               can be found in share/sbt-instrumentation/int_overflows/
+    --overflow-with-clang     Do not instrument check for signed integer overflows, use
+                              clang sanitizer instead.
     --pta=[fs|fi|old]         Use flow-sensitive/flow-insensitive or old
                               (flow-insensitive too) points-to analysis when slicing.
                               Default is the old
@@ -351,7 +353,8 @@ def parse_command_line():
                                     'undefined-are-pure', 'no-svcomp-funs',
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file=', 'overflow-config-file=',
-                                    'statistics', 'working-dir-prefix=', 'sv-comp'])
+                                    'statistics', 'working-dir-prefix=', 'sv-comp',
+                                    'overflow-with-clang'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -420,6 +423,9 @@ def parse_command_line():
         elif opt == '--old-slicer':
             dbg('Will use old slicer')
             options.old_slicer = True
+        elif opt == '--overflow-with-clang':
+            dbg('Will use clang sanitizer for checking overflows.')
+            options.overflow_with_clang = True
         elif opt == '--32':
             dbg('Will use 32-bit environment')
             options.is32bit = True

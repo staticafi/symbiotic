@@ -150,7 +150,8 @@ class SymbioticTool(BaseTool):
            self._options.property.signedoverflow():
             passes.append('-replace-ubsan')
 
-        if self._options.property.signedoverflow():
+        if self._options.property.signedoverflow() and \
+           not self._options.overflow_with_clang:
             passes.append('-prepare-overflows')
 
         # make all memory symbolic (if desired)
