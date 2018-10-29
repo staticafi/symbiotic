@@ -570,8 +570,9 @@ class Symbiotic(object):
     def _compile_sources(self):
         llvmsrc = []
         for source in self.sources:
-            opts = ['-Wno-unused-parameter', '-Wno-unused-attribute',
-                    '-Wno-unused-label', '-Wno-unknown-pragmas']
+            opts = ['-Wno-unused-parameter', '-Wno-unknown-attributes',
+                    '-Wno-unused-label', '-Wno-unknown-pragmas',
+                    '-Wno-unused-command-line-argument']
             if hasattr(self._tool, 'compilation_options'):
                 opts += self._tool.compilation_options()
 
