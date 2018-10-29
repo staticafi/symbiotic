@@ -71,8 +71,8 @@ class CompileWatch(ProcessWatch):
     def parse(self, line):
         if b'error:' in line:
             print_stderr('cc: {0}'.format(line.decode('utf-8')), color='BROWN')
-        #else:
-        #   dbg(line.decode('utf-8'), 'compile', print_nl=False)
+        else:
+            dbg(line.decode('utf-8'), 'compile', print_nl=False)
 
 
 class UnsuppWatch(ProcessWatch):
