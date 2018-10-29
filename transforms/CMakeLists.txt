@@ -68,7 +68,7 @@ add_llvm_loadable_module(LLVMsbt
 				CountInstr.cpp
 				MarkVolatile.cpp
 				CheckUnsupported.cpp
-                PrepareOverflows.cpp)
+				PrepareOverflows.cpp)
 
 install(TARGETS LLVMsbt
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
