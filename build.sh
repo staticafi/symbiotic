@@ -935,8 +935,7 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 		$LLVM_PREFIX/lib/*.bc* \
 		$LLVM_PREFIX/lib32/*.bc*"
 fi
-	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
-	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
+	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/"
 
 if [ "$BUILD_STP" = "yes" ]; then
 		LIBRARIES="$LIBRARIES $PREFIX/lib/libminisat*.so"
