@@ -79,9 +79,9 @@ class ProcessRunner(object):
         return ProcessRunner.current_process.poll()
 
 def runcmd(cmd, watch = ProcessWatch(), err_msg = ""):
-    # if the binary does not have absolute path, tell us which binary it is
-    if cmd[0][0] != '/':
-        dbg("'{0}' is '{1}'".format(cmd[0], find_executable(cmd[0])), color='DARK_GRAY')
+    ## if the binary does not have absolute path, tell us which binary it is
+    #if cmd[0][0] != '/':
+    #    dbg("'{0}' is '{1}'".format(cmd[0], find_executable(cmd[0])), color='DARK_GRAY')
     process = ProcessRunner()
     if process.run(cmd, watch) != 0:
         for line in watch.getLines():
