@@ -62,6 +62,7 @@ add_llvm_loadable_module(LLVMsbt
 				InitializeUninitialized.cpp
 				RemoveInfiniteLoops.cpp
 				BreakInfiniteLoops.cpp
+				BreakCritLoops.cpp
 				DeleteUndefined.cpp
 				ReplaceUBSan.cpp
 				InstrumentAlloc.cpp

@@ -598,7 +598,7 @@ class Symbiotic(object):
         # not handle PHI nodes well.
         self.run_opt(['-reg2mem', '-break-infinite-loops',
                       '-remove-infinite-loops',
-                      '-mem2reg'
+                      '-mem2reg', '-break-crit-loops'
                       ])
 
         self._get_stats('Before slicing ')
