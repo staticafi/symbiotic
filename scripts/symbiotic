@@ -169,7 +169,8 @@ def perform_binaries_check():
     except ImportError:
         from symbiotic.benchexec.util import find_executable
 
-    executables = ['clang', 'opt', 'llvm-link', 'sbt-instr', 'sbt-slicer']
+    executables = ['clang', 'opt', 'llvm-link', 'llvm-nm',
+                   'sbt-instr', 'sbt-slicer']
     for exe in executables:
         exe_path = find_executable(exe)
         if not os.path.isfile(exe_path):
