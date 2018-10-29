@@ -915,6 +915,7 @@ fi
 		$LLVM_PREFIX/lib/LLVMsbt.so \
 		$LLVM_PREFIX/lib/libPointsToPlugin.so \
 		$LLVM_PREFIX/lib/libRangeAnalysisPlugin.so \
+		$LLVM_PREFIX/lib/libCheckNSWPlugin.so \
 		$LLVM_PREFIX/lib/libRA.so"
 
 if [ ${BUILD_KLEE} = "yes" ];  then

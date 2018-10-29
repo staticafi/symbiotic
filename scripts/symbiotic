@@ -185,7 +185,7 @@ def _find_library(lib):
     return None
 
 def perform_libraries_check():
-    libraries = ['LLVMsbt.so',
+    libraries = ['LLVMsbt.so', 'libCheckNSWPlugin.so',
                  'libPointsToPlugin.so', 'libRA.so',
                  'libLLVMdg.so', 'libLLVMpta.so', 'libLLVMrd.so',
                  'libPTA.so', 'libRD.so']
