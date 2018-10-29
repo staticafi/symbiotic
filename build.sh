@@ -798,6 +798,9 @@ if [ $FROM -le 6 ]; then
 
 	(build && make install) || exit 1
 
+	# precompile bitcode files
+	scripts/precompile_bitcode_files.sh
+
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
@@ -928,7 +931,9 @@ fi
 if [ ${BUILD_KLEE} = "yes" ];  then
 	LIBRARIES="${LIBRARIES} \
 		$LLVM_PREFIX/lib/klee/runtime/*.bc* \
-		$LLVM_PREFIX/lib32/klee/runtime/*.bc*"
+		$LLVM_PREFIX/lib32/klee/runtime/*.bc* \
+		$LLVM_PREFIX/lib/*.bc* \
+		$LLVM_PREFIX/lib32/*.bc*"
 fi
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/*/*.c \
 	       $LLVM_PREFIX/share/sbt-instrumentation/*/*.json"
