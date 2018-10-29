@@ -697,7 +697,7 @@ class Symbiotic(object):
 
         if self.options.property.signedoverflow() and \
            not self.options.overflow_with_clang:
-			self.link_undefined()
+            self.link_undefined()
 
         #################### #################### ###################
         # INSTRUMENTATION
