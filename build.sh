@@ -611,7 +611,8 @@ fi
 ######################################################################
 if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	# build klee
-	git_clone_or_pull "-b 6.0.1 https://github.com/staticafi/klee.git" klee || exitmsg "Cloning failed"
+	KLEE_BRANCH="6.0.1"
+	git_clone_or_pull "-b $KLEE_BRANCH https://github.com/staticafi/klee.git" klee || exitmsg "Cloning failed"
 
 	# workaround a problem with calling llvm-config from build directory
 	if [ ! -f ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib/libgtest.a -o \
@@ -655,6 +656,12 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 			-DENABLE_UNIT_TESTS=ON \
 			$ZLIB_FLAGS $Z3_FLAGS $STP_FLAGS \
 			|| clean_and_exit 1 "git"
+	fi
+
+	if [ "$UPDATE" = "1" ]; then
+		git fetch --all
+		git checkout $KLEE_BRANCH
+		git pull
 	fi
 
 	# clean runtime libs, it may be 32-bit from last build
