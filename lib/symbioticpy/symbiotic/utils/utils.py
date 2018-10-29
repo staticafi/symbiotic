@@ -89,7 +89,7 @@ def enable_debug(d_opts):
     debug_opts = d_opts
 
 
-def dbg(msg, domain='all', print_nl=True, prefix='DBG: ', color=None):
+def dbg(msg, domain='all', print_nl=True, prefix='[DBG] ', color='GRAY'):
     global debug_enabled
 
     if debug_enabled:

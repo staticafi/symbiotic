@@ -27,12 +27,11 @@ class SlicerWatch(ProcessWatch):
         ProcessWatch.__init__(self, lines)
 
     def parse(self, line):
-        if b'INFO' in line:
-            dbg(line.decode('utf-8'), domain='slicer', print_nl=False)
-        elif b'ERROR' in line or b'error' in line:
+        if b'ERROR' in line or b'error' in line:
             print_stderr(line.decode('utf-8'))
         else:
-            dbg(line.decode('utf-8'), 'slicer', False)
+            dbg(line.decode('utf-8'), 'slicer', print_nl = False,
+                prefix='', color=None)
 
 
 class InstrumentationWatch(ProcessWatch):
@@ -41,13 +40,15 @@ class InstrumentationWatch(ProcessWatch):
 
     def parse(self, line):
         if b'Info' in line:
-            dbg(line.decode('utf-8'), domain='instrumentation', print_nl=False)
+            dbg(line.decode('utf-8'), domain='instrumentation', print_nl=False,
+                prefix='', color=None)
         elif b'ERROR' in line or b'error' in line:
             print_stderr(line.decode('utf-8'))
         elif b'Inserted' in line:
             print_stdout(line.decode('utf-8'), print_nl=False)
         else:
-            dbg(line.decode('utf-8'), 'slicer', False)
+            dbg(line.decode('utf-8'), 'slicer', print_nl = False,
+                prefix='', color=None)
 
 
 class PrintWatch(ProcessWatch):
@@ -101,7 +102,8 @@ class ToolWatch(ProcessWatch):
            or b'error' in line or b'warn' in line:
             sys.stderr.write(line.decode('utf-8'))
         else:
-            dbg(line.decode('utf-8'), 'all', False)
+            dbg(line.decode('utf-8'), 'all', print_nl=False,
+                prefix='', color=None)
 
 
 def report_results(res):
