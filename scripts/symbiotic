@@ -96,8 +96,8 @@ where OPTS can be following:
                               can be found in share/sbt-instrumentation/memsafety/
     --overflow-config-file    Set the configuration file for overflows. The files
                               can be found in share/sbt-instrumentation/int_overflows/
-    --overflow-with-clang     Do not instrument check for signed integer overflows, use
-                              clang sanitizer instead.
+    --overflow-with-clang     Do not instrument checks for signed integer overflows with
+                              sbt-instrumentation, use clang sanitizer instead.
     --pta=[fs|fi|old]         Use flow-sensitive/flow-insensitive or old
                               (flow-insensitive too) points-to analysis when slicing.
                               Default is the old
@@ -233,7 +233,6 @@ def set_environ(tool, opts):
 
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
     prepend('LD_LIBRARY_PATH', '{0}/lib'.format(llvm_prefix))
-    prepend('LD_LIBRARY_PATH', '{0}/minisat/build'.format(symbiotic_dir))
 
     prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
     prepend('C_INCLUDE_DIR', '{0}/include'.format(llvm_prefix))
