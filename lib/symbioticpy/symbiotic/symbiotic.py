@@ -276,7 +276,8 @@ class Symbiotic(object):
         if self.options.property.memsafety():
             # default config file is 'config.json'
             config = prefix + 'memsafety/' + config_file
-            assert os.path.isfile(config)
+            if not os.path.isfile(config):
+                raise SymbioticException("Not a valid config file: '{0}'".format(config))
             # check whether we have this file precompiled
             # (this may be a distribution where we're trying to
             # avoid compilation of anything else than sources)
