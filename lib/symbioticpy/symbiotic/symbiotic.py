@@ -212,10 +212,6 @@ class Symbiotic(object):
         if self.options.is32bit:
             cmd.append('-m32')
 
-        if self.options.property.memsafety() and required_version(get_clang_version(), "4.0.1"):
-            cmd.append('-Xclang')
-            cmd.append('-force-lifetime-markers')
-
         cmd.append('-o')
         if output is None:
             basename = os.path.basename(source)
@@ -313,7 +309,7 @@ class Symbiotic(object):
         if not definitionsbc:
             definitionsbc = os.path.abspath(self._compile_to_llvm(definitions,\
                  output=os.path.basename(definitions[:-2]+'.bc'),
-                 with_g=False, opts=['-O2']))
+                 with_g=False, opts=['-O3']))
 
         assert definitionsbc
 
@@ -579,6 +575,11 @@ class Symbiotic(object):
             if self.options.property.signedoverflow():
                 # FIXME: this is a hack, remove once we have better CD algorithm
                 self.options.disabled_optimizations = ['-instcombine']
+
+            if self.options.property.memsafety() and \
+               required_version(get_clang_version(), "4.0.1"):
+                opts.append('-Xclang')
+                opts.append('-force-lifetime-markers')
 
             llvms = self._compile_to_llvm(source, opts=opts)
             llvmsrc.append(llvms)

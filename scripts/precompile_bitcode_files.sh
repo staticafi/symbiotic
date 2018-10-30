@@ -20,10 +20,10 @@ for LLVM in $PREFIX/llvm-*; do
 		mkdir -p "$LLVM/lib" "$LLVM/lib32"
 
 		FILES="$FILES ${LLVM#install/}/lib/$OUT"
-		$CLANG $CPPFLAGS -emit-llvm -c $F -o $LLVM/lib/$OUT $CPPFLAGS $CFLAGS $LDFLAGS
+		$CLANG $CPPFLAGS -O3 -emit-llvm -c $F -o $LLVM/lib/$OUT $CPPFLAGS $CFLAGS $LDFLAGS
 
 		FILES="$FILES ${LLVM#install/}/lib32/$OUT"
-		$CLANG $CPPFLAGS -emit-llvm -c $F -m32 -o $LLVM/lib32/$OUT $CPPFLAGS $CFLAGS $LDFLAGS
+		$CLANG $CPPFLAGS -O3 -emit-llvm -c $F -m32 -o $LLVM/lib32/$OUT $CPPFLAGS $CFLAGS $LDFLAGS
 	done
 done
 
