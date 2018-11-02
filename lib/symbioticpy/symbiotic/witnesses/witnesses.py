@@ -2,7 +2,7 @@
 
 from os.path import basename
 from sys import version_info
-from hashlib import sha1
+from hashlib import sha256 as hashfunc
 
 from sys import version_info
 if version_info < (3, 0):
@@ -26,9 +26,9 @@ if no_lxml:
     from xml.etree import ElementTree as ET
 
 
-def get_sha1(source):
+def get_hash(source):
     f = open(source, 'r', encoding='utf-8')
-    hsh = sha1()
+    hsh = hashfunc()
     for l in f:
         hsh.update(l.encode('utf-8'))
 
@@ -116,7 +116,7 @@ class GraphMLWriter(object):
             ET.SubElement(self._graph, 'data', key='specification').text = p
         ET.SubElement(self._graph, 'data', key='programfile').text = source
         ET.SubElement(self._graph, 'data',
-                      key='programhash').text = get_sha1(source)
+                      key='programhash').text = get_hash(source)
         #ET.SubElement(self._graph, 'data', key='memorymodel').text = 'precise'
         ET.SubElement(self._graph, 'data', key='architecture').text = arch
 
