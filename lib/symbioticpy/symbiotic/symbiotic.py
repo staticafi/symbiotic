@@ -333,15 +333,6 @@ class Symbiotic(object):
         """
         Instrument the code.
         """
-        # perform conservative optimizations that cannot remove undefined behavior
-        self.optimize(passes=['-constmerge', '-dce',
-                              '-ipconstprop', '-deadargelim',
-                              '-inline-threshold=70', '-inline',
-                              '-mem2reg', '-loops',
-                              '-lcssa', '-loop-simplify', '-loop-rotate',
-                              '-loop-unroll', '-unroll-count=10',
-                              '-unroll-allow-partial', '-ipconstprop',
-                              '-deadargelim'])
         self._instrument()
 
     def _get_libraries(self, which=[]):
