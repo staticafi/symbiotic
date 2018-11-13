@@ -795,8 +795,9 @@ class Symbiotic(object):
         # VERIFICATION
         #  - run the verification backend
         #################### #################### ###################
+        self._get_stats('Before verification ')
+
         if not self.options.no_verification:
-            self._get_stats('Before verification ')
             print_stdout('INFO: Starting verification', color='WHITE')
 
             restart_counting_time()
