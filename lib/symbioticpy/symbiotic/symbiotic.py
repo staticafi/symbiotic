@@ -569,7 +569,8 @@ class Symbiotic(object):
         for source in self.sources:
             opts = ['-Wno-unused-parameter', '-Wno-unknown-attributes',
                     '-Wno-unused-label', '-Wno-unknown-pragmas',
-                    '-Wno-unused-command-line-argument']
+                    '-Wno-unused-command-line-argument',
+                    '-fbracket-depth=512']
             if hasattr(self._tool, 'compilation_options'):
                 opts += self._tool.compilation_options()
 
