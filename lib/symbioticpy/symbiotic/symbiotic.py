@@ -676,10 +676,12 @@ class Symbiotic(object):
         passes = []
         if self.options.property.memsafety() or \
            self.options.property.undefinedness() or \
-           self.options.property.signedoverflow():
+           self.options.property.signedoverflow() or \
+           self.options.property.termination():
             # remove the original calls to __VERIFIER_error
             passes.append('-remove-error-calls')
-        if hasattr(self._tool, 'passes_after_compilation'):
+        if hasattr(self._tool, 'passes_after_compilation') and \
+           not self.options.property.termination():
             passes += self._tool.passes_after_compilation()
 
         if self.options.property.signedoverflow() and \
@@ -687,8 +689,7 @@ class Symbiotic(object):
             passes.append('-mem2reg')
             passes.append('-break-crit-edges')
 
-        if not self.options.property.termination():
-            self.run_opt(passes)
+        self.run_opt(passes)
 
         # we want to link memsafety functions before instrumentation,
         # because we need to check for invalid dereferences in them
