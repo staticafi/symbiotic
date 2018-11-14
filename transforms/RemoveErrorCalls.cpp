@@ -67,21 +67,20 @@ static void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2) {
     i2->setDebugLoc(metadataI->getDebugLoc());
 }
 
-
-class ReplaceUBSan : public FunctionPass {
+class RemoveErrorCalls : public FunctionPass {
   public:
     static char ID;
 
-    ReplaceUBSan() : FunctionPass(ID) {}
+    RemoveErrorCalls() : FunctionPass(ID) {}
 
     virtual bool runOnFunction(Function &F);
 };
 
-bool ReplaceUBSan::runOnFunction(Function &F)
+bool RemoveErrorCalls::runOnFunction(Function &F)
 {
   bool modified = false;
   Module *M = F.getParent();
-  Constant *ver_err = nullptr;
+  std::unique_ptr<CallInst> ext;
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
     Instruction *ins = &*I;
@@ -98,20 +97,21 @@ bool ReplaceUBSan::runOnFunction(Function &F)
       assert(callee->hasName());
       StringRef name = callee->getName();
 
-      if (!name.startswith("__ubsan_handle"))
-        continue;
-
-      if (callee->isDeclaration()) {
-        if (!ver_err) {
+      if (name.equals("__VERIFIER_error") ||
+          name.equals("__assert_fail")) {
+        if (!ext) {
           LLVMContext& Ctx = M->getContext();
-          ver_err = M->getOrInsertFunction("__VERIFIER_error",
-                                           Type::getVoidTy(Ctx),
-                                           nullptr);
+          Type *argTy = Type::getInt32Ty(Ctx);
+          Constant *extF
+            = M->getOrInsertFunction("__VERIFIER_exit", Type::getVoidTy(Ctx),
+                                     argTy, nullptr);
+
+          std::vector<Value *> args = { ConstantInt::get(argTy, 0) };
+          ext = std::unique_ptr<CallInst>(CallInst::Create(extF, args));
         }
 
-        auto CI2 = CallInst::Create(ver_err);
+        auto CI2 = ext->clone();
         CloneMetadata(CI, CI2);
-
         CI2->insertAfter(CI);
         CI->eraseFromParent();
 
@@ -124,65 +124,6 @@ bool ReplaceUBSan::runOnFunction(Function &F)
 
 } // namespace
 
-static RegisterPass<ReplaceUBSan> RUBS("replace-ubsan",
-                                       "Replace ubsan calls with calls to __VERIFIER_error");
-char ReplaceUBSan::ID;
-
-class ReplaceAsserts : public FunctionPass {
-  public:
-    static char ID;
-
-    ReplaceAsserts() : FunctionPass(ID) {}
-
-    virtual bool runOnFunction(Function &F);
-};
-
-bool ReplaceAsserts::runOnFunction(Function &F)
-{
-  bool modified = false;
-  Module *M = F.getParent();
-  Constant *ver_err = nullptr;
-
-  for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
-    Instruction *ins = &*I;
-    ++I;
-    if (CallInst *CI = dyn_cast<CallInst>(ins)) {
-      if (CI->isInlineAsm())
-        continue;
-
-      const Value *val = CI->getCalledValue()->stripPointerCasts();
-      const Function *callee = dyn_cast<Function>(val);
-      if (!callee || callee->isIntrinsic())
-        continue;
-
-      if (!callee->isDeclaration())
-        continue;
-
-      assert(callee->hasName());
-      StringRef name = callee->getName();
-      if (!name.equals("__assert_fail"))
-        continue;
-
-      if (!ver_err) {
-        LLVMContext& Ctx = M->getContext();
-        ver_err = M->getOrInsertFunction("__VERIFIER_error",
-                                         Type::getVoidTy(Ctx),
-                                         nullptr);
-      }
-
-      auto CI2 = CallInst::Create(ver_err);
-      CloneMetadata(CI, CI2);
-
-      CI2->insertAfter(CI);
-      CI->eraseFromParent();
-
-      modified = true;
-    }
-  }
-  return modified;
-}
-
-static RegisterPass<ReplaceAsserts> RASS("replace-asserts",
-                                         "Replace assert calls with calls to __VERIFIER_error");
-char ReplaceAsserts::ID;
-
+static RegisterPass<RemoveErrorCalls> RERC("remove-error-calls",
+                                           "Remove calls to __VERIFIER_error");
+char RemoveErrorCalls::ID;

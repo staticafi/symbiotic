@@ -58,6 +58,7 @@ add_llvm_loadable_module(LLVMsbt
 				CloneMetadata.cpp
 				Prepare.cpp
 				RemoveReadOnlyAttr.cpp
+				RemoveErrorCalls.cpp
 				RenameVerifierFuns.cpp
 				InitializeUninitialized.cpp
 				RemoveInfiniteLoops.cpp
