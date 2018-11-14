@@ -276,35 +276,30 @@ class Symbiotic(object):
         if self.options.property.memsafety():
             # default config file is 'config.json'
             config = prefix + 'memsafety/' + config_file
-            if not os.path.isfile(config):
-                raise SymbioticException("Not a valid config file: '{0}'".format(config))
-            # check whether we have this file precompiled
-            # (this may be a distribution where we're trying to
-            # avoid compilation of anything else than sources)
-            precompiled_bc = '{0}/{1}.bc'.format(libdir,definitions[:-2])
-            if os.path.isfile(precompiled_bc):
-                definitionsbc = precompiled_bc
-            else:
-                definitions = prefix + 'memsafety/{0}'.format(definitions)
-                assert os.path.isfile(definitions)
+            config_dir = 'memsafety'
+        elif self.options.property.termination():
+            # default config file is 'config.json'
+            config = prefix + 'termination/' + config_file
+            config_dir = 'termination'
         elif self.options.property.signedoverflow() and \
              not self.options.overflow_with_clang:
-            # default config file is 'config.json'
-            config = prefix + 'int_overflows/' + config_file
-            assert os.path.isfile(config)
-            # check whether we have this file precompiled
-            # (this may be a distribution where we're trying to
-            # avoid compilation of anything else than sources)
-            precompiled_bc = '{0}/{1}.bc'.format(libdir,definitions[:-2])
-            if os.path.isfile(precompiled_bc):
-                definitionsbc = precompiled_bc
-            else:
-                definitions = prefix + 'int_overflows/{0}'.format(definitions)
-                assert os.path.isfile(definitions)
+            config_dir = 'int_overflows'
         elif self.options.property.signedoverflow():
             return
         else:
             raise SymbioticException('BUG: Unhandled property')
+
+        if not os.path.isfile(config):
+            raise SymbioticException("Not a valid config file: '{0}'".format(config))
+        # check whether we have this file precompiled
+        # (this may be a distribution where we're trying to
+        # avoid compilation of anything else than sources)
+        precompiled_bc = '{0}/{1}.bc'.format(libdir,definitions[:-2])
+        if os.path.isfile(precompiled_bc):
+            definitionsbc = precompiled_bc
+        else:
+            definitions = prefix + config_dir + '/{0}'.format(definitions)
+            assert os.path.isfile(definitions)
 
         # module with defintions of instrumented functions
         if not definitionsbc:
@@ -692,7 +687,8 @@ class Symbiotic(object):
             passes.append('-mem2reg')
             passes.append('-break-crit-edges')
 
-        self.run_opt(passes)
+        if not self.options.property.termination():
+            self.run_opt(passes)
 
         # we want to link memsafety functions before instrumentation,
         # because we need to check for invalid dereferences in them
