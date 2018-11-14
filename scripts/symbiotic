@@ -37,7 +37,9 @@ from symbiotic.witnesses.witnesses import GraphMLWriter
 from symbiotic.includepaths import IncludePathsSearcher
 from subprocess import call
 
-VERSION='6.0.2_dev'
+# the numbers must be separated by '-, otherwise it will
+# break the tool-module in benchexec
+VERSION='6.0.2-dev'
 try:
     from symbiotic.versions import versions
     from symbiotic.versions import llvm_version as LLVM_VERSION
