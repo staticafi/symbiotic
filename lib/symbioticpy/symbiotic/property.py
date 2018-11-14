@@ -25,6 +25,10 @@ class Property:
         """ Check for undefined behavior """
         return False
 
+    def termination(self):
+        """ Check termination """
+        return False
+
     def ltl(self):
         """ Is the property described by a generic LTL formula(e)? """
         return False
@@ -67,6 +71,15 @@ class PropertyUnreachCall(Property):
     def assertions(self):
         return True
 
+
+class PropertyTermination(Property):
+    def __init__(self, prpfile = None):
+        Property.__init__(self, prpfile)
+
+    def termination(self):
+        return True
+
+
 supported_ltl_properties = {
     'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )' : 'REACHCALL',
     'CHECK( init(main()), LTL(G valid-free) )'                 : 'MEMSAFETY',
@@ -74,6 +87,7 @@ supported_ltl_properties = {
     'CHECK( init(main()), LTL(G valid-memtrack) )'             : 'MEMSAFETY',
     'CHECK( init(main()), LTL(G ! overflow) )'                 : 'SIGNED-OVERFLOW',
     'CHECK( init(main()), LTL(G def-behavior) )'               : 'UNDEF-BEHAVIOR',
+    'CHECK( init(main()), LTL(F end) )'                        : 'TERMINATION',
 }
 
 supported_properties = {
@@ -86,6 +100,7 @@ supported_properties = {
     'undefined'                                                : 'UNDEF-BEHAVIOR',
     'signed-overflow'                                          : 'SIGNED-OVERFLOW',
     'memsafety'                                                : 'MEMSAFETY',
+    'termination'                                              : 'TERMINATION',
 }
 
 def _get_prp(prp):
@@ -163,6 +178,11 @@ def get_property(symbiotic_dir, prp):
         prop = PropertyNoOverflow(prpfile)
         if prpfile is None:
             prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyNoOverflow.prp'))
+
+    elif 'TERMINATION' in prps:
+        prop = PropertyTermination(prpfile)
+        if prpfile is None:
+            prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyTermination.prp'))
 
     if prop:
         prop._ltl = ltl_prps

@@ -93,6 +93,9 @@ class SymbioticTool(KleeBase):
             # default config file is 'config.json'
             return (self._options.overflow_config_file, 'overflows.c', True)
 
+        if self._options.property.termination():
+            return ('config.json', 'termination.c', True)
+
         return (None, None, None)
 
     def slicer_options(self):
@@ -127,6 +130,8 @@ class SymbioticTool(KleeBase):
                         return result.RESULT_FALSE_DEREF
                     elif self._options.property.signedoverflow():
                         return result.RESULT_FALSE_OVERFLOW
+                    elif self._options.property.termination():
+                        return result.RESULT_FALSE_TERMINATION
                     return result.RESULT_FALSE_REACH
                 elif self._options.property.memsafety():
                     if key == 'EDOUBLEFREE' or key == 'EINVALFREE':

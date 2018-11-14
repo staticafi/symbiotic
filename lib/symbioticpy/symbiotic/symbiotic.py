@@ -276,35 +276,30 @@ class Symbiotic(object):
         if self.options.property.memsafety():
             # default config file is 'config.json'
             config = prefix + 'memsafety/' + config_file
-            if not os.path.isfile(config):
-                raise SymbioticException("Not a valid config file: '{0}'".format(config))
-            # check whether we have this file precompiled
-            # (this may be a distribution where we're trying to
-            # avoid compilation of anything else than sources)
-            precompiled_bc = '{0}/{1}.bc'.format(libdir,definitions[:-2])
-            if os.path.isfile(precompiled_bc):
-                definitionsbc = precompiled_bc
-            else:
-                definitions = prefix + 'memsafety/{0}'.format(definitions)
-                assert os.path.isfile(definitions)
+            config_dir = 'memsafety'
+        elif self.options.property.termination():
+            # default config file is 'config.json'
+            config = prefix + 'termination/' + config_file
+            config_dir = 'termination'
         elif self.options.property.signedoverflow() and \
              not self.options.overflow_with_clang:
-            # default config file is 'config.json'
-            config = prefix + 'int_overflows/' + config_file
-            assert os.path.isfile(config)
-            # check whether we have this file precompiled
-            # (this may be a distribution where we're trying to
-            # avoid compilation of anything else than sources)
-            precompiled_bc = '{0}/{1}.bc'.format(libdir,definitions[:-2])
-            if os.path.isfile(precompiled_bc):
-                definitionsbc = precompiled_bc
-            else:
-                definitions = prefix + 'int_overflows/{0}'.format(definitions)
-                assert os.path.isfile(definitions)
+            config_dir = 'int_overflows'
         elif self.options.property.signedoverflow():
             return
         else:
             raise SymbioticException('BUG: Unhandled property')
+
+        if not os.path.isfile(config):
+            raise SymbioticException("Not a valid config file: '{0}'".format(config))
+        # check whether we have this file precompiled
+        # (this may be a distribution where we're trying to
+        # avoid compilation of anything else than sources)
+        precompiled_bc = '{0}/{1}.bc'.format(libdir,definitions[:-2])
+        if os.path.isfile(precompiled_bc):
+            definitionsbc = precompiled_bc
+        else:
+            definitions = prefix + config_dir + '/{0}'.format(definitions)
+            assert os.path.isfile(definitions)
 
         # module with defintions of instrumented functions
         if not definitionsbc:
@@ -456,7 +451,8 @@ class Symbiotic(object):
         self.llvmfile = output
 
     def optimize(self, passes, disable=[]):
-        if self.options.no_optimize:
+        if self.options.no_optimize or \
+           self.options.property.termination():
             return
 
         disable += self.options.disabled_optimizations
@@ -682,10 +678,12 @@ class Symbiotic(object):
         passes = []
         if self.options.property.memsafety() or \
            self.options.property.undefinedness() or \
-           self.options.property.signedoverflow():
+           self.options.property.signedoverflow() or \
+           self.options.property.termination():
             # remove the original calls to __VERIFIER_error
             passes.append('-remove-error-calls')
-        if hasattr(self._tool, 'passes_after_compilation'):
+        if hasattr(self._tool, 'passes_after_compilation') and \
+           not self.options.property.termination():
             passes += self._tool.passes_after_compilation()
 
         if self.options.property.signedoverflow() and \
@@ -726,7 +724,8 @@ class Symbiotic(object):
         # SLICING
         #  - slice the code w.r.t error sites
         #################### #################### ###################
-        if not self.options.noslice:
+        if not self.options.noslice and \
+           not self.options.property.termination():
             self.perform_slicing()
 
         # start a new time era
