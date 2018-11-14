@@ -610,19 +610,12 @@ fi
 #   KLEE
 ######################################################################
 if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
-	# build klee
-	KLEE_BRANCH="6.0.1"
-	git_clone_or_pull "-b $KLEE_BRANCH https://github.com/staticafi/klee.git" klee || exitmsg "Cloning failed"
-
-	# workaround a problem with calling llvm-config from build directory
-	if [ ! -f ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib/libgtest.a -o \
-	     ! -f ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib/libgtest_main.a ]; then
-		touch ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib/libgtest.a
-		touch ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib/libgtest_main.a
+	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/klee)" ]; then
+		git_submodule_init
 	fi
 
-	mkdir -p klee/build-${LLVM_VERSION} || exit 1
-	pushd klee/build-${LLVM_VERSION} || exit 1
+	mkdir -p klee/build-${LLVM_VERSION}
+	pushd klee/build-${LLVM_VERSION}
 
 	if [ "x$BUILD_TYPE" = "xRelease" ]; then
 		KLEE_BUILD_TYPE="Release+Asserts"
