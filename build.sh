@@ -846,7 +846,7 @@ if [ "$BUILD_STP" = "yes" ]; then
 	echo -e "\t'minisat' : '$MINISAT_VERSION'," >> $VERSFILE
 	echo -e "\t'stp' : '$STP_VERSION'," >> $VERSFILE
 fi
-	echo -e "\t'KLEE' : '$KLEE_VERSION'," >> $VERSFILE
+	echo -e "\t'klee' : '$KLEE_VERSION'," >> $VERSFILE
 	echo -e "}\n\n" >> $VERSFILE
 	echo "llvm_version = '${LLVM_VERSION}'" >> $VERSFILE
 

@@ -10,3 +10,6 @@
 	path = sbt-instrumentation
 	url = https://github.com/staticafi/sbt-instrumentation
 	ignore = untracked
+[submodule "klee"]
+	path = klee
+	url = ./klee

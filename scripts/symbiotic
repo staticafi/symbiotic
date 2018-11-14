@@ -37,7 +37,7 @@ from symbiotic.witnesses.witnesses import GraphMLWriter
 from symbiotic.includepaths import IncludePathsSearcher
 from subprocess import call
 
-VERSION='6.0.0-dev'
+VERSION='6.0.2_dev'
 try:
     from symbiotic.versions import versions
     from symbiotic.versions import llvm_version as LLVM_VERSION
@@ -320,6 +320,13 @@ def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, 
 save_files = False
 working_dir_prefix = '/tmp'
 
+
+def print_versions():
+    print('version: {0}'.format(VERSION))
+    print('LLVM version: {0}'.format(LLVM_VERSION))
+    for (k, v) in versions.items():
+        print('{0:<20} -> {1}'.format(k, v))
+
 def print_short_vers():
     vers = '{0}-'.format(VERSION)
     # the LLVM version of the default verifier
@@ -333,6 +340,8 @@ def print_short_vers():
 
     print(vers)
 
+def print_shortest_vers():
+    print('{0}-{1}'.format(VERSION, versions['symbiotic'][:8]))
 
 def parse_command_line():
     options = SymbioticOptions()
@@ -384,13 +393,10 @@ def parse_command_line():
                  print('Unknown libc')
                  sys.exit(0)
         elif opt == '--version-short':
-            print_short_vers()
+            print_shortest_vers()
             sys.exit(0)
         elif opt == '--version':
-            print('version: {0}'.format(VERSION))
-            print('LLVM version: {0}'.format(LLVM_VERSION))
-            for (k, v) in versions.items():
-                print('{0:<20} -> {1}'.format(k, v))
+            print_versions()
             sys.exit(0)
         elif opt == '--no-slice':
             dbg('Will not slice')
