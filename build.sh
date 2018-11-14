@@ -85,7 +85,7 @@ LLVM_TOOLS="opt clang llvm-link llvm-dis llvm-nm"
 WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
-BUILD_STP='yes'
+BUILD_STP='no'
 
 check_z3() {
 	echo "#include <z3.h>" | gcc - -E &>/dev/null
@@ -623,14 +623,18 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 		KLEE_BUILD_TYPE="$BUILD_TYPE"
 	fi
 
-	STP_FLAGS=
-	Z3_FLAGS=
-	if [ "$BUILD_STP" = "yes" -o -d $ABS_SRCDIR/stp ]; then
-		STP_FLAGS="-DENABLE_SOLVER_STP=ON -DSTP_DIR=${ABS_SRCDIR}/stp"
-	fi
+	# Our version of KLEE does not work with STP now
+	# STP_FLAGS=
+	# if [ "$BUILD_STP" = "yes" -o -d $ABS_SRCDIR/stp ]; then
+	# 	STP_FLAGS="-DENABLE_SOLVER_STP=ON -DSTP_DIR=${ABS_SRCDIR}/stp"
+	# fi
+	STP_FLAGS="-DENABLE_SOLVER_STP=OFF"
 
+	Z3_FLAGS=
 	if [ "$HAVE_Z3" = "yes" ]; then
 		Z3_FLAGS=-DENABLE_SOLVER_Z3=ON
+	else
+		exitmsg "KLEE needs Z3 library"
 	fi
 
 	if [ ! -d CMakeFiles ]; then
