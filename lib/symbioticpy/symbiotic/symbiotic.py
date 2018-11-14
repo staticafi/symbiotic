@@ -451,7 +451,8 @@ class Symbiotic(object):
         self.llvmfile = output
 
     def optimize(self, passes, disable=[]):
-        if self.options.no_optimize:
+        if self.options.no_optimize or \
+           self.options.property.termination():
             return
 
         disable += self.options.disabled_optimizations
@@ -722,7 +723,8 @@ class Symbiotic(object):
         # SLICING
         #  - slice the code w.r.t error sites
         #################### #################### ###################
-        if not self.options.noslice:
+        if not self.options.noslice and \
+           not self.options.property.termination():
             self.perform_slicing()
 
         # start a new time era
