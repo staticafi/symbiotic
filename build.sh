@@ -952,7 +952,7 @@ fi
 		include/symbiotic-size_t.h \
 		$LLVM_PREFIX/include/stddef.h \
 		lib/*.c \
-		specs/* \
+		properties/* \
 		lib/symbioticpy/symbiotic/*.py \
 		lib/symbioticpy/symbiotic/benchexec/*.py \
 		lib/symbioticpy/symbiotic/benchexec/tools/*.py \

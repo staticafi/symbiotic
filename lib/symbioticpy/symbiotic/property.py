@@ -138,7 +138,7 @@ def _map_property(prps):
 def get_property(symbiotic_dir, prp):
     if prp is None:
         prop = PropertyUnreachCall()
-        prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyUnreachCall.prp'))
+        prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyUnreachCall.prp'))
         return prop
 
     prps, prpfile = _get_prp(prp)
@@ -148,21 +148,21 @@ def get_property(symbiotic_dir, prp):
     if 'REACHCALL' in prps:
         prop = PropertyUnreachCall(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyUnreachCall.prp'))
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyUnreachCall.prp'))
     elif 'MEMSAFETY' in prps:
         prop = PropertyMemSafety(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyMemSafety.prp'))
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyMemSafety.prp'))
 
     elif 'UNDEF-BEHAVIOR' in prps:
         prop = PropertyDefBehavior(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyDefBehavior.prp'))
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyDefBehavior.prp'))
 
     elif 'SIGNED-OVERFLOW' in prps:
         prop = PropertyNoOverflow(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyNoOverflow.prp'))
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyNoOverflow.prp'))
 
     if prop:
         prop._ltl = ltl_prps

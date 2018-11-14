@@ -8,7 +8,7 @@ add_subdirectory(include)
 install(PROGRAMS scripts/symbiotic
 	DESTINATION bin)
 
-install(DIRECTORY specs
+install(DIRECTORY properties
 	DESTINATION ${INSTALL_DATA_DIR}/)
 
 
