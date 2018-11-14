@@ -12,4 +12,4 @@
 	ignore = untracked
 [submodule "klee"]
 	path = klee
-	url = ./klee
+	url = https://github.com/staticafi/klee
