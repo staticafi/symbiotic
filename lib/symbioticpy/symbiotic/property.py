@@ -182,7 +182,7 @@ def get_property(symbiotic_dir, prp):
     elif 'TERMINATION' in prps:
         prop = PropertyTermination(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'specs/PropertyTermination.prp'))
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyTermination.prp'))
 
     if prop:
         prop._ltl = ltl_prps
