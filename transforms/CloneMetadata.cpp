@@ -19,11 +19,11 @@ using namespace llvm;
  * @param i1 the first instruction
  * @param i2 the second instruction without any metadata
  */
-void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2)
+bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2)
 {
     if (i1->hasMetadata()) {
         i2->setDebugLoc(i1->getDebugLoc());
-        return;
+        return true;
     }
 
     const llvm::Instruction *metadataI = nullptr;
@@ -45,8 +45,10 @@ void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2)
         }
     }
 
-    assert(metadataI && "Did not find dbg in any instruction of a block");
-    i2->setDebugLoc(metadataI->getDebugLoc());
-}
+    //assert(metadataI && "Did not find dbg in any instruction of a block");
+    if (metadataI)
+        i2->setDebugLoc(metadataI->getDebugLoc());
 
+    return metadataI != nullptr;
+}
 
