@@ -61,7 +61,8 @@ class SymbioticTool(KleeBase):
             ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
             ('EMEMALLOC', re.compile('.*KLEE: WARNING: Allocating memory failed.*')),
-            ('EMEMLEAK', re.compile('.*memory error: memory leak detected.*'))
+            ('EMEMLEAK', re.compile('.*memory error: memory leak detected.*')),
+            ('EFREEALLOCA', re.compile('.*ERROR:.*free of alloca.*'))
         ]
 
     def instrumentation_options(self):
@@ -126,7 +127,7 @@ class SymbioticTool(KleeBase):
                 # return True so that we know we should terminate
                 if key.startswith('ASSERTIONFAILED'):
                     return result.RESULT_FALSE_REACH
-                elif key == 'EFREE':
+                elif key == 'EFREE' or key == 'EFREEALLOCA':
                         return result.RESULT_FALSE_FREE
                 elif key == 'EMEMERROR':
                         return result.RESULT_FALSE_DEREF
