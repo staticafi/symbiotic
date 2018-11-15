@@ -693,14 +693,8 @@ class Symbiotic(object):
 
         self.run_opt(passes)
 
-        # we want to link memsafety functions before instrumentation,
-        # because we need to check for invalid dereferences in them
-        if self.options.property.memsafety():
-            self.link_undefined()
-
-        if self.options.property.signedoverflow() and \
-           not self.options.overflow_with_clang:
-            self.link_undefined()
+        if hasattr(self._tool, 'actions_after_compilation'):
+            self._tool.actions_after_compilation(self)
 
         #################### #################### ###################
         # INSTRUMENTATION
@@ -735,7 +729,6 @@ class Symbiotic(object):
         opt = get_optlist_after(self.options.optlevel)
         if opt:
             self.optimize(passes=opt)
-
 
         # there may have been created new loops
         passes = ['-remove-infinite-loops']

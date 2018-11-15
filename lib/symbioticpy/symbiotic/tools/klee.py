@@ -109,6 +109,12 @@ class SymbioticTool(KleeBase):
 
             return passes
 
+    def actions_after_compilation(self, symbiotic):
+        if symbiotic.options.property.signedoverflow() and \
+           not self.options.overflow_with_clang:
+            symbiotic.link_undefined()
+
+
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
         Compose the command line to execute from the name of the executable

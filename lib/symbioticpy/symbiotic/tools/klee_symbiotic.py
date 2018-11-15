@@ -136,6 +136,15 @@ class SymbioticTool(KleeBase):
 
         return passes
 
+    def actions_after_compilation(self, symbiotic):
+        # we want to link memsafety functions before instrumentation,
+        # because we need to check for invalid dereferences in them
+        if symbiotic.options.property.memsafety():
+            symbiotic.link_undefined()
+
+        if symbiotic.options.property.signedoverflow() and \
+           not self.options.overflow_with_clang:
+            symbiotic.link_undefined()
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
