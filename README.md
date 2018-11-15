@@ -47,7 +47,7 @@ $ ./build.sh -j2
 And that should be it! However, if something goes wrong or you need to adust the build
 process, you can pass different options to the build script. Possible options include:
   - `build-type=TYPE` (TYPE one of `Release`, `Debug`)
-  - `llvm-version=VERSION` (the default `VERSION` is `3.9.1`, other versions are rather experimental)
+  - `llvm-version=VERSION` (the default `VERSION` is `4.0.1`, other versions are rather experimental)
   - `with-llvm=`, `with-llvm-src=`, `with-llvm-dir=` This set of options orders the script to use already built external LLVM (the build script will build LLVM otherwise if it has not been built already in this folder)
   - `with-zlib` Build also zlib
   - `no-llvm` Do not try building LLVM
