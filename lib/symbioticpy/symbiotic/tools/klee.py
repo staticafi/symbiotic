@@ -90,7 +90,8 @@ class SymbioticTool(KleeBase):
         if self._options.property.memsafety():
             # default config file is 'config.json'
             # slice with respect to the memory handling operations
-            return ('__INSTR_mark_pointer,__INSTR_mark_free', ['-criteria-are-next-instr'])
+            return ('__INSTR_mark_pointer,__INSTR_mark_free,__INSTR_mark_allocation',
+                    ['-criteria-are-next-instr'])
 
         return (self._options.slicing_criterion,[])
 
