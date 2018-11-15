@@ -106,6 +106,37 @@ class SymbioticTool(KleeBase):
 
         return (self._options.slicing_criterion,[])
 
+
+    def passes_after_slicing(self):
+        """
+        Prepare the bitcode for verification after slicing:
+        \return a list of LLVM passes that should be run on the code
+        """
+        # instrument our malloc -- either the version that can fail,
+        # or the version that can not fail.
+        passes = []
+        if self._options.malloc_never_fails:
+            passes += ['-instrument-alloc-nf']
+        else:
+            passes += ['-instrument-alloc']
+
+        # remove/replace the rest of undefined functions
+        # for which we do not have a definition and
+        # that has not been removed
+        if self._options.undef_retval_nosym:
+            passes += ['-delete-undefined-nosym']
+        else:
+            passes += ['-delete-undefined']
+
+        # for the memsafety property, make functions behave like they have
+        # side-effects, because LLVM optimizations could remove them otherwise,
+        # even though they contain calls to assert
+        if self._options.property.memsafety():
+            passes.append('-remove-readonly-attr')
+
+        return passes
+
+
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
         Compose the command line to execute from the name of the executable

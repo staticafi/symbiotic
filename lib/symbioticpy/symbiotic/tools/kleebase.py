@@ -165,14 +165,7 @@ class SymbioticTool(BaseTool):
         Prepare the bitcode for verification after slicing:
         \return a list of LLVM passes that should be run on the code
         """
-        # instrument our malloc -- either the version that can fail,
-        # or the version that can not fail.
         passes = []
-        if self._options.malloc_never_fails:
-            passes += ['-instrument-alloc-nf']
-        else:
-            passes += ['-instrument-alloc']
-
         # remove/replace the rest of undefined functions
         # for which we do not have a definition and
         # that has not been removed
