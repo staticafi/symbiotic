@@ -451,8 +451,7 @@ class Symbiotic(object):
         self.llvmfile = output
 
     def optimize(self, passes, disable=[]):
-        if self.options.no_optimize or \
-           self.options.property.termination():
+        if self.options.no_optimize:
             return
 
         disable += self.options.disabled_optimizations
@@ -682,8 +681,7 @@ class Symbiotic(object):
            self.options.property.termination():
             # remove the original calls to __VERIFIER_error
             passes.append('-remove-error-calls')
-        if hasattr(self._tool, 'passes_after_compilation') and \
-           not self.options.property.termination():
+        if hasattr(self._tool, 'passes_after_compilation'):
             passes += self._tool.passes_after_compilation()
 
         if self.options.property.signedoverflow() and \
@@ -730,8 +728,12 @@ class Symbiotic(object):
         if opt:
             self.optimize(passes=opt)
 
+        passes = []
+
         # there may have been created new loops
-        passes = ['-remove-infinite-loops']
+        if not self.options.property.termination():
+            passes.append('-remove-infinite-loops')
+
         if hasattr(self._tool, 'passes_after_slicing'):
             passes += self._tool.passes_after_slicing()
         self.run_opt(passes)
