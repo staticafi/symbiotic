@@ -194,10 +194,7 @@ class SymbioticTool(KleeBase):
         for line in output:
             fnd = self._parse_klee_output_line(line.decode('ascii'))
             if fnd:
-                if fnd.startswith('false'):
-                    return fnd
-                else:
-                    found.append(fnd)
+                found.append(fnd)
 
         if not found:
             if returncode != 0:
@@ -205,8 +202,15 @@ class SymbioticTool(KleeBase):
             else:
                 # we haven't found anything
                 return result.RESULT_TRUE_PROP
+        elif len(found) == 1:
+            return found[0]
         else:
-            return result.RESULT_UNKNOWN
+            if 'EINITVALS' not in found:
+                for f in found:
+                    if f.startswith('false'):
+                        return f
+
+            return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
 
         return result.RESULT_ERROR
 
