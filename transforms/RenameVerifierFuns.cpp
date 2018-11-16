@@ -127,7 +127,7 @@ void RenameVerifierFuns::mapLines() {
 }
 
 static void replaceCall(Module& M, CallInst *CI, unsigned line, const std::string& var) {
-  std::string parent_name = cast<Function>(CI->getCalledValue()->stripPointerCasts())->getName();
+  std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName();
   std::string name = parent_name + ":" + var + ":" + std::to_string(line);
   Function *called_func = CI->getCalledFunction();
   Constant *new_func = M.getOrInsertFunction(called_func->getName().str() + "_named",
