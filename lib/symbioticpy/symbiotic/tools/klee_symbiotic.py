@@ -143,7 +143,7 @@ class SymbioticTool(KleeBase):
             symbiotic.link_undefined()
 
         if symbiotic.options.property.signedoverflow() and \
-           not self.options.overflow_with_clang:
+           not symbiotic.options.overflow_with_clang:
             symbiotic.link_undefined()
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):

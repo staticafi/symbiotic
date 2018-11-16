@@ -283,6 +283,7 @@ class Symbiotic(object):
             config_dir = 'termination'
         elif self.options.property.signedoverflow() and \
              not self.options.overflow_with_clang:
+            config = prefix + 'int_overflows/' + config_file
             config_dir = 'int_overflows'
         elif self.options.property.signedoverflow():
             return

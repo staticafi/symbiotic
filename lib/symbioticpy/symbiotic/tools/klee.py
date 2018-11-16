@@ -111,7 +111,7 @@ class SymbioticTool(KleeBase):
 
     def actions_after_compilation(self, symbiotic):
         if symbiotic.options.property.signedoverflow() and \
-           not self.options.overflow_with_clang:
+           not symbiotic.options.overflow_with_clang:
             symbiotic.link_undefined()
 
 
