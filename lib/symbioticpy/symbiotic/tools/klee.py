@@ -79,6 +79,13 @@ class SymbioticTool(KleeBase):
             # default config file is 'config.json'
             return ('config-marker.json', 'marker.c', False)
 
+        if self._options.property.signedoverflow():
+            # default config file is 'config.json'
+            return (self._options.overflow_config_file, 'overflows.c', True)
+
+        if self._options.property.termination():
+            return ('config.json', 'termination.c', True)
+
         return (None, None, None)
 
     def slicer_options(self):
