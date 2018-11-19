@@ -59,7 +59,7 @@ bool MarkVolatile::runOnFunction(Function &F)
       assert(callee->hasName());
       StringRef name = callee->getName();
 
-      if (!name.startswith("__INSTR_mark_pointer"))
+      if (!name.startswith("__INSTR_mark_"))
         continue;
 
       // we found a marked instruction, make it volatile
