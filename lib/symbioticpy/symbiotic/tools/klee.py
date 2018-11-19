@@ -150,7 +150,10 @@ class SymbioticTool(KleeBase):
             if pattern.match(line):
                 # return True so that we know we should terminate
                 if key.startswith('ASSERTIONFAILED'):
-                    return result.RESULT_FALSE_REACH
+                    if self._options.property.signedoverflow():
+                        return result.RESULT_FALSE_OVERFLOW
+                    else:
+                        return result.RESULT_FALSE_REACH
                 elif key == 'EFREE' or key == 'EFREEALLOCA':
                         return result.RESULT_FALSE_FREE
                 elif key == 'EMEMERROR':
