@@ -62,7 +62,8 @@ class SymbioticTool(KleeBase):
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
             ('EMEMALLOC', re.compile('.*KLEE: WARNING: Allocating memory failed.*')),
             ('EMEMLEAK', re.compile('.*memory error: memory leak detected.*')),
-            ('EFREEALLOCA', re.compile('.*ERROR:.*free of alloca.*'))
+            ('EFREEALLOCA', re.compile('.*ERROR:.*free of alloca.*')),
+            ('ERESOLV', re.compile('.*ERROR:.*Could not resolve.*'))
         ]
 
     def instrumentation_options(self):
