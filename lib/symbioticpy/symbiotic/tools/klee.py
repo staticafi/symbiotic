@@ -105,9 +105,9 @@ class SymbioticTool(KleeBase):
 
     def passes_after_instrumentation(self):
         if self._options.property.memsafety():
-            # make all store/load insts that are marked by instrumentation
-            # volatile, so that we can run optimizations later on them
-            passes = ['-mark-volatile', '-replace-lifetime-markers']
+            # replace llvm.lifetime.start/end with __VERIFIER_scope_enter/leave
+            # so that optimizations will not mess the code up
+            passes = ['-replace-lifetime-markers']
             # also replace all mallocs with our functions so that optimizations
             # do not remove them
             if self._options.malloc_never_fails:
@@ -115,6 +115,10 @@ class SymbioticTool(KleeBase):
             else:
                 passes += ['-instrument-alloc']
 
+            # make all store/load insts that are marked by instrumentation
+            # volatile, so that we can run optimizations later on them
+            # NOTE: we want this pass as the last one
+            passes.append('-mark-volatile')
             return passes
 
     def actions_after_compilation(self, symbiotic):
