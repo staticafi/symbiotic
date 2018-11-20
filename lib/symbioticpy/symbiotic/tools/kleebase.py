@@ -162,9 +162,6 @@ class SymbioticTool(BaseTool):
         if not self._options.explicit_symbolic:
             passes.append('-initialize-uninitialized')
 
-        if self._options.property.memsafety():
-            passes.append('-replace-lifetime-markers')
-
         return passes
 
     def passes_after_slicing(self):
