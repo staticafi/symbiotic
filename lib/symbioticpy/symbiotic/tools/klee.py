@@ -188,8 +188,14 @@ class SymbioticTool(KleeBase):
         else:
             if 'EINITVALS' not in found: # EINITVALS would break the validity of the found error
                 for f in found:
-                    if f.startswith('false'): # we found something and error,
-                        return f              # so report the error
+                    # we found error that we sought for?
+                    if f == result.RESULT_FALSE_REACH and self._options.property.assertions():
+                        return f
+                    elif f == result.RESULT_FALSE_OVERFLOW and self._options.property.signedoverflow():
+                        return f
+                    elif f in [result.RESULT_FALSE_FREE, result.RESULT_FALSE_DEREF, result.RESULT_FALSE_MEMTRACK]\
+                        and self._options.property.memsafety():
+                        return f
 
             return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
 
