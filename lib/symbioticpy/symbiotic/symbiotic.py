@@ -285,6 +285,9 @@ class Symbiotic(object):
              not self.options.overflow_with_clang:
             config = prefix + 'int_overflows/' + config_file
             config_dir = 'int_overflows'
+        elif self.options.property.memcleanup():
+            config = prefix + 'memsafety/' + config_file
+            config_dir = 'memsafety'
         elif self.options.property.signedoverflow():
             return
         else:

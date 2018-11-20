@@ -97,6 +97,9 @@ class SymbioticTool(KleeBase):
         if self._options.property.termination():
             return ('config.json', 'termination.c', True)
 
+        if self._options.property.memcleanup():
+            return ('config-memcleanup.json', 'memsafety.c', True)
+
         return (None, None, None)
 
     def slicer_options(self):
@@ -174,6 +177,8 @@ class SymbioticTool(KleeBase):
                         return result.RESULT_FALSE_OVERFLOW
                     elif self._options.property.termination():
                         return result.RESULT_FALSE_TERMINATION
+                    elif self._options.property.memcleanup():
+                        return result.RESULT_FALSE_MEMCLEANUP
                     return result.RESULT_FALSE_REACH
                 elif self._options.property.memsafety():
                     if key == 'EDOUBLEFREE' or key == 'EINVALFREE':
