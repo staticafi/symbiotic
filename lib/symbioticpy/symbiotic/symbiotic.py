@@ -598,6 +598,10 @@ class Symbiotic(object):
         if opt:
             self.optimize(passes=opt)
 
+        add_params = []
+        if not self.options.is32bit:
+            add_params.append("-rda=ss")
+
         # Break the infinite loops just before slicing so that the
         # optimizations won't make them syntactically infinite again. We must
         # run reg2mem before breaking to loops, because breaking the loops can
@@ -612,7 +616,6 @@ class Symbiotic(object):
         restart_counting_time()
         for n in range(0, self.options.repeat_slicing):
             dbg('Slicing the code for the {0}. time'.format(n + 1))
-            add_params = []
             # if n == 0 and self.options.repeat_slicing > 1:
             #    add_params = ['-pta-field-sensitive=8']
 
