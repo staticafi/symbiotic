@@ -107,7 +107,7 @@ class SymbioticTool(KleeBase):
         if self._options.property.memsafety():
             # make all store/load insts that are marked by instrumentation
             # volatile, so that we can run optimizations later on them
-            passes = ['-mark-volatile', '-replace-lifetime-markers']
+            passes = ['-replace-lifetime-markers', '-mark-volatile']
             # also replace all mallocs with our functions so that optimizations
             # do not remove them
             if self._options.malloc_never_fails:

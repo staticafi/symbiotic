@@ -578,6 +578,9 @@ class Symbiotic(object):
                required_version(get_clang_version(), "4.0.1"):
                 opts.append('-Xclang')
                 opts.append('-force-lifetime-markers')
+                # these optimizations mess up with scopes,
+                # FIXME: find a better solution
+                self.options.disabled_optimizations = ['-licm','-gvn','-early-cse']
 
             llvms = self._compile_to_llvm(source, opts=opts)
             llvmsrc.append(llvms)
