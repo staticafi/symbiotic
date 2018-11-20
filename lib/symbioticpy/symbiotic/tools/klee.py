@@ -152,6 +152,8 @@ class SymbioticTool(KleeBase):
                 if key.startswith('ASSERTIONFAILED'):
                     if self._options.property.signedoverflow():
                         return result.RESULT_FALSE_OVERFLOW
+                    elif self._options.property.termination():
+                        return result.RESULT_FALSE_TERMINATION
                     else:
                         return result.RESULT_FALSE_REACH
                 elif key == 'EFREE' or key == 'EFREEALLOCA':
