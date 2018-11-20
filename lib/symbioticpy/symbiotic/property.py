@@ -13,6 +13,10 @@ class Property:
         """ Check for memory safety violations """
         return False
 
+    def memcleanup(self):
+        """ Check for memory leaks """
+        return False
+
     def signedoverflow(self):
         """ Check for signed integer overflows """
         return False
@@ -45,6 +49,13 @@ class PropertyMemSafety(Property):
         Property.__init__(self, prpfile)
 
     def memsafety(self):
+        return True
+
+class PropertyMemCleanup(Property):
+    def __init__(self, prpfile = None):
+        Property.__init__(self, prpfile)
+
+    def memcleanup(self):
         return True
 
 
@@ -85,6 +96,7 @@ supported_ltl_properties = {
     'CHECK( init(main()), LTL(G valid-free) )'                 : 'MEMSAFETY',
     'CHECK( init(main()), LTL(G valid-deref) )'                : 'MEMSAFETY',
     'CHECK( init(main()), LTL(G valid-memtrack) )'             : 'MEMSAFETY',
+    'CHECK( init(main()), LTL(G valid-memcleanup) )'           : 'MEMCLEANUP',
     'CHECK( init(main()), LTL(G ! overflow) )'                 : 'SIGNED-OVERFLOW',
     'CHECK( init(main()), LTL(G def-behavior) )'               : 'UNDEF-BEHAVIOR',
     'CHECK( init(main()), LTL(F end) )'                        : 'TERMINATION',
@@ -100,6 +112,7 @@ supported_properties = {
     'undefined'                                                : 'UNDEF-BEHAVIOR',
     'signed-overflow'                                          : 'SIGNED-OVERFLOW',
     'memsafety'                                                : 'MEMSAFETY',
+    'memcleanup'                                               : 'MEMCLEANUP',
     'termination'                                              : 'TERMINATION',
 }
 
@@ -168,6 +181,11 @@ def get_property(symbiotic_dir, prp):
         prop = PropertyMemSafety(prpfile)
         if prpfile is None:
             prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyMemSafety.prp'))
+
+    elif 'MEMCLEANUP' in prps:
+        prop = PropertyMemCleanup(prpfile)
+        if prpfile is None:
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyMemCleanup.prp'))
 
     elif 'UNDEF-BEHAVIOR' in prps:
         prop = PropertyDefBehavior(prpfile)
