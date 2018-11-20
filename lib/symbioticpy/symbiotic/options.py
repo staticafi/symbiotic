@@ -13,7 +13,7 @@ class SymbioticOptions(object):
         # source codes
         self.sources = []
 
-        self.tool_name = 'klee-symbiotic'
+        self.tool_name = 'klee'
         self.is32bit = False
         self.stats = False
         # properties mapped to our names
