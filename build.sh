@@ -876,6 +876,7 @@ get_klee_dependencies()
 	KLEE_BIN="$1"
 	LIBS=$(get_external_library $KLEE_BIN libstdc++)
 	LIBS="$LIBS $(get_external_library $KLEE_BIN tinfo)"
+	LIBS="$LIBS $(get_external_library $KLEE_BIN libgomp)"
 	# FIXME: remove once we build/download our z3
 	LIBS="$LIBS $(get_any_library $KLEE_BIN libz3)"
 	LIBS="$LIBS $(get_any_library $KLEE_BIN libstp)"
