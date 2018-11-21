@@ -34,7 +34,7 @@ exitmsg()
 
 usage()
 {
-	echo "$0 [shell] [no-llvm] [update] [slicer | scripts | klee | witness | bin] OPTS"
+	echo "$0 [shell] [no-llvm] [update] [archive | full-archive] [slicer | scripts | klee | witness | bin] OPTS"
 	echo "" # new line
 	echo -e "shell    - run shell with environment set"
 	echo -e "no-llvm  - skip compiling llvm"
@@ -46,6 +46,8 @@ usage()
 	echo -e "llvm-version=ver   - use this version of llvm"
 	echo -e "build-type=TYPE    - set Release/Debug build"
 	echo -e "build-stp          - build and use STP in KLEE"
+	echo -e "archive            - create a zip file with symbiotic"
+	echo -e "full-archive       - create a zip file with symbiotic and add non-standard dependencies"
 	echo "" # new line
 	echo -e "slicer, scripts,"
 	echo -e "klee, witness"
@@ -116,6 +118,7 @@ SRCDIR=`dirname $0`
 ABS_RUNDIR=`abspath $RUNDIR`
 ABS_SRCDIR=`abspath $SRCDIR`
 ARCHIVE="no"
+FULL_ARCHIVE="no"
 
 while [ $# -gt 0 ]; do
 	case $1 in
@@ -155,6 +158,10 @@ while [ $# -gt 0 ]; do
 		;;
 		archive)
 			ARCHIVE="yes"
+		;;
+		full-archive)
+			ARCHIVE="yes"
+			FULL_ARCHIVE="yes"
 		;;
 		with-llvm=*)
 			WITH_LLVM=${1##*=}
@@ -876,6 +883,7 @@ get_klee_dependencies()
 	KLEE_BIN="$1"
 	LIBS=$(get_external_library $KLEE_BIN libstdc++)
 	LIBS="$LIBS $(get_external_library $KLEE_BIN tinfo)"
+	LIBS="$LIBS $(get_external_library $KLEE_BIN libgomp)"
 	# FIXME: remove once we build/download our z3
 	LIBS="$LIBS $(get_any_library $KLEE_BIN libz3)"
 	LIBS="$LIBS $(get_any_library $KLEE_BIN libstp)"
@@ -894,13 +902,15 @@ get_klee_dependencies()
 
 	# copy dependencies
 	DEPENDENCIES=""
-	DEPS=`get_klee_dependencies $LLVM_PREFIX/bin/klee`
-	if [ ! -z "$DEPS" ]; then
-		for D in $DEPS; do
-			DEST="$PREFIX/lib/$(basename $D)"
-			cmp "$D" "$DEST" || cp -u "$D" "$DEST"
-			DEPENDENCIES="$DEST $DEPENDENCIES"
-		done
+	if [ "$FULL_ARCHIVE" = "yes" ]; then
+		DEPS=`get_klee_dependencies $LLVM_PREFIX/bin/klee`
+		if [ ! -z "$DEPS" ]; then
+			for D in $DEPS; do
+				DEST="$PREFIX/lib/$(basename $D)"
+				cmp "$D" "$DEST" || cp -u "$D" "$DEST"
+				DEPENDENCIES="$DEST $DEPENDENCIES"
+			done
+		fi
 	fi
 
 	cd $PREFIX || exitmsg "Whoot? prefix directory not found! This is a BUG, sir..."

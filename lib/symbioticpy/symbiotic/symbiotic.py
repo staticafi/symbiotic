@@ -285,6 +285,9 @@ class Symbiotic(object):
              not self.options.overflow_with_clang:
             config = prefix + 'int_overflows/' + config_file
             config_dir = 'int_overflows'
+        elif self.options.property.memcleanup():
+            config = prefix + 'memsafety/' + config_file
+            config_dir = 'memsafety'
         elif self.options.property.signedoverflow():
             return
         else:
@@ -578,6 +581,9 @@ class Symbiotic(object):
                required_version(get_clang_version(), "4.0.1"):
                 opts.append('-Xclang')
                 opts.append('-force-lifetime-markers')
+                # these optimizations mess up with scopes,
+                # FIXME: find a better solution
+                self.options.disabled_optimizations = ['-licm','-gvn','-early-cse']
 
             llvms = self._compile_to_llvm(source, opts=opts)
             llvmsrc.append(llvms)
@@ -591,6 +597,10 @@ class Symbiotic(object):
         opt = get_optlist_before(self.options.optlevel)
         if opt:
             self.optimize(passes=opt)
+
+        add_params = []
+        if not self.options.is32bit:
+            add_params.append("-rda=ss")
 
         # Break the infinite loops just before slicing so that the
         # optimizations won't make them syntactically infinite again. We must
@@ -606,7 +616,6 @@ class Symbiotic(object):
         restart_counting_time()
         for n in range(0, self.options.repeat_slicing):
             dbg('Slicing the code for the {0}. time'.format(n + 1))
-            add_params = []
             # if n == 0 and self.options.repeat_slicing > 1:
             #    add_params = ['-pta-field-sensitive=8']
 

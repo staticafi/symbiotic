@@ -87,6 +87,9 @@ class SymbioticTool(KleeBase):
         if self._options.property.termination():
             return ('config.json', 'termination.c', True)
 
+        if self._options.property.memcleanup():
+            return ('config-memcleanup.json', 'memsafety.c', True)
+
         return (None, None, None)
 
     def slicer_options(self):
@@ -117,7 +120,6 @@ class SymbioticTool(KleeBase):
 
             # make all store/load insts that are marked by instrumentation
             # volatile, so that we can run optimizations later on them
-            # NOTE: we want this pass as the last one
             passes.append('-mark-volatile')
             return passes
 
@@ -158,6 +160,8 @@ class SymbioticTool(KleeBase):
                         return result.RESULT_FALSE_OVERFLOW
                     elif self._options.property.termination():
                         return result.RESULT_FALSE_TERMINATION
+                    if self._options.property.memcleanup():
+                        return result.RESULT_FALSE_MEMCLEANUP
                     else:
                         return result.RESULT_FALSE_REACH
                 elif key == 'EFREE' or key == 'EFREEALLOCA':
@@ -201,6 +205,8 @@ class SymbioticTool(KleeBase):
                         return f
                     elif f in [result.RESULT_FALSE_FREE, result.RESULT_FALSE_DEREF, result.RESULT_FALSE_MEMTRACK]\
                         and self._options.property.memsafety():
+                        return f
+                    elif f == result.RESULT_FALSE_MEMCLEANUP and self._options.property.memcleanup():
                         return f
 
             return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
