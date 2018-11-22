@@ -76,9 +76,13 @@ class SymbioticTool(KleeBase):
         instrumentation (and False otherwise)
         """
 
+        # NOTE: we do not want to link the functions with memsafety/cleanup
+        # because then the optimizations could remove the calls to markers
         if self._options.property.memsafety():
-            # default config file is 'config.json'
             return ('config-marker.json', 'marker.c', False)
+
+        if self._options.property.memcleanup():
+            return ('config-marker-memcleanup.json', 'marker.c', False)
 
         if self._options.property.signedoverflow():
             # default config file is 'config.json'
@@ -86,9 +90,6 @@ class SymbioticTool(KleeBase):
 
         if self._options.property.termination():
             return ('config.json', 'termination.c', True)
-
-        if self._options.property.memcleanup():
-            return ('config-memcleanup.json', 'memsafety.c', True)
 
         return (None, None, None)
 
@@ -104,9 +105,16 @@ class SymbioticTool(KleeBase):
             return ('__INSTR_mark_pointer,__INSTR_mark_free,__INSTR_mark_allocation',
                     ['-criteria-are-next-instr'])
 
+        elif self._options.property.memcleanup():
+            # default config file is 'config.json'
+            # slice with respect to the memory handling operations
+            return ('__INSTR_mark_free,__INSTR_mark_allocation',
+                    ['-criteria-are-next-instr'])
+
         return (self._options.slicing_criterion,[])
 
     def passes_after_instrumentation(self):
+        passes = []
         if self._options.property.memsafety():
             # replace llvm.lifetime.start/end with __VERIFIER_scope_enter/leave
             # so that optimizations will not mess the code up
@@ -121,7 +129,15 @@ class SymbioticTool(KleeBase):
             # make all store/load insts that are marked by instrumentation
             # volatile, so that we can run optimizations later on them
             passes.append('-mark-volatile')
-            return passes
+        elif self._options.property.memcleanup():
+            # replace all mallocs with our functions so that optimizations
+            # do not remove them
+            if self._options.malloc_never_fails:
+                passes += ['-instrument-alloc-nf']
+            else:
+                passes += ['-instrument-alloc']
+
+        return passes
 
     def actions_after_compilation(self, symbiotic):
         if symbiotic.options.property.signedoverflow() and \
@@ -146,6 +162,9 @@ class SymbioticTool(KleeBase):
             cmd.append('-exit-on-error-type=ReadOnly')
             cmd.append('-exit-on-error-type=Free')
             cmd.append('-exit-on-error-type=BadVectorAccess')
+        elif self._options.property.memcleanup():
+            cmd.append('-check-leaks')
+            cmd.append('-exit-on-error-type=Leak')
         else:
             cmd.append('-exit-on-error-type=Assert')
 
@@ -160,8 +179,6 @@ class SymbioticTool(KleeBase):
                         return result.RESULT_FALSE_OVERFLOW
                     elif self._options.property.termination():
                         return result.RESULT_FALSE_TERMINATION
-                    if self._options.property.memcleanup():
-                        return result.RESULT_FALSE_MEMCLEANUP
                     else:
                         return result.RESULT_FALSE_REACH
                 elif key == 'EFREE' or key == 'EFREEALLOCA':
@@ -169,6 +186,9 @@ class SymbioticTool(KleeBase):
                 elif key == 'EMEMERROR':
                         return result.RESULT_FALSE_DEREF
                 elif key == 'EMEMLEAK':
+                    if self._options.property.memcleanup():
+                        return result.RESULT_FALSE_MEMCLEANUP
+                    else:
                         return result.RESULT_FALSE_MEMTRACK
                 return key
 
