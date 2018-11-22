@@ -16,6 +16,7 @@ class SymbioticOptions(object):
         self.tool_name = 'klee'
         self.is32bit = False
         self.stats = False
+        self.generate_ll = False
         # properties mapped to our names
         self.property = get_property(self.symbiotic_dir, None)
         self.noslice = False

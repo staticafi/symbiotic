@@ -107,6 +107,7 @@ where OPTS can be following:
                               all, compile, prepare, slicer
                               In that case you get verbose output. You can just use
                               --debug= to print basic messages.
+    --generate-ll             Generate also .ll files (for debugging)
     --output=FILE             Store the final code (that is to be run by a tool) to FILE
     --witness=FILE            Store witness into FILE (default is witness.graphml)
     --witness-with-source-lines
@@ -367,7 +368,7 @@ def parse_command_line():
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file=', 'overflow-config-file=',
                                     'statistics', 'working-dir-prefix=', 'sv-comp',
-                                    'overflow-with-clang'])
+                                    'overflow-with-clang', 'generate-ll'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -386,6 +387,8 @@ def parse_command_line():
             sys.exit(0)
         elif opt == '--debug':
             enable_debug(arg.split(','))
+        elif opt == '--generate-ll':
+            options.generate_ll = True
         elif opt == '--verifier':
             options.tool_name = arg.lower()
         elif opt == '--libc':

@@ -193,6 +193,13 @@ class Symbiotic(object):
         # tool to use
         self._tool = tool
 
+    def _generate_ll(self):
+        if not self.options.generate_ll:
+            return
+
+        runcmd(["llvm-dis", self.llvmfile], CompileWatch(),
+               "Generating .ll file from '{0}' failed".format(self.llvmfile))
+
     def _compile_to_llvm(self, source, output=None, with_g=True, opts=[]):
         """
         Compile given source to LLVM bytecode
@@ -240,6 +247,7 @@ class Symbiotic(object):
 
         runcmd(cmd, PrepareWatch(), 'Prepare phase failed')
         self.llvmfile = output
+        self._generate_ll()
 
     def _get_stats(self, prefix=''):
         if not self.options.stats:
@@ -327,6 +335,7 @@ class Symbiotic(object):
 
         self.llvmfile = output
         self._get_stats('After instrumentation ')
+        self._generate_ll()
 
     def instrument(self):
         """
@@ -363,6 +372,7 @@ class Symbiotic(object):
         runcmd(cmd, DbgWatch('compile'),
                'Failed linking llvm file with libraries')
         self.llvmfile = output
+        self._generate_ll()
 
     def _link_undefined(self, undefs):
         def get_path(symbdir, ty, tool, name):
@@ -453,6 +463,7 @@ class Symbiotic(object):
 
         runcmd(cmd, SlicerWatch(), 'Slicing failed')
         self.llvmfile = output
+        self._generate_ll()
 
     def optimize(self, passes, disable=[]):
         if self.options.no_optimize:
@@ -475,6 +486,7 @@ class Symbiotic(object):
         print_elapsed_time('INFO: Optimizations time', color='WHITE')
 
         self.llvmfile = output
+        self._generate_ll()
 
     def check_llvmfile(self, llvmfile, check='-check-unsupported'):
         """
@@ -505,6 +517,7 @@ class Symbiotic(object):
         runcmd(cmd, DbgWatch('compile'),
                   'Failed preprocessing the llvm code')
         self.llvmfile = output
+        self._generate_ll()
 
     def get_klee_functions(self, bitcode):
         """ Check whether the code contains any KLEE functions """
@@ -672,6 +685,7 @@ class Symbiotic(object):
 
         # make the path absolute
         self.llvmfile = os.path.abspath(self.llvmfile)
+        self._generate_ll()
 
         self._get_stats('After compilation ')
 
