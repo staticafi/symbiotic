@@ -48,8 +48,18 @@ bool RemoveInfiniteLoops::runOnFunction(Function &F) {
   for (BasicBlock& block : F) {
     // if this is a block that jumps on itself (it has the only instruction
     // which is the jump)
-    if (block.size() == 1 && block.getSingleSuccessor() == &block)
-        to_process.push_back(&block);
+    if (block.size() == 1) {
+        auto succ = block.getUniqueSuccessor();
+        if (!succ)
+            continue;
+        // empty block with self-loop
+        if (succ == &block)
+            to_process.push_back(&block);
+
+        // two empty blocks mutually calling themselves
+        if (succ->size() == 1 && succ->getUniqueSuccessor() == &block)
+            to_process.push_back(&block);
+    }
   }
 
   if (to_process.empty())
