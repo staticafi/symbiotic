@@ -34,7 +34,7 @@ bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2);
 namespace {
 
 llvm::cl::opt<bool> useExit("remove-error-calls-use-exit",
-        llvm::cl::desc("Insert __VERIFIER_exit instead of __VERIFIER_abort\n"),
+        llvm::cl::desc("Insert __VERIFIER_exit instead of __VERIFIER_silent_exit\n"),
         llvm::cl::init(false));
 
 class RemoveErrorCalls : public FunctionPass {
@@ -73,7 +73,8 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
           LLVMContext& Ctx = M->getContext();
           Type *argTy = Type::getInt32Ty(Ctx);
           Constant *extF
-            = M->getOrInsertFunction(useExit ? "__VERIFIER_exit" : "__VERIFIER_abort",
+            = M->getOrInsertFunction(useExit ? "__VERIFIER_exit" :
+                                               "__VERIFIER_silent_exit",
                                      Type::getVoidTy(Ctx), argTy, nullptr);
 
           std::vector<Value *> args = { ConstantInt::get(argTy, 0) };
