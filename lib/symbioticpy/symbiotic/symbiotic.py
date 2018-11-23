@@ -705,6 +705,9 @@ class Symbiotic(object):
            self.options.property.termination():
             # remove the original calls to __VERIFIER_error
             passes.append('-remove-error-calls')
+        if self.options.property.memcleanup():
+            passes.append('-remove-error-calls')
+            passes.append('-remove-error-calls-use-exit')
         if hasattr(self._tool, 'passes_after_compilation'):
             passes += self._tool.passes_after_compilation()
 

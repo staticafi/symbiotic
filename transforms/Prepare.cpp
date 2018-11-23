@@ -139,7 +139,7 @@ bool Prepare::replace_ldv_calls(Module& M, Function &F) {
         args.push_back(CI->getOperand(0));
       } else if (name.equals("ldv_stop")) {
         Type *argTy = Type::getInt32Ty(Ctx);
-        new_func = M.getOrInsertFunction("__VERIFIER_exit", Type::getVoidTy(Ctx),
+        new_func = M.getOrInsertFunction("__VERIFIER_abort", Type::getVoidTy(Ctx),
                                          argTy, nullptr);
 
         args.push_back(ConstantInt::get(argTy, 0));
