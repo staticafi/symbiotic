@@ -736,7 +736,10 @@ class Symbiotic(object):
 
         # link undefined (no-op when prepare is turned off)
         # (this still can have an effect even in memsafety, since we
-        # can link __VERIFIER_malloc0.c or similar)
+        # can link __VERIFIER_malloc0.c or similar).
+        # We want to link undefined functions, because we may slice
+        # parts of them. NOTE: maybe we could slice without them,
+        # then link, and then slice again?
         self.link_undefined()
 
         #################### #################### ###################
