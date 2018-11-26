@@ -543,6 +543,33 @@ class Symbiotic(object):
         return self._tool.determine_result(returncode, 0,
                                            watch.getLines(), False)
 
+    def replay_nonsliced(self, ktest):
+        llvmfile = self.nonsliced_llvmfile
+        # perform the same postprocessing steps
+        # as for the sliced file
+        tmp = self.llvmfile
+        self.llvmfile = llvmfile
+        self.postprocessing()
+        llvmfile = self.llvmfile
+        self.llvmfile = tmp
+
+        params = self.options.tool_params if self.options.tool_params else []
+        params.append('-replay-nondets={0}'.format(ktest))
+        cmd = self._tool.cmdline(self._tool.executable(),
+                                 params, [llvmfile],
+                                 self.options.property.getPrpFile(), [])
+        returncode = 0
+        watch = ToolWatch(self._tool)
+        try:
+            runcmd(cmd, watch, 'Running the verifier in replay mode failed')
+        except SymbioticException as e:
+            print_stderr(str(e), color='RED')
+            returncode = 1
+
+        return self._tool.determine_result(returncode, 0,
+                                           watch.getLines(), False)
+
+
     def terminate(self):
         pr = ProcessRunner()
         if pr.hasProcess():
@@ -645,6 +672,45 @@ class Symbiotic(object):
 
         self._get_stats('After slicing ')
 
+    def postprocessing(self):
+        passes = []
+
+        # there may have been created new loops
+        if not self.options.property.termination():
+            passes.append('-remove-infinite-loops')
+
+        if hasattr(self._tool, 'passes_after_slicing'):
+            passes += self._tool.passes_after_slicing()
+        self.run_opt(passes)
+
+        # FIXME: move these checks to tool specific code
+        if self._tool.name() == 'klee' and not self.check_llvmfile(self.llvmfile):
+            dbg('Unsupported call (probably floating handling)')
+            return report_results('unsupported call')
+
+        # delete-undefined may insert __VERIFIER_make_nondet
+        # and also other funs like __errno_location may be included
+        self.link_undefined()
+
+        if self._linked_functions:
+            print('Linked our definitions to these undefined functions:')
+            for f in self._linked_functions:
+                print_stdout('  ', print_nl=False)
+                print_stdout(f)
+
+        # XXX: we could optimize the code again here...
+        print_elapsed_time('INFO: After-slicing optimizations and transformations time',
+                           color='WHITE')
+
+        # check that if we do not use KLEE, we do not have any klee functions in the code
+        if self._tool.name() != "klee":
+            kf = self.get_klee_functions(self.llvmfile)
+            if kf:
+                raise SymbioticException('Code contains KLEE functions, but the verifier is not KLEE ({0})'.format(' '.join(kf)))
+
+        # tool's specific preprocessing steps
+        self.postprocess_llvm()
+
     def _disable_some_optimizations(self, llvm_version):
         disabled = []
         # disable some oprimizations for termination property
@@ -744,6 +810,8 @@ class Symbiotic(object):
         # then link, and then slice again?
         self.link_undefined()
 
+        self.nonsliced_llvmfile = self.llvmfile
+
         #################### #################### ###################
         # SLICING
         #  - slice the code w.r.t error sites
@@ -760,43 +828,7 @@ class Symbiotic(object):
         if opt:
             self.optimize(passes=opt)
 
-        passes = []
-
-        # there may have been created new loops
-        if not self.options.property.termination():
-            passes.append('-remove-infinite-loops')
-
-        if hasattr(self._tool, 'passes_after_slicing'):
-            passes += self._tool.passes_after_slicing()
-        self.run_opt(passes)
-
-        # FIXME: move these checks to tool specific code
-        if self._tool.name() == 'klee' and not self.check_llvmfile(self.llvmfile):
-            dbg('Unsupported call (probably floating handling)')
-            return report_results('unsupported call')
-
-        # delete-undefined may insert __VERIFIER_make_nondet
-        # and also other funs like __errno_location may be included
-        self.link_undefined()
-
-        if self._linked_functions:
-            print('Linked our definitions to these undefined functions:')
-            for f in self._linked_functions:
-                print_stdout('  ', print_nl=False)
-                print_stdout(f)
-
-        # XXX: we could optimize the code again here...
-        print_elapsed_time('INFO: After-slicing optimizations and transformations time',
-                           color='WHITE')
-
-        # check that if we do not use KLEE, we do not have any klee functions in the code
-        if self._tool.name() != "klee":
-            kf = self.get_klee_functions(self.llvmfile)
-            if kf:
-                raise SymbioticException('Code contains KLEE functions, but the verifier is not KLEE ({0})'.format(' '.join(kf)))
-
-        # tool's specific preprocessing steps
-        self.postprocess_llvm()
+        self.postprocessing()
 
         if not self.options.final_output is None:
             # copy the file to final_output
@@ -824,4 +856,4 @@ class Symbiotic(object):
         else:
             found = 'Did not run verification'
 
-        return report_results(found)
+        return found

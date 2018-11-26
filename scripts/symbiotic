@@ -30,7 +30,7 @@ sys.path.append(os.path.abspath(pth))
 from symbiotic.utils import err, dbg, enable_debug
 from symbiotic.utils.utils import print_stdout, print_stderr, get_symbiotic_dir, process_grep
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
-from symbiotic import SymbioticException, Symbiotic
+from symbiotic import SymbioticException, Symbiotic, report_results
 from symbiotic.options import SymbioticOptions
 from symbiotic.property import get_property
 from symbiotic.witnesses.witnesses import GraphMLWriter
@@ -305,6 +305,19 @@ def generate_graphml(path, source, prps, is32bit, is_correctness_wit, saveto):
         assert path is None
     gen.write(saveto)
 
+def get_testcase(bindir):
+    abd = os.path.abspath(bindir)
+    for path in os.listdir('{0}/klee-last'.format(abd)):
+        if path.endswith('.err'):
+            # get the corresponding .path file
+            return os.path.abspath('{0}/klee-last/{1}'.format(abd, path[:path.find(".")]))
+
+def get_ktest(bindir):
+    return get_testcase(bindir) + '.ktest';
+
+def get_path_file(bindir):
+    return get_testcase(bindir) + '.path';
+
 def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
     print('Generating {0} witness: {1}'.format('correctness' if is_correctness_wit else 'error', saveto))
@@ -312,13 +325,8 @@ def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, 
         generate_graphml(None, sources[0], prps, is32bit, is_correctness_wit, saveto)
         return
 
-    abd = os.path.abspath(bindir)
-    for path in os.listdir('{0}/klee-last'.format(abd)):
-        if path.endswith('.err'):
-            # get the corresponding .path file
-            pth = os.path.abspath('{0}/klee-last/{1}.path'.format(abd, path[:path.find(".")]))
-            generate_graphml(pth, sources[0], prps, is32bit, is_correctness_wit, saveto)
-            break
+    pth = get_path_file(bindir)
+    generate_graphml(pth, sources[0], prps, is32bit, is_correctness_wit, saveto)
 
 # do not remove working files after running
 save_files = False
@@ -700,6 +708,21 @@ if __name__ == "__main__":
 
         # FIXME: make tool specific
         srcdir = os.path.dirname(symbiotic.llvmfile)
+        if res.startswith('false'):
+            # replay the counterexample on non-sliced module
+            ktest = get_ktest(srcdir)
+            newpath = os.path.join(srcdir, os.path.basename(ktest))
+            # move the file out of klee-last directory as the new run
+            # will create a new such directory (link)
+            os.rename(ktest, newpath)
+            newres = symbiotic.replay_nonsliced(newpath)
+
+            if res != newres:
+                res = 'cex not-confirmed'
+
+        report_results(res)
+
+        # FIXME: make tool specific
         if res is None or not tool.name().startswith('klee'):
             pass
         elif res.startswith('false'):

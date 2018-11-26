@@ -73,7 +73,7 @@ def print_object(obj):
 
 def split_name(name):
     var = name.decode('utf-8').split(":")
-    if len(var) != 3:
+    if len(var) != 4:
         return None, None, None
     return var[0], var[1], var[2]
 
