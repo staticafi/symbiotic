@@ -144,8 +144,8 @@ class SymbioticTool(BaseTool):
             passes.append('-remove-infinite-loops')
 
         if not self._options.nowitness:
-            passes.append('-rename-verifier-funs')
-            passes.append('-rename-verifier-funs-source={0}'.format(self._options.sources[0]))
+            passes.append('-replace-verifier-funs')
+            passes.append('-replace-verifier-funs-source={0}'.format(self._options.sources[0]))
 
         if not self._options.noprepare:
             passes.append('-prepare')
