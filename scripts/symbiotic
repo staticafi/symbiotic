@@ -708,7 +708,7 @@ if __name__ == "__main__":
 
         # FIXME: make tool specific
         srcdir = os.path.dirname(symbiotic.llvmfile)
-        if res.startswith('false'):
+        if res and res.startswith('false'):
             print_stdout("Found {0}".format(res))
             print_stdout("Trying to confirm the error path")
             # replay the counterexample on non-sliced module
@@ -722,7 +722,7 @@ if __name__ == "__main__":
             if res != newres:
                 res = 'cex not-confirmed'
 
-        report_results(res)
+        report_results(res or "no result")
 
         # FIXME: make tool specific
         if res is None or not tool.name().startswith('klee'):

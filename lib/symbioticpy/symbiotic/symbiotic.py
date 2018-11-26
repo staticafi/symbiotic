@@ -602,6 +602,7 @@ class Symbiotic(object):
             self.terminate()
             self.kill()
             print('Interrupted...')
+            return 'interrupted'
 
     def _compile_sources(self):
         llvmsrc = []
