@@ -44,6 +44,11 @@ class DeleteUndefined : public ModulePass {
   Function *get_verifier_make_nondet(llvm::Module *);
   Type *get_size_t(llvm::Module *);
 
+  // go from the top to the bottom to make sure we do not
+  // interferea with previous calls to klee_make_nondet
+  // FIXME: this is just a heuristics...
+  unsigned int calls_count = 1<<30;
+
   //void replaceCall(CallInst *CI, Module *M);
   void defineFunction(Module *M, Function *F);
 protected:
@@ -140,13 +145,15 @@ Function *DeleteUndefined::get_verifier_make_nondet(llvm::Module *M)
 
   LLVMContext& Ctx = M->getContext();
   //void verifier_make_symbolic(void *addr, size_t nbytes, const char *name);
-  Constant *C = M->getOrInsertFunction("__VERIFIER_make_nondet",
+  Constant *C = M->getOrInsertFunction("klee_make_nondet",
                                        Type::getVoidTy(Ctx),
                                        Type::getInt8PtrTy(Ctx), // addr
                                        get_size_t(M),   // nbytes
                                        Type::getInt8PtrTy(Ctx), // name
+                                       Type::getInt32Ty(Ctx), // identifier
                                        nullptr);
   _vms = cast<Function>(C);
+
   return _vms;
 }
 
@@ -196,15 +203,20 @@ void DeleteUndefined::defineFunction(Module *M, Function *F)
 
     std::vector<Value *> args;
     args.push_back(CastI);
-    args.push_back(ConstantInt::get(get_size_t(M), M->getDataLayout().getTypeAllocSize(Ty)));
-    Constant *name = ConstantDataArray::getString(Ctx, "nondet_from_undef");
+    args.push_back(ConstantInt::get(get_size_t(M),
+                   M->getDataLayout().getTypeAllocSize(Ty)));
+    std::string namestr = F->getName();
+    namestr += ":undeffun:0";
+    Constant *name = ConstantDataArray::getString(Ctx, namestr);
     GlobalVariable *nameG = new GlobalVariable(*M, name->getType(), true /*constant */,
                                                GlobalVariable::PrivateLinkage, name);
     args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
+    args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx), --calls_count));
+
     CallInst *CI = CallInst::Create(vms, args);
     CI->insertAfter(CastI);
 
-    LoadInst *LI = new LoadInst(AI, "ret_from_undef", block);
+    LoadInst *LI = new LoadInst(AI, "undefret", block);
     ReturnInst::Create(Ctx, LI, block);
   }
 

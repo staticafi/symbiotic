@@ -72,6 +72,7 @@ public:
     mapLines();
     replaceCalls(M);
     handleAllocs(M);
+
     return !calls_to_replace.empty() || !allocs_to_handle.empty();
   }
 };
