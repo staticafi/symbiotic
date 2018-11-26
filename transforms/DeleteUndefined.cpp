@@ -40,10 +40,7 @@ class DeleteUndefined : public ModulePass {
   Type *_size_t_Ty = nullptr; // type of size_t
   bool _nosym; // do not use symbolic values when replacing
 
-  std::unordered_map<llvm::Type *, llvm::GlobalVariable *> added_globals;
-
   // add global of given type and initialize it in may as nondeterministic
-  GlobalVariable *getGlobalNondet(llvm::Type *, llvm::Module *);
   Function *get_verifier_make_nondet(llvm::Module *);
   Type *get_size_t(llvm::Module *);
 
@@ -169,73 +166,6 @@ Type *DeleteUndefined::get_size_t(llvm::Module *M)
   return _size_t_Ty;
 }
 
-// add global of given type and initialize it in may as nondeterministic
-// FIXME: use the same variables as in InitializeUninitialized
-GlobalVariable *DeleteUndefined::getGlobalNondet(llvm::Type *Ty, llvm::Module *M)
-{
-  auto it = added_globals.find(Ty);
-  if (it != added_globals.end())
-    return it->second;
-
-  LLVMContext& Ctx = M->getContext();
-  GlobalVariable *G = new GlobalVariable(*M, Ty, false /* constant */,
-                                         GlobalValue::PrivateLinkage,
-                                         /* initializer */
-                                         Constant::getNullValue(Ty),
-                                         "nondet_gl_undef");
-
-  added_globals.emplace(Ty, G);
-
-  // insert initialization of the new global variable
-  // at the beginning of main
-  Function *vms = get_verifier_make_nondet(M);
-  CastInst *CastI = CastInst::CreatePointerCast(G, Type::getInt8PtrTy(Ctx));
-
-  std::vector<Value *> args;
-  //XXX: we should not build the new DL every time
-  std::unique_ptr<DataLayout> DL
-    = std::unique_ptr<DataLayout>(new DataLayout(M->getDataLayout()));
-
-  args.push_back(CastI);
-  args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
-  Constant *name = ConstantDataArray::getString(Ctx, "nondet");
-  GlobalVariable *nameG = new GlobalVariable(*M, name->getType(), true /*constant */,
-                                             GlobalVariable::PrivateLinkage, name);
-  args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
-  CallInst *CI = CallInst::Create(vms, args);
-
-  Function *main = M->getFunction("main");
-  assert(main && "Do not have main");
-  BasicBlock& block = main->getBasicBlockList().front();
-  // there must be some instruction, otherwise we would not be calling
-  // this function
-  Instruction& I = *(block.begin());
-  CastI->insertBefore(&I);
-  CI->insertBefore(&I);
-
-  // add metadata due to the inliner pass
-  CloneMetadata(&I, CI);
-  CloneMetadata(&I, CastI);
-
-  return G;
-}
-
-/*
-void DeleteUndefined::replaceCall(CallInst *CI, Module *M)
-{
-  LLVMContext& Ctx = M->getContext();
-  Type *Ty = CI->getType();
-  // we checked for this before
-  assert(!Ty->isVoidTy());
-  // what to do in this case?
-  assert(Ty->isSized());
-
-  LoadInst *LI = new LoadInst(getGlobalNondet(Ty, M));
-  LI->insertBefore(CI);
-  CI->replaceAllUsesWith(LI);
-}
-*/
-
 void DeleteUndefined::defineFunction(Module *M, Function *F)
 {
   assert(F->size() == 0);
@@ -248,8 +178,32 @@ void DeleteUndefined::defineFunction(Module *M, Function *F)
     // to use the symbolic value
     ReturnInst::Create(Ctx, Constant::getNullValue(F->getReturnType()), block);
   } else {
-    LoadInst *LI = new LoadInst(getGlobalNondet(F->getReturnType(), M),
-                                "ret_from_undef", block);
+    Type *Ty = F->getReturnType();
+    AllocaInst *AI = new AllocaInst(Ty
+#if (LLVM_VERSION_MAJOR >= 5)
+    ,1
+#endif
+    );
+
+    block->getInstList().push_back(AI);
+
+    // insert initialization of the new global variable
+    // at the beginning of main
+    Function *vms = get_verifier_make_nondet(M);
+    CastInst *CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(Ctx));
+    CastI->insertAfter(AI);
+
+    std::vector<Value *> args;
+    args.push_back(CastI);
+    args.push_back(ConstantInt::get(get_size_t(M), M->getDataLayout().getTypeAllocSize(Ty)));
+    Constant *name = ConstantDataArray::getString(Ctx, "nondet_from_undef");
+    GlobalVariable *nameG = new GlobalVariable(*M, name->getType(), true /*constant */,
+                                               GlobalVariable::PrivateLinkage, name);
+    args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
+    CallInst *CI = CallInst::Create(vms, args);
+    CI->insertAfter(CastI);
+
+    LoadInst *LI = new LoadInst(AI, "ret_from_undef", block);
     ReturnInst::Create(Ctx, LI, block);
   }
 
