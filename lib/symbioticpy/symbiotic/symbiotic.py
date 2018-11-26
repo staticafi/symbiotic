@@ -646,17 +646,19 @@ class Symbiotic(object):
         self._get_stats('After slicing ')
 
     def _disable_some_optimizations(self, llvm_version):
+        disabled = []
+        # disable some oprimizations for termination property
+        if self.options.property.termination():
+            disabled += ['-functionattrs', '-instcombine']
+
         # disable optimizations that are not in particular llvm versions
         ver_major, ver_minor, ver_micro = map(int, llvm_version.split('.'))
-        disabled = []
-        if ver_major != 3:
-            return []
 
-        if ver_minor <= 7:
+        if ver_major == 3 and ver_minor <= 7:
             disabled += ['-aa', '-demanded-bits',
                         '-globals-aa', '-forceattrs',
                         '-inferattrs', '-rpo-functionattrs']
-        if ver_minor <= 6:
+        if ver_major == 3 and ver_minor <= 6:
             disabled += [ '-tti', '-bdce', '-elim-avail-extern',
                           '-float2int', '-loop-accesses']
 
