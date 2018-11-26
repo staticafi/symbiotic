@@ -183,6 +183,7 @@ class SymbioticTool(BaseTool):
         # even though they contain calls to assert
         if self._options.property.memsafety():
             passes.append('-remove-readonly-attr')
+            passes.append('-dummy-marker')
 
         return passes
 

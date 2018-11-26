@@ -683,6 +683,11 @@ class Symbiotic(object):
             passes += self._tool.passes_after_slicing()
         self.run_opt(passes)
 
+        # optimize the code after slicing and before verification
+        opt = get_optlist_after(self.options.optlevel)
+        if opt:
+            self.optimize(passes=opt)
+
         # FIXME: move these checks to tool specific code
         if self._tool.name() == 'klee' and not self.check_llvmfile(self.llvmfile):
             dbg('Unsupported call (probably floating handling)')
@@ -710,6 +715,10 @@ class Symbiotic(object):
 
         # tool's specific preprocessing steps
         self.postprocess_llvm()
+
+        # for once, delete all undefined before the verification
+        # (we may have new undefined calls because of passes
+        self.run_opt(passes = ['-delete-undefined'])
 
     def _disable_some_optimizations(self, llvm_version):
         disabled = []
@@ -822,11 +831,6 @@ class Symbiotic(object):
 
         # start a new time era
         restart_counting_time()
-
-        # optimize the code after slicing and before verification
-        opt = get_optlist_after(self.options.optlevel)
-        if opt:
-            self.optimize(passes=opt)
 
         self.postprocessing()
 
