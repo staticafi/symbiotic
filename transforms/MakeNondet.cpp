@@ -180,7 +180,6 @@ void MakeNondet::replaceCall(Module& M, CallInst *CI,
 
 void MakeNondet::handleAlloc(Module& M, CallInst *CI,
                                       unsigned line, const std::string& var) {
-  static unsigned call_identifier = 0;
   std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName();
   std::string name = parent_name + ":" + var + ":" + std::to_string(line);
   Constant *name_const = ConstantDataArray::getString(M.getContext(), name);
