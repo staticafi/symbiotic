@@ -119,24 +119,10 @@ class SymbioticTool(KleeBase):
             # replace llvm.lifetime.start/end with __VERIFIER_scope_enter/leave
             # so that optimizations will not mess the code up
             passes = ['-replace-lifetime-markers']
-            # also replace all mallocs with our functions so that optimizations
-            # do not remove them
-            if self._options.malloc_never_fails:
-                passes += ['-instrument-alloc-nf']
-            else:
-                passes += ['-instrument-alloc']
 
             # make all store/load insts that are marked by instrumentation
             # volatile, so that we can run optimizations later on them
             passes.append('-mark-volatile')
-        elif self._options.property.memcleanup():
-            # replace all mallocs with our functions so that optimizations
-            # do not remove them
-            if self._options.malloc_never_fails:
-                passes += ['-instrument-alloc-nf']
-            else:
-                passes += ['-instrument-alloc']
-
         return passes
 
     def actions_after_compilation(self, symbiotic):

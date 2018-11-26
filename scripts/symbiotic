@@ -709,6 +709,8 @@ if __name__ == "__main__":
         # FIXME: make tool specific
         srcdir = os.path.dirname(symbiotic.llvmfile)
         if res.startswith('false'):
+            print_stdout("Found {0}".format(res))
+            print_stdout("Trying to confirm the error path")
             # replay the counterexample on non-sliced module
             ktest = get_ktest(srcdir)
             newpath = os.path.join(srcdir, os.path.basename(ktest))

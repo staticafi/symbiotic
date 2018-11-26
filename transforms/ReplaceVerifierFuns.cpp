@@ -39,19 +39,24 @@ static cl::opt<std::string> source_name("replace-verifier-funs-source",
 class ReplaceVerifierFuns : public ModulePass {
   // every item is (line number, call)
   std::vector<std::pair<unsigned, CallInst *>> calls_to_replace;
+  std::vector<std::pair<unsigned, CallInst *>> allocs_to_handle;
   std::set<unsigned> lines_nums;
   std::map<unsigned, std::string> lines;
   Function *_vms = nullptr; // verifier_make_symbolic function
   Type *_size_t_Ty = nullptr; // type of size_t
 
-  void handleCall(Function& F, CallInst *CI);
+  void handleCall(Function& F, CallInst *CI, bool ismalloc);
   void mapLines();
   void replaceCalls(Module& M);
+  void handleAllocs(Module& M);
   void replaceCall(Module& M, CallInst *CI, unsigned line, const std::string& var);
+  void handleAlloc(Module& M, CallInst *CI, unsigned line, const std::string& var);
 
   // add global of given type and initialize it in may as nondeterministic
   Function *get_verifier_make_nondet(llvm::Module&);
   Type *get_size_t(llvm::Module& );
+
+  unsigned call_identifier = 0;
 
 public:
   static char ID;
@@ -66,7 +71,8 @@ public:
 
     mapLines();
     replaceCalls(M);
-    return !calls_to_replace.empty();
+    handleAllocs(M);
+    return !calls_to_replace.empty() || !allocs_to_handle.empty();
   }
 };
 
@@ -75,7 +81,9 @@ bool ReplaceVerifierFuns::runOnFunction(Function &F) {
     return false;
 
   StringRef name = F.getName();
-  if (!name.startswith("__VERIFIER_nondet_"))
+  if (!name.startswith("__VERIFIER_nondet_") &&
+      !name.startswith("malloc") &&
+      !name.startswith("calloc"))
     return false;
 
   bool changed = false;
@@ -90,18 +98,26 @@ bool ReplaceVerifierFuns::runOnFunction(Function &F) {
 #endif
 
     if (CallInst *CI = dyn_cast<CallInst>(use)) {
-      handleCall(F, CI);
+      handleCall(F, CI, !name.startswith("__VERIFIER"));
     }
   }
 
   return changed;
 }
 
-void ReplaceVerifierFuns::handleCall(Function& F, CallInst *CI) {
+void ReplaceVerifierFuns::handleCall(Function& F, CallInst *CI, bool ismalloc) {
   const DebugLoc& Loc = CI->getDebugLoc();
   if (Loc) {
-	calls_to_replace.emplace_back(Loc.getLine(), CI);
+    if (ismalloc)
+	    allocs_to_handle.emplace_back(Loc.getLine(), CI);
+    else
+	    calls_to_replace.emplace_back(Loc.getLine(), CI);
     lines_nums.insert(Loc.getLine());
+  } else {
+    if (ismalloc)
+	    allocs_to_handle.emplace_back(0, CI);
+    else
+	    calls_to_replace.emplace_back(0, CI);
   }
 }
 
@@ -134,7 +150,6 @@ void ReplaceVerifierFuns::mapLines() {
 
 void ReplaceVerifierFuns::replaceCall(Module& M, CallInst *CI,
                                       unsigned line, const std::string& var) {
-  static unsigned call_identifier = 0;
   std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName();
   std::string name = parent_name + ":" + var + ":" + std::to_string(line);
   Constant *name_const = ConstantDataArray::getString(M.getContext(), name);
@@ -182,6 +197,42 @@ void ReplaceVerifierFuns::replaceCall(Module& M, CallInst *CI,
   CI->eraseFromParent();
 }
 
+void ReplaceVerifierFuns::handleAlloc(Module& M, CallInst *CI,
+                                      unsigned line, const std::string& var) {
+  static unsigned call_identifier = 0;
+  std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName();
+  std::string name = parent_name + ":" + var + ":" + std::to_string(line);
+  Constant *name_const = ConstantDataArray::getString(M.getContext(), name);
+  GlobalVariable *nameG = new GlobalVariable(M, name_const->getType(), true /*constant */,
+                                             GlobalVariable::PrivateLinkage, name_const);
+
+  CastInst *CastI = CastInst::CreatePointerCast(CI, Type::getInt8PtrTy(M.getContext()));
+  CastI->insertAfter(CI);
+
+  std::vector<Value *> args;
+  // memory
+  args.push_back(CastI);
+  // nbytes
+  if (CI->getCalledFunction()->getName().equals("calloc")) {
+    auto Mul = BinaryOperator::Create(Instruction::Mul,
+                                      CI->getOperand(0),
+                                      CI->getOperand(1));
+    Mul->insertBefore(CastI);
+    args.push_back(Mul);
+  } else {
+    args.push_back(CI->getOperand(0));
+  }
+
+  // name
+  args.push_back(ConstantExpr::getPointerCast(nameG,
+                                              Type::getInt8PtrTy(M.getContext())));
+  // identifier
+  args.push_back(ConstantInt::get(Type::getInt32Ty(M.getContext()), ++call_identifier));
+
+  CallInst *new_CI = CallInst::Create(get_verifier_make_nondet(M), args);
+  new_CI->insertAfter(CastI);
+}
+
 static std::string getName(const std::string& line) {
   std::istringstream iss(line);
   std::string sub, var;
@@ -209,10 +260,19 @@ void ReplaceVerifierFuns::replaceCalls(Module& M) {
     unsigned line_num = pr.first;
 	CallInst *CI = pr.second;
 
-    std::string line = lines[line_num];
-    assert(!line.empty());
+    auto it = lines.find(line_num);
+    replaceCall(M, CI, line_num,
+                it == lines.end() ? "" : getName(it->second));
+  }
+}
 
-    replaceCall(M, CI, line_num, getName(line));
+void ReplaceVerifierFuns::handleAllocs(Module& M) {
+  for (auto& pr : allocs_to_handle) {
+    unsigned line_num = pr.first;
+	CallInst *CI = pr.second;
+
+    auto it = lines.find(line_num);
+    handleAlloc(M, CI, line_num, "dynalloc");
   }
 }
 
