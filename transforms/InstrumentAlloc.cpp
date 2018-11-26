@@ -54,18 +54,21 @@ static RegisterPass<InstrumentAllocNeverFails> INSTALLOCNF("instrument-alloc-nf"
                                                            "allocation never fail");
 char InstrumentAllocNeverFails::ID;
 
+static unsigned allocsite_counter = 0;
 static void replace_malloc(Module *M, CallInst *CI, bool never_fails)
 {
   Constant *C = nullptr;
 
   if (never_fails)
-    C = M->getOrInsertFunction("__VERIFIER_malloc0", CI->getType(), CI->getOperand(0)->getType()
+    C = M->getOrInsertFunction("__VERIFIER_malloc0", CI->getType(), CI->getOperand(0)->getType(),
+                               Type::getInt32Ty(M->getContext()) // identifier
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
     );
   else
-    C = M->getOrInsertFunction("__VERIFIER_malloc", CI->getType(), CI->getOperand(0)->getType()
+    C = M->getOrInsertFunction("__VERIFIER_malloc", CI->getType(), CI->getOperand(0)->getType(),
+                               Type::getInt32Ty(M->getContext()) // identifier
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
@@ -74,20 +77,39 @@ static void replace_malloc(Module *M, CallInst *CI, bool never_fails)
   assert(C);
   Function *Malloc = cast<Function>(C);
 
-  CI->setCalledFunction(Malloc);
+  std::vector<Value *> args;
+  args.push_back(CI->getOperand(0));
+  // identifier
+  args.push_back(ConstantInt::get(Type::getInt32Ty(M->getContext()), ++allocsite_counter));
+
+  CallInst *new_CI = CallInst::Create(Malloc, args);
+
+  SmallVector<std::pair<unsigned, MDNode *>, 8> metadata;
+  CI->getAllMetadata(metadata);
+  // copy the metadata
+  for (auto& md : metadata)
+    new_CI->setMetadata(md.first, md.second);
+  // copy the attributes (like zeroext etc.)
+  new_CI->setAttributes(CI->getAttributes());
+
+  new_CI->insertBefore(CI);
+  CI->replaceAllUsesWith(new_CI);
+  CI->eraseFromParent();
 }
 
 static void replace_calloc(Module *M, CallInst *CI, bool never_fails)
 {
   Constant *C = nullptr;
   if (never_fails)
-    C = M->getOrInsertFunction("__VERIFIER_calloc0", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType()
+    C = M->getOrInsertFunction("__VERIFIER_calloc0", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(),
+                               Type::getInt32Ty(M->getContext()) // identifier
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
     );
   else
-    C = M->getOrInsertFunction("__VERIFIER_calloc", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType()
+    C = M->getOrInsertFunction("__VERIFIER_calloc", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(),
+                               Type::getInt32Ty(M->getContext()) // identifier
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
@@ -95,7 +117,26 @@ static void replace_calloc(Module *M, CallInst *CI, bool never_fails)
 
   assert(C);
   Function *Calloc = cast<Function>(C);
-  CI->setCalledFunction(Calloc);
+
+  std::vector<Value *> args;
+  args.push_back(CI->getOperand(0));
+  args.push_back(CI->getOperand(1));
+  // identifier
+  args.push_back(ConstantInt::get(Type::getInt32Ty(M->getContext()), ++allocsite_counter));
+
+  CallInst *new_CI = CallInst::Create(Calloc, args);
+
+  SmallVector<std::pair<unsigned, MDNode *>, 8> metadata;
+  CI->getAllMetadata(metadata);
+  // copy the metadata
+  for (auto& md : metadata)
+    new_CI->setMetadata(md.first, md.second);
+  // copy the attributes (like zeroext etc.)
+  new_CI->setAttributes(CI->getAttributes());
+
+  new_CI->insertBefore(CI);
+  CI->replaceAllUsesWith(new_CI);
+  CI->eraseFromParent();
 }
 
 static bool instrument_alloc(Function &F, bool never_fails)
