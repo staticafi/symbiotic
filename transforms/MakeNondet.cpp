@@ -31,12 +31,12 @@
 
 using namespace llvm;
 
-static cl::opt<std::string> source_name("replace-verifier-funs-source",
+static cl::opt<std::string> source_name("make-nondet-source",
                                         cl::desc("Specify source filename"),
                                         cl::value_desc("filename"));
 
 
-class ReplaceVerifierFuns : public ModulePass {
+class MakeNondet : public ModulePass {
   // every item is (line number, call)
   std::vector<std::pair<unsigned, CallInst *>> calls_to_replace;
   std::vector<std::pair<unsigned, CallInst *>> allocs_to_handle;
@@ -61,7 +61,7 @@ class ReplaceVerifierFuns : public ModulePass {
 public:
   static char ID;
 
-  ReplaceVerifierFuns() : ModulePass(ID) {}
+  MakeNondet() : ModulePass(ID) {}
   bool runOnFunction(Function &F);
   // must be module pass, so that we can iterate over
   // declarations too
@@ -76,7 +76,7 @@ public:
   }
 };
 
-bool ReplaceVerifierFuns::runOnFunction(Function &F) {
+bool MakeNondet::runOnFunction(Function &F) {
   if (!F.isDeclaration())
     return false;
 
@@ -105,7 +105,7 @@ bool ReplaceVerifierFuns::runOnFunction(Function &F) {
   return changed;
 }
 
-void ReplaceVerifierFuns::handleCall(Function& F, CallInst *CI, bool ismalloc) {
+void MakeNondet::handleCall(Function& F, CallInst *CI, bool ismalloc) {
   const DebugLoc& Loc = CI->getDebugLoc();
   if (Loc) {
     if (ismalloc)
@@ -121,7 +121,7 @@ void ReplaceVerifierFuns::handleCall(Function& F, CallInst *CI, bool ismalloc) {
   }
 }
 
-void ReplaceVerifierFuns::mapLines() {
+void MakeNondet::mapLines() {
   if (lines_nums.empty()) {
     assert(calls_to_replace.empty());
     return;
@@ -148,7 +148,7 @@ void ReplaceVerifierFuns::mapLines() {
   assert(lines.size() == lines_nums.size());
 }
 
-void ReplaceVerifierFuns::replaceCall(Module& M, CallInst *CI,
+void MakeNondet::replaceCall(Module& M, CallInst *CI,
                                       unsigned line, const std::string& var) {
   std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName();
   std::string name = parent_name + ":" + var + ":" + std::to_string(line);
@@ -176,15 +176,8 @@ void ReplaceVerifierFuns::replaceCall(Module& M, CallInst *CI,
   args.push_back(ConstantInt::get(Type::getInt32Ty(M.getContext()), ++call_identifier));
 
   CallInst *new_CI = CallInst::Create(get_verifier_make_nondet(M), args);
-
-  SmallVector<std::pair<unsigned, MDNode *>, 8> metadata;
-  CI->getAllMetadata(metadata);
-  // copy the metadata
-  for (auto& md : metadata)
-    new_CI->setMetadata(md.first, md.second);
-  // copy the attributes (like zeroext etc.)
-  new_CI->setAttributes(CI->getAttributes());
-
+  if (auto Loc = CI->getDebugLoc())
+    new_CI->setDebugLoc(Loc);
 
   LoadInst *LI = new LoadInst(AI, name);
 
@@ -197,7 +190,7 @@ void ReplaceVerifierFuns::replaceCall(Module& M, CallInst *CI,
   CI->eraseFromParent();
 }
 
-void ReplaceVerifierFuns::handleAlloc(Module& M, CallInst *CI,
+void MakeNondet::handleAlloc(Module& M, CallInst *CI,
                                       unsigned line, const std::string& var) {
   static unsigned call_identifier = 0;
   std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName();
@@ -230,6 +223,8 @@ void ReplaceVerifierFuns::handleAlloc(Module& M, CallInst *CI,
   args.push_back(ConstantInt::get(Type::getInt32Ty(M.getContext()), ++call_identifier));
 
   CallInst *new_CI = CallInst::Create(get_verifier_make_nondet(M), args);
+  if (auto Loc = CI->getDebugLoc())
+    new_CI->setDebugLoc(Loc);
   new_CI->insertAfter(CastI);
 }
 
@@ -255,7 +250,7 @@ static std::string getName(const std::string& line) {
   return "--";
 }
 
-void ReplaceVerifierFuns::replaceCalls(Module& M) {
+void MakeNondet::replaceCalls(Module& M) {
   for (auto& pr : calls_to_replace) {
     unsigned line_num = pr.first;
 	CallInst *CI = pr.second;
@@ -266,7 +261,7 @@ void ReplaceVerifierFuns::replaceCalls(Module& M) {
   }
 }
 
-void ReplaceVerifierFuns::handleAllocs(Module& M) {
+void MakeNondet::handleAllocs(Module& M) {
   for (auto& pr : allocs_to_handle) {
     unsigned line_num = pr.first;
 	CallInst *CI = pr.second;
@@ -276,7 +271,7 @@ void ReplaceVerifierFuns::handleAllocs(Module& M) {
   }
 }
 
-Function *ReplaceVerifierFuns::get_verifier_make_nondet(llvm::Module& M)
+Function *MakeNondet::get_verifier_make_nondet(llvm::Module& M)
 {
   if (_vms)
     return _vms;
@@ -296,7 +291,7 @@ Function *ReplaceVerifierFuns::get_verifier_make_nondet(llvm::Module& M)
   return _vms;
 }
 
-Type *ReplaceVerifierFuns::get_size_t(llvm::Module& M)
+Type *MakeNondet::get_size_t(llvm::Module& M)
 {
   if (_size_t_Ty)
     return _size_t_Ty;
@@ -311,9 +306,10 @@ Type *ReplaceVerifierFuns::get_size_t(llvm::Module& M)
   return _size_t_Ty;
 }
 
-static RegisterPass<ReplaceVerifierFuns> RVF("replace-verifier-funs",
-                                             "Replace calls to verifier funs with code "
-                                             " that registers new symbolic objects "
-                                             "with KLEE");
-char ReplaceVerifierFuns::ID;
+static RegisterPass<MakeNondet> MND("make-nondet",
+                                    "Replace calls to verifier funs with code "
+                                    " that registers new symbolic objects "
+                                    "with KLEE. Also, make dynamically allocated "
+                                    "memory contain nondeterministic values too");
+char MakeNondet::ID;
 

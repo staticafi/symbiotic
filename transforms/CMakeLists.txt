@@ -60,7 +60,7 @@ add_llvm_loadable_module(LLVMsbt
 				RemoveReadOnlyAttr.cpp
 				RemoveErrorCalls.cpp
 				RenameVerifierFuns.cpp
-				ReplaceVerifierFuns.cpp
+				MakeNondet.cpp
 				InitializeUninitialized.cpp
 				RemoveInfiniteLoops.cpp
 				BreakInfiniteLoops.cpp
