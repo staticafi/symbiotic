@@ -213,21 +213,23 @@ class SymbioticTool(KleeBase):
             else:
                 # we haven't found anything
                 return result.RESULT_TRUE_PROP
-        elif len(found) == 1:
-            return found[0]
         else:
-            if 'EINITVALS' not in found: # EINITVALS would break the validity of the found error
-                for f in found:
-                    # we found error that we sought for?
-                    if f == result.RESULT_FALSE_REACH and self._options.property.assertions():
-                        return f
-                    elif f == result.RESULT_FALSE_OVERFLOW and self._options.property.signedoverflow():
-                        return f
-                    elif f in [result.RESULT_FALSE_FREE, result.RESULT_FALSE_DEREF, result.RESULT_FALSE_MEMTRACK]\
-                        and self._options.property.memsafety():
-                        return f
-                    elif f == result.RESULT_FALSE_MEMCLEANUP and self._options.property.memcleanup():
-                        return f
+            if 'EINITVALS' in found: # EINITVALS would break the validity of the found error
+                return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
+
+            for f in found:
+                # we found error that we sought for?
+                if f == result.RESULT_FALSE_REACH and self._options.property.assertions():
+                    return f
+                elif f == result.RESULT_FALSE_OVERFLOW and self._options.property.signedoverflow():
+                    return f
+                elif f in [result.RESULT_FALSE_FREE, result.RESULT_FALSE_DEREF, result.RESULT_FALSE_MEMTRACK]\
+                    and self._options.property.memsafety():
+                    return f
+                elif f == result.RESULT_FALSE_MEMCLEANUP and self._options.property.memcleanup():
+                    return f
+                elif f == result.RESULT_FALSE_TERMINATION and self._options.property.termination():
+                    return f
 
             return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
 
