@@ -307,15 +307,16 @@ def generate_graphml(path, source, prps, is32bit, is_correctness_wit, saveto):
 
 def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
-    print('Generating witness: {0}'.format(saveto))
+    print('Generating {0} witness: {1}'.format('correctness' if is_correctness_wit else 'error', saveto))
     if is_correctness_wit:
         generate_graphml(None, sources[0], prps, is32bit, is_correctness_wit, saveto)
         return
 
     abd = os.path.abspath(bindir)
     for path in os.listdir('{0}/klee-last'.format(abd)):
-        if 'assert' in path:
-            pth = os.path.abspath('{0}/klee-last/{1}.path'.format(abd, path[:-11]))
+        if path.endswith('.err'):
+            # get the corresponding .path file
+            pth = os.path.abspath('{0}/klee-last/{1}.path'.format(abd, path[:path.find(".")]))
             generate_graphml(pth, sources[0], prps, is32bit, is_correctness_wit, saveto)
             break
 
