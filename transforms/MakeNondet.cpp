@@ -62,7 +62,7 @@ public:
   static char ID;
 
   MakeNondet() : ModulePass(ID) {}
-  bool runOnFunction(Function &F);
+  void runOnFunction(Function &F);
   // must be module pass, so that we can iterate over
   // declarations too
   virtual bool runOnModule(Module &M) {
@@ -76,33 +76,21 @@ public:
   }
 };
 
-bool MakeNondet::runOnFunction(Function &F) {
-  if (!F.isDeclaration())
-    return false;
+void MakeNondet::runOnFunction(Function &F) {
+  if (F.isDeclaration())
+    return;
 
-  StringRef name = F.getName();
-  if (!name.startswith("__VERIFIER_nondet_") &&
-      !name.startswith("malloc") &&
-      !name.startswith("calloc"))
-    return false;
-
-  bool changed = false;
-
-  //llvm::errs() << "Got __VERIFIER_fun: " << name << "\n";
-
-  for (auto I = F.use_begin(), E = F.use_end(); I != E; ++I) {
-#if ((LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR < 5))
-    Value *use = *I;
-#else
-    Value *use = I->getUser();
-#endif
-
-    if (CallInst *CI = dyn_cast<CallInst>(use)) {
-      handleCall(F, CI, !name.startswith("__VERIFIER"));
+  for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
+    if (CallInst *CI = dyn_cast<CallInst>(&*I)) {
+      auto fun = dyn_cast<Function>(CI->getCalledValue()->stripPointerCasts());
+      if (!fun)
+          continue;
+      auto name = fun->getName();
+      if (name.equals("malloc") || name.equals("calloc") ||
+          name.startswith("__VERIFIER_nondet"))
+        handleCall(F, CI, !name.startswith("__VERIFIER"));
     }
   }
-
-  return changed;
 }
 
 void MakeNondet::handleCall(Function& F, CallInst *CI, bool ismalloc) {
@@ -210,10 +198,14 @@ void MakeNondet::handleAlloc(Module& M, CallInst *CI,
     auto Mul = BinaryOperator::Create(Instruction::Mul,
                                       CI->getOperand(0),
                                       CI->getOperand(1));
+    auto CastI2 = CastInst::CreateZExtOrBitCast(Mul, get_size_t(M));
     Mul->insertBefore(CastI);
-    args.push_back(Mul);
+    CastI2->insertAfter(Mul);
+    args.push_back(CastI2);
   } else {
-    args.push_back(CI->getOperand(0));
+    auto CastI2 = CastInst::CreateZExtOrBitCast(CI->getOperand(0), get_size_t(M));
+    CastI2->insertBefore(CastI);
+    args.push_back(CastI2);
   }
 
   // name

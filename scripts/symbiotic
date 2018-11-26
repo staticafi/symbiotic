@@ -520,6 +520,7 @@ def parse_command_line():
             options.link_files += arg.split(',')
         elif opt == '--save-files':
             save_files = True
+            options.generate_ll = True
         elif opt == '--working-dir-prefix':
             wdr = os.path.abspath(arg)
             if not os.path.isdir(wdr):

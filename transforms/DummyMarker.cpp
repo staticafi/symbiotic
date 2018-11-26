@@ -55,7 +55,10 @@ bool DummyMarker::runOnFunction(Function &F)
     if (!CI)
         continue;
 
-    auto fun = CI->getCalledFunction()->getName();
+    auto calledFun = dyn_cast<Function>(CI->getCalledValue()->stripPointerCasts());
+    if (!calledFun)
+        continue;
+    auto fun = calledFun->getName();
     if (fun.equals("malloc") || fun.equals("calloc")) {
       Constant *dummy = M->getOrInsertFunction("__symbiotic_keep_ptr",
                                                Type::getVoidTy(Ctx),
