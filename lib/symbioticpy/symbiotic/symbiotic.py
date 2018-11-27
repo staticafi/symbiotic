@@ -553,11 +553,6 @@ class Symbiotic(object):
         llvmfile = self.llvmfile
         self.llvmfile = tmp
 
-        # FIXME: move these checks to tool specific code
-        if self._tool.name() == 'klee' and not self.check_llvmfile(llvmfile):
-            dbg('Unsupported call (probably floating handling)')
-            return 'unsupported call'
-
         print_stdout('INFO: Replaying error path', color='WHITE')
         restart_counting_time()
 
