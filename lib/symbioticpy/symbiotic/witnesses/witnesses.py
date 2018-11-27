@@ -53,6 +53,19 @@ def get_repr(obj):
     ret.append((b, num))
     return ret
 
+def is_zero(obj):
+    assert len(obj[1]) > 0
+
+    for i in range(1, len(obj[1])):
+        b = obj[1][i]
+        if version_info.major < 3:
+            value = ord(b)
+        else:
+            value = b
+        if value != 0:
+            return False
+
+    return True
 
 def print_object(obj):
     rep = 'len {0} bytes, |'.format(len(obj[1]))
@@ -182,8 +195,17 @@ class GraphMLWriter(object):
         objects = self._parseKtest(ktestfile)
         print(' -- ---- --')
         print('Symbolic objects:')
-        for o in objects:
-            print_object(o)
+        if len(objects) > 100:
+            n = 0
+            for o in objects:
+                if not is_zero(o):
+                    print_object(o)
+                    n += 1
+
+            print('\nAnd the rest of objects ({0} objects) are 0'.format(len(objects) - n))
+        else:
+            for o in objects:
+                print_object(o)
         print(' -- ---- --')
 
         if not include_objects:
