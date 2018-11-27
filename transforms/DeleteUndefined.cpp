@@ -81,8 +81,7 @@ static RegisterPass<DeleteUndefinedNoSym> DLTUNS("delete-undefined-nosym",
 char DeleteUndefinedNoSym::ID;
 
 static const char *leave_calls[] = {
-  "__assert_fail",
-  "abort",
+// KLEE
   "klee_make_symbolic",
   "klee_make_nondet",
   "klee_assume",
@@ -91,6 +90,9 @@ static const char *leave_calls[] = {
   "klee_report_error",
   "klee_warning_once",
   "klee_int",
+// standard library
+  "__assert_fail",
+  "abort",
   "exit",
   "_exit",
   "malloc",
@@ -101,9 +103,24 @@ static const char *leave_calls[] = {
   "memcmp",
   "memcpy",
   "memmove",
-  "kzalloc",
   "__errno_location",
-  NULL
+  "__ctype_b_loc",
+// fp stuff
+  "fmaxf",
+  "frexp",
+  "ldexp",
+  "__isnan",
+  "__signbit",
+// C++
+  "_ZdaPv",
+  "_ZdlPv",
+  "_Znaj",
+  "_Znwj",
+  "_Znam",
+  "_Znwm",
+// misc
+  "kzalloc",
+  nullptr
 };
 
 static bool array_match(const StringRef &name, const char **array)
