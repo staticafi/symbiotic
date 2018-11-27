@@ -323,6 +323,8 @@ class GraphMLWriter(object):
             ET.SubElement(self._graph, 'edge',
                           source=str(last_id - 1),
                           target=str(last_id))
+        else:
+            last_id -= 1
 
         ET.SubElement(last_node, 'data', key='violation').text = 'true'
 
@@ -332,7 +334,28 @@ class GraphMLWriter(object):
 
         f.close()
 
-    def parseError(self, pathFile, filename=None):
+        return last_id
+
+    def _addInfiniteLoop(self, last_id, filename):
+        if filename:
+            filenm = basename(filename)
+        else:
+            filenm = None
+
+        last_id += 1
+
+        loop_node = ET.SubElement(self._graph, 'node', id=str(last_id))
+        ET.SubElement(loop_node, 'data', key='cyclehead').text = 'true'
+        enter_loop_edge = ET.SubElement(self._graph, 'edge',
+                            source=str(last_id - 1),
+                            target=str(last_id))
+        ET.SubElement(enter_loop_edge, 'data', key='enterLoopHead').text = 'true'
+        enter_loop_edge = ET.SubElement(self._graph, 'edge',
+                            source=str(last_id),
+                            target=str(last_id))
+        ET.SubElement(enter_loop_edge, 'data', key='enterLoopHead').text = 'true'
+
+    def parseError(self, pathFile, is_termination, filename=None):
         """
         Parse .path file from klee
         \param pathFile     the .path file
@@ -342,7 +365,7 @@ class GraphMLWriter(object):
         """
         # replace .path with .ktest
         last_id = self._dumpObjects('{0}ktest'.format(pathFile[:-4]), filename)
-        if trivial_witness:
+        if trivial_witness and not is_termination:
             if not include_objects or (include_objects and last_id == 1):
                 # set the entry node as violation too
                 ET.SubElement(self._entry, 'data',
@@ -357,7 +380,10 @@ class GraphMLWriter(object):
 
                 ET.SubElement(last_node, 'data', key='violation').text = 'true'
         else:
-            self._dumpPath(pathFile, last_id, filename)
+            last_id = self._dumpPath(pathFile, last_id, filename)
+
+        if is_termination:
+            self._addInfiniteLoop(last_id, filename)
 
     def dump(self):
         if no_lxml:
