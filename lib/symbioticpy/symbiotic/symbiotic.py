@@ -553,6 +553,11 @@ class Symbiotic(object):
         llvmfile = self.llvmfile
         self.llvmfile = tmp
 
+        # FIXME: move these checks to tool specific code
+        if self._tool.name() == 'klee' and not self.check_llvmfile(llvmfile):
+            dbg('Unsupported call (probably floating handling)')
+            return 'unsupported call'
+
         params = self.options.tool_params if self.options.tool_params else []
         params.append('-replay-nondets={0}'.format(ktest))
         cmd = self._tool.cmdline(self._tool.executable(),
@@ -689,11 +694,6 @@ class Symbiotic(object):
         if opt:
             self.optimize(passes=opt)
 
-        # FIXME: move these checks to tool specific code
-        if self._tool.name() == 'klee' and not self.check_llvmfile(self.llvmfile):
-            dbg('Unsupported call (probably floating handling)')
-            return report_results('unsupported call')
-
         # delete-undefined may insert __VERIFIER_make_nondet
         # and also other funs like __errno_location may be included
         self.link_undefined()
@@ -717,9 +717,14 @@ class Symbiotic(object):
         # tool's specific preprocessing steps
         self.postprocess_llvm()
 
-        # for once, delete all undefined before the verification
-        # (we may have new undefined calls because of passes
-        self.run_opt(passes = ['-delete-undefined'])
+        # for once, delete all undefined functions before the verification
+        # (we may have new calls of undefined function because of
+        # the previous passes
+        if self.options.undef_retval_nosym:
+            passes = ['-delete-undefined-nosym']
+        else:
+            passes = ['-delete-undefined']
+        self.run_opt(passes)
 
     def _disable_some_optimizations(self, llvm_version):
         disabled = []
@@ -850,6 +855,11 @@ class Symbiotic(object):
         #  - run the verification backend
         #################### #################### ###################
         self._get_stats('Before verification ')
+
+        # FIXME: move these checks to tool specific code
+        if self._tool.name() == 'klee' and not self.check_llvmfile(self.llvmfile):
+            dbg('Unsupported call (probably floating handling)')
+            return 'unsupported call'
 
         if not self.options.no_verification:
             print_stdout('INFO: Starting verification', color='WHITE')

@@ -170,15 +170,7 @@ class SymbioticTool(BaseTool):
         \return a list of LLVM passes that should be run on the code
         """
         passes = []
-        # remove/replace the rest of undefined functions
-        # for which we do not have a definition and
-        # that has not been removed
-        if self._options.undef_retval_nosym:
-            passes += ['-delete-undefined-nosym']
-        else:
-            passes += ['-delete-undefined']
 
-        # for the memsafety property, make functions behave like they have
         # side-effects, because LLVM optimizations could remove them otherwise,
         # even though they contain calls to assert
         if self._options.property.memsafety():
