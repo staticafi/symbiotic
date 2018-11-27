@@ -558,6 +558,9 @@ class Symbiotic(object):
             dbg('Unsupported call (probably floating handling)')
             return 'unsupported call'
 
+        print_stdout('INFO: Replaying error path', color='WHITE')
+        restart_counting_time()
+
         params = self.options.tool_params if self.options.tool_params else []
         params.append('-replay-nondets={0}'.format(ktest))
         cmd = self._tool.cmdline(self._tool.executable(),
@@ -570,6 +573,8 @@ class Symbiotic(object):
         except SymbioticException as e:
             print_stderr(str(e), color='RED')
             returncode = 1
+
+        print_elapsed_time('INFO: Replaying error path time', color='WHITE')
 
         return self._tool.determine_result(returncode, 0,
                                            watch.getLines(), False)

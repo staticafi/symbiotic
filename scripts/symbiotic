@@ -723,6 +723,8 @@ if __name__ == "__main__":
             if res != newres:
                 res = 'cex not-confirmed'
 
+        print('--------------------------------------------------------------------------------')
+
         report_results(res or "no result")
 
         # FIXME: make tool specific
