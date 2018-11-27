@@ -293,14 +293,14 @@ def parse_environ(opts):
     if 'CPPFLAGS' in os.environ:
         opts.CPPFLAGS += os.environ['CPPFLAGS'].split(' ')
 
-def generate_graphml(path, source, prps, is32bit, is_correctness_wit, saveto):
+def generate_graphml(path, source, prps, is32bit, is_correctness_wit, termination, saveto):
     if saveto is None:
         saveto = '{0}.graphml'.format(os.path.basename(path))
         saveto = os.path.abspath(saveto)
 
     gen = GraphMLWriter(source, prps, is32bit, is_correctness_wit, witness_with_source_lines)
     if not is_correctness_wit:
-        gen.parseError(path, source)
+        gen.parseError(path, termination, source)
     else:
         assert path is None
     gen.write(saveto)
@@ -318,15 +318,15 @@ def get_ktest(bindir):
 def get_path_file(bindir):
     return get_testcase(bindir) + '.path';
 
-def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, saveto = None):
+def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, termination, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
     print('Generating {0} witness: {1}'.format('correctness' if is_correctness_wit else 'error', saveto))
     if is_correctness_wit:
-        generate_graphml(None, sources[0], prps, is32bit, is_correctness_wit, saveto)
+        generate_graphml(None, sources[0], prps, is32bit, is_correctness_wit, termination, saveto)
         return
 
     pth = get_path_file(bindir)
-    generate_graphml(pth, sources[0], prps, is32bit, is_correctness_wit, saveto)
+    generate_graphml(pth, sources[0], prps, is32bit, is_correctness_wit, termination, saveto)
 
 # do not remove working files after running
 save_files = False
@@ -736,10 +736,12 @@ if __name__ == "__main__":
 
             if not opts.nowitness:
                 generate_counterexample(srcdir, sources, opts.property.getLTL(),
-                                        opts.is32bit, False, opts.witness_output)
+                                        opts.is32bit, False, opts.property.termination(),
+                                        opts.witness_output)
         elif res == 'true' and not opts.nowitness:
             generate_counterexample(srcdir, sources, opts.property.getLTL(),
-                                    opts.is32bit, True, opts.witness_output)
+                                    opts.is32bit, True, opts.property.termination(),
+                                    opts.witness_output)
     except Timeout:
         sys.stdout.flush()
         sys.stderr.flush()
