@@ -147,7 +147,7 @@ witness_with_source_lines = False
 no_integrity_check = False
 dump_env_only = False
 dump_env_cmd = False
-sv_comp = True
+sv_comp = False
 
 def dump_paths(dump_as_cmd=False, fun = print_stdout):
     variables = ['PATH', 'LD_LIBRARY_PATH', 'C_INCLUDE_DIR']
