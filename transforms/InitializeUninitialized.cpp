@@ -33,6 +33,7 @@ bool CloneMetadata(const llvm::Instruction *, llvm::Instruction *);
 class InitializeUninitialized : public ModulePass {
     Function *_vms = nullptr; // verifier_make_nondet function
     Type *_size_t_Ty = nullptr; // type of size_t
+    unsigned calls_count = 0;
 
     std::unique_ptr<DataLayout> DL;
 
@@ -127,6 +128,7 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
     GlobalVariable *nameG = new GlobalVariable(M, name->getType(), true /*constant */,
                                                GlobalVariable::PrivateLinkage, name);
     args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
+    args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx), ++calls_count));
     CallInst *CI = CallInst::Create(vms, args);
 
     Function *main = M.getFunction("main");
@@ -150,6 +152,30 @@ bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
   return modified;
 }
 
+static unsigned getKleeMakeNondetCounter(const Function *F) {
+    using namespace llvm;
+
+    unsigned max = 0;
+    for (auto I = F->use_begin(), E = F->use_end(); I != E; ++I) {
+#if ((LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR < 5))
+        const Value *use = *I;
+#else
+        const Value *use = I->getUser();
+#endif
+        auto CI = dyn_cast<CallInst>(use);
+        assert(CI && "The use is not call");
+
+        auto C = dyn_cast<ConstantInt>(CI->getArgOperand(3));
+        assert(C && "Invalid operand in klee_make_nondet");
+
+        auto val = C->getZExtValue();
+        if (val > max)
+            max = val;
+    }
+
+    return max;
+}
+
 Function *InitializeUninitialized::get_verifier_make_nondet(llvm::Module *M)
 {
   if (_vms)
@@ -157,13 +183,17 @@ Function *InitializeUninitialized::get_verifier_make_nondet(llvm::Module *M)
 
   LLVMContext& Ctx = M->getContext();
   //void verifier_make_symbolic(void *addr, size_t nbytes, const char *name);
-  Constant *C = M->getOrInsertFunction("__VERIFIER_make_nondet",
+  Constant *C = M->getOrInsertFunction("klee_make_nondet",
                                        Type::getVoidTy(Ctx),
                                        Type::getInt8PtrTy(Ctx), // addr
                                        get_size_t(M),   // nbytes
                                        Type::getInt8PtrTy(Ctx), // name
+                                       Type::getInt32Ty(Ctx), // identifier
                                        nullptr);
   _vms = cast<Function>(C);
+
+  calls_count = getKleeMakeNondetCounter(_vms);
+
   return _vms;
 }
 
@@ -249,7 +279,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
   bool modified = false;
   Module *M = F.getParent();
   LLVMContext& Ctx = M->getContext();
-  GlobalVariable *name = getNameGlobal(M, "nondet");
+  GlobalVariable *name = getNameGlobal(M, "global:nondet:0");
 
   Function *C = get_verifier_make_nondet(M);
 
@@ -281,6 +311,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             args.push_back(CastI);
             args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
             args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
+            args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx), ++calls_count));
 
             CI = CallInst::Create(C, args);
             CastI->insertAfter(AI);
@@ -299,7 +330,9 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             args.push_back(CastI);
             args.push_back(MulI);
             args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
+            args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx), ++calls_count));
             CI = CallInst::Create(C, args);
+
             CastI->insertAfter(AI);
             MulI->insertAfter(CastI);
             CI->insertAfter(MulI);
@@ -324,6 +357,7 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             args.push_back(CastI);
             args.push_back(ConstantInt::get(get_size_t(M), DL->getTypeAllocSize(Ty)));
             args.push_back(ConstantExpr::getPointerCast(name, Type::getInt8PtrTy(Ctx)));
+            args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx), ++calls_count));
 
             CI = CallInst::Create(C, args);
             CastI->insertAfter(AIS);

@@ -44,10 +44,7 @@ class DeleteUndefined : public ModulePass {
   Function *get_verifier_make_nondet(llvm::Module *);
   Type *get_size_t(llvm::Module *);
 
-  // go from the top to the bottom to make sure we do not
-  // interferea with previous calls to klee_make_nondet
-  // FIXME: this is just a heuristics...
-  unsigned int calls_count = 1<<30;
+  unsigned int calls_count = 0;
 
   //void replaceCall(CallInst *CI, Module *M);
   void defineFunction(Module *M, Function *F);
@@ -155,6 +152,30 @@ bool DeleteUndefined::runOnModule(Module& M) {
     return modified;
 }
 
+static unsigned getKleeMakeNondetCounter(const Function *F) {
+    using namespace llvm;
+
+    unsigned max = 0;
+    for (auto I = F->use_begin(), E = F->use_end(); I != E; ++I) {
+#if ((LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR < 5))
+        const Value *use = *I;
+#else
+        const Value *use = I->getUser();
+#endif
+        auto CI = dyn_cast<CallInst>(use);
+        assert(CI && "The use is not call");
+
+        auto C = dyn_cast<ConstantInt>(CI->getArgOperand(3));
+        assert(C && "Invalid operand in klee_make_nondet");
+
+        auto val = C->getZExtValue();
+        if (val > max)
+            max = val;
+    }
+
+    return max;
+}
+
 Function *DeleteUndefined::get_verifier_make_nondet(llvm::Module *M)
 {
   if (_vms)
@@ -170,6 +191,8 @@ Function *DeleteUndefined::get_verifier_make_nondet(llvm::Module *M)
                                        Type::getInt32Ty(Ctx), // identifier
                                        nullptr);
   _vms = cast<Function>(C);
+
+  calls_count = getKleeMakeNondetCounter(_vms);
 
   return _vms;
 }
@@ -228,7 +251,7 @@ void DeleteUndefined::defineFunction(Module *M, Function *F)
     GlobalVariable *nameG = new GlobalVariable(*M, name->getType(), true /*constant */,
                                                GlobalVariable::PrivateLinkage, name);
     args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
-    args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx), --calls_count));
+    args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx), ++calls_count));
 
     CallInst *CI = CallInst::Create(vms, args);
     CI->insertAfter(CastI);

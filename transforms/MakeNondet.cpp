@@ -139,6 +139,8 @@ void MakeNondet::mapLines() {
 
 void MakeNondet::replaceCall(Module& M, CallInst *CI,
                                       unsigned line, const std::string& var) {
+  // NOTE: this must be called before using call_identifier
+  auto make_nondet = get_verifier_make_nondet(M);
   std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName();
   std::string name = parent_name + ":" + var + ":" + std::to_string(line);
   Constant *name_const = ConstantDataArray::getString(M.getContext(), name);
@@ -164,7 +166,7 @@ void MakeNondet::replaceCall(Module& M, CallInst *CI,
   // identifier
   args.push_back(ConstantInt::get(Type::getInt32Ty(M.getContext()), ++call_identifier));
 
-  CallInst *new_CI = CallInst::Create(get_verifier_make_nondet(M), args);
+  CallInst *new_CI = CallInst::Create(make_nondet, args);
   if (auto Loc = CI->getDebugLoc())
     new_CI->setDebugLoc(Loc);
 
@@ -181,6 +183,7 @@ void MakeNondet::replaceCall(Module& M, CallInst *CI,
 
 void MakeNondet::handleAlloc(Module& M, CallInst *CI,
                                       unsigned line, const std::string& var) {
+  auto make_nondet = get_verifier_make_nondet(M);
   std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName();
   std::string name = parent_name + ":" + var + ":" + std::to_string(line);
   Constant *name_const = ConstantDataArray::getString(M.getContext(), name);
@@ -214,7 +217,7 @@ void MakeNondet::handleAlloc(Module& M, CallInst *CI,
   // identifier
   args.push_back(ConstantInt::get(Type::getInt32Ty(M.getContext()), ++call_identifier));
 
-  CallInst *new_CI = CallInst::Create(get_verifier_make_nondet(M), args);
+  CallInst *new_CI = CallInst::Create(make_nondet, args);
   if (auto Loc = CI->getDebugLoc())
     new_CI->setDebugLoc(Loc);
   new_CI->insertAfter(CastI);
@@ -295,6 +298,30 @@ void MakeNondet::handleAllocs(Module& M) {
   }
 }
 
+static unsigned getKleeMakeNondetCounter(const Function *F) {
+    using namespace llvm;
+
+    unsigned max = 0;
+    for (auto I = F->use_begin(), E = F->use_end(); I != E; ++I) {
+#if ((LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR < 5))
+        const Value *use = *I;
+#else
+        const Value *use = I->getUser();
+#endif
+        auto CI = dyn_cast<CallInst>(use);
+        assert(CI && "The use is not call");
+
+        auto C = dyn_cast<ConstantInt>(CI->getArgOperand(3));
+        assert(C && "Invalid operand in klee_make_nondet");
+
+        auto val = C->getZExtValue();
+        if (val > max)
+            max = val;
+    }
+
+    return max;
+}
+
 Function *MakeNondet::get_verifier_make_nondet(llvm::Module& M)
 {
   if (_vms)
@@ -303,15 +330,18 @@ Function *MakeNondet::get_verifier_make_nondet(llvm::Module& M)
   LLVMContext& Ctx = M.getContext();
   //void verifier_make_symbolic(void *addr, size_t nbytes, const char *name);
   Constant *C = M.getOrInsertFunction("klee_make_nondet",
-                                      Type::getVoidTy(Ctx),
-                                      Type::getInt8PtrTy(Ctx), // addr
+                                       Type::getVoidTy(Ctx),
+                                       Type::getInt8PtrTy(Ctx), // addr
                                       // FIXME: get rid of the nbytes
                                       // -- make the object symbolic entirely
-                                      get_size_t(M),   // nbytes
-                                      Type::getInt8PtrTy(Ctx), // name
-                                      Type::getInt32Ty(Ctx), // identifier
-                                      nullptr);
+                                       get_size_t(M),   // nbytes
+                                       Type::getInt8PtrTy(Ctx), // name
+                                       Type::getInt32Ty(Ctx), // identifier
+                                       nullptr);
   _vms = cast<Function>(C);
+
+  call_identifier = getKleeMakeNondetCounter(_vms);
+
   return _vms;
 }
 
