@@ -39,7 +39,7 @@ from subprocess import call
 
 # the numbers must be separated by '-, otherwise it will
 # break the tool-module in benchexec
-VERSION='6.0.3'
+VERSION='6.0.3-dev'
 try:
     from symbiotic.versions import versions
     from symbiotic.versions import llvm_version as LLVM_VERSION
