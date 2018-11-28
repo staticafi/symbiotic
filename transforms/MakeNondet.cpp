@@ -220,22 +220,53 @@ void MakeNondet::handleAlloc(Module& M, CallInst *CI,
   new_CI->insertAfter(CastI);
 }
 
-static std::string getName(const std::string& line) {
-  std::istringstream iss(line);
-  std::string sub, var;
-  while (iss >> sub) {
-    if (sub == "=") {
-	  break;
-    }
-	var = std::move(sub);
-  }
+static std::string strip(const std::string& str) {
+    size_t start = 0, end = str.length() - 1;
+    while (start < str.length() && std::isspace(str[start]))
+        ++start;
+    while (end >= 0 && std::isspace(str[end]))
+        --end;
+    assert(start <= end);
+    return str.substr(start, end - start + 1);
+}
 
-  if (!var.empty() && sub == "=") {
-    // check also that after = follows the __VERIFIER_* call
-    iss >> sub;
+static std::string lastWord(const std::string& str) {
+    size_t end = str.length() - 1;
+
+    // skip the whitespace at the end
+    while (end >= 0 && std::isspace(str[end]))
+        --end;
+
+    while (end >= 0 && !std::isspace(str[end])) {
+        if (end == 0)
+            return str;
+
+        --end;
+    }
+
+    return str.substr(end + 1);
+}
+
+static inline bool startswith(const std::string& str, const std::string& with) {
+    return str.compare(0, with.length(), with) == 0;
+}
+
+static std::string getName(const std::string& line) {
+  auto pos = line.find("=");
+  if (pos == std::string::npos)
+      return "--";
+
+  std::string var = lastWord(strip(line.substr(0, pos)));
+  std::string expr = strip(line.substr(pos + 1));
+  //errs() << " var: " << var << "\n";
+  //errs() << " expr: " << expr << "\n";
+  if (!var.empty() && !expr.empty()) {
     // this may make problems with casting, line: (int) __VERIFIER_nondet_char()
     // maybe this is not needed?
-    if (sub.compare(0, 18, "__VERIFIER_nondet_") == 0)
+    if (startswith(expr, "__VERIFIER_nondet_")/* ||
+        startswith(expr, "malloc") || startswith(expr, "calloc") ||
+        startswith(expr, "realloc") || startswith(expr, "alloca") ||
+        startswith(expr, "__builtin_alloca")*/)
 		return var;
   }
 
@@ -259,7 +290,8 @@ void MakeNondet::handleAllocs(Module& M) {
 	CallInst *CI = pr.second;
 
     auto it = lines.find(line_num);
-    handleAlloc(M, CI, line_num, "dynalloc");
+    auto name = getName(it->second);
+    handleAlloc(M, CI, line_num, name == "--" ? "%dynalloc" : name);
   }
 }
 
