@@ -709,7 +709,7 @@ if __name__ == "__main__":
 
         # FIXME: make tool specific
         srcdir = os.path.dirname(symbiotic.llvmfile)
-        if res and res.startswith('false'):
+        if not opts.noslice and res and res.startswith('false'):
             print_stdout("Found {0}".format(res))
             print_stdout("Trying to confirm the error path")
             # replay the counterexample on non-sliced module
