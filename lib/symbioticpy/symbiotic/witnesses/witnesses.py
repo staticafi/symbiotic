@@ -38,7 +38,8 @@ def get_hash(source):
 
 def get_repr(obj):
     ret = []
-    assert len(obj[1]) > 0
+    if not len(obj[1]) > 0:
+        return ()
 
     b = obj[1][0]
     num = 1
@@ -69,7 +70,12 @@ def is_zero(obj):
 
 def print_object(obj):
     rep = 'len {0} bytes, |'.format(len(obj[1]))
-    for part in get_repr(obj):
+    objrepr = get_repr(obj)
+    if objrepr == ():
+        assert(len(obj[1]) == 0)
+        rep += "|"
+
+    for part in objrepr:
         if version_info.major < 3:
             value = ord(part[0])
         else:
