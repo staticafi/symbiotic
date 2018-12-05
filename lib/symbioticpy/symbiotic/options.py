@@ -29,7 +29,6 @@ class SymbioticOptions(object):
         self.no_verification = False
         self.final_output = None
         self.witness_output = '{0}/witness.graphml'.format(env.symbiotic_dir)
-        self.test_output = '{0}/test-suite.xml'.format(env.symbiotic_dir)
         self.source_is_bc = False
         self.optlevel = ["before-O3", "after-O3"]
         self.slicer_pta = 'fi'

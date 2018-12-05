@@ -220,7 +220,7 @@ class TestCaseWriter(object):
 
         return last_id
 
-    def parseError(self, pathFile, filename=None):
+    def parseTest(self, pathFile, filename=None):
         """
         Parse .path file from klee
         \param pathFile     the .path file

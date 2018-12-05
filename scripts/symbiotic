@@ -289,10 +289,11 @@ def generate_graphml(path, source, prps, is32bit, is_correctness_wit, terminatio
         assert path is None
     gen.write(saveto)
 
-def generate_testcase(path, source, is32bit, is_correctness_test, saveto):
-    if saveto is None:
-        saveto = '{0}.xml'.format(os.path.basename(path))
-        saveto = os.path.abspath(saveto)
+def generate_testcase(path, source, is32bit, is_correctness_test):
+    saveto = '{0}.xml'.format(os.path.basename(path))
+    saveto = os.path.abspath(saveto)
+
+    print('Generating {0} test: {1}'.format('correctness' if is_correctness_test else 'error', saveto))
 
     savetomd = '{0}/metadata.xml'.format(os.path.dirname(saveto))
     savetomd = os.path.abspath(savetomd)
@@ -301,12 +302,20 @@ def generate_testcase(path, source, is32bit, is_correctness_test, saveto):
     gen_md = MetadataWriter(source, is32bit)
 
     if is_correctness_test:
-        return
-        #gen.parseObjects(path, source)
+        gen.parseTest(path, source)
     else:
-        gen.parseError(path, source)
+        gen.parseTest(path, source)
     gen.write(saveto)
     gen_md.write(savetomd)
+
+def get_testcases(bindir, is_correctness_test):
+    abd = os.path.abspath(bindir)
+    testcases = []
+    for path in os.listdir('{0}/klee-last'.format(abd)):
+        if (is_correctness_test and path.endswith('.path')) \
+            or path.endswith('.err'):
+            testcases.append(os.path.abspath('{0}/klee-last/{1}'.format(abd, path[:path.find(".")])) + '.path')
+    return testcases
 
 def get_testcase(bindir):
     abd = os.path.abspath(bindir)
@@ -315,11 +324,11 @@ def get_testcase(bindir):
             # get the corresponding .path file
             return os.path.abspath('{0}/klee-last/{1}'.format(abd, path[:path.find(".")]))
 
-def get_ktest(bindir):
-    return get_testcase(bindir) + '.ktest';
+def get_ktest(bindir, is_correctness_test = False, test_comp=False):
+    return get_testcase(bindir, is_correctness_test, test_comp) + '.ktest';
 
-def get_path_file(bindir):
-    return get_testcase(bindir) + '.path';
+def get_path_file(bindir, is_correctness_test = False, test_comp = False):
+    return get_testcase(bindir, is_correctness_test, test_comp) + '.path';
 
 def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, termination, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
@@ -331,15 +340,12 @@ def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, 
     pth = get_path_file(bindir)
     generate_graphml(pth, sources[0], prps, is32bit, is_correctness_wit, termination, saveto)
 
-def generate_test(bindir, sources, is32bit, is_correctness_test, saveto = None):
+def generate_tests(bindir, sources, is32bit, is_correctness_test):
     assert len(sources) == 1 and "Can not generate tests for more sources yet"
-    print('Generating {0} test: {1}'.format('correctness' if is_correctness_test else 'error', saveto))
-    if is_correctness_test:
-        generate_testcase(None, sources[0], is32bit, is_correctness_test, saveto)
-        return
 
-    pth = get_path_file(bindir)
-    generate_testcase(pth, sources[0], is32bit, is_correctness_test, saveto)
+    paths = get_testcases(bindir, is_correctness_test)
+    for pth in paths:
+        generate_testcase(pth, sources[0], is32bit, is_correctness_test)
 
 # do not remove working files after running
 save_files = False
@@ -524,10 +530,6 @@ def parse_command_line(env):
             options.witness_output = os.path.expanduser(arg)
             options.witness_output = os.path.abspath(options.witness_output)
             dbg('Witness will be stored to {0}'.format(arg))
-        elif opt == '--test':
-            options.test_output = os.path.expanduser(arg)
-            options.test_output = os.path.abspath(options.test_output)
-            dbg('Test will be stored to {0}'.format(arg))
         elif opt == '--bc':
             options.source_is_bc = True
             dbg('Given code is bytecode')
@@ -630,6 +632,9 @@ def initialize_verifier(opts):
         return SymbioticTool(opts)
     if opts.tool_name == 'klee':
         from symbiotic.tools.klee import SymbioticTool
+        return SymbioticTool(opts)
+    elif opts.tool_name == 'klee-testcomp':
+        from symbiotic.tools.klee_testcomp import SymbioticTool
         return SymbioticTool(opts)
     elif opts.tool_name == 'ceagle':
         from symbiotic.tools.ceagle import SymbioticTool
@@ -791,13 +796,13 @@ if __name__ == "__main__":
                                         opts.is32bit, False, opts.property.termination(),
                                         opts.witness_output)
             if test_comp:
-                generate_test(srcdir, sources, opts.is32bit, False, opts.test_output)
+                generate_tests(srcdir, sources, opts.is32bit, False)
         elif res == 'true' and not opts.nowitness:
             generate_counterexample(srcdir, sources, opts.property.getLTL(),
                                     opts.is32bit, True, opts.property.termination(),
                                     opts.witness_output)
         elif res == 'true' and test_comp:
-            generate_test(srcdir, sources, opts.is32bit, True, opts.test_output)
+            generate_tests(srcdir, sources, opts.is32bit, True)
 
     except Timeout:
         sys.stdout.flush()
