@@ -35,6 +35,7 @@ from symbiotic.environment import Environment
 from symbiotic.options import SymbioticOptions
 from symbiotic.property import get_property
 from symbiotic.witnesses.witnesses import GraphMLWriter
+from symbiotic.testsuits.testcases import TestCaseWriter
 from symbiotic.includepaths import IncludePathsSearcher
 from subprocess import call
 
@@ -140,6 +141,7 @@ where OPTS can be following:
     --statistics              Dump statistics about bitcode
     --working-dir-prefix      Where to create the temporary directory (defaults to /tmp)
     --sv-comp                 Shortcut for SV-COMP settings (malloc-never-fails, etc.)
+    --test-comp               Shortcut for Test-COMP settings
 
     One (and only one) of the sources must contain 'main' function
 """
@@ -150,6 +152,7 @@ no_integrity_check = False
 dump_env_only = False
 dump_env_cmd = False
 sv_comp = False
+test_comp = False
 
 def dump_paths(dump_as_cmd=False, fun = print_stdout):
     variables = ['PATH', 'LD_LIBRARY_PATH', 'C_INCLUDE_DIR']
@@ -285,6 +288,19 @@ def generate_graphml(path, source, prps, is32bit, is_correctness_wit, terminatio
         assert path is None
     gen.write(saveto)
 
+def generate_testcase(path, source, is32bit, is_correctness_test, saveto):
+    if saveto is None:
+        saveto = '{0}.xml'.format(os.path.basename(path))
+        saveto = os.path.abspath(saveto)
+
+    gen = TestCaseWriter(source, not is_correctness_test)
+    if is_correctness_test:
+        return
+        #gen.parseObjects(path, source)
+    else:
+        gen.parseError(path, source)
+    gen.write(saveto)
+
 def get_testcase(bindir):
     abd = os.path.abspath(bindir)
     for path in os.listdir('{0}/klee-last'.format(abd)):
@@ -307,6 +323,16 @@ def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, 
 
     pth = get_path_file(bindir)
     generate_graphml(pth, sources[0], prps, is32bit, is_correctness_wit, termination, saveto)
+
+def generate_test(bindir, sources, is32bit, is_correctness_test, saveto = None):
+    assert len(sources) == 1 and "Can not generate tests for more sources yet"
+    print('Generating {0} test: {1}'.format('correctness' if is_correctness_test else 'error', saveto))
+    if is_correctness_test:
+        generate_testcase(None, sources[0], is32bit, is_correctness_test, saveto)
+        return
+
+    pth = get_path_file(bindir)
+    generate_testcase(pth, sources[0], is32bit, is_correctness_test, saveto)
 
 # do not remove working files after running
 save_files = False
@@ -357,7 +383,8 @@ def parse_command_line(env):
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file=', 'overflow-config-file=',
                                     'statistics', 'working-dir-prefix=', 'sv-comp',
-                                    'overflow-with-clang', 'generate-ll'])
+                                    'test-comp', 'overflow-with-clang',
+                                    'generate-ll'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -369,6 +396,7 @@ def parse_command_line(env):
     global dump_env_cmd
     global no_integrity_check
     global sv_comp
+    global test_comp
 
     for opt, arg in opts:
         if opt == '--help':
@@ -398,6 +426,10 @@ def parse_command_line(env):
         elif opt == '--sv-comp':
             dbg('Using SV-COMP settings')
             sv_comp = True
+        elif opt == '--test-comp':
+            dbg('Using Test-COMP settings')
+            test_comp = True
+            options.test_comp = True
         elif opt == '--no-witness':
             dbg('Will not create a witness')
             options.nowitness = True
@@ -485,6 +517,10 @@ def parse_command_line(env):
             options.witness_output = os.path.expanduser(arg)
             options.witness_output = os.path.abspath(options.witness_output)
             dbg('Witness will be stored to {0}'.format(arg))
+        elif opt == '--test':
+            options.test_output = os.path.expanduser(arg)
+            options.test_output = os.path.abspath(options.test_output)
+            dbg('Test will be stored to {0}'.format(arg))
         elif opt == '--bc':
             options.source_is_bc = True
             dbg('Given code is bytecode')
@@ -626,6 +662,18 @@ def set_svcomp(opts):
 
     enable_debug('all')
 
+def set_testcomp(opts):
+    global no_integrity_check
+    no_integrity_check = True
+
+    opts.malloc_never_fails = True
+    opts.noslice = True
+    opts.explicit_symbolic = True
+    opts.nowitness = True
+    opts.search_include_paths = False
+
+    enable_debug('all')
+
 if __name__ == "__main__":
     # store time when we have started, so that we can
     # measure how long Symbiotic ran
@@ -638,6 +686,9 @@ if __name__ == "__main__":
 
     if sv_comp:
         set_svcomp(opts)
+
+    if test_comp:
+        set_testcomp(opts)
 
     if dump_env_only:
         tool = initialize_verifier(opts)
@@ -732,10 +783,15 @@ if __name__ == "__main__":
                 generate_counterexample(srcdir, sources, opts.property.getLTL(),
                                         opts.is32bit, False, opts.property.termination(),
                                         opts.witness_output)
+            if test_comp:
+                generate_test(srcdir, sources, opts.is32bit, False, opts.test_output)
         elif res == 'true' and not opts.nowitness:
             generate_counterexample(srcdir, sources, opts.property.getLTL(),
                                     opts.is32bit, True, opts.property.termination(),
                                     opts.witness_output)
+        elif res == 'true' and test_comp:
+            generate_test(srcdir, sources, opts.is32bit, True, opts.test_output)
+
     except Timeout:
         sys.stdout.flush()
         sys.stderr.flush()

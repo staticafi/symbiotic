@@ -144,7 +144,8 @@ class SymbioticTool(BaseTool):
         if not self._options.property.termination():
             passes.append('-remove-infinite-loops')
 
-        if not self._options.nowitness:
+        if not self._options.nowitness or \
+           self._options.test_comp:
             passes.append('-make-nondet')
             passes.append('-make-nondet-source={0}'.format(self._options.sources[0]))
 
