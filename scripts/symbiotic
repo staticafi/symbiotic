@@ -36,6 +36,7 @@ from symbiotic.options import SymbioticOptions
 from symbiotic.property import get_property
 from symbiotic.witnesses.witnesses import GraphMLWriter
 from symbiotic.testsuits.testcases import TestCaseWriter
+from symbiotic.testsuits.metadata import MetadataWriter
 from symbiotic.includepaths import IncludePathsSearcher
 from subprocess import call
 
@@ -293,13 +294,19 @@ def generate_testcase(path, source, is32bit, is_correctness_test, saveto):
         saveto = '{0}.xml'.format(os.path.basename(path))
         saveto = os.path.abspath(saveto)
 
+    savetomd = '{0}/metadata.xml'.format(os.path.dirname(saveto))
+    savetomd = os.path.abspath(savetomd)
+
     gen = TestCaseWriter(source, not is_correctness_test)
+    gen_md = MetadataWriter(source, is32bit)
+
     if is_correctness_test:
         return
         #gen.parseObjects(path, source)
     else:
         gen.parseError(path, source)
     gen.write(saveto)
+    gen_md.write(savetomd)
 
 def get_testcase(bindir):
     abd = os.path.abspath(bindir)
