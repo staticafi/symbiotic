@@ -721,6 +721,7 @@ if __name__ == "__main__":
             newres = symbiotic.replay_nonsliced(newpath)
 
             if res != newres:
+                dbg("Replayed result: {0}".format(newres))
                 res = 'cex not-confirmed'
 
         print('--------------------------------------------------------------------------------')
