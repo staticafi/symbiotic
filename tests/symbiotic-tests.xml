@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 1.4//EN" "http://www.sosy-lab.org/benchexec/benchmark-1.4.dtd">
+<benchmark tool="symbiotic" timelimit="20 s" memlimit="2 GB" cpuCores="1">
+
+<rundefinition name="reach">
+  <tasks name="reach-tests">
+    <includesfile>reach.set</includesfile>
+    <propertyfile>../properties/unreach-call.prp</propertyfile>
+  </tasks>
+  <tasks name="reach-tests-32bit">
+    <includesfile>reach.set</includesfile>
+    <propertyfile>../properties/unreach-call.prp</propertyfile>
+    <option name="--32"/>
+  </tasks>
+</rundefinition>
+
+<rundefinition name="memsafety">
+  <tasks name="memsafety-tests">
+    <includesfile>memsafety.set</includesfile>
+    <propertyfile>../properties/unmemsafety-call.prp</propertyfile>
+  </tasks>
+  <tasks name="memsafety-tests-32bit">
+    <includesfile>memsafety.set</includesfile>
+    <propertyfile>../properties/valid-memsafety.prp</propertyfile>
+    <option name="--32"/>
+  </tasks>
+</rundefinition>
+
+<rundefinition name="memcleanup">
+  <tasks name="memcleanup-tests">
+    <includesfile>memcleanup.set</includesfile>
+    <propertyfile>../properties/unmemcleanup-call.prp</propertyfile>
+  </tasks>
+  <tasks name="memcleanup-tests-32bit">
+    <includesfile>memcleanup.set</includesfile>
+    <propertyfile>../properties/valid-memcleanup.prp</propertyfile>
+    <option name="--32"/>
+  </tasks>
+</rundefinition>
+
+</benchmark>

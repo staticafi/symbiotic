@@ -1,3 +1,0 @@
-FALSE --prp=memsafety --malloc-never-fails double_free.c
-TRUE  --prp=memsafety --malloc-never-fails realloc-true.c
-TRUE  --prp=memsafety --malloc-never-fails global-init-regression-true-valid-memsafety.i
