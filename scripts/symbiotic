@@ -249,16 +249,24 @@ def set_environ(tool, opts):
         prepend('PATH', '{0}/dg/tools'.format(symbiotic_dir))
         prepend('PATH', '{0}/sbt-slicer/build-{1}/src'.format(symbiotic_dir, llvm_version))
         prepend('PATH', '{0}/sbt-instrumentation/build-{1}/src'.format(symbiotic_dir, llvm_version))
-        prepend('PATH', '{0}/klee/build-{1}/bin'.format(symbiotic_dir, llvm_version))
 
         prepend('LD_LIBRARY_PATH', '{0}/transforms/build-{1}/'.format(symbiotic_dir,llvm_version))
         prepend('LD_LIBRARY_PATH', '{0}/dg/build-{1}/lib'.format(symbiotic_dir, llvm_version))
         prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/build-{1}/analyses'.format(symbiotic_dir, llvm_version))
         prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/ra/build-{1}/'.format(symbiotic_dir, llvm_version))
         opts.instrumentation_files_path = '{0}/sbt-instrumentation/instrumentations/'.format(symbiotic_dir)
+
+        # tools
+        # FIXME: move to 'set_environment'
+        if tool.name().startswith('klee'):
+            prepend('PATH', '{0}/klee/build-{1}/bin'.format(symbiotic_dir, llvm_version))
+        elif tool.name() == 'nidhugg':
+            prepend('PATH', '{0}/nidhugg/build-{1}/src'.format(symbiotic_dir, llvm_version))
+        else:
+            print_stderr('Unknown tool for devel mode: {0}'.format(tool.name()),
+                         color='RED')
     else:
         opts.instrumentation_files_path = '{0}/share/sbt-instrumentation/'.format(llvm_prefix)
-
     # Get include paths again now when we have our clang in the path,
     # so that we have at least includes from our clang's instalation
     # (these has the lowest prefs., so just append them
@@ -625,6 +633,9 @@ def initialize_verifier(opts):
     elif opts.tool_name == 'seahorn':
         from symbiotic.tools.seahorn import SymbioticTool
         return SymbioticTool(opts)
+    elif opts.tool_name == 'nidhugg':
+        from symbiotic.tools.nidhugg import SymbioticTool
+        return SymbioticTool(opts)
     else:
         raise SymbioticException('Unknown verifier: {0}'.format(opts.tool_name))
 
@@ -709,7 +720,8 @@ if __name__ == "__main__":
 
         # FIXME: make tool specific
         srcdir = os.path.dirname(symbiotic.llvmfile)
-        if not opts.noslice and res and res.startswith('false'):
+        if tool.name().startswith('klee') and \
+            not opts.noslice and res and res.startswith('false'):
             print_stdout("Found {0}".format(res))
             print_stdout("Trying to confirm the error path")
             # replay the counterexample on non-sliced module
