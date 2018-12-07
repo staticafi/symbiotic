@@ -46,6 +46,8 @@ usage()
 	echo -e "llvm-version=ver   - use this version of llvm"
 	echo -e "build-type=TYPE    - set Release/Debug build"
 	echo -e "build-stp          - build and use STP in KLEE"
+	echo -e "build-klee         - build KLEE (default: yes)"
+	echo -e "build-nidhugg      - build nidhugg bug-finding tool (default: no)"
 	echo -e "archive            - create a zip file with symbiotic"
 	echo -e "full-archive       - create a zip file with symbiotic and add non-standard dependencies"
 	echo "" # new line
@@ -78,7 +80,6 @@ export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/share/pkgconfig:$PKG_CONFI
 
 FROM='0'
 NO_LLVM='0'
-BUILD_KLEE="yes"
 UPDATE=
 OPTS=
 LLVM_VERSION=`get_llvm_version`
@@ -88,6 +89,9 @@ WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
 BUILD_STP='no'
+
+BUILD_KLEE="yes"
+BUILD_NIDHUGG="no"
 
 check_z3() {
 	echo "#include <z3.h>" | gcc - -E &>/dev/null
@@ -146,6 +150,9 @@ while [ $# -gt 0 ]; do
 		;;
 		'no-klee')
 			BUILD_KLEE=no
+		;;
+		'build-nidhugg')
+			BUILD_NIDHUGG="yes"
 		;;
 		'update')
 			UPDATE=1
@@ -608,7 +615,6 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	popd; popd
 fi
 
-
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
@@ -693,6 +699,45 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 		$LLVM_PREFIX/lib32/klee/runtime/ \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
 
+	popd
+fi
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+######################################################################
+#   nidhugg
+######################################################################
+if [ $FROM -le 4  -a "$BUILD_NIDHUGG" = "yes" ]; then
+	if [ ! -d nidhugg ]; then
+		git_clone_or_pull "https://github.com/nidhugg/nidhugg"
+
+	fi
+
+	mkdir -p nidhugg/build-${LLVM_VERSION}
+	pushd nidhugg/build-${LLVM_VERSION}
+
+	if [ "x$BUILD_TYPE" = "xRelease" ]; then
+		NIDHUGG_OPTIONS=""
+	else
+		NIDHUGG_OPTIONS="--enable-asserts"
+	fi
+
+	if [ ! -f "config.h" ]; then
+
+		OLD_PATH="$PATH"
+		PATH="$ABS_SRCDIR/llvm-${LLVM_VERSION}/build/bin":$PATH
+
+		autoreconf --install ..
+		../configure --prefix="$LLVM_PREFIX" \
+			     $NIDHUGG_OPTIONS \
+		  || clean_and_exit 1 "git"
+
+		  PATH="$OLD_PATH"
+	fi
+
+	(build && make install) || exit 1
 	popd
 fi
 
@@ -944,6 +989,10 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 		$LLVM_PREFIX/lib/*.bc* \
 		$LLVM_PREFIX/lib32/*.bc*"
 fi
+if [ ${BUILD_NIDHUGG} = "yes" ];  then
+	LIBRARIES="$LLVM_PREFIX/bin/nidhugg"
+fi
+
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/"
 
 if [ "$BUILD_STP" = "yes" ]; then
