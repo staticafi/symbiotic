@@ -773,9 +773,10 @@ class Symbiotic(object):
         self._get_stats('After compilation ')
 
         # FIXME: make tool-specific
-        if not self.check_llvmfile(self.llvmfile, '-check-concurr'):
-            print('Unsupported call (probably pthread API or floating point stdlib functions)')
-            return report_results('unknown')
+        if not self._tool.name() == 'nidhugg':
+            if not self.check_llvmfile(self.llvmfile, '-check-concurr'):
+                print('Unsupported call (pthread API)')
+                return report_results('unknown')
 
         # link the files that we got on the command line
         # and that we are required to link in on any circumstances
