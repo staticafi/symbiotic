@@ -72,6 +72,8 @@ _PROP_SAT =          'sat'
 _PROP_MEMSAFETY =    'valid-memsafety'
 
 # possible run results (output of a tool)
+RESULT_DONE =               'done'
+"""tool terminated properly and true/false does not make sense"""
 RESULT_UNKNOWN =            'unknown'
 """tool could not find out an answer due to incompleteness"""
 RESULT_ERROR =              'ERROR' # or any other value not listed here
@@ -116,7 +118,8 @@ RESULT_LIST = [RESULT_TRUE_PROP, RESULT_UNKNOWN,
                RESULT_FALSE_MEMCLEANUP,
                RESULT_WITNESS_CONFIRMED,
                RESULT_SAT, RESULT_UNSAT,
-               RESULT_FALSE_OVERFLOW, RESULT_FALSE_DEADLOCK
+               RESULT_FALSE_OVERFLOW, RESULT_FALSE_DEADLOCK,
+               RESULT_DONE
                ]
 
 # Classification of results
