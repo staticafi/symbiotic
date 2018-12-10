@@ -351,8 +351,6 @@ def generate_tests(bindir, sources, is32bit, is_correctness_test):
         rm_tmp_dir(tmpdir, True)
         os.mkdir(tmpdir)
 
-    print tmpdir
-
     paths = get_testcases(bindir, is_correctness_test)
     for pth in paths:
         generate_testcase(pth, sources[0], is32bit, is_correctness_test)
