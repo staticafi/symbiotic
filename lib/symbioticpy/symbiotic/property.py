@@ -90,16 +90,24 @@ class PropertyTermination(Property):
     def termination(self):
         return True
 
+class PropertyErrorCall(Property):
+    def __init__(self, prpfile = None):
+        Property.__init__(self, prpfile)
+
+    def errorcall(self):
+        return True
 
 supported_ltl_properties = {
-    'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )' : 'REACHCALL',
-    'CHECK( init(main()), LTL(G valid-free) )'                 : 'MEMSAFETY',
-    'CHECK( init(main()), LTL(G valid-deref) )'                : 'MEMSAFETY',
-    'CHECK( init(main()), LTL(G valid-memtrack) )'             : 'MEMSAFETY',
-    'CHECK( init(main()), LTL(G valid-memcleanup) )'           : 'MEMCLEANUP',
-    'CHECK( init(main()), LTL(G ! overflow) )'                 : 'SIGNED-OVERFLOW',
-    'CHECK( init(main()), LTL(G def-behavior) )'               : 'UNDEF-BEHAVIOR',
-    'CHECK( init(main()), LTL(F end) )'                        : 'TERMINATION',
+    'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )'         : 'REACHCALL',
+    'CHECK( init(main()), LTL(G valid-free) )'                         : 'MEMSAFETY',
+    'CHECK( init(main()), LTL(G valid-deref) )'                        : 'MEMSAFETY',
+    'CHECK( init(main()), LTL(G valid-memtrack) )'                     : 'MEMSAFETY',
+    'CHECK( init(main()), LTL(G valid-memcleanup) )'                   : 'MEMCLEANUP',
+    'CHECK( init(main()), LTL(G ! overflow) )'                         : 'SIGNED-OVERFLOW',
+    'CHECK( init(main()), LTL(G def-behavior) )'                       : 'UNDEF-BEHAVIOR',
+    'CHECK( init(main()), LTL(F end) )'                                : 'TERMINATION',
+    'COVER( init(main()), FQL(COVER EDGES(@DECISIONEDGE)) )'           : 'COVERAGE',
+    'COVER( init(main()), FQL(COVER EDGES(@CALL(__VERIFIER_error))) )' : 'COVER-ERROR',
 }
 
 supported_properties = {
@@ -114,6 +122,8 @@ supported_properties = {
     'memsafety'                                                : 'MEMSAFETY',
     'memcleanup'                                               : 'MEMCLEANUP',
     'termination'                                              : 'TERMINATION',
+    'coverage'                                                 : 'COVERAGE',
+    'cover-error'                                              : 'COVER-ERROR',
 }
 
 def _get_prp(prp):
@@ -201,6 +211,16 @@ def get_property(symbiotic_dir, prp):
         prop = PropertyTermination(prpfile)
         if prpfile is None:
             prop._prpfile = abspath(join(symbiotic_dir, 'properties/termination.prp'))
+
+    elif 'COVERAGE' in prps:
+        prop = PropertyErrorCall(prpfile)
+        if prpfile is None:
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyCoverage.prp'))
+
+    elif 'COVER-ERROR' in prps:
+        prop = PropertyErrorCall(prpfile)
+        if prpfile is None:
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyCoverError.prp'))
 
     if prop:
         prop._ltl = ltl_prps
