@@ -290,7 +290,7 @@ def generate_graphml(path, source, prps, is32bit, is_correctness_wit, terminatio
     gen.write(saveto)
 
 def generate_testcase(path, source, is32bit, is_correctness_test):
-    saveto = '{0}.xml'.format(os.path.basename(path))
+    saveto = 'test-suite/{0}.xml'.format(os.path.basename(path))
     saveto = os.path.abspath(saveto)
 
     print('Generating {0} test: {1}'.format('correctness' if is_correctness_test else 'error', saveto))
@@ -342,6 +342,16 @@ def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, 
 
 def generate_tests(bindir, sources, is32bit, is_correctness_test):
     assert len(sources) == 1 and "Can not generate tests for more sources yet"
+
+    abd = os.path.abspath(bindir)
+    tmpdir = '{0}/test-suite'.format(abd)
+    try:
+        os.mkdir(tmpdir)
+    except OSError:
+        rm_tmp_dir(tmpdir, True)
+        os.mkdir(tmpdir)
+
+    print tmpdir
 
     paths = get_testcases(bindir, is_correctness_test)
     for pth in paths:
