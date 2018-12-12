@@ -442,7 +442,7 @@ class Symbiotic(object):
             crit, opts = '__assert_fail,__VERIFIER_error', []
 
         output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['sbt-slicer', '-c', crit] + opts
+        cmd = self.options.slicer_cmd + ['-c', crit] + opts
         if self.options.slicer_pta in ['fi', 'fs']:
             cmd.append('-pta')
             cmd.append(self.options.slicer_pta)
