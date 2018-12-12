@@ -116,6 +116,7 @@ where OPTS can be following:
     --cppflags=flags          Append extra CFLAGS and CPPFLAGS to use while compiling,
                               the environment CFLAGS and CPPFLAGS are used too
     --slicer-params=STR       Pass parameters directly to slicer
+    --slicer-cmd=STR          Command to run slicer, default: sbt-slicer
     --verifier-params=STR     Pass parameters directly to the verifier
     --save-files              Do not remove working files after running.
                               The files will be stored in the symbiotic_files directory.
@@ -376,7 +377,7 @@ def parse_command_line():
                                     'pta=', 'no-libc', 'slicing-criterion=',
                                     'cflags=', 'cppflags=', 'link=', 'verifier=',
                                     'no-link-undefined', 'repeat-slicing=',
-                                    'slicer-params=', 'verifier-params=',
+                                    'slicer-params=', 'slicer-cmd=', 'verifier-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
                                     'save-files', 'version-short', 'no-posix',
                                     'no-kernel', 'no-verifier-funs', 'no-witness',
@@ -522,6 +523,8 @@ def parse_command_line():
             options.CPPFLAGS += arg.split()
         elif opt == '--slicer-params':
             options.slicer_params = arg.split()
+        elif opt == '--slicer-cmd':
+            options.slicer_cmd = arg.split()
         elif opt == '--verifier-params':
             options.tool_params = arg.split()
         elif opt == '--link':

@@ -47,6 +47,7 @@ class SymbioticOptions(object):
         self.link_files = []
         # additional parameters that can be passed right
         # to the slicer and symbolic executor
+        self.slicer_cmd = ['sbt-slicer']
         self.slicer_params = []
         self.tool_params = []
         # these llvm passes will not be run in the optimization phase
