@@ -115,6 +115,16 @@ static const char *leave_calls[] = {
   "_Znwj",
   "_Znam",
   "_Znwm",
+// pthread stuff
+  "pthread_mutex_lock",
+  "pthread_mutex_unlock",
+  "pthread_mutex_init",
+  "pthread_create",
+  "pthread_join",
+  "pthread_cond_init",
+  "pthread_cond_wait",
+  "pthread_cond_signal",
+  "pthread_cond_broadcast",
 // misc
   "kzalloc",
   nullptr
