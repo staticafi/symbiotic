@@ -167,14 +167,14 @@ def dump_paths(dump_as_cmd=False, fun = print_stdout):
             else:
                 fun('{0}="{1}"'.format(v, os.environ[v]))
 
-def perform_binaries_check():
+def perform_binaries_check(slicer):
     try:
         from benchexec.util import find_executable
     except ImportError:
         from symbiotic.benchexec.util import find_executable
 
     executables = ['clang', 'opt', 'llvm-link', 'llvm-nm',
-                   'sbt-instr', 'sbt-slicer']
+                   'sbt-instr'] + [slicer]
     for exe in executables:
         exe_path = find_executable(exe)
         if not os.path.isfile(exe_path):
@@ -247,7 +247,7 @@ def set_environ(tool, opts):
 
     if opts.devel_mode:
         prepend('PATH', '{0}/llvm-{1}/build/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
-        prepend('PATH', '{0}/dg/tools'.format(symbiotic_dir))
+        prepend('PATH', '{0}/dg/build-{1}/tools'.format(symbiotic_dir, llvm_version))
         prepend('PATH', '{0}/sbt-slicer/build-{1}/src'.format(symbiotic_dir, llvm_version))
         prepend('PATH', '{0}/sbt-instrumentation/build-{1}/src'.format(symbiotic_dir, llvm_version))
 
@@ -283,7 +283,7 @@ def set_environ(tool, opts):
     dbg('Symbiotic dir: {0}'.format(symbiotic_dir))
     dump_paths(fun=dbg)
 
-    perform_binaries_check()
+    perform_binaries_check(opts.slicer_cmd[0])
     perform_libraries_check()
 
     return symbiotic_dir
