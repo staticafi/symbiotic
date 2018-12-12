@@ -20,6 +20,7 @@ limitations under the License.
 """
 from os.path import dirname, abspath, isfile
 from symbiotic.utils.utils import print_stdout
+from symbiotic.utils.process import runcmd
 
 try:
     from symbiotic.versions import llvm_version
@@ -126,6 +127,14 @@ class SymbioticTool(BaseTool):
 
         return passes
 
+
+    def actions_after_slicing(self, symbiotic):
+        llvmfile=symbiotic.llvmfile
+        newfile='{0}-unrolled.bc'.format(llvmfile[:-3])
+        runcmd(['nidhugg', '-unroll=5', llvmfile,
+                '-transform', newfile])
+        symbiotic.llvmfile = newfile
+
     def instrumentation_options(self):
         """
         Returns a triple (c, l, x) where c is the configuration
@@ -196,7 +205,7 @@ class SymbioticTool(BaseTool):
         """
 
         # for now use 5
-        cmd = [executable, '-unroll', '5', '-sc']
+        cmd = [executable, '-sc']
         return cmd + options + tasks
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):

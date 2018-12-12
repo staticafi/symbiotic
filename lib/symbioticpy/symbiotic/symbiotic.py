@@ -851,6 +851,9 @@ class Symbiotic(object):
                     self.options.final_output, e.message)
                 raise SymbioticException(msg)
 
+        if hasattr(self._tool, 'actions_after_slicing'):
+            self._tool.actions_after_slicing(self)
+
         #################### #################### ###################
         # VERIFICATION
         #  - run the verification backend
