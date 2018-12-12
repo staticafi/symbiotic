@@ -612,6 +612,10 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	fi
 
 	build || clean_and_exit 1
+	# copy the libraries to LLVM build, there is a "bug" in llvm-config
+	# that requires them
+	cp *.a ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib
+
 	popd; popd
 fi
 
