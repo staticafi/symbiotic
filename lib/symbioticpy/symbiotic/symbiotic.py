@@ -626,13 +626,15 @@ class Symbiotic(object):
                 # FIXME: this is a hack, remove once we have better CD algorithm
                 self.options.disabled_optimizations = ['-instcombine']
 
-            if self.options.property.memsafety() and \
-               required_version(get_clang_version(), "4.0.1"):
-                opts.append('-Xclang')
-                opts.append('-force-lifetime-markers')
-                # these optimizations mess up with scopes,
-                # FIXME: find a better solution
-                self.options.disabled_optimizations = ['-licm','-gvn','-early-cse']
+            if self.options.property.memsafety():
+                if required_version(get_clang_version(), "4.0.1"):
+                    opts.append('-Xclang')
+                    opts.append('-force-lifetime-markers')
+                    # these optimizations mess up with scopes,
+                    # FIXME: find a better solution
+                    self.options.disabled_optimizations = ['-licm','-gvn','-early-cse']
+                else:
+                    print_stdout('Clang does not support lifetime markers, scopes are not instrumented', color="BROWN")
 
             llvms = self._compile_to_llvm(source, opts=opts)
             llvmsrc.append(llvms)
