@@ -717,7 +717,7 @@ class Symbiotic(object):
             if kf:
                 raise SymbioticException('Code contains KLEE functions, but the verifier is not KLEE ({0})'.format(' '.join(kf)))
 
-        # tool's specific preprocessing steps
+        # tool's specific preprocessing steps before verification
         self.postprocess_llvm()
 
         # for once, delete all undefined functions before the verification
@@ -775,8 +775,19 @@ class Symbiotic(object):
 
         self._get_stats('After compilation ')
 
+        if hasattr(self._tool, 'passes_after_compilation'):
+            self.run_opt(self._tool.passes_after_compilation())
+
         if hasattr(self._tool, 'actions_after_compilation'):
             self._tool.actions_after_compilation(self)
+
+        #################### #################### ###################
+        # PREPROCESSING before instrumentation
+        #  - prepare the code: remove calls to error functions if
+        #    we do not aim for their reachability and link known
+        #    functions that should be unconditionally linked to the
+        #    module
+        #################### #################### ###################
 
         # link the files that we got on the command line
         # and that we are required to link in on any circumstances
@@ -787,13 +798,11 @@ class Symbiotic(object):
            self.options.property.undefinedness() or \
            self.options.property.signedoverflow() or \
            self.options.property.termination():
-            # remove the original calls to __VERIFIER_error
+            # remove the original calls to __VERIFIER_error/__assert_fail
             passes.append('-remove-error-calls')
         if self.options.property.memcleanup():
             passes.append('-remove-error-calls')
             passes.append('-remove-error-calls-use-exit')
-        if hasattr(self._tool, 'passes_after_compilation'):
-            passes += self._tool.passes_after_compilation()
 
         if self.options.property.signedoverflow() and \
            not self.options.overflow_with_clang:
@@ -802,20 +811,23 @@ class Symbiotic(object):
 
         self.run_opt(passes)
 
-        if hasattr(self._tool, 'actions_after_compilation'):
-            self._tool.actions_after_compilation(self)
-
         #################### #################### ###################
         # INSTRUMENTATION
         #  - now instrument the code according to the given property
         #################### #################### ###################
+
         self.instrument()
 
         if hasattr(self._tool, 'passes_after_instrumentation'):
             passes = self._tool.passes_after_instrumentation()
             self.run_opt(passes)
 
-        # link with the rest of libraries if needed (klee-libc)
+        #################### #################### ###################
+        # POSTPROCESSING after instrumentation
+        #  - link functions to the instrumented module
+        #################### #################### ###################
+
+        # link with the rest of libraries if needed
         self.link()
 
         # link undefined (no-op when prepare is turned off)
@@ -826,12 +838,13 @@ class Symbiotic(object):
         # then link, and then slice again?
         self.link_undefined()
 
-        self.nonsliced_llvmfile = self.llvmfile
 
         #################### #################### ###################
         # SLICING
         #  - slice the code w.r.t error sites
         #################### #################### ###################
+        self.nonsliced_llvmfile = self.llvmfile
+
         if not self.options.noslice and \
            not self.options.property.termination():
             self.perform_slicing()
@@ -839,6 +852,13 @@ class Symbiotic(object):
         # start a new time era
         restart_counting_time()
 
+        if hasattr(self._tool, 'actions_after_slicing'):
+            self._tool.actions_after_slicing(self)
+
+        #################### #################### ###################
+        # POSTPROCESSING after slicing
+        #  - slice the code w.r.t error sites
+        #################### #################### ###################
         self.postprocessing()
 
         if not self.options.final_output is None:
@@ -851,19 +871,14 @@ class Symbiotic(object):
                     self.options.final_output, e.message)
                 raise SymbioticException(msg)
 
-        if hasattr(self._tool, 'actions_after_slicing'):
-            self._tool.actions_after_slicing(self)
-
         #################### #################### ###################
         # VERIFICATION
         #  - run the verification backend
         #################### #################### ###################
         self._get_stats('Before verification ')
 
-        # FIXME: move these checks to tool specific code
-        if self._tool.name() == 'klee' and not self.check_llvmfile(self.llvmfile):
-            dbg('Unsupported call (probably floating handling)')
-            return 'unsupported call'
+        if hasattr(self._tool, 'actions_before_verification'):
+            self._tool.actions_before_verification(self)
 
         if not self.options.no_verification:
             print_stdout('INFO: Starting verification', color='WHITE')
