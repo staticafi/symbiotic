@@ -127,7 +127,6 @@ class SymbioticTool(BaseTool):
 
         return passes
 
-
     def actions_after_slicing(self, symbiotic):
         llvmfile=symbiotic.llvmfile
         newfile='{0}-unrolled.bc'.format(llvmfile[:-3])

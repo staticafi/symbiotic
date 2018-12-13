@@ -164,6 +164,11 @@ class SymbioticTool(BaseTool):
 
         return passes
 
+    def actions_after_compilation(self, symbiotic):
+        if not symbiotic.check_llvmfile(symbiotic.llvmfile, '-check-concurr'):
+            from symbiotic.exceptions import SymbioticExceptionalResult as Result
+            raise Result('unknown (unsupported call (pthread API)')
+
     def passes_after_slicing(self):
         """
         Prepare the bitcode for verification after slicing:
