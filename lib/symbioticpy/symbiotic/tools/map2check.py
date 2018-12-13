@@ -17,6 +17,11 @@ class SymbioticTool(Map2CheckTool):
     def llvm_version(self):
         return '3.8.1'
 
+    def actions_after_compilation(self, symbiotic):
+        if not symbiotic.check_llvmfile(symbiotic.llvmfile, '-check-concurr'):
+            from symbiotic.exceptions import SymbioticExceptionalResult as Result
+            raise Result('unknown (unsupported call (pthread API)')
+
     def slicer_options(self):
         """
         Returns tuple (c, opts) where c is the slicing

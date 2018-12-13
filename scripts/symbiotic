@@ -30,7 +30,7 @@ sys.path.append(os.path.abspath(pth))
 from symbiotic.utils import err, dbg, enable_debug
 from symbiotic.utils.utils import print_stdout, print_stderr, get_symbiotic_dir, process_grep
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
-from symbiotic import SymbioticException, Symbiotic, report_results
+from symbiotic import SymbioticException, Symbiotic
 from symbiotic.options import SymbioticOptions
 from symbiotic.property import get_property
 from symbiotic.witnesses.witnesses import GraphMLWriter
@@ -741,7 +741,7 @@ if __name__ == "__main__":
 
         print('--------------------------------------------------------------------------------')
 
-        report_results(res or "no result")
+        symbiotic.report_results(res or "no result")
 
         # FIXME: make tool specific
         if res is None or not tool.name().startswith('klee'):

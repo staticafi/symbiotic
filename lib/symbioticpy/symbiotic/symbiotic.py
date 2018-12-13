@@ -9,7 +9,7 @@ from . utils import err, dbg, enable_debug, print_elapsed_time, restart_counting
 from . utils.process import ProcessRunner, runcmd
 from . utils.watch import ProcessWatch, DbgWatch
 from . utils.utils import print_stdout, print_stderr, get_symbiotic_dir, get_clang_version, required_version
-from . exceptions import SymbioticException
+from . exceptions import SymbioticException, SymbioticExceptionalResult
 
 class PrepareWatch(ProcessWatch):
     def __init__(self, lines=100):
@@ -105,30 +105,6 @@ class ToolWatch(ProcessWatch):
             dbg(line.decode('utf-8'), 'all', print_nl=False,
                 prefix='', color=None)
 
-
-def report_results(res):
-    dbg(res)
-    color = 'BROWN'
-
-    if res.startswith('false'):
-        color = 'RED'
-        print_stdout('Error found.', color=color)
-    elif res == 'true':
-        color = 'GREEN'
-        print_stdout('No error found.', color=color)
-    elif res.startswith('error') or\
-            res.startswith('ERROR'):
-        color = 'RED'
-        print_stdout('Failure!', color=color)
-
-    sys.stdout.flush()
-    print_stdout('RESULT: ', print_nl=False)
-    print_stdout(res, color=color)
-    sys.stdout.flush()
-
-    return res
-
-
 def get_optlist_before(optlevel):
     from . optimizations import optimizations
     lst = []
@@ -161,7 +137,6 @@ def get_optlist_after(optlevel):
                 lst += optimizations[o]
 
     return lst
-
 
 class Symbiotic(object):
     """
@@ -260,6 +235,31 @@ class Symbiotic(object):
         except SymbioticException:
             # not fatal, continue working
             dbg('Failed getting statistics')
+
+    def report_results(self, res):
+        """
+        Report result to the user and terminate analysis
+        """
+        dbg(res)
+        color = 'BROWN'
+
+        if res.startswith('false'):
+            color = 'RED'
+            print_stdout('Error found.', color=color)
+        elif res == 'true':
+            color = 'GREEN'
+            print_stdout('No error found.', color=color)
+        elif res.startswith('error') or\
+                res.startswith('ERROR'):
+            color = 'RED'
+            print_stdout('Failure!', color=color)
+
+        sys.stdout.flush()
+        print_stdout('RESULT: ', print_nl=False)
+        print_stdout(res, color=color)
+        sys.stdout.flush()
+
+        return res
 
     def _instrument(self):
         if not hasattr(self._tool, 'instrumentation_options'):
@@ -608,6 +608,9 @@ class Symbiotic(object):
             self.kill()
             print('Interrupted...')
             return 'interrupted'
+        except SymbioticExceptionalResult as res:
+            # we got result from some exceptional case
+            return self.report_results(str(res))
 
     def _compile_sources(self):
         llvmsrc = []
@@ -772,11 +775,8 @@ class Symbiotic(object):
 
         self._get_stats('After compilation ')
 
-        # FIXME: make tool-specific
-        if not self._tool.name() == 'nidhugg':
-            if not self.check_llvmfile(self.llvmfile, '-check-concurr'):
-                print('Unsupported call (pthread API)')
-                return report_results('unknown')
+        if hasattr(self._tool, 'actions_after_compilation'):
+            self._tool.actions_after_compilation(self)
 
         # link the files that we got on the command line
         # and that we are required to link in on any circumstances
