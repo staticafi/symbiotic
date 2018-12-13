@@ -99,9 +99,6 @@ class SymbioticTool(BaseTool):
         if not self._options.property.termination():
             passes.append('-remove-infinite-loops')
 
-        if not self._options.noprepare:
-            passes.append('-prepare')
-
         if self._options.property.undefinedness() or \
            self._options.property.signedoverflow():
             passes.append('-replace-ubsan')

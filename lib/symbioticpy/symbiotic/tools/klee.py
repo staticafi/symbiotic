@@ -126,10 +126,14 @@ class SymbioticTool(KleeBase):
         return passes
 
     def actions_after_compilation(self, symbiotic):
+        if not symbiotic.check_llvmfile(symbiotic.llvmfile, '-check-concurr'):
+            from symbiotic.exceptions import SymbioticExceptionalResult as Result
+            raise Result('unknown (unsupported call (pthread API)')
+
+        # XXX: is this needed?
         if symbiotic.options.property.signedoverflow() and \
            not symbiotic.options.overflow_with_clang:
             symbiotic.link_undefined()
-
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
