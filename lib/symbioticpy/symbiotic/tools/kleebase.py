@@ -166,7 +166,6 @@ class SymbioticTool(BaseTool):
 
     def actions_after_compilation(self, symbiotic):
         if not symbiotic.check_llvmfile(symbiotic.llvmfile, '-check-concurr'):
-            dbg('Unsupported call (pthread API)')
             from symbiotic.exceptions import SymbioticExceptionalResult as Result
             raise Result('unknown (unsupported call (pthread API)')
 
