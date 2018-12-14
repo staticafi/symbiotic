@@ -73,6 +73,14 @@ class SymbioticTool(BaseTool):
         """
         return llvm_version
 
+    def set_environment(self, env, opts):
+        """
+        Set environment for the tool
+        """
+        if opts.devel_mode:
+            env.prepend('PATH', '{0}/nidhugg/build-{1}/src'.\
+                        format(env.symbiotic_dir, llvm_version))
+
     def compilation_options(self):
         """
         List of compilation options specific for this tool
