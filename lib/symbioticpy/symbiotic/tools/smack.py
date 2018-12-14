@@ -47,12 +47,13 @@ class SymbioticTool(SmackTool):
 
         return (self._options.slicing_criterion,[])
 
-    def set_environment(self, symbiotic_dir, opts):
+    def set_environment(self, env, opts):
         """
         Set environment for the tool
         """
-        # do not link any functions
-        opts.linkundef = []
+        if opts.devel_mode:
+            env.prepend('PATH', '{0}/smack'.\
+                        format(env.symbiotic_dir))
 
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
