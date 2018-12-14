@@ -17,29 +17,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import os
-import re
 
 try:
     import benchexec.util as util
     import benchexec.result as result
-    from benchexec.tools.template import  BaseTool
+    from benchexec.tools.template import BaseTool
 except ImportError:
     # fall-back solution (at least for now)
     import symbiotic.benchexec.util as util
     import symbiotic.benchexec.result as result
-    from symbiotic.benchexec.tools.template import  BaseTool
+    from symbiotic.benchexec.tools.template import BaseTool
+
+import os
+import re
 
 class Tool(BaseTool):
 
     REQUIRED_PATHS = [
-        "boogie",
-        "corral",
-        "llvm",
-        "lockpwn",
-        "smack",
-        "smack.sh"
-    ]
+                  "boogie",
+                  "corral",
+                  "llvm",
+                  "lockpwn",
+                  "smack",
+                  "smack.sh"
+                  ]
 
     def executable(self):
         """
@@ -60,7 +61,7 @@ class Tool(BaseTool):
         Sets the name for SMACK, which gets displayed in the "Tool" row in
         BenchExec table headers.
         """
-        return 'SMACK+Corral'
+        return 'SMACK'
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
@@ -78,19 +79,22 @@ class Tool(BaseTool):
         """
         splitout = "\n".join(output)
         if 'SMACK found no errors' in splitout:
-            return result.RESULT_TRUE_PROP
+          return result.RESULT_TRUE_PROP
         errmsg = re.search(r'SMACK found an error(:\s+([^\.]+))?\.', splitout)
         if errmsg:
-            errtype = errmsg.group(2)
-            if errtype:
-                if 'invalid pointer dereference' == errtype:
-                    return result.RESULT_FALSE_DEREF
-                elif 'invalid memory deallocation' == errtype:
-                    return result.RESULT_FALSE_FREE
-                elif 'memory leak' == errtype:
-                    return result.RESULT_FALSE_MEMTRACK
-                elif 'signed integer overflow' == errtype:
-                    return result.RESULT_FALSE_OVERFLOW
-            else:
-                return result.RESULT_FALSE_REACH
+          errtype = errmsg.group(2)
+          if errtype:
+            if 'invalid pointer dereference' == errtype:
+              return result.RESULT_FALSE_DEREF
+            elif 'invalid memory deallocation' == errtype:
+              return result.RESULT_FALSE_FREE
+            elif 'memory leak' == errtype:
+              return result.RESULT_FALSE_MEMTRACK
+            elif 'memory cleanup' == errtype:
+              return result.RESULT_FALSE_MEMCLEANUP
+            elif 'integer overflow' == errtype:
+              return result.RESULT_FALSE_OVERFLOW
+          else:
+            return result.RESULT_FALSE_REACH
         return result.RESULT_UNKNOWN
+

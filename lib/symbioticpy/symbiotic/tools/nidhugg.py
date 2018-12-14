@@ -79,7 +79,7 @@ class SymbioticTool(BaseTool):
         """
         if opts.devel_mode:
             env.prepend('PATH', '{0}/nidhugg/build-{1}/src'.\
-                        format(env.symbiotic_dir, llvm_version))
+                        format(env.symbiotic_dir, self.llvm_version()))
 
     def compilation_options(self):
         """
