@@ -31,6 +31,7 @@ from symbiotic.utils import err, dbg, enable_debug
 from symbiotic.utils.utils import print_stdout, print_stderr, get_symbiotic_dir, process_grep
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
 from symbiotic import SymbioticException, Symbiotic
+from symbiotic.environment import Environment
 from symbiotic.options import SymbioticOptions
 from symbiotic.property import get_property
 from symbiotic.witnesses.witnesses import GraphMLWriter
@@ -167,14 +168,14 @@ def dump_paths(dump_as_cmd=False, fun = print_stdout):
             else:
                 fun('{0}="{1}"'.format(v, os.environ[v]))
 
-def perform_binaries_check(slicer):
+def perform_binaries_check(additional):
     try:
         from benchexec.util import find_executable
     except ImportError:
         from symbiotic.benchexec.util import find_executable
 
     executables = ['clang', 'opt', 'llvm-link', 'llvm-nm',
-                   'sbt-instr'] + [slicer]
+                   'sbt-instr'] + additional
     for exe in executables:
         exe_path = find_executable(exe)
         if not os.path.isfile(exe_path):
@@ -202,70 +203,42 @@ def perform_libraries_check():
         if not _find_library(lib):
             err("Cannot find library '{0}'".format(lib))
 
-def set_environ(tool, opts):
-    def prepend(env, what):
-        if env in os.environ:
-            newenv = '{0}:{1}'.format(what, os.environ[env])
-        else:
-            newenv = what
-
-        os.environ[env] = newenv
-
-    def append(env, what):
-        if env in os.environ:
-            newenv = '{0}:{1}'.format(os.environ[env], what)
-        else:
-            newenv = what
-
-        os.environ[env] = newenv
-
+def set_environ(tool, env, opts):
     if opts.search_include_paths:
         additional_include_paths = IncludePathsSearcher().get()
         for p in additional_include_paths:
-            prepend('C_INCLUDE_DIR', p)
-
-    symbiotic_dir = get_symbiotic_dir()
+            env.prepend('C_INCLUDE_DIR', p)
 
     # check whether we are in distribution directory or in the developement directory
-    if os.path.isfile('{0}/build.sh'.format(symbiotic_dir)):
+    if os.path.isfile('{0}/build.sh'.format(env.symbiotic_dir)):
         opts.devel_mode = True
     else:
         opts.devel_mode = False
 
     llvm_version = tool.llvm_version()
-    llvm_prefix = '{0}/llvm-{1}'.format(symbiotic_dir, llvm_version)
+    llvm_prefix = '{0}/llvm-{1}'.format(env.symbiotic_dir, llvm_version)
 
     if not os.path.isdir(llvm_prefix):
         err("Directory with LLVM binaries does not exist: '{0}'".format(llvm_prefix))
 
-    prepend('LD_LIBRARY_PATH', '{0}/lib'.format(symbiotic_dir))
-    prepend('LD_LIBRARY_PATH', '{0}/lib'.format(llvm_prefix))
+    env.prepend('LD_LIBRARY_PATH', '{0}/lib'.format(env.symbiotic_dir))
+    env.prepend('LD_LIBRARY_PATH', '{0}/lib'.format(llvm_prefix))
 
-    prepend('C_INCLUDE_DIR', '{0}/include'.format(symbiotic_dir))
-    prepend('C_INCLUDE_DIR', '{0}/include'.format(llvm_prefix))
-    prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
+    env.prepend('C_INCLUDE_DIR', '{0}/include'.format(env.symbiotic_dir))
+    env.prepend('C_INCLUDE_DIR', '{0}/include'.format(llvm_prefix))
+    env.prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(env.symbiotic_dir, llvm_version))
 
     if opts.devel_mode:
-        prepend('PATH', '{0}/llvm-{1}/build/bin:{0}/bin'.format(symbiotic_dir, llvm_version))
-        prepend('PATH', '{0}/dg/build-{1}/tools'.format(symbiotic_dir, llvm_version))
-        prepend('PATH', '{0}/sbt-slicer/build-{1}/src'.format(symbiotic_dir, llvm_version))
-        prepend('PATH', '{0}/sbt-instrumentation/build-{1}/src'.format(symbiotic_dir, llvm_version))
+        env.prepend('PATH', '{0}/llvm-{1}/build/bin:{0}/bin'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('PATH', '{0}/dg/build-{1}/tools'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('PATH', '{0}/sbt-slicer/build-{1}/src'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('PATH', '{0}/sbt-instrumentation/build-{1}/src'.format(env.symbiotic_dir, llvm_version))
 
-        prepend('LD_LIBRARY_PATH', '{0}/transforms/build-{1}/'.format(symbiotic_dir,llvm_version))
-        prepend('LD_LIBRARY_PATH', '{0}/dg/build-{1}/lib'.format(symbiotic_dir, llvm_version))
-        prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/build-{1}/analyses'.format(symbiotic_dir, llvm_version))
-        prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/ra/build-{1}/'.format(symbiotic_dir, llvm_version))
-        opts.instrumentation_files_path = '{0}/sbt-instrumentation/instrumentations/'.format(symbiotic_dir)
-
-        # tools
-        # FIXME: move to 'set_environment'
-        if tool.name().startswith('klee'):
-            prepend('PATH', '{0}/klee/build-{1}/bin'.format(symbiotic_dir, llvm_version))
-        elif tool.name() == 'nidhugg':
-            prepend('PATH', '{0}/nidhugg/build-{1}/src'.format(symbiotic_dir, llvm_version))
-        else:
-            print_stderr('Unknown tool for devel mode: {0}'.format(tool.name()),
-                         color='RED')
+        env.prepend('LD_LIBRARY_PATH', '{0}/transforms/build-{1}/'.format(env.symbiotic_dir,llvm_version))
+        env.prepend('LD_LIBRARY_PATH', '{0}/dg/build-{1}/lib'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/build-{1}/analyses'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/ra/build-{1}/'.format(env.symbiotic_dir, llvm_version))
+        opts.instrumentation_files_path = '{0}/sbt-instrumentation/instrumentations/'.format(env.symbiotic_dir)
     else:
         opts.instrumentation_files_path = '{0}/share/sbt-instrumentation/'.format(llvm_prefix)
     # Get include paths again now when we have our clang in the path,
@@ -274,19 +247,16 @@ def set_environ(tool, opts):
     if opts.search_include_paths:
         additional_include_paths = IncludePathsSearcher().get()
         for p in additional_include_paths:
-            append('C_INCLUDE_DIR', p)
+            env.append('C_INCLUDE_DIR', p)
 
     # let the tool set its specific environment
     if hasattr(tool, 'set_environment'):
-        tool.set_environment(symbiotic_dir, opts)
+        tool.set_environment(env, opts)
 
-    dbg('Symbiotic dir: {0}'.format(symbiotic_dir))
     dump_paths(fun=dbg)
 
-    perform_binaries_check(opts.slicer_cmd[0])
+    perform_binaries_check([opts.slicer_cmd[0]] + [tool.executable()])
     perform_libraries_check()
-
-    return symbiotic_dir
 
 def parse_environ(opts):
     """
@@ -364,8 +334,8 @@ def print_short_vers():
 def print_shortest_vers():
     print('{0}-{1}'.format(VERSION, versions['symbiotic'][:8]))
 
-def parse_command_line():
-    options = SymbioticOptions()
+def parse_command_line(env):
+    options = SymbioticOptions(env)
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], '',
@@ -474,7 +444,7 @@ def parse_command_line():
                     break
         elif opt == '--prp':
             try:
-                options.property = get_property(options.symbiotic_dir, arg)
+                options.property = get_property(env.symbiotic_dir, arg)
                 if options.property is None:
                     err('Could not derive the right property')
             except SymbioticException as e:
@@ -657,7 +627,10 @@ if __name__ == "__main__":
     # measure how long Symbiotic ran
     start_time = time()
 
-    opts, args = parse_command_line()
+    environment = Environment(get_symbiotic_dir())
+    dbg('Symbiotic dir: {0}'.format(environment.symbiotic_dir))
+
+    opts, args = parse_command_line(environment)
 
     if sv_comp:
         set_svcomp(opts)
@@ -665,7 +638,7 @@ if __name__ == "__main__":
     if dump_env_only:
         tool = initialize_verifier(opts)
         parse_environ(opts)
-        set_environ(tool, opts)
+        set_environ(tool, environment, opts)
         dump_paths(dump_env_cmd)
         sys.exit(0)
 
@@ -688,7 +661,7 @@ if __name__ == "__main__":
         symbiotic = None
 
         # set environment. That is set PATH and LD_LIBRARY_PATH and so on
-        symbiotic_dir = set_environ(tool, opts)
+        set_environ(tool, environment, opts)
         # this calls the tools, so it must be after setting the environ
         if not no_integrity_check:
             from symbiotic.integritycheck import IntegrityChecker
@@ -706,13 +679,13 @@ if __name__ == "__main__":
         sources = opts.sources = list(map(os.path.abspath, sources))
 
         # change working directory so that we do not mess up the current directory much
-        working_dir = setup_working_directory()
-        os.chdir(working_dir)
-        dbg('Working directory: {0}'.format(working_dir))
+        environment.working_dir = setup_working_directory()
+        os.chdir(environment.working_dir)
+        dbg('Working directory: {0}'.format(environment.working_dir))
 
         # let the show begin!
         try:
-            symbiotic = Symbiotic(tool, sources, opts, symbiotic_dir)
+            symbiotic = Symbiotic(tool, sources, opts, environment)
             res = symbiotic.run()
         except SymbioticException as e:
             sys.stdout.flush()
@@ -770,8 +743,8 @@ if __name__ == "__main__":
             symbiotic.kill()
             symbiotic.kill_wait()
 
-    os.chdir('..')
-    rm_tmp_dir(working_dir)
+    os.chdir(os.path.join(environment.working_dir, '..'))
+    rm_tmp_dir(environment.working_dir)
 
     # print information about how long Symbiotic ran
     print_stdout('INFO: Total time elapsed: {0}'.format(time() - start_time),

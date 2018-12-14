@@ -8,7 +8,7 @@ from . options import SymbioticOptions
 from . utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
 from . utils.process import ProcessRunner, runcmd
 from . utils.watch import ProcessWatch, DbgWatch
-from . utils.utils import print_stdout, print_stderr, get_symbiotic_dir, get_clang_version, required_version
+from . utils.utils import print_stdout, print_stderr, get_clang_version, required_version
 from . exceptions import SymbioticException, SymbioticExceptionalResult
 
 class PrepareWatch(ProcessWatch):
@@ -144,21 +144,18 @@ class Symbiotic(object):
     symbolic execution on given source(s)
     """
 
-    def __init__(self, tool, src, opts=None, symb_dir=None):
+    def __init__(self, tool, src, opts=None, env=None):
         # source file
         self.sources = src
         # source compiled to llvm bytecode
         self.llvmfile = None
         # the file that will be used for symbolic execution
         self.runfile = None
-        # the directory that symbiotic script is located
-        if symb_dir:
-            self.symbiotic_dir = symb_dir
-        else:
-            self.symbiotic_dir = get_symbiotic_dir()
+        # environment
+        self.env = env
 
         if opts is None:
-            self.options = SymbioticOptions(self.symbiotic_dir)
+            self.options = SymbioticOptions(env.symbiotic_dir)
         else:
             self.options = opts
 
@@ -274,9 +271,9 @@ class Symbiotic(object):
 
         llvm_dir = 'llvm-{0}'.format(self._tool.llvm_version())
         if self.options.is32bit:
-            libdir = os.path.join(self.symbiotic_dir, llvm_dir, 'lib32')
+            libdir = os.path.join(self.env.symbiotic_dir, llvm_dir, 'lib32')
         else:
-            libdir = os.path.join(self.symbiotic_dir, llvm_dir, 'lib')
+            libdir = os.path.join(self.env.symbiotic_dir, llvm_dir, 'lib')
 
         prefix = self.options.instrumentation_files_path
 
@@ -346,7 +343,7 @@ class Symbiotic(object):
     def _get_libraries(self, which=[]):
         files = []
         if self.options.add_libc:
-            d = '{0}/lib'.format(self.symbiotic_dir)
+            d = '{0}/lib'.format(self.env.symbiotic_dir)
             if self.options.is32bit:
                 d += '32'
 
@@ -390,7 +387,7 @@ class Symbiotic(object):
         tolink = []
         for ty in self.options.linkundef:
             for undef in undefs:
-                path = get_path(self.symbiotic_dir, ty,
+                path = get_path(self.env.symbiotic_dir, ty,
                                 self._tool.name(), undef)
                 if path is None:
                     continue
