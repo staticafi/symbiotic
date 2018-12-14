@@ -16,7 +16,7 @@ class SymbioticTool(SmackTool):
         self._memsafety = self._options.property.memsafety()
 
     def llvm_version(self):
-        return '3.7.1'
+        return '3.9.1'
 
     def instrumentation_options(self):
         """
