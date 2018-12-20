@@ -1,3 +1,4 @@
+extern void free(void*);
 int main(void)
 {
 	int *p = malloc(sizeof *p);
