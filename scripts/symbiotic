@@ -610,6 +610,9 @@ def initialize_verifier(opts):
     elif opts.tool_name == 'nidhugg':
         from symbiotic.tools.nidhugg import SymbioticTool
         return SymbioticTool(opts)
+    elif opts.tool_name == 'divine':
+        from symbiotic.tools.divine import SymbioticTool
+        return SymbioticTool(opts)
     else:
         raise SymbioticException('Unknown verifier: {0}'.format(opts.tool_name))
 
