@@ -28,9 +28,20 @@ class SymbioticTool(DivineTool):
         instrumentation (and False otherwise)
         """
 
-        if self._memsafety:
-            # default config file is 'config.json'
+        # NOTE: we do not want to link the functions with memsafety/cleanup
+        # because then the optimizations could remove the calls to markers
+        if self._options.property.memsafety():
             return ('config-marker.json', 'marker.c', False)
+
+        if self._options.property.memcleanup():
+            return ('config-marker-memcleanup.json', 'marker.c', False)
+
+        if self._options.property.signedoverflow():
+            # default config file is 'config.json'
+            return (self._options.overflow_config_file, 'overflows.c', True)
+
+        if self._options.property.termination():
+            return ('config.json', 'termination.c', True)
 
         return (None, None, None)
 
@@ -40,12 +51,20 @@ class SymbioticTool(DivineTool):
         criterion and opts is a list of options
         """
 
-        if self._memsafety:
+        if self._options.property.memsafety():
             # default config file is 'config.json'
             # slice with respect to the memory handling operations
-            return ('__INSTR_mark_pointer', ['-criteria-are-next-instr'])
+            return ('__INSTR_mark_pointer,__INSTR_mark_free,__INSTR_mark_allocation',
+                    ['-criteria-are-next-instr'])
+
+        elif self._options.property.memcleanup():
+            # default config file is 'config.json'
+            # slice with respect to the memory handling operations
+            return ('__INSTR_mark_free,__INSTR_mark_allocation',
+                    ['-criteria-are-next-instr'])
 
         return (self._options.slicing_criterion,[])
+
 
     def set_environment(self, env, opts):
         """
