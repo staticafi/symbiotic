@@ -166,7 +166,7 @@ def _map_property(prps):
 def get_property(symbiotic_dir, prp):
     if prp is None:
         prop = PropertyUnreachCall()
-        prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyUnreachCall.prp'))
+        prop._prpfile = abspath(join(symbiotic_dir, 'properties/unreach-call.prp'))
         return prop
 
     prps, prpfile = _get_prp(prp)
