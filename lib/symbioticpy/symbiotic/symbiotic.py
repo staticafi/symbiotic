@@ -172,6 +172,10 @@ class Symbiotic(object):
         runcmd(["llvm-dis", self.llvmfile], CompileWatch(),
                "Generating .ll file from '{0}' failed".format(self.llvmfile))
 
+    def command(self, cmd):
+        return runcmd(cmd, DbgWatch('all'),
+                      "Failed running command: {0}".format(" ".join(cmd)))
+
     def _compile_to_llvm(self, source, output=None, with_g=True, opts=[]):
         """
         Compile given source to LLVM bytecode
@@ -716,17 +720,16 @@ class Symbiotic(object):
             if kf:
                 raise SymbioticException('Code contains KLEE functions, but the verifier is not KLEE ({0})'.format(' '.join(kf)))
 
+        if hasattr(self._tool, 'passes_before_verification'):
+            self.run_opt(self._tool.passes_before_verification())
+
         # tool's specific preprocessing steps before verification
+        # FIXME: move this to actions_before_verification
         self.postprocess_llvm()
 
-        # for once, delete all undefined functions before the verification
-        # (we may have new calls of undefined function because of
-        # the previous passes
-        if self.options.undef_retval_nosym:
-            passes = ['-delete-undefined-nosym']
-        else:
-            passes = ['-delete-undefined']
-        self.run_opt(passes)
+        if hasattr(self._tool, 'actions_before_verification'):
+            self._tool.actions_before_verification(self)
+
 
     def _disable_some_optimizations(self, llvm_version):
         disabled = []
@@ -856,7 +859,8 @@ class Symbiotic(object):
 
         #################### #################### ###################
         # POSTPROCESSING after slicing
-        #  - slice the code w.r.t error sites
+        #  - prepare the code to be passed to the verification tool
+        #    after all the transformations
         #################### #################### ###################
         self.postprocessing()
 
@@ -875,9 +879,6 @@ class Symbiotic(object):
         #  - run the verification backend
         #################### #################### ###################
         self._get_stats('Before verification ')
-
-        if hasattr(self._tool, 'actions_before_verification'):
-            self._tool.actions_before_verification(self)
 
         if not self.options.no_verification:
             print_stdout('INFO: Starting verification', color='WHITE')

@@ -185,6 +185,15 @@ class SymbioticTool(BaseTool):
 
         return passes
 
+    def passes_before_verification(self):
+        # for once, delete all undefined functions before the verification
+        # (we may have new calls of undefined function because of
+        # the previous passes
+        if self._options.undef_retval_nosym:
+            return ['-delete-undefined-nosym']
+        else:
+            return ['-delete-undefined']
+
     def actions_before_verification(self, symbiotic):
         if not symbiotic.check_llvmfile(symbiotic.llvmfile):
             dbg('Unsupported call (probably floating handling)')
