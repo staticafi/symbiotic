@@ -683,9 +683,10 @@ if __name__ == "__main__":
         sources = opts.sources = list(map(os.path.abspath, sources))
 
         # change working directory so that we do not mess up the current directory much
-        environment.working_dir = setup_working_directory()
+        environment.working_dir = os.path.abspath(setup_working_directory())
         os.chdir(environment.working_dir)
         dbg('Working directory: {0}'.format(environment.working_dir))
+        assert environment.symbiotic_dir != environment.working_dir
 
         # let the show begin!
         try:
@@ -747,7 +748,8 @@ if __name__ == "__main__":
             symbiotic.kill()
             symbiotic.kill_wait()
 
-    os.chdir(os.path.join(environment.working_dir, '..'))
+    os.chdir(environment.symbiotic_dir)
+    assert environment.symbiotic_dir != environment.working_dir
     rm_tmp_dir(environment.working_dir)
 
     # print information about how long Symbiotic ran
