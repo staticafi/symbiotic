@@ -265,7 +265,8 @@ def parse_environ(opts):
     """
     if 'C_INCLUDE_DIR' in os.environ:
         for p in os.environ['C_INCLUDE_DIR'].split(':'):
-            opts.CPPFLAGS.append('-I{0}'.format(p))
+            if p != '':
+                opts.CPPFLAGS.append('-I{0}'.format(p))
 
     if 'CFLAGS' in os.environ:
         opts.CFLAGS += os.environ['CFLAGS'].split(' ')
