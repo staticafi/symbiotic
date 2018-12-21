@@ -139,8 +139,8 @@ def get_optlist_after(optlevel):
     return lst
 
 def clang_has_lifetime_markers():
-    out = process_grep(['clang', '-cc1', '--help'], '-force-lifetime-markers')
-    return len(out) == 1 and out[0].lstrip().startswith('-force-lifetime-markers')
+    retval, out = process_grep(['clang', '-cc1', '--help'], '-force-lifetime-markers')
+    return retval == 0 and len(out) == 1 and out[0].lstrip().startswith('-force-lifetime-markers')
 
 class Symbiotic(object):
     """
@@ -629,6 +629,7 @@ class Symbiotic(object):
 
             if self.options.property.memsafety():
                 if clang_has_lifetime_markers():
+                    dbg('Clang supports -force-lifetime-markers, using it')
                     opts.append('-Xclang')
                     opts.append('-force-lifetime-markers')
                 else:
