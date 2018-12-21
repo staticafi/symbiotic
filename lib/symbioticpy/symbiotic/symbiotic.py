@@ -8,7 +8,7 @@ from . options import SymbioticOptions
 from . utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
 from . utils.process import ProcessRunner, runcmd
 from . utils.watch import ProcessWatch, DbgWatch
-from . utils.utils import print_stdout, print_stderr, get_clang_version, required_version
+from . utils.utils import print_stdout, print_stderr, get_clang_version, process_grep
 from . exceptions import SymbioticException, SymbioticExceptionalResult
 
 class PrepareWatch(ProcessWatch):
@@ -138,6 +138,10 @@ def get_optlist_after(optlevel):
 
     return lst
 
+def clang_has_lifetime_markers():
+    out = process_grep(['clang', '-cc1', '--help'], '-force-lifetime-markers')
+    return len(out) == 1 and out[0].lstrip().startswith('-force-lifetime-markers')
+
 class Symbiotic(object):
     """
     Instance of symbiotic tool. Instruments, prepares, compiles and runs
@@ -178,7 +182,7 @@ class Symbiotic(object):
 
     def _compile_to_llvm(self, source, output=None, with_g=True, opts=[]):
         """
-        Compile given source to LLVM bytecode
+        Compile given source to LLVM bitecode
         """
 
         # __inline attribute is buggy in clang, remove it using -D__inline
@@ -619,12 +623,12 @@ class Symbiotic(object):
             opts = ['-Wno-unused-parameter', '-Wno-unknown-attributes',
                     '-Wno-unused-label', '-Wno-unknown-pragmas',
                     '-Wno-unused-command-line-argument',
-                    '-fbracket-depth=512']
+                    '-fbracket-depth=1024']
             if hasattr(self._tool, 'compilation_options'):
                 opts += self._tool.compilation_options()
 
             if self.options.property.memsafety():
-                if required_version(get_clang_version(), "4.0.1"):
+                if clang_has_lifetime_markers():
                     opts.append('-Xclang')
                     opts.append('-force-lifetime-markers')
                 else:
@@ -633,7 +637,7 @@ class Symbiotic(object):
             llvms = self._compile_to_llvm(source, opts=opts)
             llvmsrc.append(llvms)
 
-        # link all compiled sources to a one bytecode
+        # link all compiled sources to a one bitecode
         # the result is stored to self.llvmfile
         self.link('code.bc', llvmsrc)
 
