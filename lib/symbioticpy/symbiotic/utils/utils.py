@@ -124,9 +124,6 @@ def get_symbiotic_dir():
     realpath = os.path.realpath(os.path.join(sys.argv[0], '..'))
     return os.path.abspath(os.path.dirname(realpath))
 
-def required_version(actual, required):
-    return LooseVersion(actual) >= LooseVersion(required)
-
 def get_clang_version():
     (retval, lines) = process_grep(['clang', '-v'], 'version')
     assert(retval == 0)
