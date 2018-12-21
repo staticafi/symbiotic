@@ -623,17 +623,10 @@ class Symbiotic(object):
             if hasattr(self._tool, 'compilation_options'):
                 opts += self._tool.compilation_options()
 
-            if self.options.property.signedoverflow():
-                # FIXME: this is a hack, remove once we have better CD algorithm
-                self.options.disabled_optimizations = ['-instcombine']
-
             if self.options.property.memsafety():
                 if required_version(get_clang_version(), "4.0.1"):
                     opts.append('-Xclang')
                     opts.append('-force-lifetime-markers')
-                    # these optimizations mess up with scopes,
-                    # FIXME: find a better solution
-                    self.options.disabled_optimizations = ['-licm','-gvn','-early-cse']
                 else:
                     print_stdout('Clang does not support lifetime markers, scopes are not instrumented', color="BROWN")
 
@@ -736,6 +729,15 @@ class Symbiotic(object):
         # disable some oprimizations for termination property
         if self.options.property.termination():
             disabled += ['-functionattrs', '-instcombine']
+
+        if self.options.property.signedoverflow():
+            # FIXME: this is a hack, remove once we have better CD algorithm
+            self.options.disabled_optimizations = ['-instcombine']
+
+        if self.options.property.memsafety():
+            # these optimizations mess up with scopes,
+            # FIXME: find a better solution
+            self.options.disabled_optimizations = ['-licm','-gvn','-early-cse']
 
         # disable optimizations that are not in particular llvm versions
         ver_major, ver_minor, ver_micro = map(int, llvm_version.split('.'))
