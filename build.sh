@@ -1025,6 +1025,7 @@ fi
 		lib/symbioticpy/symbiotic/tools/*.py \
 		lib/symbioticpy/symbiotic/utils/*.py \
 		lib/symbioticpy/symbiotic/witnesses/*.py \
+		lib/symbioticpy/symbiotic/testsuits/*.py \
 		LICENSE.txt
 
 	git commit -m "Create Symbiotic distribution `date`" || true
