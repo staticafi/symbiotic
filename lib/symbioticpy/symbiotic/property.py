@@ -37,6 +37,10 @@ class Property:
         """ Is the property described by a generic LTL formula(e)? """
         return False
 
+    def errorcall(self):
+        """ Check for error calls """
+        return False
+
     def getPrpFile(self):
         return self._prpfile
 

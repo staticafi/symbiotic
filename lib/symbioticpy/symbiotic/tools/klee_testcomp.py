@@ -120,12 +120,17 @@ class SymbioticTool(KleeBase):
         if not found:
             if returncode != 0:
                 return result.RESULT_ERROR
+            elif self._options.property.errorcall():
+                return result.RESULT_DONE
             else:
                 # we haven't found anything
                 return result.RESULT_TRUE_PROP
         else:
             if 'EINITVALS' in found: # EINITVALS would break the validity of the found error
                 return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
+
+            if self._options.property.errorcall():
+                return result.RESULT_DONE
 
             for f in found:
                 # we found error that we sought for?
