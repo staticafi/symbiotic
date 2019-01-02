@@ -62,6 +62,7 @@ add_llvm_loadable_module(LLVMsbt
 				RenameVerifierFuns.cpp
 				MakeNondet.cpp
 				InitializeUninitialized.cpp
+				InternalizeGlobals.cpp
 				RemoveInfiniteLoops.cpp
 				BreakInfiniteLoops.cpp
 				BreakCritLoops.cpp

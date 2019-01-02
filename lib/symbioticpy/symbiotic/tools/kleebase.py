@@ -159,10 +159,6 @@ class SymbioticTool(BaseTool):
            not self._options.overflow_with_clang:
             passes.append('-prepare-overflows')
 
-        # make all memory symbolic (if desired)
-        if not self._options.explicit_symbolic:
-            passes.append('-initialize-uninitialized')
-
         return passes
 
     def actions_after_compilation(self, symbiotic):
@@ -189,10 +185,20 @@ class SymbioticTool(BaseTool):
         # for once, delete all undefined functions before the verification
         # (we may have new calls of undefined function because of
         # the previous passes
+        passes = []
         if self._options.undef_retval_nosym:
-            return ['-delete-undefined-nosym']
+            passes = ['-delete-undefined-nosym']
         else:
-            return ['-delete-undefined']
+            passes = ['-delete-undefined']
+
+        # make external globals non-deterministic
+        passes.append('-internalize-globals')
+
+        # make the uninitialized variables symbolic (if desired)
+        if not self._options.explicit_symbolic:
+            passes.append('-initialize-uninitialized')
+
+        return passes
 
     def actions_before_verification(self, symbiotic):
         if not symbiotic.check_llvmfile(symbiotic.llvmfile):

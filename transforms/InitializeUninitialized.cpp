@@ -39,7 +39,6 @@ class InitializeUninitialized : public ModulePass {
 
     Function *get_verifier_make_nondet(Module *);
     Type *get_size_t(Module *);
-    bool initializeExternalGlobals(Module&);
   public:
     static char ID;
 
@@ -48,7 +47,7 @@ class InitializeUninitialized : public ModulePass {
 
     bool runOnModule(Module& M) override {
       DL = std::unique_ptr<DataLayout>(new DataLayout(M.getDataLayout()));
-      bool modified = initializeExternalGlobals(M);
+      bool modified = false;
 
       for (Function& F : M)
         modified |= runOnFunction(F);
@@ -61,96 +60,6 @@ class InitializeUninitialized : public ModulePass {
 static RegisterPass<InitializeUninitialized> INIUNINI("initialize-uninitialized",
                                                       "initialize all uninitialized variables to non-deterministic value");
 char InitializeUninitialized::ID;
-
-bool InitializeUninitialized::initializeExternalGlobals(Module& M) {
-  bool modified = false;
-  LLVMContext& Ctx = M.getContext();
-
-  for (Module::global_iterator I = M.global_begin(),
-                               E = M.global_end(); I != E; ++I) {
-    GlobalVariable *GV = &*I;
-    if (GV->hasInitializer())
-      continue;
-
-    // insert initialization of the new global variable
-    // at the beginning of main
-
-    // GV is a pointer to some memory, we want the size of the memory
-    Type *Ty = GV->getType()->getContainedType(0);
-    if (!Ty->isSized()) {
-      GV->dump();
-      llvm::errs() << "ERROR: failed making global variable symbolic "
-                      "(type is unsized)\n";
-      continue;
-    }
-
-    // what memory will be made symbolic
-    Value *memory = GV;
-
-    // the global is a pointer, so we will create an object that it can
-    // point to and set it to symbolic at the beggining of main
-    if (Ty->isPointerTy()) {
-        if (!Ty->getContainedType(0)->isSized()) {
-            GV->dump();
-            llvm::errs() << "ERROR: failed making global variable symbolic "
-                            "(referenced type is unsized)\n";
-            continue;
-        }
-
-        // maybe we should do that recursively? Until we get a non-pointer?
-        Constant *init = Constant::getNullValue(Ty->getContainedType(0));
-        GlobalVariable *pointedG
-            = new GlobalVariable(M, Ty->getContainedType(0),
-                                 false /*constant */,
-                                 GlobalVariable::PrivateLinkage,
-                                 init);
-        GV->setInitializer(pointedG);
-
-        // set memory and its type that should be made symbolic
-        memory = pointedG;
-        Ty = Ty->getContainedType(0);
-    } else {
-        // we need to set some initializer, otherwise the global
-        // won't be marked as non-external. This initializer will
-        // be overwritten at the beginning of main
-        GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
-    }
-
-    Function *vms = get_verifier_make_nondet(&M);
-    CastInst *CastI = CastInst::CreatePointerCast(memory, Type::getInt8PtrTy(Ctx));
-
-    std::vector<Value *> args;
-    args.push_back(CastI);
-    args.push_back(ConstantInt::get(get_size_t(&M), DL->getTypeAllocSize(Ty)));
-    std::string nameStr = "extern-global:" + (GV->hasName() ? GV->getName().str() : "--");
-    Constant *name
-        = ConstantDataArray::getString(Ctx, nameStr);
-    GlobalVariable *nameG = new GlobalVariable(M, name->getType(), true /*constant */,
-                                               GlobalVariable::PrivateLinkage, name);
-    args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
-    args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx), ++calls_count));
-    CallInst *CI = CallInst::Create(vms, args);
-
-    Function *main = M.getFunction("main");
-    assert(main && "Do not have main");
-    BasicBlock& block = main->getBasicBlockList().front();
-    // there must be some instruction, otherwise we would not be calling
-    // this function
-    Instruction& Inst = *(block.begin());
-    CastI->insertBefore(&Inst);
-    CI->insertBefore(&Inst);
-
-    // add metadata due to the inliner pass
-    CloneMetadata(&Inst, CI);
-
-    modified = true;
-
-    GV->setExternallyInitialized(false);
-    errs() << "Made global variable '" << GV->getName() << "' non-extern\n";
-  }
-
-  return modified;
-}
 
 static unsigned getKleeMakeNondetCounter(const Function *F) {
     using namespace llvm;
