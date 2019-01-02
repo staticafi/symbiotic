@@ -129,9 +129,6 @@ class SymbioticTool(KleeBase):
             if 'EINITVALS' in found: # EINITVALS would break the validity of the found error
                 return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
 
-            if self._options.property.errorcall():
-                return result.RESULT_DONE
-
             for f in found:
                 # we found error that we sought for?
                 if f == result.RESULT_FALSE_REACH and self._options.property.assertions():
@@ -146,7 +143,7 @@ class SymbioticTool(KleeBase):
                 elif f == result.RESULT_FALSE_TERMINATION and self._options.property.termination():
                     return f
                 elif f == result.RESULT_FALSE_REACH and self._options.property.errorcall():
-                    return f
+                    return result.RESULT_DONE
 
 
             return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
