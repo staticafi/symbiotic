@@ -110,7 +110,7 @@ class SymbioticTool(BaseTool):
         prefix = '{0}/install'.format(env.symbiotic_dir)
 
         if opts.is32bit:
-            env.preprend('KLEE_RUNTIME_LIBRARY_PATH',
+            env.prepend('KLEE_RUNTIME_LIBRARY_PATH',
                          '{0}/llvm-{1}/lib32/klee/runtime'.\
                          format(prefix, self.llvm_version()))
         else:
