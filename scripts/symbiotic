@@ -308,14 +308,16 @@ def generate_testcase(path, source, is32bit, is_correctness_test):
     gen.write(saveto)
     gen_md.write(savetomd)
 
-def get_testcases(bindir, is_correctness_test):
+def get_testcases(bindir):
     abd = os.path.abspath(bindir)
     testcases = []
+    is_correctness_test = True
     for path in os.listdir('{0}/klee-last'.format(abd)):
-        if (is_correctness_test and path.endswith('.path')) \
-            or path.endswith('.err'):
+        if path.endswith('.path') or path.endswith('.err'):
             testcases.append(os.path.abspath('{0}/klee-last/{1}'.format(abd, path[:path.find(".")])) + '.path')
-    return testcases
+        if path.endswith('.err'):
+            is_correctness_test = False
+    return testcases, is_correctness_test
 
 def get_testcase(bindir):
     abd = os.path.abspath(bindir)
@@ -324,11 +326,11 @@ def get_testcase(bindir):
             # get the corresponding .path file
             return os.path.abspath('{0}/klee-last/{1}'.format(abd, path[:path.find(".")]))
 
-def get_ktest(bindir, is_correctness_test = False, test_comp=False):
-    return get_testcase(bindir, is_correctness_test, test_comp) + '.ktest';
+def get_ktest(bindir):
+    return get_testcase(bindir) + '.ktest';
 
-def get_path_file(bindir, is_correctness_test = False, test_comp = False):
-    return get_testcase(bindir, is_correctness_test, test_comp) + '.path';
+def get_path_file(bindir):
+    return get_testcase(bindir) + '.path';
 
 def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, termination, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
@@ -340,7 +342,7 @@ def generate_counterexample(bindir, sources, prps, is32bit, is_correctness_wit, 
     pth = get_path_file(bindir)
     generate_graphml(pth, sources[0], prps, is32bit, is_correctness_wit, termination, saveto)
 
-def generate_tests(bindir, sources, is32bit, is_correctness_test):
+def generate_tests(bindir, sources, is32bit):
     assert len(sources) == 1 and "Can not generate tests for more sources yet"
 
     abd = os.path.abspath(bindir)
@@ -351,7 +353,7 @@ def generate_tests(bindir, sources, is32bit, is_correctness_test):
         rm_tmp_dir(tmpdir, True)
         os.mkdir(tmpdir)
 
-    paths = get_testcases(bindir, is_correctness_test)
+    (paths, is_correctness_test) = get_testcases(bindir)
     for pth in paths:
         generate_testcase(pth, sources[0], is32bit, is_correctness_test)
 
@@ -803,14 +805,12 @@ if __name__ == "__main__":
                 generate_counterexample(srcdir, sources, opts.property.getLTL(),
                                         opts.is32bit, False, opts.property.termination(),
                                         opts.witness_output)
-            if test_comp:
-                generate_tests(srcdir, sources, opts.is32bit, False)
         elif res == 'true' and not opts.nowitness:
             generate_counterexample(srcdir, sources, opts.property.getLTL(),
                                     opts.is32bit, True, opts.property.termination(),
                                     opts.witness_output)
-        elif res == 'true' and test_comp:
-            generate_tests(srcdir, sources, opts.is32bit, True)
+        elif res == 'done' and test_comp:
+            generate_tests(srcdir, sources, opts.is32bit)
 
     except Timeout:
         sys.stdout.flush()
