@@ -1,9 +1,10 @@
 #!/bin/bash
 #
 # Build Symbiotic from scratch and setup environment for
-# development if needed
+# development if needed. This build script is meant to be more
+# of a guide how to build Symbiotic, it may not work in all cases.
 #
-#  (c) Marek Chalupa, 2016 - 2018
+#  (c) Marek Chalupa, 2016 - 2019
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -89,6 +90,7 @@ WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
 BUILD_STP='no'
+BUILD_Z3='no'
 
 BUILD_KLEE="yes"
 BUILD_NIDHUGG="no"
@@ -104,6 +106,11 @@ check_zlib() {
 
 HAVE_Z3=$(if check_z3; then echo "yes"; else echo "no"; fi)
 WITH_ZLIB=$(if check_zlib; then echo "no"; else echo "yes"; fi)
+
+if [ "$HAVE_Z3" = "no" -a "$BUILD_STP" = "no" ]; then
+	BUILD_Z3 = "yes"
+	echo "Will build z3 as it is missing in the system"
+fi
 
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
@@ -162,6 +169,9 @@ while [ $# -gt 0 ]; do
 		;;
 		build-stp)
 			BUILD_STP="yes"
+		;;
+		build-z3)
+			BUILD_Z3="yes"
 		;;
 		archive)
 			ARCHIVE="yes"
@@ -324,8 +334,8 @@ check()
 		fi
 	fi
 
-	if [ "$BUILD_STP" != "yes" -a "$HAVE_Z3" != "yes" ]; then
-		exitmsg "Need z3 from package or enable building STP by using 'build-stp' argument."
+	if [ "$BUILD_STP" != "yes" -a "$HAVE_Z3" != "yes" -a "$BUILD_Z3" != "yes" ]; then
+		exitmsg "Need z3 from package or enable building STP or Z3 by using 'build-stp' or 'build-z3' argument."
 	fi
 
 }
@@ -623,6 +633,29 @@ if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
 
+if [ "$BUILD_Z3" = "yes" ]; then
+	######################################################################
+	#   Z3
+	######################################################################
+	if [ $FROM -le 4 ]; then
+		git_clone_or_pull git://github.com/Z3Prover/z3 -b "z3-4.8.4" z3
+		mkdir -p "z3/build" && pushd "z3/build"
+		if [ ! -d CMakeFiles ]; then
+			cmake .. -DCMAKE_INSTALL_PREFIX=$PREFIX \
+				 -DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
+				 || clean_and_exit 1 "git"
+		fi
+
+		make && make install
+		popd
+	fi
+fi # BUILD_Z3
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+
 ######################################################################
 #   KLEE
 ######################################################################
@@ -648,7 +681,7 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	STP_FLAGS="-DENABLE_SOLVER_STP=OFF"
 
 	Z3_FLAGS=
-	if [ "$HAVE_Z3" = "yes" ]; then
+	if [ "$HAVE_Z3" = "yes" -o "$BUILD_Z3" = "yes" ]; then
 		Z3_FLAGS=-DENABLE_SOLVER_Z3=ON
 	else
 		exitmsg "KLEE needs Z3 library"
@@ -882,6 +915,12 @@ if [ "$BUILD_STP" = "yes" ]; then
 	STP_VERSION=`git rev-parse HEAD`
 	cd -
 fi
+
+if [ "$BUILD_Z3" = "yes" ]; then
+	cd z3 || exit 1
+	Z3_VERSION=`git rev-parse HEAD`
+	cd -
+fi
 	cd klee || exit 1
 	KLEE_VERSION=`git rev-parse HEAD`
 	cd -
@@ -898,6 +937,9 @@ fi
 if [ "$BUILD_STP" = "yes" ]; then
 	echo -e "\t'minisat' : '$MINISAT_VERSION'," >> $VERSFILE
 	echo -e "\t'stp' : '$STP_VERSION'," >> $VERSFILE
+fi
+if [ "$BUILD_Z3" = "yes" ]; then
+	echo -e "\t'z3' : '$Z3_VERSION'," >> $VERSFILE
 fi
 	echo -e "\t'klee' : '$KLEE_VERSION'," >> $VERSFILE
 	echo -e "}\n\n" >> $VERSFILE
@@ -1002,6 +1044,10 @@ fi
 
 if [ "$BUILD_STP" = "yes" ]; then
 		LIBRARIES="$LIBRARIES $PREFIX/lib/libminisat*.so"
+fi
+
+if [ "$BUILD_Z3" = "yes" ]; then
+		LIBRARIES="$LIBRARIES $PREFIX/lib/libz3*.so"
 fi
 
 	#strip binaries, it will save us 500 MB!
