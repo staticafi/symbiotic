@@ -290,6 +290,13 @@ check()
 		exit 1
 	fi
 
+	if ! patch --version &>/dev/null; then
+		echo "Need 'patch' utility"
+		exit 1
+	fi
+
+
+
 	if ! cmake --version &>/dev/null; then
 		echo "cmake is needed"
 		exit 1
@@ -334,7 +341,7 @@ check()
 		fi
 	fi
 
-	if [ "$BUILD_STP" != "yes" -a "$HAVE_Z3" != "yes" -a "$BUILD_Z3" != "yes" ]; then
+	if [ "$BUILD_STP" = "no" -a "$HAVE_Z3" = "no" -a "$BUILD_Z3" != "no" ]; then
 		exitmsg "Need z3 from package or enable building STP or Z3 by using 'build-stp' or 'build-z3' argument."
 	fi
 
