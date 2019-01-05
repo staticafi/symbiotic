@@ -285,44 +285,54 @@ git_submodule_init()
 GET="curl -LRO"
 check()
 {
+	MISSING=""
 	if ! curl --version &>/dev/null; then
 		echo "Need curl to download files"
-		exit 1
+		MISSING="curl"
 	fi
 
 	if ! patch --version &>/dev/null; then
 		echo "Need 'patch' utility"
-		exit 1
+		MISSING="patch $MISSING"
 	fi
 
-
+	if [ "$BUILD_KLEE" = "yes" ]; then
+		if ! which unzip &>/dev/null; then
+			echo "Need 'unzip' utility"
+			MISSING="unzip $MISSING"
+		fi
+	fi
 
 	if ! cmake --version &>/dev/null; then
 		echo "cmake is needed"
-		exit 1
+		MISSING="cmake $MISSING"
 	fi
 
 	if ! make --version &>/dev/null; then
 		echo "make is needed"
-		exit 1
+		MISSING="make $MISSING"
 	fi
 
 	if ! rsync --version &>/dev/null; then
 		# TODO: fix the bootstrap script to use also cp
 		echo "sbt-instrumentation needs rsync when bootstrapping json. "
-		exit 1
+		MISSING="rsync $MISSING"
 	fi
 
 	if [ "$BUILD_STP" = "yes" ]; then
 		if ! bison --version &>/dev/null; then
 			echo "STP needs bison program"
-			exit 1
+			MISSING="bison $MISSING"
 		fi
 
 		if ! flex --version &>/dev/null; then
 			echo "STP needs flex program"
-			exit 1
+			MISSING="flex $MISSING"
 		fi
+	fi
+
+	if [ "$MISSING" != "" ]; then
+		exitmsg "Missing dependencies: $MISSING"
 	fi
 
 	if [ "x$WITH_LLVM" != "x" ]; then
