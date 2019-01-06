@@ -108,8 +108,13 @@ HAVE_Z3=$(if check_z3; then echo "yes"; else echo "no"; fi)
 WITH_ZLIB=$(if check_zlib; then echo "no"; else echo "yes"; fi)
 
 if [ "$HAVE_Z3" = "no" -a "$BUILD_STP" = "no" ]; then
-	BUILD_Z3 = "yes"
-	echo "Will build z3 as it is missing in the system"
+	if [ ! -d "z3" ]; then
+		BUILD_Z3="yes"
+		echo "Will build z3 as it is missing in the system"
+	else
+		HAVE_Z3="yes"
+		echo "Found z3 directory, using that build"
+	fi
 fi
 
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
@@ -351,7 +356,7 @@ check()
 		fi
 	fi
 
-	if [ "$BUILD_STP" = "no" -a "$HAVE_Z3" = "no" -a "$BUILD_Z3" != "no" ]; then
+	if [ "$BUILD_STP" = "no" -a "$HAVE_Z3" = "no" -a "$BUILD_Z3" = "no" ]; then
 		exitmsg "Need z3 from package or enable building STP or Z3 by using 'build-stp' or 'build-z3' argument."
 	fi
 
@@ -700,6 +705,17 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	Z3_FLAGS=
 	if [ "$HAVE_Z3" = "yes" -o "$BUILD_Z3" = "yes" ]; then
 		Z3_FLAGS=-DENABLE_SOLVER_Z3=ON
+		if [ -d ${ABS_SRCDIR}/z3 ]; then
+			Z3_FLAGS="$Z3_FLAGS -DZ3_INCLUDE_DIRS=$PREFIX/include"
+
+			if [ -f "$PREFIX/lib/libz3.so" ]; then
+				Z3_FLAGS="$Z3_FLAGS -DZ3_LIBRARIES=$PREFIX/lib"
+			elif [ -f "$PREFIX/lib64/libz3.so" ]; then
+				Z3_FLAGS="$Z3_FLAGS -DZ3_LIBRARIES=$PREFIX/lib64"
+			else
+				exitmsg "Could not find the compiled z3 libraries"
+			fi
+		fi
 	else
 		exitmsg "KLEE needs Z3 library"
 	fi
@@ -718,6 +734,7 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 			-DLLVM_CONFIG_BINARY=${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/bin/llvm-config \
 			-DGTEST_SRC_DIR=$ABS_SRCDIR/googletest \
 			-DENABLE_UNIT_TESTS=ON \
+			-DENABLE_TCMALLOC=OFF \
 			$ZLIB_FLAGS $Z3_FLAGS $STP_FLAGS \
 			|| clean_and_exit 1 "git"
 	fi
