@@ -714,6 +714,7 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 			else
 				exitmsg "Could not find the compiled z3 libraries"
 			fi
+			Z3_FLAGS="$Z3_FLAGS -DZ3_INCLUDE_DIRS=$PREFIX/include/"
 		fi
 	else
 		exitmsg "KLEE needs Z3 library"
