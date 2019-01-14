@@ -104,9 +104,13 @@ class MetadataWriter(object):
 
     def write(self, to):
         et = ET.ElementTree(self._metadata)
+        doctype = """<!DOCTYPE test-metadata PUBLIC "+//IDN sosy-lab.org//DTD test-format test-metadata 1.0//EN" "https://sosy-lab.org/test-format/test-metadata-1.0.dtd">"""
         if no_lxml:
-            et.write(to, encoding='UTF-8', method="xml",
-                     xml_declaration=True)
+           with open(to, 'wb') as f:
+                f.write("""<?xml version="1.0" encoding="UTF-8" standalone="no"?>""".encode('utf8'))
+                f.write(doctype.encode('utf8'))
+                et.write(f, encoding='UTF-8', method="xml",
+                     xml_declaration=False)
         else:
-            et.write(to, encoding='UTF-8', method="xml",
+            et.write(to, encoding='UTF-8', method="xml", doctype = doctype,
                      pretty_print=True, xml_declaration=True)
