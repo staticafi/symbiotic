@@ -324,6 +324,17 @@ check()
 		MISSING="rsync $MISSING"
 	fi
 
+	if ! tar --version &>/dev/null; then
+		echo "Need tar utility"
+		MISSING="tar $MISSING"
+	fi
+
+	if ! xz --version &>/dev/null; then
+		echo "Need xz utility"
+		MISSING="xz $MISSING"
+	fi
+
+
 	if [ "$BUILD_STP" = "yes" ]; then
 		if ! bison --version &>/dev/null; then
 			echo "STP needs bison program"
