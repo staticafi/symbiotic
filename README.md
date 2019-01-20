@@ -1,14 +1,15 @@
 Symbiotic is an open-source tool for finding bugs in sequential computer programs.
 It is based on three well-know techniques:
 instrumentation, static program slicing and symbolic execution.
-Symbiotic is highly modular and most of its components are self-standing programs of LLVM passes that have their own repositories at https://github.com/staticafi.
+Symbiotic is highly modular and most of its components are self-standing programs or LLVM passes that have their own repositories at https://github.com/staticafi.
 
 ## Getting started
 
 ### Downloading Symbiotic
-The archive used in SV-COMOP 2018 can be downloaded from [https://gitlab.com/sosy-lab/sv-comp/archives/raw/svcomp18/2018/symbiotic.zip](https://gitlab.com/sosy-lab/sv-comp/archives/raw/svcomp18/2018/symbiotic.zip)
 
-Other tarballs with Symbiotic distribution (not updated reguralry) can be downloaded from https://github.com/staticafi/symbiotic/releases
+Tarballs with Symbiotic distribution can be downloaded from https://github.com/staticafi/symbiotic/releases.
+Alternatively, you can download archives used in [SV-COMP 2018](https://gitlab.com/sosy-lab/sv-comp/archives/raw/svcomp18/2018/symbiotic.zip) or [SV-COMP 2019](https://gitlab.com/sosy-lab/sv-comp/archives-2019/raw/svcomp19/2019/symbiotic.zip).
+
 After unpacking, Symbiotic is ready to go.
 
 ### Docker image
@@ -28,31 +29,23 @@ First of all you must clone the repository:
 $ git clone https://github.com/staticafi/symbiotic
 ```
 
-The build script of Symbiotic uses `curl`, `make`, and `cmake`, so make sure
-you have them installed (the script will complain otherwise).
-STP theorem prover further needs `bison` and `flex` and minisat needs `zlib`.
-These components are needed when building KLEE. However, if you do not want to
-build Symbiotic with KLEE (and therefore with STP and minisat), then you can comment
-these components out in the build script (there is no switch for not building these
-components yet).
-
-If you have all the dependencies, you are ready to run the `build.sh` script:
-
+The build script of Symbiotic will complain about missing dependencies.
+Run `build.sh` script to compile Symbiotic:
 
 ```
 $ cd symbiotic
 $ ./build.sh -j2
 ```
 
-And that should be it! However, if something goes wrong or you need to adust the build
+If something goes wrong or you need to adjust the build
 process, you can pass different options to the build script. Possible options include:
   - `build-type=TYPE` (TYPE one of `Release`, `Debug`)
   - `llvm-version=VERSION` (the default `VERSION` is `4.0.1`, other versions are rather experimental)
   - `with-llvm=`, `with-llvm-src=`, `with-llvm-dir=` This set of options orders the script to use already built external LLVM (the build script will build LLVM otherwise if it has not been built already in this folder)
   - `with-zlib` Build also zlib
   - `no-llvm` Do not try building LLVM
-  - `slicer`, `minisat`, `stp`, `klee`, `scripts`, `bin` Start building Symbiotic from this point
 
+There are many other options, but they are not properly documented. Actually, the whole build script should be rather a guidance of what is needed and how to build the components, but is not guaranteed to work on any system.
 
 As you can see from the example, you can pass also arguments for make, e.g. `-j2`, to the build script.
 If you need to specify paths to header files or libraries, you can do it
@@ -60,23 +53,10 @@ by passing `CFLAGS`, `CPPFLAGS`, LDFLAGS environment variables either by exporti
 them beforehand, or by passing them as make options (e.g. `CFLAGS='-g'`)
 
 If everything goes well, Symbiotic components are built and also installed
-to the `install/` directory that can be packed or copied wherever you need.
+to the `install/` directory that can be packed or copied wherever you need (you can use `archive` to create a .zip file
+or `full-archive` to create .zip file including system libraries like libc with the build script).
 This directory is under `git` control, so you can see the differences between
 versions or make an archive using `git archive` command.
-
-There is a known problem that can arise while building KLEE:
-
-```
-llvm-config: error: missing: /home/mchalupa/src/symbiotic/llvm-3.9.1/build/lib/libgtest.a
-llvm-config: error: missing: /home/mchalupa/src/symbiotic/llvm-3.9.1/build/lib/libgtest_main.a
-CMake Error at cmake/find_llvm.cmake:62 (message):
-  Failed running
-  /home/mchalupa/src/symbiotic/llvm-3.9.1/build/bin/llvm-config;--system-libs
-Call Stack (most recent call first):
-  cmake/find_llvm.cmake:163 (_run_llvm_config)
-  lib/Basic/CMakeLists.txt:19 (klee_get_llvm_libs)
-```
-This is due to [b5cd41e2](https://github.com/llvm-mirror/llvm/commit/b5cd41e26f89aad2f2dc4f5dc37577f7abf8528a) commit in LLVM. Until we have this fixed, the fastest workaround is to just create empty files `build/lib/libgtest.a` and `build/lib/libgtest_main.a` in the LLVM's folder.
 
 When building on mac, you may need to build LLVM with shared libraries
 (modify the build script) or use `with-llvm-*` switch with your LLVM build.
@@ -103,6 +83,7 @@ running Symbiotic, or on one line:
 ```
 CPPFLAGS='-I /lib/gcc/include' scripts/symbiotic file.c
 ```
+
 You can also use `--cppflags` switch that works exactly the same as environment variables.
 If the program is split into more files, you can give Symbiotic all the files.
 At least one of them must contain the 'main' function.
@@ -117,8 +98,8 @@ Use `--help` switch to see all available options.
 
 Components of Symbiotic can be found at https://github.com/staticafi with the
 only exception of `dg` library that is currently at https://github.com/mchalupa/dg.
-All sowtware used in Symbiotic are open-source projects and are licensed under various
-open-source licenses (mostly MIT license, Apache-2.0,
+All software used in Symbiotic are open-source projects and are licensed under various
+open-source licenses (mostly MIT license,
 and University of Illinois Open Source license)
 
 ## Contact
