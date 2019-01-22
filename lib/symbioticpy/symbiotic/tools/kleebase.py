@@ -186,17 +186,18 @@ class SymbioticTool(BaseTool):
         # (we may have new calls of undefined function because of
         # the previous passes
         passes = []
-        if self._options.undef_retval_nosym:
-            passes = ['-delete-undefined-nosym']
-        else:
-            passes = ['-delete-undefined']
-
-        # make external globals non-deterministic
-        passes.append('-internalize-globals')
 
         # make the uninitialized variables symbolic (if desired)
         if not self._options.explicit_symbolic:
             passes.append('-initialize-uninitialized')
+
+        if self._options.undef_retval_nosym:
+            passes.append('-delete-undefined-nosym')
+        else:
+            passes.append('-delete-undefined')
+
+        # make external globals non-deterministic
+        passes.append('-internalize-globals')
 
         return passes
 
