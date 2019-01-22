@@ -17,7 +17,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from os.path import dirname, abspath, isfile
+from os.path import dirname, abspath, isfile, join
+from os import listdir
 from symbiotic.utils.utils import print_stdout
 
 try:
@@ -34,15 +35,14 @@ except ImportError:
     import symbiotic.benchexec.util as util
     from symbiotic.benchexec.tools.template import BaseTool
 
-def dump_error(bindir, ismem=False):
-    abd = abspath(bindir)
-    if ismem:
-        pth = abspath('{0}/klee-last/test000001.ptr.err'.format(abd))
-        if not isfile(pth):
-            pth = abspath('{0}/klee-last/test000001.leak.err'.format(abd))
-    else:
-        pth = abspath('{0}/klee-last/test000001.assert.err'.format(abd))
+def dump_errors(bindir):
+    pths = []
+    abd = abspath(join(bindir, 'klee-last'))
+    for item in listdir(abd):
+        if item.endswith('.err'):
+            dump_error(abspath(join('klee-last', item)))
 
+def dump_error(pth):
     if not isfile(pth):
         from symbiotic.utils import dbg
         dbg("Couldn't find the file with error description")
@@ -207,5 +207,5 @@ class SymbioticTool(BaseTool):
             raise Result('unknown (call to unsupported function)')
 
     def describe_error(self, llvmfile):
-        dump_error(dirname(llvmfile), self._options.property.memsafety())
+        dump_errors(dirname(llvmfile))
 
