@@ -162,19 +162,11 @@ static bool mayBeUnititialized(const llvm::AllocaInst *AI)
 
 GlobalVariable *getNameGlobal(Module *M, const std::string& name)
 {
-  static std::map<const std::string, GlobalVariable *> variables;
-  auto GI = variables.find(name);
-  if (GI != variables.end())
-      return GI->second;
-
   LLVMContext& Ctx = M->getContext();
   Constant *name_init = ConstantDataArray::getString(Ctx, name);
   GlobalVariable *G = new GlobalVariable(*M, name_init->getType(), true,
                                           GlobalValue::PrivateLinkage,
                                           name_init);
-
-
-  variables[name] = G;
   return G;
 }
 
@@ -188,9 +180,6 @@ bool InitializeUninitialized::runOnFunction(Function &F)
   bool modified = false;
   Module *M = F.getParent();
   LLVMContext& Ctx = M->getContext();
-  GlobalVariable *name = getNameGlobal(M, "global:nondet:0");
-
-  Function *C = get_verifier_make_nondet(M);
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
     Instruction *ins = &*I;
@@ -213,6 +202,8 @@ bool InitializeUninitialized::runOnFunction(Function &F)
       // to the original alloca. This way slicer will slice this
       // initialization away if program initialize it manually later
       if (Ty->isSized()) {
+        GlobalVariable *name = getNameGlobal(M, F.getName().str() + ":uninitialized:0");
+        Function *C = get_verifier_make_nondet(M);
         // if this is an array allocation, just call verifier_make_nondet on it,
         // since storing whole symbolic array into it would have soo huge overhead
         if (Ty->isArrayTy()) {
