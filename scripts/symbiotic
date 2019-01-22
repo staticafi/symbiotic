@@ -139,6 +139,8 @@ where OPTS can be following:
     --dump-env-cmd            Dump environment variables for using them in command line
     --statistics              Dump statistics about bitcode
     --working-dir-prefix      Where to create the temporary directory (defaults to /tmp)
+    --replay-error            Try replaying a found error on non-sliced code
+    --search-include-paths    Try automatically finding paths with standard include directories
     --sv-comp                 Shortcut for SV-COMP settings (malloc-never-fails, etc.)
 
     One (and only one) of the sources must contain 'main' function
@@ -357,7 +359,8 @@ def parse_command_line(env):
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file=', 'overflow-config-file=',
                                     'statistics', 'working-dir-prefix=', 'sv-comp',
-                                    'overflow-with-clang', 'generate-ll'])
+                                    'overflow-with-clang', 'generate-ll',
+                                    'search-include-paths', 'replay-error'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -531,9 +534,13 @@ def parse_command_line(env):
             options.overflow_config_file = arg
         elif opt == '--dump-env':
             dump_env_only = True
+        elif opt == '--replay-error':
+            options.replay_error = True
         elif opt == '--dump-env-cmd':
             dump_env_only = True
             dump_env_cmd = True
+        elif opt == '--search-include-paths':
+            options.search_include_paths = True
         elif opt == '--no-integrity-check':
             no_integrity_check = True
 
@@ -625,6 +632,7 @@ def set_svcomp(opts):
     opts.search_include_paths = False
 
     enable_debug('all')
+    dbg('Using SV-COMP settings')
 
 if __name__ == "__main__":
     # store time when we have started, so that we can
@@ -701,7 +709,7 @@ if __name__ == "__main__":
 
         # FIXME: make tool specific
         srcdir = os.path.dirname(symbiotic.llvmfile)
-        if tool.name().startswith('klee') and \
+        if opts.replay_error and tool.name().startswith('klee') and \
             not opts.noslice and res and res.startswith('false'):
             print_stdout("Found {0}".format(res))
             print_stdout("Trying to confirm the error path")

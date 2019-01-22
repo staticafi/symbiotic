@@ -52,6 +52,8 @@ class SymbioticOptions(object):
         self.instrumentation_files_path = None
         self.nowitness = False
         # try to automatically find paths with common header files
-        self.search_include_paths = True
+        self.search_include_paths = False
         # flag for checking overflows with clang sanitizer
         self.overflow_with_clang = False
+        # replay error path
+        self.replay_error = False
