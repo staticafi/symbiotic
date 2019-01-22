@@ -183,7 +183,7 @@ def perform_binaries_check(additional):
         if not os.path.isfile(exe_path):
             err("Cannot find executable '{0}' ('{1}')".format(exe, exe_path))
         else:
-            dbg("'{0}' is '{1}'".format(exe, exe_path))
+            dbg("'{0}' is '{1}'".format(os.path.basename(exe), exe_path))
 
 def _find_library(lib):
     # code taken and modified from benchexec.util.find_executable
@@ -725,7 +725,7 @@ if __name__ == "__main__":
                 dbg("Replayed result: {0}".format(newres))
                 res = 'cex not-confirmed'
 
-        print('--------------------------------------------------------------------------------')
+        print(''.join(['-' for x in range(1,80)]))
 
         symbiotic.report_results(res or "no result")
 
