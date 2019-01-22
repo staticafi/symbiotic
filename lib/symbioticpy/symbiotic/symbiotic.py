@@ -8,7 +8,7 @@ from . options import SymbioticOptions
 from . utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
 from . utils.process import ProcessRunner, runcmd
 from . utils.watch import ProcessWatch, DbgWatch
-from . utils.utils import print_stdout, print_stderr, get_clang_version, process_grep
+from . utils.utils import print_stdout, print_stderr, process_grep
 from . exceptions import SymbioticException, SymbioticExceptionalResult
 
 class PrepareWatch(ProcessWatch):
@@ -140,7 +140,8 @@ def get_optlist_after(optlevel):
 
 def clang_has_lifetime_markers():
     retval, out = process_grep(['clang', '-cc1', '--help'], '-force-lifetime-markers')
-    return retval == 0 and len(out) == 1 and out[0].lstrip().startswith('-force-lifetime-markers')
+    return retval == 0 and len(out) == 1 and\
+            out[0].lstrip().decode('ascii').startswith('-force-lifetime-markers')
 
 class Symbiotic(object):
     """
