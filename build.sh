@@ -103,21 +103,13 @@ check_zlib() {
 	echo "#include <zlib.h>" | gcc - -E &>/dev/null
 }
 
+check_32_bit() {
+	echo "#include <stdint.h>" | gcc - -E -m32 &>/dev/null
+}
 
+HAVE_32_BIT_LIBS=$(if check_32_bit; then echo "yes"; else echo "no"; fi)
 HAVE_Z3=$(if check_z3; then echo "yes"; else echo "no"; fi)
 WITH_ZLIB=$(if check_zlib; then echo "no"; else echo "yes"; fi)
-
-if [ "$HAVE_Z3" = "no" -a "$BUILD_STP" = "no" ]; then
-	if [ ! -d "z3" ]; then
-		#BUILD_Z3="yes"
-		#echo "Will build z3 as it is missing in the system"
-		# Our build is not working right now
-		exitmsg "Please, install z3 libraries (libz3-dev package on Ubuntu)"
-	else
-		HAVE_Z3="yes"
-		echo "Found z3 directory, using that build"
-	fi
-fi
 
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
@@ -218,6 +210,21 @@ if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
 fi
 
+if [ "$HAVE_32_BIT_LIBS" = "no" -a "$BUILD_KLEE" = "yes" ]; then
+	exitmsg "KLEE needs 32-bit headers to build 32-bit versions of runtime libraries"
+fi
+
+if [ "$HAVE_Z3" = "no" -a "$BUILD_STP" = "no" ]; then
+	if [ ! -d "z3" ]; then
+		#BUILD_Z3="yes"
+		#echo "Will build z3 as it is missing in the system"
+		# Our build is not working right now
+		exitmsg "Please, install z3 libraries (libz3-dev package on Ubuntu)"
+	else
+		HAVE_Z3="yes"
+		echo "Found z3 directory, using that build"
+	fi
+fi
 
 # Try to get the previous build type if no is given
 if [ -z "$BUILD_TYPE" ]; then
