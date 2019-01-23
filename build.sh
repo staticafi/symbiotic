@@ -216,10 +216,8 @@ fi
 
 if [ "$HAVE_Z3" = "no" -a "$BUILD_STP" = "no" ]; then
 	if [ ! -d "z3" ]; then
-		#BUILD_Z3="yes"
-		#echo "Will build z3 as it is missing in the system"
-		# Our build is not working right now
-		exitmsg "Please, install z3 libraries (libz3-dev package on Ubuntu)"
+		BUILD_Z3="yes"
+		echo "Will build z3 as it is missing in the system"
 	else
 		HAVE_Z3="yes"
 		echo "Found z3 directory, using that build"
