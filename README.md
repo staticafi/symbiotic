@@ -100,7 +100,6 @@ Let's see how you can use Symbiotic to find an error in the following program `t
 
 ```C
 #include <assert.h>
-
 #define N 10
 
 int main( ) { 
@@ -131,7 +130,7 @@ int main( ) {
 }
 ```
 
-Running `scripts/symbiotic test1.c` should produce output similar to the following:
+Running `scripts/symbiotic test1.c` should produce an output similar to the following:
 ```
 6.0.3-dev-llvm-4.0.1-symbiotic:e0b1d107-dg:5c2afa4c-sbt-slicer:0739f6e4-sbt-instrumentation:69fc0523-klee:e1cc1262
 INFO: Optimizations time: 0.20078516006469727
@@ -179,13 +178,10 @@ void __VERIFIER_assert(int);
 typedef unsigned int size_t;
 extern  __attribute__((__nothrow__)) void *malloc(size_t __size ) __attribute__((__malloc__));
 
-
 struct list {
  int n;
  struct list *next;
 };
-
-
 
 int i = 1;
 
@@ -194,7 +190,6 @@ struct list* append(struct list *l, int n)
  struct list *new_el;
 
  new_el = malloc(8);
-
  new_el->n = n;
  new_el->next = l;
 
