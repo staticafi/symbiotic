@@ -94,6 +94,181 @@ scripts/symbiotic main.c additional_definitions.c lib.c
 
 Use `--help` switch to see all available options.
 
+### Example
+
+Let's see how you can use Symbiotic to find an error in the following program `test1.c`:
+
+```C
+#include <assert.h>
+
+#define N 10
+
+int main( ) { 
+  int a[ N ];
+  int swapped = 1;
+  while ( swapped ) { 
+    swapped = 0;
+    int i = 1;
+    while ( i < N ) { 
+      if ( a[i - 1] < a[i] ) { 
+        int t = a[i];
+        a[i] = a[i - 1]; 
+        a[i-1] = t;
+        swapped = 1;
+      }   
+      i = i + 1;
+    }   
+  }
+
+  int x;
+  int y;
+  for ( x = 0 ; x < N ; x++ ) { 
+    for ( y = x+1 ; y < N ; y++ ) { 
+      assert(  a[x] <= a[y]  );  
+    }   
+  }
+  return 0;
+}
+```
+
+Running `scripts/symbiotic test1.c` should produce output similar to the following:
+```
+6.0.3-dev-llvm-4.0.1-symbiotic:e0b1d107-dg:5c2afa4c-sbt-slicer:0739f6e4-sbt-instrumentation:69fc0523-klee:e1cc1262
+INFO: Optimizations time: 0.20078516006469727
+INFO: Starting slicing
+INFO: Total slicing time: 0.01668262481689453
+INFO: Optimizations time: 0.15298175811767578
+Linked our definitions to these undefined functions:
+  __VERIFIER_assert
+  __VERIFIER_error
+INFO: After-slicing optimizations and transformations time: 0.010685443878173828
+INFO: Starting verification
+KLEE: ERROR: /home/marek/src/symbiotic/lib/svcomp/klee/__VERIFIER_error.c:9: ASSERTION FAIL: verifier assertion failed
+KLEE: NOTE: now ignoring this error at this location
+INFO: Verification time: 22.329169750213623
+-------------------------------------------------------------------------------
+Error found.
+RESULT: false(unreach-call)
+
+ --- Error trace ---
+
+Error: ASSERTION FAIL: verifier assertion failed
+File: /home/marek/src/symbiotic/lib/svcomp/klee/__VERIFIER_error.c
+Line: 9
+assembly.ll line: 14
+Stack: 
+	#000000014 in __VERIFIER_error () at /home/marek/src/symbiotic/lib/svcomp/klee/__VERIFIER_error.c:9
+	#100000028 in __VERIFIER_assert (expr) at /home/marek/src/symbiotic/lib/verifier/__VERIFIER_assert.c:8
+	#200000099 in main () at /home/marek/src/symbiotic/tests/sum-false-unreach-call.c:25
+
+ --- ----------- ---
+Generating error witness: /home/marek/src/symbiotic/witness.graphml
+ -- ---- --
+Symbolic objects:
+b'main:uninitialized:0:1' := len 40 bytes, |0x1|2 times 0x0|0x70|3 times 0x0|0x70|3 times 0x0|0x70|0x1|2 times 0x0|0x60|3 times 0x0|0x60|0x1|2 times 0x0|0x40|3 times 0x0|0x40|0x1|7 times 0x0|0x1|2 times 0x0|0x80|
+ -- ---- --
+INFO: Total time elapsed: 23.30927062034607
+```
+
+Symbiotic found an assertion violation. This is also the default mode of Symbiotic. If you want to look for e.g. errors with pointers, use `--prp=memsafety` switch. Consider this program, say `test2.c`:
+
+```C
+extern void __VERIFIER_error() __attribute__ ((__noreturn__));
+void __VERIFIER_assert(int);
+
+typedef unsigned int size_t;
+extern  __attribute__((__nothrow__)) void *malloc(size_t __size ) __attribute__((__malloc__));
+
+
+struct list {
+ int n;
+ struct list *next;
+};
+
+
+
+int i = 1;
+
+struct list* append(struct list *l, int n)
+{
+ struct list *new_el;
+
+ new_el = malloc(8);
+
+ new_el->n = n;
+ new_el->next = l;
+
+ return new_el;
+}
+
+int main(void)
+{
+ struct list *l,m;
+ l = &m; 
+ l->next = 0;
+ l->n = 0;
+
+ l = append(l, 1); 
+ l = append(l, 2); 
+
+ __VERIFIER_assert(l->next->next->n != 0); 
+ return 0;
+}
+
+```
+
+If you run `scripts/symbiotic --prp=memsafety test2.c`, you should get an output similar to the following:
+
+```
+6.0.3-dev-llvm-4.0.1-symbiotic:e0b1d107-dg:5c2afa4c-sbt-slicer:0739f6e4-sbt-instrumentation:69fc0523-klee:e1cc1262
+INFO: Starting instrumentation
+INFO: Instrumentation time: 0.02246999740600586
+INFO: Optimizations time: 0.12847304344177246
+INFO: Starting slicing
+INFO: Total slicing time: 0.016747236251831055
+INFO: Optimizations time: 0.08698320388793945
+Linked our definitions to these undefined functions:
+  __VERIFIER_assert
+  __VERIFIER_error
+INFO: After-slicing optimizations and transformations time: 0.012034416198730469
+Removed calls to '__symbiotic_keep_ptr' (function is undefined)
+INFO: Starting verification
+KLEE: WARNING ONCE: Alignment of memory from call "malloc" is not modelled. Using alignment of 8.
+KLEE: ERROR: /home/marek/src/symbiotic/tests/list-regression-false-valid-deref.c:24: memory error: out of bound pointer
+KLEE: NOTE: now ignoring this error at this location
+INFO: Verification time: 0.05180239677429199
+-------------------------------------------------------------------------------
+Error found.
+RESULT: false(valid-deref)
+
+ --- Error trace ---
+
+Error: memory error: out of bound pointer
+File: /home/marek/src/symbiotic/tests/list-regression-false-valid-deref.c
+Line: 24
+assembly.ll line: 21
+Stack: 
+	#000000021 in append (l=94876668759600, n=1) at /home/marek/src/symbiotic/tests/list-regression-false-valid-deref.c:24
+	#100000047 in main () at /home/marek/src/symbiotic/tests/list-regression-false-valid-deref.c:36
+Info: 
+	address: 12:94876669426520
+	pointing to: object at 94876669426512 of size 8
+		MO11[8] allocated at append():  %call = tail call noalias i8* @malloc(i32 8) #2, !dbg !22
+
+ --- ----------- ---
+Generating error witness: /home/marek/src/symbiotic/witness.graphml
+ -- ---- --
+Symbolic objects:
+b'main:uninitialized:0:2' := len 16 bytes, |16 times 0x0|
+b'append:%dynalloc:21:1' := len 8 bytes, |8 times 0x0|
+ -- ---- --
+INFO: Total time elapsed: 1.111555576324463
+```
+
+If you would omit the `--prp=memsafety` switch, you would see that the output ends with `RESULT: unknown(false(valid-deref))`. This means that Symbiotic found an error but different one that it should look for. Note that the difference is not only in the output. Since Symbiotic slices the program w.r.t error-sites, it may remove some errors that are not related to the particular error that we looked for. So the fact that Symbiotic found an invalid dereference even though it looked for assertion violatoin is just a lucky coincidence and may not be true for other programs.
+
+From the later example you can also see that you can use functions from [SV-COMP](http://sv-comp.sosy-lab.org/) in the programs.
+
 ### Symbiotic Components
 
 Components of Symbiotic can be found at https://github.com/staticafi with the
