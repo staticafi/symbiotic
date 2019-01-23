@@ -726,15 +726,8 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	if [ "$HAVE_Z3" = "yes" -o "$BUILD_Z3" = "yes" ]; then
 		Z3_FLAGS=-DENABLE_SOLVER_Z3=ON
 		if [ -d ${ABS_SRCDIR}/z3 ]; then
-
-			if [ -f "$PREFIX/lib/libz3.so" ]; then
-				Z3_FLAGS="$Z3_FLAGS -DCMAKE_FIND_ROOT_PATH=$PREFIX/lib/cmake/z3/"
-			elif [ -f "$PREFIX/lib64/libz3.so" ]; then
-				Z3_FLAGS="$Z3_FLAGS -DCMAKE_FIND_ROOT_PATH=$PREFIX/lib64/cmake/z3/"
-			else
-				exitmsg "Could not find the compiled z3 libraries"
-			fi
-			Z3_FLAGS="$Z3_FLAGS -DZ3_INCLUDE_DIRS=$PREFIX/include/"
+			Z3_FLAGS="$Z3_FLAGS -DCMAKE_LIBRARY_PATH=${ABS_SRCDIR}/z3/build/"
+			Z3_FLAGS="$Z3_FLAGS -DCMAKE_INCLUDE_PATH=${ABS_SRCDIR}/z3/src/api"
 		fi
 	else
 		exitmsg "KLEE needs Z3 library"
