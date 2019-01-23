@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -e
+
+cd $(dirname $0)
+
+if which apt-get &>/dev/null; then
+	sudo ./install-ubuntu.sh
+elif which pacman &>/dev/null; then
+	sudo ./install-arch.sh
+fi
+
