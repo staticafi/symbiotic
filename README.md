@@ -29,7 +29,6 @@ First of all you must clone the repository:
 $ git clone https://github.com/staticafi/symbiotic
 ```
 
-The build script of Symbiotic will complain about missing dependencies.
 Run `build.sh` script to compile Symbiotic:
 
 ```
@@ -37,19 +36,20 @@ $ cd symbiotic
 $ ./build.sh -j2
 ```
 
-If something goes wrong or you need to adjust the build
-process, you can pass different options to the build script. Possible options include:
+The build script will complain about missing dependencies if any. You can try using `scripts/install-system-dependencies.sh` script to install the main dependencies (or at least check the names of packages). If the build script continues to complain, you must install the dependencies manually.
+
+If you need to adjust the build process, you can pass different options to the build script.
+Possible options include:
   - `build-type=TYPE` (TYPE one of `Release`, `Debug`)
   - `llvm-version=VERSION` (the default `VERSION` is `4.0.1`, other versions are rather experimental)
   - `with-llvm=`, `with-llvm-src=`, `with-llvm-dir=` This set of options orders the script to use already built external LLVM (the build script will build LLVM otherwise if it has not been built already in this folder)
-  - `with-zlib` Build also zlib
   - `no-llvm` Do not try building LLVM
 
-There are many other options, but they are not properly documented. Actually, the whole build script should be rather a guidance of what is needed and how to build the components, but is not guaranteed to work on any system.
+There are many other options, but they are not properly documented (check the script). Actually, the whole build script should be rather a guidance of what is needed and how to build the components, but is not guaranteed to work on any system.
 
 As you can see from the example, you can pass also arguments for make, e.g. `-j2`, to the build script.
 If you need to specify paths to header files or libraries, you can do it
-by passing `CFLAGS`, `CPPFLAGS`, LDFLAGS environment variables either by exporting
+by passing `CFLAGS`, `CPPFLAGS`, and/or `LDFLAGS` environment variables either by exporting
 them beforehand, or by passing them as make options (e.g. `CFLAGS='-g'`)
 
 If everything goes well, Symbiotic components are built and also installed
