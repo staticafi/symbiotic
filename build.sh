@@ -673,7 +673,7 @@ if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
 
-if [ "$BUILD_Z3" = "yes" ]; then
+if [ "$BUILD_Z3" = "yes" -a "$BUILD_KLEE" = "yes"]; then
 	######################################################################
 	#   Z3
 	######################################################################
