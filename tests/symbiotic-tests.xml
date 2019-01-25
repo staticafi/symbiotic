@@ -7,6 +7,8 @@
     <includesfile>reach.set</includesfile>
     <propertyfile>../properties/unreach-call.prp</propertyfile>
   </tasks>
+</rundefinition>
+<rundefinition name="reach-32bit">
   <tasks name="reach-tests-32bit">
     <includesfile>reach.set</includesfile>
     <propertyfile>../properties/unreach-call.prp</propertyfile>
@@ -15,25 +17,37 @@
 </rundefinition>
 
 <rundefinition name="memsafety">
+  <option name="--prp=memsafety"/>
   <tasks name="memsafety-tests">
     <includesfile>memsafety.set</includesfile>
-    <propertyfile>../properties/unmemsafety-call.prp</propertyfile>
+    <propertyfile>../properties/valid-memsafety.prp</propertyfile>
+    <option name="--prp=memsafety"/>
   </tasks>
+</rundefinition>
+
+<rundefinition name="memsafety-32bit">
   <tasks name="memsafety-tests-32bit">
     <includesfile>memsafety.set</includesfile>
     <propertyfile>../properties/valid-memsafety.prp</propertyfile>
     <option name="--32"/>
+    <option name="--prp=memsafety"/>
   </tasks>
 </rundefinition>
 
 <rundefinition name="memcleanup">
   <tasks name="memcleanup-tests">
     <includesfile>memcleanup.set</includesfile>
-    <propertyfile>../properties/unmemcleanup-call.prp</propertyfile>
+    <propertyfile>../properties/valid-memcleanup.prp</propertyfile>
+    <option name="--prp=memcleanup"/>
   </tasks>
+</rundefinition>
+
+<rundefinition name="memcleanup-32bit">
+  <option name="--prp=memcleanup"/>
   <tasks name="memcleanup-tests-32bit">
     <includesfile>memcleanup.set</includesfile>
     <propertyfile>../properties/valid-memcleanup.prp</propertyfile>
+    <option name="--prp=memcleanup"/>
     <option name="--32"/>
   </tasks>
 </rundefinition>
