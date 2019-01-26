@@ -673,11 +673,11 @@ if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
 
-if [ "$BUILD_Z3" = "yes" -a "$BUILD_KLEE" = "yes" ]; then
+if [ "$BUILD_Z3" = "yes" -o "$HAVE_Z3" = "yes" ]; then
 	######################################################################
 	#   Z3
 	######################################################################
-	if [ $FROM -le 4 ]; then
+	if [ $FROM -le 4 -a "$BUILD_KLEE" = "yes" ]; then
 		git_clone_or_pull git://github.com/Z3Prover/z3 -b "z3-4.8.4" z3
 		mkdir -p "z3/build" && pushd "z3/build"
 		if [ ! -d CMakeFiles ]; then
