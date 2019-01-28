@@ -855,7 +855,8 @@ class Symbiotic(object):
         self.nonsliced_llvmfile = self.llvmfile
 
         if not self.options.noslice and \
-           not self.options.property.termination():
+           not self.options.property.termination() and \
+           not self.options.property.coverage():
             self.perform_slicing()
 
         # start a new time era

@@ -41,6 +41,10 @@ class Property:
         """ Check for error calls """
         return False
 
+    def coverage(self):
+        """ Generate tests for coverage """
+        return False
+
     def getPrpFile(self):
         return self._prpfile
 
@@ -100,6 +104,14 @@ class PropertyErrorCall(Property):
 
     def errorcall(self):
         return True
+
+class PropertyCoverage(Property):
+    def __init__(self, prpfile = None):
+        Property.__init__(self, prpfile)
+
+    def coverage(self):
+        return True
+
 
 supported_ltl_properties = {
     'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )'         : 'REACHCALL',
@@ -217,7 +229,7 @@ def get_property(symbiotic_dir, prp):
             prop._prpfile = abspath(join(symbiotic_dir, 'properties/termination.prp'))
 
     elif 'COVERAGE' in prps:
-        prop = PropertyErrorCall(prpfile)
+        prop = PropertyCoverage(prpfile)
         if prpfile is None:
             prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyCoverage.prp'))
 

@@ -689,7 +689,7 @@ def set_testcomp(opts):
     no_integrity_check = True
 
     opts.malloc_never_fails = True
-    opts.noslice = True
+    opts.noslice = False
     opts.explicit_symbolic = True
     opts.nowitness = True
     opts.search_include_paths = False

@@ -120,7 +120,7 @@ class SymbioticTool(KleeBase):
         if not found:
             if returncode != 0:
                 return result.RESULT_ERROR
-            elif self._options.property.errorcall():
+            elif self._options.property.errorcall() or self._options.property.coverage():
                 return result.RESULT_DONE
             else:
                 # we haven't found anything
@@ -144,6 +144,9 @@ class SymbioticTool(KleeBase):
                     return f
                 elif f == result.RESULT_FALSE_REACH and self._options.property.errorcall():
                     return result.RESULT_DONE
+                elif f == result.RESULT_FALSE_REACH and self._options.property.coverage():
+                    return result.RESULT_DONE
+
 
 
             return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
