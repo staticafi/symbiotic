@@ -111,7 +111,6 @@ HAVE_32_BIT_LIBS=$(if check_32_bit; then echo "yes"; else echo "no"; fi)
 HAVE_Z3=$(if check_z3; then echo "yes"; else echo "no"; fi)
 WITH_ZLIB=$(if check_zlib; then echo "no"; else echo "yes"; fi)
 
-export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
 abspath() {
 	if which realpath &>/dev/null; then
@@ -190,7 +189,6 @@ while [ $# -gt 0 ]; do
 		;;
 		llvm-version=*)
 			LLVM_VERSION=${1##*=}
-			LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 		;;
 		build-type=*)
 			BUILD_TYPE=${1##*=}
@@ -223,6 +221,8 @@ if [ "$HAVE_Z3" = "no" -a "$BUILD_STP" = "no" ]; then
 		echo "Found z3 directory, using that build"
 	fi
 fi
+
+export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
 # Try to get the previous build type if no is given
 if [ -z "$BUILD_TYPE" ]; then
