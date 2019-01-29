@@ -630,6 +630,7 @@ def set_svcomp(opts):
     opts.malloc_never_fails = True
     opts.explicit_symbolic = True
     opts.search_include_paths = False
+    opts.linkundef.append('svcomp')
 
     enable_debug('all')
     dbg('Using SV-COMP settings')
