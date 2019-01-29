@@ -77,10 +77,10 @@ class Tool(BaseTool):
         """
         Returns a BenchExec result status based on the output of SMACK
         """
-        splitout = "\n".join(output)
-        if 'SMACK found no errors' in splitout:
+        splitout = b"\n".join(output)
+        if b'SMACK found no errors' in splitout:
           return result.RESULT_TRUE_PROP
-        errmsg = re.search(r'SMACK found an error(:\s+([^\.]+))?\.', splitout)
+        errmsg = re.search('SMACK found an error(:\s+([^\.]+))?\.', splitout.decode('utf-8'))
         if errmsg:
           errtype = errmsg.group(2)
           if errtype:

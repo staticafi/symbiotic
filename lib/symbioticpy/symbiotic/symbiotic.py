@@ -529,7 +529,7 @@ class Symbiotic(object):
         """ Check whether the code contains any KLEE functions """
         kf = []
         for f in self._get_undefined(bitcode):
-            if f.startswith('klee_'):
+            if f.startswith(b"klee_"):
                 kf.append(f)
         return kf
 
