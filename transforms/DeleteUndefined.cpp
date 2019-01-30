@@ -102,6 +102,11 @@ static const char *leave_calls[] = {
   "memmove",
   "__errno_location",
   "__ctype_b_loc",
+  "sqrt",
+  "acos",
+  "cos",
+  "fabs",
+  "pow",
 // fp stuff
   "fmaxf",
   "frexp",

@@ -468,9 +468,6 @@ build_llvm()
 if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	if [ -z "$WITH_LLVM" ]; then
 		build_llvm
-		LLVM_LOCATION=llvm-${LLVM_VERSION}/build
-	else
-		LLVM_LOCATION=$WITH_LLVM
 	fi
 
 	# we need these binaries in symbiotic, copy them
@@ -479,6 +476,12 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	for B in $LLVM_TOOLS; do
 		cp $LLVM_LOCATION/bin/${B} $LLVM_PREFIX/bin/${B} || exit 1
 	done
+fi
+
+if [ -z "$WITH_LLVM" ]; then
+	LLVM_LOCATION=$ABS_SRCDIR/llvm-${LLVM_VERSION}/build
+else
+	LLVM_LOCATION=$WITH_LLVM
 fi
 
 
@@ -695,6 +698,29 @@ if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
 
+######################################################################
+#   KLEE uclic and POSIX
+######################################################################
+if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
+	git_clone_or_pull https://github.com/klee/klee-uclibc.git
+	pushd klee-uclibc
+	if [ ! -f "config.log" ]; then
+		FLAGS="--with-cc=$LLVM_LOCATION/bin/clang --with-llvm-config=$LLVM_LOCATION/bin/llvm-config"
+		if [ "$BUILD_TYPE" = "Debug" ]; then
+			FLAGS="--enable-assertions $FLAGS"
+		else
+			FLAGS="--enable-release $FLAGS"
+		fi
+		./configure --make-llvm-lib $FLAGS || clean_and_exit 1 "git"
+	fi
+
+	build
+	popd
+fi
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
 
 ######################################################################
 #   KLEE
@@ -745,6 +771,9 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 			-DLLVM_CONFIG_BINARY=${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/bin/llvm-config \
 			-DGTEST_SRC_DIR=$ABS_SRCDIR/googletest \
 			-DENABLE_UNIT_TESTS=ON \
+			-DENABLE_KLEE_UCLIBC=ON \
+			-DENABLE_POSIX_RUNTIME=ON \
+			-DKLEE_UCLIBC_PATH=${ABS_SRCDIR}/klee-uclibc \
 			-DENABLE_TCMALLOC=OFF \
 			$ZLIB_FLAGS $Z3_FLAGS $STP_FLAGS \
 			|| clean_and_exit 1 "git"

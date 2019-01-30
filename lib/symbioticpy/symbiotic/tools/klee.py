@@ -144,7 +144,7 @@ class SymbioticTool(KleeBase):
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
                '-output-stats=0', '-disable-opt', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self._options.timeout),
-               '-external-calls=none']
+               '-external-calls=none', '-libc=uclibc']
         if self._options.property.memsafety():
             cmd.append('-check-leaks')
             cmd.append('-exit-on-error-type=Ptr')
