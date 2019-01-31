@@ -115,25 +115,7 @@ class SymbioticTool(KleeBase):
 
     def passes_after_instrumentation(self):
         passes = []
-        if self._options.property.memsafety():
-            # replace llvm.lifetime.start/end with __VERIFIER_scope_enter/leave
-            # so that optimizations will not mess the code up
-            passes = ['-replace-lifetime-markers']
-
-            # make all store/load insts that are marked by instrumentation
-            # volatile, so that we can run optimizations later on them
-            passes.append('-mark-volatile')
         return passes
-
-    def actions_after_compilation(self, symbiotic):
-        if not symbiotic.check_llvmfile(symbiotic.llvmfile, '-check-concurr'):
-            from symbiotic.exceptions import SymbioticExceptionalResult as Result
-            raise Result('unknown (unsupported call (pthread API)')
-
-        # XXX: is this needed?
-        if symbiotic.options.property.signedoverflow() and \
-           not symbiotic.options.overflow_with_clang:
-            symbiotic.link_undefined()
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """

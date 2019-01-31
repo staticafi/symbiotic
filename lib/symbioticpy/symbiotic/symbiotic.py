@@ -690,6 +690,12 @@ class Symbiotic(object):
         if not self.options.property.termination():
             passes.append('-remove-infinite-loops')
 
+        # side-effects, because LLVM optimizations could remove them otherwise,
+        # even though they contain calls to assert
+        if self.options.property.memsafety():
+            passes.append('-remove-readonly-attr')
+            passes.append('-dummy-marker')
+
         if hasattr(self._tool, 'passes_after_slicing'):
             passes += self._tool.passes_after_slicing()
         self.run_opt(passes)
@@ -804,6 +810,17 @@ class Symbiotic(object):
         self.link_unconditional()
 
         passes = []
+        if not self.options.property.termination():
+            passes.append('-remove-infinite-loops')
+
+        if self.options.property.undefinedness() or \
+           self.options.property.signedoverflow():
+            passes.append('-replace-ubsan')
+
+        if self.options.property.signedoverflow() and \
+           not self.options.overflow_with_clang:
+            passes.append('-prepare-overflows')
+
         if self.options.property.memsafety() or \
            self.options.property.undefinedness() or \
            self.options.property.signedoverflow() or \
@@ -828,9 +845,20 @@ class Symbiotic(object):
 
         self.instrument()
 
+        passes = []
         if hasattr(self._tool, 'passes_after_instrumentation'):
             passes = self._tool.passes_after_instrumentation()
-            self.run_opt(passes)
+
+        if self.options.property.memsafety():
+            # replace llvm.lifetime.start/end with __VERIFIER_scope_enter/leave
+            # so that optimizations will not mess the code up
+            passes.append('-replace-lifetime-markers')
+
+            # make all store/load insts that are marked by instrumentation
+            # volatile, so that we can run optimizations later on them
+            passes.append('-mark-volatile')
+
+        self.run_opt(passes)
 
         #################### #################### ###################
         # POSTPROCESSING after instrumentation
