@@ -412,10 +412,7 @@ class Symbiotic(object):
             return filter(set(only_func).__contains__, undefs)
         return undefs
 
-    def link_undefined(self, only_func=[]):
-        if not self.options.linkundef:
-            return
-
+    def _rec_link_undefined(self, only_func=[]):
         # get undefined functions from the bitcode
         undefs = self._get_undefined(self.llvmfile, only_func)
         if self._link_undefined([x.decode('ascii') for x in undefs]):
@@ -423,7 +420,14 @@ class Symbiotic(object):
             # because the functions may have added some new undefined
             # functions
             if not only_func:
-                self.link_undefined()
+                self._rec_link_undefined()
+
+    def link_undefined(self, only_func=[]):
+        if not self.options.linkundef:
+            return
+
+        self._linked_functions = [] # for printing
+        self._rec_link_undefined(only_func)
 
         if self._linked_functions:
             print('Linked our definitions to these undefined functions:')
@@ -828,6 +832,12 @@ class Symbiotic(object):
 
         self.instrument()
 
+
+        #################### #################### ###################
+        # POSTPROCESSING after instrumentation
+        #  - link functions to the instrumented module
+        #################### #################### ###################
+
         passes = []
         if hasattr(self._tool, 'passes_after_instrumentation'):
             passes = self._tool.passes_after_instrumentation()
@@ -844,22 +854,10 @@ class Symbiotic(object):
         self.run_opt(passes)
 
         #################### #################### ###################
-        # POSTPROCESSING after instrumentation
-        #  - link functions to the instrumented module
-        #################### #################### ###################
-
-        # link undefined (no-op when prepare is turned off)
-        # (this still can have an effect even in memsafety, since we
-        # can link __VERIFIER_malloc0.c or similar).
-        # We want to link undefined functions, because we may slice
-        # parts of them. NOTE: maybe we could slice without them,
-        # then link, and then slice again?
-        self.link_undefined()
-
-        #################### #################### ###################
         # SLICING
         #  - slice the code w.r.t error sites
         #################### #################### ###################
+        # remember the non-sliced llvmfile
         self.nonsliced_llvmfile = self.llvmfile
 
         if not self.options.noslice and \
