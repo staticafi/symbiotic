@@ -137,47 +137,10 @@ class SymbioticTool(BaseTool):
         Prepare the bitcode for verification - return a list of
         LLVM passes that should be run on the code
         """
-        # remove definitions of __VERIFIER_* that are not created by us,
-        # make extern globals local, etc. Also remove syntactically infinite loops.
         passes = []
-
-        if not self._options.property.termination():
-            passes.append('-remove-infinite-loops')
-
         if not self._options.nowitness:
             passes.append('-make-nondet')
             passes.append('-make-nondet-source={0}'.format(self._options.sources[0]))
-
-        if not self._options.noprepare:
-            passes.append('-prepare')
-
-        if self._options.property.undefinedness() or \
-           self._options.property.signedoverflow():
-            passes.append('-replace-ubsan')
-
-        if self._options.property.signedoverflow() and \
-           not self._options.overflow_with_clang:
-            passes.append('-prepare-overflows')
-
-        return passes
-
-    def actions_after_compilation(self, symbiotic):
-        if not symbiotic.check_llvmfile(symbiotic.llvmfile, '-check-concurr'):
-            from symbiotic.exceptions import SymbioticExceptionalResult as Result
-            raise Result('unknown (unsupported call (pthread API)')
-
-    def passes_after_slicing(self):
-        """
-        Prepare the bitcode for verification after slicing:
-        \return a list of LLVM passes that should be run on the code
-        """
-        passes = []
-
-        # side-effects, because LLVM optimizations could remove them otherwise,
-        # even though they contain calls to assert
-        if self._options.property.memsafety():
-            passes.append('-remove-readonly-attr')
-            passes.append('-dummy-marker')
 
         return passes
 
