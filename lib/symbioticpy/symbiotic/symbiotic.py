@@ -488,20 +488,6 @@ class Symbiotic(object):
         self.llvmfile = output
         self._generate_ll()
 
-    def check_llvmfile(self, llvmfile, check='-check-unsupported'):
-        """
-        Check whether the bitcode does not contain anything
-        that we do not support
-        """
-        cmd = ['opt', '-load', 'LLVMsbt.so', check,
-               '-o', '/dev/null', llvmfile]
-        try:
-            runcmd(cmd, UnsuppWatch(), 'Failed checking the code')
-        except SymbioticException:
-            return False
-
-        return True
-
     def postprocess_llvm(self):
         """
         Run a command that proprocesses the llvm code
