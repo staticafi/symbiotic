@@ -89,6 +89,7 @@ LLVM_TOOLS="opt clang llvm-link llvm-dis llvm-nm"
 WITH_LLVM=
 WITH_LLVM_SRC=
 WITH_LLVM_DIR=
+WITH_LLVMCBE='no'
 BUILD_STP='no'
 BUILD_Z3='no'
 
@@ -193,6 +194,9 @@ while [ $# -gt 0 ]; do
 		build-type=*)
 			BUILD_TYPE=${1##*=}
 		;;
+		with-llvm-cbe)
+			WITH_LLVMCBE="yes"
+		;;
 		*)
 			if [ -z "$OPTS" ]; then
 				OPTS="$1"
@@ -208,6 +212,8 @@ if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
 fi
 
+export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
+
 if [ "$HAVE_32_BIT_LIBS" = "no" -a "$BUILD_KLEE" = "yes" ]; then
 	exitmsg "KLEE needs 32-bit headers to build 32-bit versions of runtime libraries"
 fi
@@ -222,7 +228,11 @@ if [ "$HAVE_Z3" = "no" -a "$BUILD_STP" = "no" ]; then
 	fi
 fi
 
-export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
+if [ "$WITH_LLVMCBE" = "yes" ]; then
+	if echo ${LLVM_VERSION} | grep -v -q '^[67]'; then
+		exitmsg "llvm-cbe needs LLVM 6 or 7"
+	fi
+fi
 
 # Try to get the previous build type if no is given
 if [ -z "$BUILD_TYPE" ]; then
@@ -428,6 +438,11 @@ build_llvm()
 		rm -f cfe-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
 		rm -f compiler-rt-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
 	fi
+	if [ $WITH_LLVMCBE = "yes" ]; then
+		pushd ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/projects || exitmsg "Invalid directory"
+		git_clone_or_pull https://github.com/JuliaComputing/llvm-cbe
+		popd
+	fi
 
 	mkdir -p llvm-${LLVM_VERSION}/build
 	pushd llvm-${LLVM_VERSION}/build
@@ -469,6 +484,7 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	if [ -z "$WITH_LLVM" ]; then
 		build_llvm
 		LLVM_LOCATION=llvm-${LLVM_VERSION}/build
+
 	else
 		LLVM_LOCATION=$WITH_LLVM
 	fi
