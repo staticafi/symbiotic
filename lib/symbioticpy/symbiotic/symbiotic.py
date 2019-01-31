@@ -349,24 +349,8 @@ class Symbiotic(object):
         """
         self._instrument()
 
-    def _get_libraries(self, which=[]):
-        files = []
-        if self.options.add_libc:
-            d = '{0}/lib'.format(self.env.symbiotic_dir)
-            if self.options.is32bit:
-                d += '32'
-
-            files.append('{0}/klee/runtime/klee-libc.bc'.format(d))
-
-        return files
-
-    def link(self, output=None, libs=None):
-        if libs is None:
-            libs = self._get_libraries()
-
-        if not libs:
-            return
-
+    def link(self, libs, output=None):
+        assert libs
         if output is None:
             output = '{0}-ln.bc'.format(
                 self.llvmfile[:self.llvmfile.rfind('.')])
@@ -440,6 +424,12 @@ class Symbiotic(object):
             # functions
             if not only_func:
                 self.link_undefined()
+
+        if self._linked_functions:
+            print('Linked our definitions to these undefined functions:')
+            for f in self._linked_functions:
+                print_stdout('  ', print_nl=False)
+                print_stdout(f)
 
     def slicer(self, add_params=[]):
         if hasattr(self._tool, 'slicer_options'):
@@ -641,7 +631,7 @@ class Symbiotic(object):
 
         # link all compiled sources to a one bitecode
         # the result is stored to self.llvmfile
-        self.link('code.bc', llvmsrc)
+        self.link(llvmsrc, 'code.bc')
 
     def perform_slicing(self):
         # run optimizations that can make slicing more precise
@@ -700,20 +690,14 @@ class Symbiotic(object):
             passes += self._tool.passes_after_slicing()
         self.run_opt(passes)
 
-        # optimize the code after slicing and before verification
-        opt = get_optlist_after(self.options.optlevel)
-        if opt:
-            self.optimize(passes=opt)
-
         # delete-undefined may insert __VERIFIER_make_nondet
         # and also other funs like __errno_location may be included
         self.link_undefined()
 
-        if self._linked_functions:
-            print('Linked our definitions to these undefined functions:')
-            for f in self._linked_functions:
-                print_stdout('  ', print_nl=False)
-                print_stdout(f)
+        # optimize the code after slicing and linking and before verification
+        opt = get_optlist_after(self.options.optlevel)
+        if opt:
+            self.optimize(passes=opt)
 
         # XXX: we could optimize the code again here...
         print_elapsed_time('INFO: After-slicing optimizations and transformations time',
@@ -734,7 +718,6 @@ class Symbiotic(object):
 
         if hasattr(self._tool, 'actions_before_verification'):
             self._tool.actions_before_verification(self)
-
 
     def _disable_some_optimizations(self, llvm_version):
         disabled = []
@@ -865,9 +848,6 @@ class Symbiotic(object):
         #  - link functions to the instrumented module
         #################### #################### ###################
 
-        # link with the rest of libraries if needed
-        self.link()
-
         # link undefined (no-op when prepare is turned off)
         # (this still can have an effect even in memsafety, since we
         # can link __VERIFIER_malloc0.c or similar).
@@ -875,7 +855,6 @@ class Symbiotic(object):
         # parts of them. NOTE: maybe we could slice without them,
         # then link, and then slice again?
         self.link_undefined()
-
 
         #################### #################### ###################
         # SLICING
