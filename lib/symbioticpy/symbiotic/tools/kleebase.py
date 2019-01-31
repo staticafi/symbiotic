@@ -164,12 +164,6 @@ class SymbioticTool(BaseTool):
 
         return passes
 
-    def actions_before_verification(self, symbiotic):
-        if not symbiotic.check_llvmfile(symbiotic.llvmfile):
-            dbg('Unsupported call (probably floating handling)')
-            from symbiotic.exceptions import SymbioticExceptionalResult as Result
-            raise Result('unknown (call to unsupported function)')
-
     def describe_error(self, llvmfile):
         dump_errors(dirname(llvmfile))
 
