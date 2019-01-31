@@ -41,6 +41,27 @@ class SymbioticTool(SkinkTool):
 
         return opts
 
+    def slicer_options(self):
+        """
+        Returns tuple (c, opts) where c is the slicing
+        criterion and opts is a list of options
+        """
+
+        if self._options.property.memsafety():
+            # default config file is 'config.json'
+            # slice with respect to the memory handling operations
+            return ('__INSTR_mark_pointer,__INSTR_mark_free,__INSTR_mark_allocation',
+                    ['-criteria-are-next-instr'])
+
+        elif self._options.property.memcleanup():
+            # default config file is 'config.json'
+            # slice with respect to the memory handling operations
+            return ('__INSTR_mark_free,__INSTR_mark_allocation',
+                    ['-criteria-are-next-instr'])
+
+        return (self._options.slicing_criterion,[])
+
+
     def set_environment(self, symbiotic_dir, opts):
         """
         Set environment for the tool
