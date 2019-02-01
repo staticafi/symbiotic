@@ -12,7 +12,10 @@ class SymbioticTool(SkinkTool):
         self._options = opts
 
     def llvm_version(self):
-        return '5.0.1'
+        return '5.0.2'
+
+    def cmdline(self, executable, options, tasks, propertyfile, rlimits):
+        return [self.executable(), '-f', 'LLVM'] + tasks
 
     def postprocess_llvm(self, infile):
         """
@@ -28,10 +31,7 @@ class SymbioticTool(SkinkTool):
         """
     List of compilation options specific for this tool
     """
-                #'-target','i386-pc-linux-gnu','-m32','-O2',
-        opts = ['-Wno-implicit-function-declaration','-Wno-incompatible-library-redeclaration','-fno-vectorize',
-                '-fno-slp-vectorize','-gline-tables-only','-Xclang','-disable-lifetime-markers','-Rpass=.*','-Rpass-missed=.*',
-                '-Rpass-analysis=.*','-mllvm','-inline-threshold=15000','-Dassert=__VERIFIER_assert']
+        opts=[]
         if self._options.property.undefinedness():
                 opts.append('-fsanitize=undefined')
                 opts.append('-fno-sanitize=unsigned-integer-overflow')
@@ -61,6 +61,9 @@ class SymbioticTool(SkinkTool):
 
         return (self._options.slicing_criterion,[])
 
+    # skink needs inlined procedures
+    def passes_before_verification(self):
+        return ['-inline-threshold=15000', '-inline']
 
     def set_environment(self, symbiotic_dir, opts):
         """

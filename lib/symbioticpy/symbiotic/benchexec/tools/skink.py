@@ -30,17 +30,18 @@ class Tool(BaseTool):
                   "logback-test.xml",
                   "skink.sh",
                   "skink.jar",
+                  "skink-fpbv.jar",
                   "application.conf"
                   ]
 
     def executable(self):
         return util.find_executable('skink.sh')
 
-    def cmdline(self, executable, options, tasks, propertyfile, rlimits):
-        return [self.executable(), '-f', 'LLVM'] + tasks
-
     def name(self):
         return 'skink'
+
+    def version(self, executable):
+        return self._version_from_tool(executable)
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         output = '\n'.join(output)
