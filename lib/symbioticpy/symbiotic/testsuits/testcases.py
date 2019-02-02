@@ -148,11 +148,11 @@ class TestCaseWriter(object):
         from struct import unpack
 
         objects = self._parseKtest(ktestfile)
-        print(' -- ---- --')
-        print('Symbolic objects:')
-        for o in objects:
-            print_object(o)
-        print(' -- ---- --')
+       #print(' -- ---- --')
+       #print('Symbolic objects:')
+       #for o in objects:
+       #    print_object(o)
+       #print(' -- ---- --')
 
         if not include_objects:
             return 1

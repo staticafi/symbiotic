@@ -293,7 +293,7 @@ def generate_testcase(path, source, is32bit, is_correctness_test):
     saveto = '{0}/test-suite/{1}.xml'.format(environment.symbiotic_dir, os.path.basename(path))
     saveto = os.path.abspath(saveto)
 
-    print('Generating {0} test: {1}'.format('correctness' if is_correctness_test else 'error', saveto))
+    #print('Generating {0} test: {1}'.format('correctness' if is_correctness_test else 'error', saveto))
 
     savetomd = '{0}/metadata.xml'.format(os.path.dirname(saveto))
     savetomd = os.path.abspath(savetomd)
@@ -356,6 +356,8 @@ def generate_tests(bindir, sources, is32bit):
     (paths, is_correctness_test) = get_testcases(bindir)
     for pth in paths:
         generate_testcase(pth, sources[0], is32bit, is_correctness_test)
+
+    print("Generated {0} testcases".format(len(paths)))
 
 # do not remove working files after running
 save_files = False
@@ -694,6 +696,8 @@ def set_testcomp(opts):
     opts.nowitness = True
     opts.search_include_paths = False
 
+    opts.tool_name = "klee-testcomp"
+
     enable_debug('all')
 
 if __name__ == "__main__":
@@ -772,44 +776,47 @@ if __name__ == "__main__":
             print_stdout('RESULT: ERROR ({0})'.format(str(e)))
             err(' == FAILURE ==\n{0}'.format(str(e)))
 
-        # FIXME: make tool specific
+        ###################################################################
+        ### REPORT
+        ###################################################################
         srcdir = os.path.dirname(symbiotic.llvmfile)
-        if tool.name().startswith('klee') and \
-            not opts.noslice and res and res.startswith('false'):
-            print_stdout("Found {0}".format(res))
-            print_stdout("Trying to confirm the error path")
-            # replay the counterexample on non-sliced module
-            ktest = get_ktest(srcdir)
-            newpath = os.path.join(srcdir, os.path.basename(ktest))
-            # move the file out of klee-last directory as the new run
-            # will create a new such directory (link)
-            os.rename(ktest, newpath)
-            newres = symbiotic.replay_nonsliced(newpath)
+        # FIXME: make tool specific
+       #if not test_comp and tool.name().startswith('klee') and \
+       #    not opts.noslice and res and res.startswith('false'):
+       #    print_stdout("Found {0}".format(res))
+       #    print_stdout("Trying to confirm the error path")
+       #    # replay the counterexample on non-sliced module
+       #    ktest = get_ktest(srcdir)
+       #    newpath = os.path.join(srcdir, os.path.basename(ktest))
+       #    # move the file out of klee-last directory as the new run
+       #    # will create a new such directory (link)
+       #    os.rename(ktest, newpath)
+       #    newres = symbiotic.replay_nonsliced(newpath)
 
-            if res != newres:
-                dbg("Replayed result: {0}".format(newres))
-                res = 'cex not-confirmed'
+       #    if res != newres:
+       #        dbg("Replayed result: {0}".format(newres))
+       #        res = 'cex not-confirmed'
 
         print('--------------------------------------------------------------------------------')
 
         symbiotic.report_results(res or "no result")
 
-        # FIXME: make tool specific
-        if res is None or not tool.name().startswith('klee'):
-            pass
-        elif res.startswith('false'):
-            if hasattr(symbiotic._tool, "describe_error"):
-                symbiotic._tool.describe_error(symbiotic.llvmfile)
+       ## FIXME: make tool specific
+       #if res is None or not tool.name().startswith('klee'):
+       #    pass
+       #elif res.startswith('false'):
+       #    if hasattr(symbiotic._tool, "describe_error"):
+       #        symbiotic._tool.describe_error(symbiotic.llvmfile)
 
-            if not opts.nowitness:
-                generate_counterexample(srcdir, sources, opts.property.getLTL(),
-                                        opts.is32bit, False, opts.property.termination(),
-                                        opts.witness_output)
-        elif res == 'true' and not opts.nowitness:
-            generate_counterexample(srcdir, sources, opts.property.getLTL(),
-                                    opts.is32bit, True, opts.property.termination(),
-                                    opts.witness_output)
-        elif res == 'done' and test_comp:
+       #    if not opts.nowitness:
+       #        generate_counterexample(srcdir, sources, opts.property.getLTL(),
+       #                                opts.is32bit, False, opts.property.termination(),
+       #                                opts.witness_output)
+       #elif res == 'true' and not opts.nowitness:
+       #    generate_counterexample(srcdir, sources, opts.property.getLTL(),
+       #                            opts.is32bit, True, opts.property.termination(),
+       #                            opts.witness_output)
+        if res == 'done' and test_comp:
             generate_tests(srcdir, sources, opts.is32bit)
 
     except Timeout:
