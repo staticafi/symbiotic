@@ -162,11 +162,6 @@ class SymbioticTool(BaseTool):
 
         return passes
 
-    def actions_after_compilation(self, symbiotic):
-        if not symbiotic.check_llvmfile(symbiotic.llvmfile, '-check-concurr'):
-            from symbiotic.exceptions import SymbioticExceptionalResult as Result
-            raise Result('unknown (unsupported call (pthread API)')
-
     def passes_after_slicing(self):
         """
         Prepare the bitcode for verification after slicing:
@@ -200,12 +195,6 @@ class SymbioticTool(BaseTool):
             passes.append('-initialize-uninitialized')
 
         return passes
-
-    def actions_before_verification(self, symbiotic):
-        if not symbiotic.check_llvmfile(symbiotic.llvmfile):
-            dbg('Unsupported call (probably floating handling)')
-            from symbiotic.exceptions import SymbioticExceptionalResult as Result
-            raise Result('unknown (call to unsupported function)')
 
     def describe_error(self, llvmfile):
         dump_error(dirname(llvmfile), self._options.property.memsafety())

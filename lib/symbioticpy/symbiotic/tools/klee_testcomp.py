@@ -30,6 +30,15 @@ except ImportError:
 
 from . kleebase import SymbioticTool as KleeBase
 
+from os import listdir
+from os.path import join
+
+def has_tests(working_dir):
+    for f in listdir(join(working_dir, 'klee-last')):
+        if f.endswith('.ktest'):
+            return True
+    return False
+
 class SymbioticTool(KleeBase):
     """
     Symbiotic tool info object
@@ -38,39 +47,10 @@ class SymbioticTool(KleeBase):
     def __init__(self, opts):
         KleeBase.__init__(self, opts)
 
-        # define and compile regular expressions for parsing klee's output
-        self._patterns = [
-            ('ASSERTIONFAILED', re.compile('.*ASSERTION FAIL:.*')),
-            ('ASSERTIONFAILED2', re.compile('.Assertion .* failed.*')),
-            ('ESTPTIMEOUT', re.compile('.*query timed out (resolve).*')),
-            ('EKLEETIMEOUT', re.compile('.*HaltTimer invoked.*')),
-            ('EEXTENCALL', re.compile('.*failed external call.*')),
-            ('ELOADSYM', re.compile('.*ERROR: unable to load symbol.*')),
-            ('EINVALINST', re.compile('.*LLVM ERROR: Code generator does not support.*')),
-            ('EINITVALS', re.compile('.*unable to compute initial values.*')),
-            ('ESYMSOL', re.compile('.*unable to get symbolic solution.*')),
-            ('ESILENTLYCONCRETIZED', re.compile('.*silently concretizing.*')),
-            ('EEXTRAARGS', re.compile('.*calling .* with extra arguments.*')),
-            #('EABORT' , re.compile('.*abort failure.*')),
-            ('EMALLOC', re.compile('.*found huge malloc, returning 0.*')),
-            ('ESKIPFORK', re.compile('.*skipping fork.*')),
-            ('EKILLSTATE', re.compile('.*killing.*states \(over memory cap\).*')),
-            ('EMEMERROR', re.compile('.*memory error: out of bound pointer.*')),
-            ('EMAKESYMBOLIC', re.compile(
-                '.*memory error: invalid pointer: make_symbolic.*')),
-            ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
-            ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
-            ('EMEMALLOC', re.compile('.*KLEE: WARNING: Allocating memory failed.*')),
-            ('EMEMLEAK', re.compile('.*memory error: memory leak detected.*')),
-            ('EFREEALLOCA', re.compile('.*ERROR:.*free of alloca.*')),
-            ('ERESOLV', re.compile('.*ERROR:.*Could not resolve.*'))
-        ]
-
     def actions_after_compilation(self, symbiotic):
         if symbiotic.options.property.signedoverflow() and \
            not symbiotic.options.overflow_with_clang:
             symbiotic.link_undefined()
-
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
@@ -78,77 +58,20 @@ class SymbioticTool(KleeBase):
         """
 
         cmd = [executable, '-write-paths',
-               '-dump-states-on-halt=0', '-silent-klee-assume=1',
-               '-output-stats=0', '-disable-opt', '-only-output-states-covering-new=1',
-               '-max-time={0}'.format(self._options.timeout),
-               '-external-calls=none']
+               '-output-stats=0', '-disable-opt',
+               '-only-output-states-covering-new=1',
+               '-max-memory=7000000']
+
+        if self._options.property.errorcall():
+            cmd.append('-exit-on-error-type=Assert')
+            cmd.append('-dump-states-on-halt=0')
+        else:
+            cmd.append('-max-time=840')
 
         return cmd + options + tasks
 
-    def _parse_klee_output_line(self, line):
-        for (key, pattern) in self._patterns:
-            if pattern.match(line):
-                # return True so that we know we should terminate
-                if key.startswith('ASSERTIONFAILED'):
-                        return result.RESULT_FALSE_REACH
-                elif key == 'EFREE' or key == 'EFREEALLOCA':
-                        return result.RESULT_FALSE_FREE
-                elif key == 'EMEMERROR':
-                        return result.RESULT_FALSE_DEREF
-                elif key == 'EMEMLEAK':
-                    if self._options.property.memcleanup():
-                        return result.RESULT_FALSE_MEMCLEANUP
-                    else:
-                        return result.RESULT_FALSE_MEMTRACK
-                return key
-
-        return None
-
     def determine_result(self, returncode, returnsignal, output, isTimeout):
-        if isTimeout:
-            return 'timeout'
+        if has_tests(self._options.environment.working_dir):
+            return result.RESULT_DONE
 
-        if output is None:
-            return 'ERROR (no output)'
-
-        found = []
-        for line in output:
-            fnd = self._parse_klee_output_line(line.decode('ascii'))
-            if fnd:
-                found.append(fnd)
-
-        if not found:
-            if returncode != 0:
-                return result.RESULT_ERROR
-            elif self._options.property.errorcall() or self._options.property.coverage():
-                return result.RESULT_DONE
-            else:
-                # we haven't found anything
-                return result.RESULT_TRUE_PROP
-        else:
-            if 'EINITVALS' in found: # EINITVALS would break the validity of the found error
-                return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
-
-            for f in found:
-                # we found error that we sought for?
-                if f == result.RESULT_FALSE_REACH and self._options.property.assertions():
-                    return f
-                elif f == result.RESULT_FALSE_OVERFLOW and self._options.property.signedoverflow():
-                    return f
-                elif f in [result.RESULT_FALSE_FREE, result.RESULT_FALSE_DEREF, result.RESULT_FALSE_MEMTRACK]\
-                    and self._options.property.memsafety():
-                    return f
-                elif f == result.RESULT_FALSE_MEMCLEANUP and self._options.property.memcleanup():
-                    return f
-                elif f == result.RESULT_FALSE_TERMINATION and self._options.property.termination():
-                    return f
-                elif f == result.RESULT_FALSE_REACH and self._options.property.errorcall():
-                    return result.RESULT_DONE
-                elif f == result.RESULT_FALSE_REACH and self._options.property.coverage():
-                    return result.RESULT_DONE
-
-
-
-            return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
-
-        return result.RESULT_ERROR
+        return result.RESULT_UNKNOWN

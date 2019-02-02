@@ -8,6 +8,7 @@ class SymbioticOptions(object):
         self.sources = []
 
         self.tool_name = 'klee'
+        self.environment = env
         self.is32bit = False
         self.stats = False
         self.generate_ll = False
