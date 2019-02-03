@@ -21,6 +21,7 @@
 import sys
 import os
 import getopt
+from shutil import copy
 from time import time
 
 # set path to our package
@@ -289,35 +290,25 @@ def generate_graphml(path, source, prps, is32bit, is_correctness_wit, terminatio
         assert path is None
     gen.write(saveto)
 
-def generate_testcase(path, source, is32bit, is_correctness_test):
+def generate_test_metadata(path, source, is32bit):
     saveto = '{0}/test-suite/{1}.xml'.format(environment.symbiotic_dir, os.path.basename(path))
     saveto = os.path.abspath(saveto)
 
-    #print('Generating {0} test: {1}'.format('correctness' if is_correctness_test else 'error', saveto))
+    print('Generating metadata')
 
     savetomd = '{0}/metadata.xml'.format(os.path.dirname(saveto))
     savetomd = os.path.abspath(savetomd)
 
-    gen = TestCaseWriter(source, not is_correctness_test)
     gen_md = MetadataWriter(source, is32bit)
-
-    if is_correctness_test:
-        gen.parseTest(path, source)
-    else:
-        gen.parseTest(path, source)
-    gen.write(saveto)
     gen_md.write(savetomd)
 
 def get_testcases(bindir):
     abd = os.path.abspath(bindir)
     testcases = []
-    is_correctness_test = True
     for path in os.listdir('{0}/klee-last'.format(abd)):
-        if path.endswith('.path') or path.endswith('.err'):
-            testcases.append(os.path.abspath('{0}/klee-last/{1}'.format(abd, path[:path.find(".")])) + '.path')
-        if path.endswith('.err'):
-            is_correctness_test = False
-    return testcases, is_correctness_test
+        if path.endswith('.xml'):
+            testcases.append(os.path.abspath('{0}/klee-last/{1}'.format(abd, path)))
+    return testcases
 
 def get_testcase(bindir):
     abd = os.path.abspath(bindir)
@@ -353,9 +344,10 @@ def generate_tests(bindir, sources, is32bit):
         rm_tmp_dir(tmpdir, True)
         os.mkdir(tmpdir)
 
-    (paths, is_correctness_test) = get_testcases(bindir)
+    generate_test_metadata(bindir, sources[0], is32bit)
+    paths = get_testcases(bindir)
     for pth in paths:
-        generate_testcase(pth, sources[0], is32bit, is_correctness_test)
+        copy(pth, os.path.join(tmpdir))
 
     print("Generated {0} testcases".format(len(paths)))
 
@@ -781,21 +773,21 @@ if __name__ == "__main__":
         ###################################################################
         srcdir = os.path.dirname(symbiotic.llvmfile)
         # FIXME: make tool specific
-       #if not test_comp and tool.name().startswith('klee') and \
-       #    not opts.noslice and res and res.startswith('false'):
-       #    print_stdout("Found {0}".format(res))
-       #    print_stdout("Trying to confirm the error path")
-       #    # replay the counterexample on non-sliced module
-       #    ktest = get_ktest(srcdir)
-       #    newpath = os.path.join(srcdir, os.path.basename(ktest))
-       #    # move the file out of klee-last directory as the new run
-       #    # will create a new such directory (link)
-       #    os.rename(ktest, newpath)
-       #    newres = symbiotic.replay_nonsliced(newpath)
+        if tool.name().startswith('klee') and \
+            opts.property.errorcall() and res and res.startswith('done'):
+            print_stdout("Found {0}".format(res))
+            print_stdout("Trying to confirm the error path")
+            # replay the counterexample on non-sliced module
+            ktest = get_ktest(srcdir)
+            newpath = os.path.join(srcdir, os.path.basename(ktest))
+            # move the file out of klee-last directory as the new run
+            # will create a new such directory (link)
+            os.rename(ktest, newpath)
+            newres = symbiotic.replay_nonsliced(newpath)
 
-       #    if res != newres:
-       #        dbg("Replayed result: {0}".format(newres))
-       #        res = 'cex not-confirmed'
+            if res != newres:
+                dbg("Replayed result: {0}".format(newres))
+                print_stdout('cex not-confirmed... emitting the test anyway')
 
         print('--------------------------------------------------------------------------------')
 
