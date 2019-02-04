@@ -3,6 +3,7 @@ BenchExec is a framework for reliable benchmarking.
 This file is part of BenchExec.
 
 Copyright (C) 2007-2015  Dirk Beyer
+Copyright (C) 2018-2019  Marek Chalupa
 All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,9 +18,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from os.path import dirname, abspath, isfile, join
-from os import listdir
+from os.path import basename, dirname, abspath, isfile, join
+from os import listdir, rename
 from symbiotic.utils.utils import print_stdout
+from symbiotic.witnesses.witnesses import GraphMLWriter
 
 try:
     from symbiotic.versions import llvm_version
@@ -59,6 +61,42 @@ def dump_error(pth):
         # this dumping is just for convenience,
         # so do not return any error
         dbg('Failed dumping the error')
+
+def generate_graphml(path, source, is_correctness_wit, opts, saveto):
+    if saveto is None:
+        saveto = '{0}.graphml'.format(basename(path))
+        saveto = abspath(saveto)
+
+    gen = GraphMLWriter(source, opts.property.getLTL(), opts.is32bit,
+                        is_correctness_wit, opts.witness_with_source_lines)
+    if not is_correctness_wit:
+        gen.parseError(path, opts.property.termination(), source)
+    else:
+        assert path is None
+    gen.write(saveto)
+
+def get_testcase(bindir):
+    abd = abspath(bindir)
+    for path in listdir('{0}/klee-last'.format(abd)):
+        if path.endswith('.err'):
+            # get the corresponding .path file
+            return abspath('{0}/klee-last/{1}'.format(abd, path[:path.find(".")]))
+
+def get_ktest(bindir):
+    return get_testcase(bindir) + '.ktest';
+
+def get_path_file(bindir):
+    return get_testcase(bindir) + '.path';
+
+def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
+    assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
+    print('Generating {0} witness: {1}'.format('correctness' if is_correctness_wit else 'error', saveto))
+    if is_correctness_wit:
+        generate_graphml(None, sources[0], is_correctness_wit, opts, saveto)
+        return
+
+    pth = get_path_file(bindir)
+    generate_graphml(pth, sources[0], is_correctness_wit, opts, saveto)
 
 
 # we use are own fork of KLEE, so do not use the official
@@ -167,3 +205,21 @@ class SymbioticTool(BaseTool):
     def describe_error(self, llvmfile):
         dump_errors(dirname(llvmfile))
 
+    def replay_error_params(self, llvmfile):
+        """ Replay error on the unsliced file """
+        srcdir = dirname(llvmfile)
+        # replay the counterexample on non-sliced module
+        ktest = get_ktest(srcdir)
+        newpath = join(srcdir, basename(ktest))
+        # move the file out of klee-last directory as the new run
+        # will create a new such directory (link)
+        rename(ktest, newpath)
+
+        params = self._options.tool_params if self._options.tool_params else []
+        params.append('-replay-nondets={0}'.format(ktest))
+
+        return params
+
+    def generate_witness(self, llvmfile, sources, has_error):
+        generate_witness(dirname(llvmfile), sources, not has_error,
+                         self._options, self._options.witness_output)
