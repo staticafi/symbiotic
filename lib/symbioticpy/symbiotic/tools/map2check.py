@@ -12,10 +12,9 @@ class SymbioticTool(Map2CheckTool):
 
     def __init__(self, opts):
         self._options = opts
-        self._memsafety = self._options.property.memsafety()
 
     def llvm_version(self):
-        return '3.8.1'
+        return '6.0.1'
 
     def slicer_options(self):
         """
