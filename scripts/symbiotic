@@ -205,9 +205,6 @@ if __name__ == "__main__":
     print_short_vers()
     sources = args
 
-    if opts.source_is_bc and len(sources) != 1:
-        err('Bytecode must be only one file')
-
     if opts.timeout != 0:
         start_timeout(opts.timeout)
 
