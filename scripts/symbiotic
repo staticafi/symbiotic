@@ -30,6 +30,7 @@ from symbiotic.utils import err, dbg
 from symbiotic.utils.utils import print_stdout, print_stderr, get_symbiotic_dir, process_grep
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
 from symbiotic import SymbioticException, Symbiotic
+from symbiotic.verifier import initialize_verifier
 from symbiotic.environment import Environment
 from symbiotic.options import SymbioticOptions, parse_command_line, usage_msg, print_short_vers, get_versions
 from symbiotic.property import get_property
@@ -120,41 +121,6 @@ def setup_working_directory(opts):
         tmpdir = mkdtemp(prefix=prefix, dir='.')
 
     return tmpdir
-
-def initialize_verifier(opts):
-    if opts.tool_name == 'klee-symbiotic':
-        from symbiotic.tools.klee_symbiotic import SymbioticTool
-        return SymbioticTool(opts)
-    if opts.tool_name == 'klee':
-        from symbiotic.tools.klee import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'ceagle':
-        from symbiotic.tools.ceagle import SymbioticTool
-        return SymbioticTool()
-    elif opts.tool_name == 'map2check':
-        from symbiotic.tools.map2check import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'cpachecker':
-        opts.explicit_symbolic = True
-        from symbiotic.tools.cpachecker import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'skink':
-        from symbiotic.tools.skink import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'smack':
-        from symbiotic.tools.smack import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'seahorn':
-        from symbiotic.tools.seahorn import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'nidhugg':
-        from symbiotic.tools.nidhugg import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'divine':
-        from symbiotic.tools.divine import SymbioticTool
-        return SymbioticTool(opts)
-    else:
-        raise SymbioticException('Unknown verifier: {0}'.format(opts.tool_name))
 
 def report_results(res):
     """
