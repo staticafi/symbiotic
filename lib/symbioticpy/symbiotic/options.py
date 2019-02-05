@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import os
 from . property import get_property
 from . utils import err, dbg, enable_debug
 
@@ -28,7 +29,10 @@ class SymbioticOptions(object):
         self.tool_name = 'klee'
         self.is32bit = False
         self.stats = False
+        # generate ll or c as output
         self.generate_ll = False
+        self.generate_c = False
+        self.cc_mode = False
         # properties mapped to our names
         self.property = get_property(env.symbiotic_dir, None)
         self.noslice = False
@@ -154,8 +158,8 @@ def parse_command_line(env):
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file=', 'overflow-config-file=',
                                     'statistics', 'working-dir-prefix=', 'sv-comp',
-                                    'overflow-with-clang', 'generate-ll',
-                                    'search-include-paths', 'replay-error'])
+                                    'overflow-with-clang', 'gen-ll', 'gen-c',
+                                    'search-include-paths', 'replay-error', 'cc'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -167,8 +171,14 @@ def parse_command_line(env):
             sys.exit(0)
         elif opt == '--debug':
             enable_debug(arg.split(','))
-        elif opt == '--generate-ll':
+        elif opt == '--gen-ll':
             options.generate_ll = True
+        elif opt == '--gen-c':
+            options.generate_c = True
+        elif opt == '--cc':
+            options.tool_name='cc'
+            options.cc_mode = True
+            options.no_verification = True
         elif opt == '--verifier':
             options.tool_name = arg.lower()
         elif opt == '--libc':
@@ -270,7 +280,7 @@ def parse_command_line(env):
                 err('Invalid numerical argument for timeout: {0}'.format(arg))
             dbg('Timeout set to {0} sec'.format(arg))
         elif opt == '--output':
-            options.final_output = arg
+            options.final_output = os.path.abspath(arg)
             dbg('Output will be stored to {0}'.format(arg))
         elif opt == '--witness':
             options.witness_output = os.path.expanduser(arg)

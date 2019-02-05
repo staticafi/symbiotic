@@ -40,6 +40,9 @@ def initialize_verifier(opts):
     elif opts.tool_name == 'divine':
         from . tools.divine import SymbioticTool
         return SymbioticTool(opts)
+    elif opts.tool_name == 'cc':
+        from . tools.cc import SymbioticTool
+        return SymbioticTool(opts)
     else:
         raise SymbioticException('Unknown verifier: {0}'.format(opts.tool_name))
 
