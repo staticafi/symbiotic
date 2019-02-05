@@ -188,7 +188,10 @@ def setup_symbiotic():
     environment.set(tool, opts)
 
     dump_paths(fun=dbg)
-    check_components(opts, [opts.slicer_cmd[0]] + [tool.executable()])
+    check_bins = [opts.slicer_cmd[0], tool.executable()]
+    if opts.generate_c:
+        check_bins.append('llvm-cbe')
+    check_components(opts, check_bins)
 
     # get absolute paths to sources
     sources = opts.sources = list(map(os.path.abspath, sources))
