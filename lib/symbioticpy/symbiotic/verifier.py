@@ -1,15 +1,47 @@
 #!/usr/bin/python
 
-import os
 import sys
-import re
 
-from . options import SymbioticOptions
-from . utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
-from . utils.process import ProcessRunner, runcmd
+from . utils import dbg
+from . utils.process import runcmd
 from . utils.watch import ProcessWatch, DbgWatch
-from . utils.utils import print_stdout, print_stderr, process_grep
+from . utils.utils import print_stderr
 from . exceptions import SymbioticException, SymbioticExceptionalResult
+
+def initialize_verifier(opts):
+    if opts.tool_name == 'klee-symbiotic':
+        from symbiotic.tools.klee_symbiotic import SymbioticTool
+        return SymbioticTool(opts)
+    if opts.tool_name == 'klee':
+        from . tools.klee import SymbioticTool
+        return SymbioticTool(opts)
+    elif opts.tool_name == 'ceagle':
+        from . tools.ceagle import SymbioticTool
+        return SymbioticTool()
+    elif opts.tool_name == 'map2check':
+        from . tools.map2check import SymbioticTool
+        return SymbioticTool(opts)
+    elif opts.tool_name == 'cpachecker':
+        opts.explicit_symbolic = True
+        from . tools.cpachecker import SymbioticTool
+        return SymbioticTool(opts)
+    elif opts.tool_name == 'skink':
+        from . tools.skink import SymbioticTool
+        return SymbioticTool(opts)
+    elif opts.tool_name == 'smack':
+        from . tools.smack import SymbioticTool
+        return SymbioticTool(opts)
+    elif opts.tool_name == 'seahorn':
+        from . tools.seahorn import SymbioticTool
+        return SymbioticTool(opts)
+    elif opts.tool_name == 'nidhugg':
+        from . tools.nidhugg import SymbioticTool
+        return SymbioticTool(opts)
+    elif opts.tool_name == 'divine':
+        from . tools.divine import SymbioticTool
+        return SymbioticTool(opts)
+    else:
+        raise SymbioticException('Unknown verifier: {0}'.format(opts.tool_name))
 
 class ToolWatch(ProcessWatch):
     def __init__(self, tool):
