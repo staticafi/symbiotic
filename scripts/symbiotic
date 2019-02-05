@@ -27,14 +27,13 @@ pth = os.path.join(os.path.dirname(__file__), '../lib/symbioticpy')
 sys.path.append(os.path.abspath(pth))
 
 from symbiotic.utils import err, dbg
-from symbiotic.utils.utils import print_stdout, print_stderr, get_symbiotic_dir, process_grep
+from symbiotic.utils.utils import print_stdout, print_stderr, get_symbiotic_dir
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
 from symbiotic import SymbioticException, Symbiotic
 from symbiotic.verifier import initialize_verifier
 from symbiotic.environment import Environment
-from symbiotic.options import SymbioticOptions, parse_command_line, usage_msg, print_short_vers, get_versions
-from symbiotic.property import get_property
-from subprocess import call
+from symbiotic.options import parse_command_line
+from symbiotic.options import usage_msg, print_short_vers, get_versions
 
 def dump_paths(dump_as_cmd=False, fun = print_stdout):
     variables = ['PATH', 'LD_LIBRARY_PATH', 'C_INCLUDE_DIR']
@@ -147,11 +146,24 @@ def report_results(res):
 
     return res
 
-if __name__ == "__main__":
-    # store time when we have started, so that we can
-    # measure how long Symbiotic ran
-    start_time = time()
+def check_components(opts, additional_bins = []):
+    # check availability of binaries and libraries
+    perform_binaries_check(additional_bins)
+    perform_libraries_check()
 
+    # this calls the tools, so it must be after setting the environ
+    if not opts.no_integrity_check:
+        from symbiotic.integritycheck import IntegrityChecker
+
+        try:
+            _, versions, _ = get_versions()
+            checker = IntegrityChecker(versions)
+            checker.check(opts.tool_name);
+        except SymbioticException as e:
+            err('{0}\nIf you are aware of this, you may use --no-integrity-check '\
+                'to suppress this error'.format(str(e)))
+
+def setup_symbiotic():
     environment = Environment(get_symbiotic_dir())
     dbg('Symbiotic dir: {0}'.format(environment.symbiotic_dir))
 
@@ -170,32 +182,13 @@ if __name__ == "__main__":
 
     print_short_vers()
     sources = args
-
-    if opts.timeout != 0:
-        start_timeout(opts.timeout)
-
     tool = initialize_verifier(opts)
 
     # set environment. That is set PATH and LD_LIBRARY_PATH and so on
     environment.set(tool, opts)
 
     dump_paths(fun=dbg)
-    # check availability of binaries and libraries
-    perform_binaries_check([opts.slicer_cmd[0]] + [tool.executable()])
-    perform_libraries_check()
-
-    # this calls the tools, so it must be after setting the environ
-    if not opts.no_integrity_check:
-        from symbiotic.integritycheck import IntegrityChecker
-
-        try:
-
-            _, versions, _ = get_versions()
-            checker = IntegrityChecker(versions)
-            checker.check(opts.tool_name);
-        except SymbioticException as e:
-            err('{0}\nIf you are aware of this, you may use --no-integrity-check '\
-                'to suppress this error'.format(str(e)))
+    check_components(opts, [opts.slicer_cmd[0]] + [tool.executable()])
 
     # get absolute paths to sources
     sources = opts.sources = list(map(os.path.abspath, sources))
@@ -206,6 +199,23 @@ if __name__ == "__main__":
     dbg('Working directory: {0}'.format(environment.working_dir))
     assert environment.symbiotic_dir != environment.working_dir
 
+    return tool, sources, opts, environment
+
+def cleanup_symbiotic(opts, environment):
+    os.chdir(environment.symbiotic_dir)
+    assert environment.symbiotic_dir != environment.working_dir
+    if not opts.save_files:
+        rm_tmp_dir(environment.working_dir)
+
+if __name__ == "__main__":
+    # store time when we have started, so that we can
+    # measure how long Symbiotic ran
+    start_time = time()
+
+    tool, sources, opts, environment = setup_symbiotic()
+
+    if opts.timeout != 0:
+        start_timeout(opts.timeout)
     symbiotic = None
     try:
         # let the show begin!
@@ -232,10 +242,7 @@ if __name__ == "__main__":
             symbiotic.kill()
             symbiotic.kill_wait()
 
-    os.chdir(environment.symbiotic_dir)
-    assert environment.symbiotic_dir != environment.working_dir
-    if not opts.save_files:
-        rm_tmp_dir(environment.working_dir)
+    cleanup_symbiotic(opts, environment)
 
     # print information about how long Symbiotic ran
     print_stdout('INFO: Total time elapsed: {0}'.format(time() - start_time),
