@@ -25,6 +25,7 @@ class SymbioticOptions(object):
     def __init__(self, env):
         # source codes
         self.sources = []
+        self.env = env
 
         self.tool_name = 'klee'
         self.is32bit = False
