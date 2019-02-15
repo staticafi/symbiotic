@@ -744,6 +744,8 @@ class SymbioticCC(object):
         if not self.options.final_output is None:
             # copy the file to final_output
             try:
+                dbg("Renaming the final file from '{0}' to '{1}'"\
+                    .format(self.llvmfile, self.options.final_output))
                 os.rename(self.llvmfile, self.options.final_output)
                 self.llvmfile = self.options.final_output
             except OSError as e:

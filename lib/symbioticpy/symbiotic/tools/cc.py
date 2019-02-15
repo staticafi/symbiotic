@@ -1,3 +1,4 @@
+from os.path import join, abspath
 
 class SymbioticTool:
     """
@@ -68,10 +69,12 @@ class SymbioticTool:
         Compose the command line to execute from the name of the executable
         """
         if self._options.generate_c:
-            output = self._options.final_output or 'symbiotic-output.c'
+            output = self._options.final_output or\
+                     join(self._options.env.symbiotic_dir, 'symbiotic-output.c')
             return ['llvm-cbe', '-o', output] + options + tasks
 
-        output = self._options.final_output or 'symbiotic-output.ll'
+        output = self._options.final_output or\
+                 join(self._options.env.symbiotic_dir, 'symbiotic-output.ll')
         return ['llvm-dis', '-o', output] + options + tasks
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
