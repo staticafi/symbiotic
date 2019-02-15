@@ -1,0 +1,20 @@
+#!/bin/sh
+
+LLVM2C=llvm-cbe
+BITCODE=$1
+if echo "$BITCODE" | grep -q "\.bc$"; then
+	CCODE=${1%%.bc}.c
+elif echo "$BITCODE" | grep -q "\.ll$"; then
+	CCODE=${1%%.ll}.c
+else
+	echo "Unrecognized suffix"
+	CCODE=${1}.c
+fi
+
+$LLVM2C "$BITCODE" -o "$CCODE"
+
+# llvm-cbe does ugly things with some prototypes, we must fix them
+if [ "$LLVM2C" = "llvm-cbe" ]; then
+	sed -i 's@uint32_t\s\+__VERIFIER_nondet_int(void)@int __VERIFIER_nondet_int(void)@' $CCODE
+	sed -i 's@uint32_t\s\+main(void)@int main(void)@' $CCODE
+fi
