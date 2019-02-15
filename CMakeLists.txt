@@ -5,7 +5,7 @@ set(INSTALL_DATA_DIR ${CMAKE_INSTALL_PREFIX} CACHE PATH "Installation directory 
 add_subdirectory(lib)
 add_subdirectory(include)
 
-install(PROGRAMS scripts/symbiotic
+install(PROGRAMS scripts/symbiotic scripts/gen-c
 	DESTINATION bin)
 
 install(DIRECTORY properties

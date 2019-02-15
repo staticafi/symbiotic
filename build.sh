@@ -1121,6 +1121,7 @@ fi
 		$DEPENDENCIES \
 		$INSTR\
 		bin/symbiotic \
+		bin/gen-c \
 		include/symbiotic.h \
 		include/symbiotic-size_t.h \
 		$LLVM_PREFIX/include/stddef.h \
