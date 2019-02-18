@@ -22,27 +22,28 @@ def _set_symbiotic_environ(tool, env, opts):
     if not isdir(llvm_prefix):
         err("Directory with LLVM binaries does not exist: '{0}'".format(llvm_prefix))
 
-    env.prepend('LD_LIBRARY_PATH', '{0}/lib'.format(env.symbiotic_dir))
-    env.prepend('LD_LIBRARY_PATH', '{0}/lib'.format(llvm_prefix))
-
     env.prepend('C_INCLUDE_DIR', '{0}/include'.format(env.symbiotic_dir))
-    env.prepend('C_INCLUDE_DIR', '{0}/include'.format(llvm_prefix))
-    env.prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(env.symbiotic_dir, llvm_version))
 
     if opts.devel_mode:
         env.prepend('PATH', '{0}/scripts'.format(env.symbiotic_dir))
-        env.prepend('PATH', '{0}/llvm-{1}/build/bin:{0}/bin'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('PATH', '{0}/llvm-{1}/build/bin'.format(env.symbiotic_dir, llvm_version))
         env.prepend('PATH', '{0}/dg/build-{1}/tools'.format(env.symbiotic_dir, llvm_version))
         env.prepend('PATH', '{0}/sbt-slicer/build-{1}/src'.format(env.symbiotic_dir, llvm_version))
         env.prepend('PATH', '{0}/sbt-instrumentation/build-{1}/src'.format(env.symbiotic_dir, llvm_version))
 
+        env.prepend('LD_LIBRARY_PATH', '{0}/build/lib'.format(llvm_prefix))
         env.prepend('LD_LIBRARY_PATH', '{0}/transforms/build-{1}/'.format(env.symbiotic_dir,llvm_version))
         env.prepend('LD_LIBRARY_PATH', '{0}/dg/build-{1}/lib'.format(env.symbiotic_dir, llvm_version))
         env.prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/build-{1}/analyses'.format(env.symbiotic_dir, llvm_version))
         env.prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/ra/build-{1}/'.format(env.symbiotic_dir, llvm_version))
         opts.instrumentation_files_path = '{0}/sbt-instrumentation/instrumentations/'.format(env.symbiotic_dir)
     else:
+        env.prepend('PATH', '{0}/bin'.format(env.symbiotic_dir))
+        env.prepend('PATH', '{0}/llvm-{1}/bin'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('LD_LIBRARY_PATH', '{0}/lib'.format(env.symbiotic_dir))
+        env.prepend('LD_LIBRARY_PATH', '{0}/lib'.format(llvm_prefix))
         opts.instrumentation_files_path = '{0}/share/sbt-instrumentation/'.format(llvm_prefix)
+
     # Get include paths again now when we have our clang in the path,
     # so that we have at least includes from our clang's instalation
     # (these has the lowest prefs., so just append them
