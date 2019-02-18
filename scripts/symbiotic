@@ -191,6 +191,7 @@ def setup_symbiotic():
     check_bins = [opts.slicer_cmd[0], tool.executable()]
     if opts.generate_c:
         check_bins.append('llvm-cbe')
+        check_bins.append('gen-c')
     check_components(opts, check_bins)
 
     # get absolute paths to sources
