@@ -71,7 +71,7 @@ class SymbioticTool:
         if self._options.generate_c:
             output = self._options.final_output or\
                      join(self._options.env.symbiotic_dir, 'symbiotic-output.c')
-            return ['llvm-cbe', '-o', output] + options + tasks
+            return ['gen-c', '-o', output] + options + tasks
 
         output = self._options.final_output or\
                  join(self._options.env.symbiotic_dir, 'symbiotic-output.ll')
