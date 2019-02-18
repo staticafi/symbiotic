@@ -72,7 +72,6 @@ add_llvm_loadable_module(LLVMsbt
 				CountInstr.cpp
 				MarkVolatile.cpp
 				DummyMarker.cpp
-				CheckUnsupported.cpp
 				ReplaceLifetimeMarkers.cpp
 				PrepareOverflows.cpp)
 
