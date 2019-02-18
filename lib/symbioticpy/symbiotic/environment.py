@@ -30,6 +30,7 @@ def _set_symbiotic_environ(tool, env, opts):
     env.prepend('PATH', '{0}/llvm-{1}/bin:{0}/bin'.format(env.symbiotic_dir, llvm_version))
 
     if opts.devel_mode:
+        env.prepend('PATH', '{0}/scripts'.format(env.symbiotic_dir))
         env.prepend('PATH', '{0}/llvm-{1}/build/bin:{0}/bin'.format(env.symbiotic_dir, llvm_version))
         env.prepend('PATH', '{0}/dg/build-{1}/tools'.format(env.symbiotic_dir, llvm_version))
         env.prepend('PATH', '{0}/sbt-slicer/build-{1}/src'.format(env.symbiotic_dir, llvm_version))
