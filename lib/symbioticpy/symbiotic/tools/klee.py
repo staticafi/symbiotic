@@ -45,6 +45,7 @@ class SymbioticTool(KleeBase):
             ('ESTPTIMEOUT', re.compile('.*query timed out (resolve).*')),
             ('EKLEETIMEOUT', re.compile('.*HaltTimer invoked.*')),
             ('EEXTENCALL', re.compile('.*failed external call.*')),
+            ('EEXTENCALLDIS', re.compile('.*external calls disallowed.*')),
             ('ELOADSYM', re.compile('.*ERROR: unable to load symbol.*')),
             ('EINVALINST', re.compile('.*LLVM ERROR: Code generator does not support.*')),
             ('EINITVALS', re.compile('.*unable to compute initial values.*')),
