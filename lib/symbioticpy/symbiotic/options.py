@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os
+import os, sys
 from . property import get_property
 from . utils import err, dbg, enable_debug
 
