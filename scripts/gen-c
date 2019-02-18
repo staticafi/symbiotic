@@ -1,14 +1,40 @@
 #!/bin/sh
 
+set -e
+
+USAGE="Usage: gen-c [-o output] bitcode"
+if [ $# -ne 1 -a $# -ne 3 ]; then
+	echo $USAGE
+	exit 1
+fi
+
+CCODE=
+BITCODE=
+
+while [ $# -gt 0 ]; do
+	case $1 in
+	"-o") shift; CCODE="$1";;
+	*) BITCODE="$1";; # take the last one
+	esac
+
+	shift;
+done
+
+if [ -z $BITCODE ]; then
+	echo $USAGE
+	exit 1
+fi
+
 LLVM2C=llvm-cbe
-BITCODE=$1
-if echo "$BITCODE" | grep -q "\.bc$"; then
-	CCODE=${1%%.bc}.c
-elif echo "$BITCODE" | grep -q "\.ll$"; then
-	CCODE=${1%%.ll}.c
-else
-	echo "Unrecognized suffix"
-	CCODE=${1}.c
+if [ -z $CCODE ]; then
+	if echo "$BITCODE" | grep -q "\.bc$"; then
+		CCODE=${BITCODE%%.bc}.c
+	elif echo "$BITCODE" | grep -q "\.ll$"; then
+		CCODE=${BITCODE%%.ll}.c
+	else
+		echo "Unrecognized suffix"
+		CCODE=${BITCODE}.c
+	fi
 fi
 
 $LLVM2C "$BITCODE" -o "$CCODE"
