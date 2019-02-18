@@ -144,8 +144,12 @@ class SymbioticTool(BaseTool):
         if opts.devel_mode:
             env.prepend('PATH', '{0}/klee/build-{1}/bin'.\
                         format(env.symbiotic_dir, llvm_version))
-
-        prefix = '{0}/install'.format(env.symbiotic_dir)
+            # XXX: we must take the runtime libraries from the install directory
+            # because we have them compiled for 32-bit and 64-bit separately
+            #(in build, there's only one of them)
+            prefix = '{0}/install'.format(env.symbiotic_dir)
+        else:
+            prefix = '{0}'.format(env.symbiotic_dir)
 
         if opts.is32bit:
             env.prepend('KLEE_RUNTIME_LIBRARY_PATH',
