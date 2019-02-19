@@ -125,9 +125,20 @@ class SymbioticTool(BaseTool):
         instrumentation (and False otherwise)
         """
 
-        if self._memsafety:
-            # default config file is 'config.json'
+        # NOTE: we do not want to link the functions with memsafety/cleanup
+        # because then the optimizations could remove the calls to markers
+        if self._options.property.memsafety():
             return ('config-marker.json', 'marker.c', False)
+
+        if self._options.property.memcleanup():
+            return ('config-marker-memcleanup.json', 'marker.c', False)
+
+        if self._options.property.signedoverflow():
+            # default config file is 'config.json'
+            return (self._options.overflow_config_file, 'overflows.c', True)
+
+        if self._options.property.termination():
+            return ('config.json', 'termination.c', True)
 
         return (None, None, None)
 
