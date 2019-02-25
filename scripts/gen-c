@@ -39,9 +39,11 @@ fi
 
 $LLVM2C "$BITCODE" -o "$CCODE"
 
+
 # llvm-cbe does ugly things with some prototypes, we must fix them
 if [ "$LLVM2C" = "llvm-cbe" ]; then
-	sed -i 's@uint32_t\s\+__VERIFIER_nondet_int(void)@int __VERIFIER_nondet_int(void)@' $CCODE
+	sed -i 's@uint32_t\s\+__VERIFIER_nondet_int(.*)@int __VERIFIER_nondet_int(void)@' $CCODE
+	sed -i 's@void\s\+__VERIFIER_assume(int\s*,\s*.*)@int __VERIFIER_assume(int)@' $CCODE
 	sed -i 's@uint32_t\s\+main(void)@int main(void)@' $CCODE
 	sed -i 's@__noreturn\s\+void\s\+__VERIFIER_error(int,\s\+\.\.\.);@void __VERIFIER_error(void) __attribute__((noreturn));@' $CCODE
 	sed -i 's@__VERIFIER_error\s*(0\s\+/\*dummy\s\+arg\*/)@__VERIFIER_error()@' $CCODE
