@@ -223,7 +223,7 @@ if [ "$HAVE_Z3" = "no" -a "$BUILD_STP" = "no" ]; then
 		BUILD_Z3="yes"
 		echo "Will build z3 as it is missing in the system"
 	else
-		HAVE_Z3="yes"
+		BUILD_Z3="yes"
 		echo "Found z3 directory, using that build"
 	fi
 fi
@@ -689,7 +689,7 @@ if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
 
-if [ "$BUILD_Z3" = "yes" -o "$HAVE_Z3" = "yes" ]; then
+if [ "$BUILD_Z3" = "yes" ]; then
 	######################################################################
 	#   Z3
 	######################################################################
