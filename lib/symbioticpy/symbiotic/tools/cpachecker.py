@@ -65,8 +65,8 @@ class SymbioticTool(BaseTool):
     def executable(self):
         executable = util.find_executable('cpa.sh', 'scripts/cpa.sh')
         executableDir = os.path.join(os.path.dirname(executable), os.path.pardir)
-        if os.path.isdir(os.path.join(executableDir, 'src')):
-            self._buildCPAchecker(executableDir)
+        #if os.path.isdir(os.path.join(executableDir, 'src')):
+        #    self._buildCPAchecker(executableDir)
         if not os.path.isfile(os.path.join(executableDir, "cpachecker.jar")):
             logging.warning("Required JAR file for CPAchecker not found in {0}.".format(executableDir))
         return executable
@@ -174,7 +174,7 @@ class SymbioticTool(BaseTool):
         # use a default configuration if no other is specicied
         if not options:
             config_paths = os.path.join(os.path.dirname(executable), '..', 'config')
-            additional_options += ['-config', '{0}/svcomp18.properties'.format(config_paths),
+            additional_options += ['-config', '{0}/svcomp19.properties'.format(config_paths),
                                    '-timelimit', '900s']
         return [executable, "-setprop", "language=LLVM"] + options + additional_options + tasks
 
@@ -279,9 +279,9 @@ class SymbioticTool(BaseTool):
         """
         return '3.9.1'
 
-    def passes_after_slicing(self):
+    def passes_before_verification(self):
         """
-        Passes that should be run after slicing
+        Passes that should run before CPAchecker
         """
         # LLVM backend in CPAchecker does not handle switches correctly yet
         return ["-reg2mem", "-lowerswitch", "-simplifycfg"]
