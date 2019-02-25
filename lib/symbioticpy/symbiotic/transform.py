@@ -157,8 +157,12 @@ class SymbioticCC(object):
         if not self.options.generate_ll:
             return
 
-        runcmd(["llvm-dis", self.llvmfile], CompileWatch(),
-               "Generating .ll file from '{0}' failed".format(self.llvmfile))
+        try:
+            runcmd(["llvm-dis", self.llvmfile], CompileWatch(),
+                    "Generating .ll file from '{0}' failed".format(self.llvmfile))
+        except SymbioticException as e:
+            dbg(str(e))
+            dbg("This is a debugging feature, continuing...")
 
     def command(self, cmd):
         return runcmd(cmd, DbgWatch('all'),
