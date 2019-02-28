@@ -123,11 +123,6 @@ def get_optlist_after(optlevel):
 
     return lst
 
-def clang_has_lifetime_markers():
-    retval, out = process_grep(['clang', '-cc1', '--help'], '-force-lifetime-markers')
-    return retval == 0 and len(out) == 1 and\
-            out[0].lstrip().decode('ascii').startswith('-force-lifetime-markers')
-
 class SymbioticCC(object):
     """
     Instance of symbiotic compiler tool.
@@ -153,6 +148,18 @@ class SymbioticCC(object):
         # tool to use
         self._tool = tool
 
+    def _get_cc(self):
+        if hasattr(self._tool, 'cc'):
+            return self._tool.cc()
+
+        return 'clang'
+
+    def cc_has_lifetime_markers(self):
+        retval, out = process_grep([self._get_cc(), '-cc1', '--help'],
+                                   '-force-lifetime-markers')
+        return retval == 0 and len(out) == 1 and\
+                out[0].lstrip().decode('ascii').startswith('-force-lifetime-markers')
+
     def _generate_ll(self):
         if not self.options.generate_ll:
             return
@@ -174,7 +181,8 @@ class SymbioticCC(object):
         """
 
         # __inline attribute is buggy in clang, remove it using -D__inline
-        cmd = ['clang', '-c', '-emit-llvm', '-include', 'symbiotic.h', '-D__inline='] + opts
+        cmd = [self._get_cc(), '-c', '-emit-llvm', '-include',
+               'symbiotic.h', '-D__inline='] + opts
 
         if with_g:
             cmd.append('-g')
@@ -478,7 +486,7 @@ class SymbioticCC(object):
                 opts += self._tool.compilation_options()
 
             if self.options.property.memsafety():
-                if clang_has_lifetime_markers():
+                if self.cc_has_lifetime_markers():
                     dbg('Clang supports -force-lifetime-markers, using it')
                     opts.append('-Xclang')
                     opts.append('-force-lifetime-markers')
