@@ -172,7 +172,7 @@ def setup_symbiotic():
     if opts.dump_env_only:
         tool = initialize_verifier(opts)
         environment.set(tool, opts)
-        dump_paths(dump_env_cmd)
+        dump_paths(opts.dump_env_cmd)
 
         sys.exit(0)
 
