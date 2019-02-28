@@ -14,7 +14,7 @@ class SymbioticTool(SeaTool):
         self._memsafety = self._options.property.memsafety()
 
     def llvm_version(self):
-        return '3.8.1'
+        return '5.0.2'
 
     def instrumentation_options(self):
         """
@@ -26,14 +26,22 @@ class SymbioticTool(SeaTool):
         instrumentation (and False otherwise)
         """
 
-        if self._memsafety:
-            # default config file is 'config.json'
+        # NOTE: we do not want to link the functions with memsafety/cleanup
+        # because then the optimizations could remove the calls to markers
+        if self._options.property.memsafety():
             return ('config-marker.json', 'marker.c', False)
 
-        return (None, None, None)
+        if self._options.property.memcleanup():
+            return ('config-marker-memcleanup.json', 'marker.c', False)
 
-    def compilation_options(self):
-        return ['-D__SEAHORN__','-fgnu89-inline']
+        if self._options.property.signedoverflow():
+            # default config file is 'config.json'
+            return (self._options.overflow_config_file, 'overflows.c', True)
+
+        if self._options.property.termination():
+            return ('config.json', 'termination.c', True)
+
+        return (None, None, None)
 
     def slicer_options(self):
         """
@@ -54,6 +62,16 @@ class SymbioticTool(SeaTool):
                     ['-criteria-are-next-instr'])
 
         return (self._options.slicing_criterion,[])
+
+    def compilation_options(self):
+        return ['-D__SEAHORN__', '-O1', '-Xclang',
+                '-disable-llvm-optzns', '-fgnu89-inline']
+
+    def actions_before_verification(self, symbiotic):
+        # link the DiOS environment
+        output = symbiotic.llvmfile[:-3] + '-sea.bc'
+        symbiotic.command(['sea', 'fe', symbiotic.llvmfile, '-o', output])
+        symbiotic.llvmfile = output
 
     def set_environment(self, symbiotic_dir, opts):
         """
