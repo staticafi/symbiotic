@@ -481,7 +481,7 @@ class SymbioticCC(object):
             opts = ['-Wno-unused-parameter', '-Wno-unknown-attributes',
                     '-Wno-unused-label', '-Wno-unknown-pragmas',
                     '-Wno-unused-command-line-argument',
-                    '-fbracket-depth=1024']
+                    '-Xclang', '-disable-llvm-optzns']
             if hasattr(self._tool, 'compilation_options'):
                 opts += self._tool.compilation_options()
 
