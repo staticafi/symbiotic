@@ -67,11 +67,17 @@ class SymbioticTool(SeaTool):
         return ['-D__SEAHORN__', '-O1', '-Xclang',
                 '-disable-llvm-optzns', '-fgnu89-inline']
 
-    def actions_before_verification(self, symbiotic):
-        # link the DiOS environment
-        output = symbiotic.llvmfile[:-3] + '-sea.bc'
-        symbiotic.command(['sea', 'fe', symbiotic.llvmfile, '-o', output])
-        symbiotic.llvmfile = output
+    def cmdline(self, executable, options, tasks, propertyfile, rlimits):
+        assert len(tasks) == 1
+        assert self._options.property.assertions()
+
+        return ['sea', '--mem=-1', '-m32', 'pf', '--step=large', '-g',
+                '--horn-global-constraints=true', '--track=mem',
+                '--horn-stats', '--enable-nondet-init', '--strip-extern',
+                '--externalize-addr-taken-functions', '--horn-singleton-aliases=true',
+                '--horn-pdr-contexts=600', '--devirt-functions',
+                '--horn-ignore-calloc=false', '--enable-indvar',
+                '--horn-answer', '--inline'] + options + tasks
 
     def set_environment(self, symbiotic_dir, opts):
         """
