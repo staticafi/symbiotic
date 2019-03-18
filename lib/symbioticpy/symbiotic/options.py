@@ -104,6 +104,7 @@ def set_svcomp(opts):
     opts.explicit_symbolic = True
     opts.search_include_paths = False
     opts.linkundef.append('svcomp')
+    opts.CFLAGS.append("-fbracket-depth=-1")
 
     enable_debug('all')
 
