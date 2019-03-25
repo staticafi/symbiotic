@@ -89,13 +89,17 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                            '-sbt-loop-unroll-count', '5',
                            '-sbt-loop-unroll-terminate'])
 
+    def actions_before_slicing(self, symbiotic):
+        symbiotic.link_undefined(['__VERIFIER_atomic_begin',
+                                  '__VERIFIER_atomic_end'])
+
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
         Compose the command line to execute from the name of the executable
         """
 
         # for now use 5
-        cmd = [executable, '-sc']
+        cmd = [executable, '-sc', '-disable-mutex-init-requirement']
         return cmd + options + tasks
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
