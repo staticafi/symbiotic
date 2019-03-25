@@ -743,6 +743,9 @@ class SymbioticCC(object):
         # remember the non-sliced llvmfile
         self.nonsliced_llvmfile = self.curfile
 
+        if hasattr(self._tool, 'actions_before_slicing'):
+            self._tool.actions_before_slicing(self)
+
         if not self.options.noslice and \
            not self.options.property.termination():
             self.perform_slicing()
