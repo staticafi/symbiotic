@@ -133,11 +133,10 @@ class SymbioticTool(BaseTool):
         return passes
 
     def actions_after_slicing(self, symbiotic):
-        llvmfile=symbiotic.llvmfile
-        newfile='{0}-unrolled.bc'.format(llvmfile[:-3])
-        runcmd(['nidhugg', '-unroll=5', llvmfile,
-                '-transform', newfile])
-        symbiotic.llvmfile = newfile
+        # unroll the loops
+        symbiotic.run_opt(['-reg2mem', '-sbt-loop-unroll',
+                           '-sbt-loop-unroll-count', '5',
+                           '-sbt-loop-unroll-terminate'])
 
     def instrumentation_options(self):
         """
