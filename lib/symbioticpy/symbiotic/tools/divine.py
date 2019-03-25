@@ -18,7 +18,7 @@ class SymbioticTool(DivineTool, SymbioticBaseTool):
         self._memsafety = self._options.property.memsafety()
 
     def llvm_version(self):
-        return '5.0.2'
+        return '6.0.1'
 
     def set_environment(self, env, opts):
         """
@@ -29,9 +29,12 @@ class SymbioticTool(DivineTool, SymbioticBaseTool):
                         format(env.symbiotic_dir))
 
 
-    def actions_before_verification(self, symbiotic):
-        # link the DiOS environment
-        symbiotic.command(['divine', 'cc', symbiotic.llvmfile])
+   # not needed anymore?
+   #def actions_before_verification(self, symbiotic):
+   #    # link the DiOS environment
+   #    newfile = symbiotic.curfile[:-3] + '-cc' + symbiotic.curfile[-3:]
+   #    symbiotic.command(['divine', 'cc', symbiotic.curfile, '-o', newfile])
+   #    symbiotic.curfile = newfile
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         return DivineTool.cmdline(self, executable, options, tasks, propertyfile, rlimits)
