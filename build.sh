@@ -92,6 +92,7 @@ WITH_LLVM_DIR=
 WITH_LLVMCBE='no'
 BUILD_STP='no'
 BUILD_Z3='no'
+BUILD_SVF='no'
 
 BUILD_KLEE="yes"
 BUILD_NIDHUGG="no"
@@ -171,6 +172,9 @@ while [ $# -gt 0 ]; do
 		;;
 		build-z3)
 			BUILD_Z3="yes"
+		;;
+		build-svf)
+			BUILD_SVF="yes"
 		;;
 		archive)
 			ARCHIVE="yes"
@@ -274,7 +278,7 @@ clean_and_exit()
 
 build()
 {
-	make "$OPTS" CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $@ || exit 1
+	make $OPTS CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $@ || exit 1
 	return 0
 }
 
@@ -534,11 +538,46 @@ if [ ! -f $LLVM_DIR/LLVMConfig.cmake ]; then
 fi
 
 ######################################################################
+#   SVF
+######################################################################
+if [ $FROM -le 1 -a $BUILD_SVF = "yes" ]; then
+	git_clone_or_pull https://github.com/SVF-tools/SVF
+
+	# download the dg library
+	pushd "$SRCDIR/SVF" || exitmsg "Cloning failed"
+	mkdir -p build-${LLVM_VERSION} || exit 1
+	pushd build-${LLVM_VERSION} || exit 1
+
+	if [ ! -d CMakeFiles ]; then
+
+		export LLVM_SRC="$LLVM_SRC_PATH"
+		export LLVM_OBJ="$LLVM_BUILD_PATH"
+		export LLVM_DIR="$LLVM_BUILDPATH"
+		cmake .. \
+			-DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
+			|| clean_and_exit 1 "git"
+	fi
+
+	(build && make install) || exit 1
+	popd
+	popd
+fi # SVF
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+######################################################################
 #   dg
 ######################################################################
 if [ $FROM -le 1 ]; then
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/dg)" ]; then
 		git_submodule_init
+	fi
+
+	if [ -d $SRCDIR/SVF ]; then
+		SVF_FLAGS="-DSVF_DIR=$ABS_SRCDIR/SVF/build-${LLVM_VERSION}"
 	fi
 
 	# download the dg library
@@ -554,6 +593,7 @@ if [ $FROM -le 1 ]; then
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
+			${SVF_FLAGS} \
 			|| clean_and_exit 1 "git"
 	fi
 
