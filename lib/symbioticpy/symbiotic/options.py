@@ -256,11 +256,6 @@ def parse_command_line(env):
                     err('Could not derive the right property')
             except SymbioticException as e:
                 stre = str(e)
-                if sv_comp:
-                    if 'unsupported property' in stre:
-                        print(stre)
-                        print_stdout('RESULT: unknown')
-                        sys.exit(0)
                 err(str(e))
 
         elif opt == '--pta':
