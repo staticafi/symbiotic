@@ -90,6 +90,7 @@ class SymbioticOptions(object):
         self.dump_env_cmd = False
         self.save_files = False
         self.working_dir_prefix = '/tmp'
+        self.unroll_count = 0
 
 def _remove_linkundef(options, what):
     try:
@@ -162,7 +163,8 @@ def parse_command_line(env):
                                     'memsafety-config-file=', 'overflow-config-file=',
                                     'statistics', 'working-dir-prefix=', 'sv-comp',
                                     'overflow-with-clang', 'gen-ll', 'gen-c',
-                                    'search-include-paths', 'replay-error', 'cc'])
+                                    'search-include-paths', 'replay-error', 'cc',
+                                    'unroll='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -344,6 +346,8 @@ def parse_command_line(env):
             options.search_include_paths = True
         elif opt == '--no-integrity-check':
             options.no_integrity_check = True
+        elif opt == '--unroll':
+            options.unroll_count = int(arg)
 
     return options, args
 
