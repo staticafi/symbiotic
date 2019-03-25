@@ -41,7 +41,7 @@ static RegisterPass<LoopUnroll> SLU("sbt-loop-unroll",
 char LoopUnroll::ID;
 
 
-
+bool CloneMetadata(const llvm::Instruction *, llvm::Instruction *);
 
 static BasicBlock *createTerminatingBlock(Function *F,
                                           Instruction *I) {
@@ -68,11 +68,7 @@ static BasicBlock *createTerminatingBlock(Function *F,
 
   // take the metadata from I, some passes would consider the module
   // broken without the metadata
-  SmallVector<std::pair<unsigned, MDNode *>, 8> metadata;
-  I->getAllMetadata(metadata);
-  // copy the metadata
-  for (auto& md : metadata)
-    CI->setMetadata(md.first, md.second);
+  CloneMetadata(I, CI);
 
   return block;
 }
