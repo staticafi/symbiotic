@@ -660,6 +660,13 @@ class SymbioticCC(object):
         if hasattr(self._tool, 'actions_after_compilation'):
             self._tool.actions_after_compilation(self)
 
+        # unroll the program if desired
+        if self.options.unroll_count != 0:
+            self.run_opt(['-reg2mem', '-sbt-loop-unroll',
+                          '-sbt-loop-unroll-count',
+                          str(self.options.unroll_count),
+                          '-sbt-loop-unroll-terminate'])
+
         #################### #################### ###################
         # PREPROCESSING before instrumentation
         #  - prepare the code: remove calls to error functions if
