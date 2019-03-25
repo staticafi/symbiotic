@@ -157,7 +157,7 @@ class SymbioticTool(KleeBase):
 
         cmd = [executable, '-write-paths',
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
-               '-output-stats=0', '-disable-opt', '-only-output-states-covering-new=1',
+               '-output-stats=0', '--optimize=false', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self._options.timeout),
                '-external-calls=none']
 

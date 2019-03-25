@@ -10,7 +10,7 @@ from . exceptions import SymbioticException, SymbioticExceptionalResult
 
 def initialize_verifier(opts):
     if opts.tool_name == 'klee-symbiotic':
-        from symbiotic.tools.klee_symbiotic import SymbioticTool
+        from . tools.klee_symbiotic import SymbioticTool
         return SymbioticTool(opts)
     if opts.tool_name == 'klee':
         from . tools.klee import SymbioticTool
