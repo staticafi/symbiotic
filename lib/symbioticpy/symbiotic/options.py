@@ -265,8 +265,8 @@ def parse_command_line(env):
 
         elif opt == '--pta':
             options.slicer_pta = arg
-            if not arg in ['fs', 'fi', 'old']:
-                err('Points-to analysis can be one of: fs, fi, old')
+            if not arg in ['fs', 'fi', 'inv']:
+                err('Points-to analysis can be one of: fs, fi, inv')
 
             dbg('Points-to: {0}'.format(arg))
         elif opt == '--slicing-criterion':
