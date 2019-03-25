@@ -71,7 +71,11 @@ bool RemoveInfiniteLoops::runOnFunction(Function &F) {
   Function *extF
     = cast<Function>(M->getOrInsertFunction("__VERIFIER_silent_exit",
                                             Type::getVoidTy(Ctx),
-                                            argTy, nullptr));
+                                            argTy
+#if LLVM_VERSION_MAJOR < 5
+                                       , nullptr
+#endif
+                                       ));
 
   std::vector<Value *> args = { ConstantInt::get(argTy, 0) };
 

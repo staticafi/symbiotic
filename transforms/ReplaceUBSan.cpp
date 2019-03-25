@@ -69,8 +69,11 @@ bool ReplaceUBSan::runOnFunction(Function &F)
         if (!ver_err) {
           LLVMContext& Ctx = M->getContext();
           ver_err = M->getOrInsertFunction("__VERIFIER_error",
-                                           Type::getVoidTy(Ctx),
-                                           nullptr);
+                                           Type::getVoidTy(Ctx)
+#if LLVM_VERSION_MAJOR < 5
+                                           , nullptr
+#endif
+                                       );
         }
 
         auto CI2 = CallInst::Create(ver_err);
@@ -130,8 +133,11 @@ bool ReplaceAsserts::runOnFunction(Function &F)
       if (!ver_err) {
         LLVMContext& Ctx = M->getContext();
         ver_err = M->getOrInsertFunction("__VERIFIER_error",
-                                         Type::getVoidTy(Ctx),
-                                         nullptr);
+                                         Type::getVoidTy(Ctx)
+#if LLVM_VERSION_MAJOR < 5
+                                       , nullptr
+#endif
+                                       );
       }
 
       auto CI2 = CallInst::Create(ver_err);

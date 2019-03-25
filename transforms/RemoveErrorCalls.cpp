@@ -75,7 +75,11 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
           Constant *extF
             = M->getOrInsertFunction(useExit ? "__VERIFIER_exit" :
                                                "__VERIFIER_silent_exit",
-                                     Type::getVoidTy(Ctx), argTy, nullptr);
+                                     Type::getVoidTy(Ctx), argTy
+#if LLVM_VERSION_MAJOR < 5
+                                       , nullptr
+#endif
+                                       );
 
           std::vector<Value *> args = { ConstantInt::get(argTy, 0) };
           ext = std::unique_ptr<CallInst>(CallInst::Create(extF, args));

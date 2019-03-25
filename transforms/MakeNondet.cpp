@@ -336,8 +336,11 @@ Function *MakeNondet::get_verifier_make_nondet(llvm::Module& M)
                                       // -- make the object symbolic entirely
                                        get_size_t(M),   // nbytes
                                        Type::getInt8PtrTy(Ctx), // name
-                                       Type::getInt32Ty(Ctx), // identifier
-                                       nullptr);
+                                       Type::getInt32Ty(Ctx) // identifier
+#if LLVM_VERSION_MAJOR < 5
+                                        , nullptr
+#endif
+                                        );
   _vms = cast<Function>(C);
 
   call_identifier = getKleeMakeNondetCounter(_vms);

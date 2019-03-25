@@ -49,10 +49,18 @@ bool ReplaceLifetimeMarkers::runOnFunction(Function &F)
   LLVMContext& Ctx = M->getContext();
   Constant *ver_scope_enter = M->getOrInsertFunction("__VERIFIER_scope_enter",
                                            Type::getVoidTy(Ctx),
-                                           Type::getInt8PtrTy(Ctx), nullptr);
+                                           Type::getInt8PtrTy(Ctx)
+#if LLVM_VERSION_MAJOR < 5
+                                       , nullptr
+#endif
+                                       );
   Constant *ver_scope_leave = M->getOrInsertFunction("__VERIFIER_scope_leave",
                                            Type::getVoidTy(Ctx),
-                                           Type::getInt8PtrTy(Ctx), nullptr);
+                                           Type::getInt8PtrTy(Ctx)
+#if LLVM_VERSION_MAJOR < 5
+                                       , nullptr
+#endif
+                                       );
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
     Instruction *ins = &*I;
