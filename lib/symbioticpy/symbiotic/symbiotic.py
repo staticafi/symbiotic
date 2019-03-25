@@ -22,7 +22,7 @@ class Symbiotic(object):
         # source file
         self.sources = src
         # source compiled to llvm bytecode
-        self.llvmfile = None
+        self.curfile = None
         # environment
         self.env = env
 
@@ -61,7 +61,7 @@ class Symbiotic(object):
 
     def replay_nonsliced(self, cc):
         bitcode = cc.prepare_unsliced_file()
-        params = self._tool.replay_error_params(cc.llvmfile)
+        params = self._tool.replay_error_params(cc.curfile)
 
         print_stdout('INFO: Replaying error path', color='WHITE')
         restart_counting_time()
@@ -95,10 +95,10 @@ class Symbiotic(object):
         has_error = res and res.startswith('false')
 
         if has_error and hasattr(self._tool, "describe_error"):
-            self._tool.describe_error(cc.llvmfile)
+            self._tool.describe_error(cc.curfile)
 
         if not self.options.nowitness and hasattr(self._tool, "generate_witness"):
-            self._tool.generate_witness(cc.llvmfile, self.sources, has_error)
+            self._tool.generate_witness(cc.curfile, self.sources, has_error)
 
         return res
 
