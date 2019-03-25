@@ -97,8 +97,11 @@ Function *InitializeUninitialized::get_verifier_make_nondet(llvm::Module *M)
                                        Type::getInt8PtrTy(Ctx), // addr
                                        get_size_t(M),   // nbytes
                                        Type::getInt8PtrTy(Ctx), // name
-                                       Type::getInt32Ty(Ctx), // identifier
-                                       nullptr);
+                                       Type::getInt32Ty(Ctx) // identifier
+#if LLVM_VERSION_MAJOR < 5
+                                       , nullptr
+#endif
+                                        );
   _vms = cast<Function>(C);
 
   calls_count = getKleeMakeNondetCounter(_vms);

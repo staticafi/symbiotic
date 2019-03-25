@@ -133,8 +133,11 @@ static void replaceCall(Module& M, CallInst *CI, unsigned line, const std::strin
   Constant *new_func = M.getOrInsertFunction(called_func->getName().str() + "_named",
 										     called_func->getAttributes(),
 									         called_func->getReturnType(),
-                                             Type::getInt8PtrTy(M.getContext()),
-                                             nullptr);
+                                             Type::getInt8PtrTy(M.getContext())
+#if LLVM_VERSION_MAJOR < 5
+                                             , nullptr
+#endif
+                                       );
   assert(new_func);
 
   std::vector<Value *> args;

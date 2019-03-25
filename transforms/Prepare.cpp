@@ -134,13 +134,21 @@ bool Prepare::replace_ldv_calls(Module& M, Function &F) {
       if (name.equals("ldv_assume")) {
         Type *argTy = Type::getInt32Ty(Ctx);
         new_func = M.getOrInsertFunction("__VERIFIER_assume", Type::getVoidTy(Ctx),
-                                         argTy, nullptr);
+                                         argTy
+#if LLVM_VERSION_MAJOR < 5
+                                       , nullptr
+#endif
+                                       );
 
         args.push_back(CI->getOperand(0));
       } else if (name.equals("ldv_stop")) {
         Type *argTy = Type::getInt32Ty(Ctx);
         new_func = M.getOrInsertFunction("__VERIFIER_silent_exit", Type::getVoidTy(Ctx),
-                                         argTy, nullptr);
+                                         argTy
+#if LLVM_VERSION_MAJOR < 5
+                                       , nullptr
+#endif
+                                       );
 
         args.push_back(ConstantInt::get(argTy, 0));
       }
