@@ -70,7 +70,7 @@ class SymbioticVerifier(object):
         # original sources (needed for witness generation)
         self.sources = sources
         # source compiled to llvm bitecode
-        self.llvmfile = bitcode
+        self.curfile = bitcode
         # environment
         self.env = env
         self.options = opts
@@ -103,7 +103,7 @@ class SymbioticVerifier(object):
     def run_verification(self):
         params = self.override_params or self.options.tool_params
         cmd = self._tool.cmdline(self._tool.executable(),
-                                 params, [self.llvmfile],
+                                 params, [self.curfile],
                                  self.options.property.getPrpFile(), [])
 
         return self._run_verifier(cmd)

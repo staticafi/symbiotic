@@ -133,7 +133,7 @@ class SymbioticCC(object):
         # source file
         self.sources = src
         # source compiled to llvm bitecode
-        self.llvmfile = None
+        self.curfile = None
         # environment
         self.env = env
 
@@ -165,8 +165,8 @@ class SymbioticCC(object):
             return
 
         try:
-            runcmd(["llvm-dis", self.llvmfile], CompileWatch(),
-                    "Generating .ll file from '{0}' failed".format(self.llvmfile))
+            runcmd(["llvm-dis", self.curfile], CompileWatch(),
+                    "Generating .ll file from '{0}' failed".format(self.curfile))
         except SymbioticException as e:
             dbg(str(e))
             dbg("This is a debugging feature, continuing...")
@@ -217,12 +217,12 @@ class SymbioticCC(object):
         self._run_opt(passes)
 
     def _run_opt(self, passes):
-        output = '{0}-pr.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+        output = '{0}-pr.bc'.format(self.curfile[:self.curfile.rfind('.')])
         cmd = ['opt', '-load', 'LLVMsbt.so',
-               self.llvmfile, '-o', output] + passes
+               self.curfile, '-o', output] + passes
 
         runcmd(cmd, PrepareWatch(), 'Prepare phase failed')
-        self.llvmfile = output
+        self.curfile = output
         self._generate_ll()
 
     def _get_stats(self, prefix=''):
@@ -230,7 +230,7 @@ class SymbioticCC(object):
             return
 
         cmd = ['opt', '-load', 'LLVMsbt.so', '-count-instr',
-               '-o', '/dev/null', self.llvmfile]
+               '-o', '/dev/null', self.curfile]
         try:
             runcmd(cmd, PrintWatch('INFO: ' + prefix), 'Failed running opt')
         except SymbioticException:
@@ -300,8 +300,8 @@ class SymbioticCC(object):
         self._get_stats('Before instrumentation ')
         print_stdout('INFO: Starting instrumentation', color='WHITE')
 
-        output = '{0}-inst.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['sbt-instr', config, self.llvmfile, definitionsbc, output]
+        output = '{0}-inst.bc'.format(self.curfile[:self.curfile.rfind('.')])
+        cmd = ['sbt-instr', config, self.curfile, definitionsbc, output]
         if not shouldlink:
             cmd.append('--no-linking')
 
@@ -309,7 +309,7 @@ class SymbioticCC(object):
         runcmd(cmd, InstrumentationWatch(), 'Instrumenting the code failed')
         print_elapsed_time('INFO: Instrumentation time', color='WHITE')
 
-        self.llvmfile = output
+        self.curfile = output
         self._get_stats('After instrumentation ')
         self._generate_ll()
 
@@ -323,15 +323,15 @@ class SymbioticCC(object):
         assert libs
         if output is None:
             output = '{0}-ln.bc'.format(
-                self.llvmfile[:self.llvmfile.rfind('.')])
+                self.curfile[:self.curfile.rfind('.')])
 
         cmd = ['llvm-link', '-o', output] + libs
-        if self.llvmfile:
-            cmd.append(self.llvmfile)
+        if self.curfile:
+            cmd.append(self.curfile)
 
         runcmd(cmd, DbgWatch('compile'),
                'Failed linking llvm file with libraries')
-        self.llvmfile = output
+        self.curfile = output
         self._generate_ll()
 
     def _link_undefined(self, undefs):
@@ -384,7 +384,7 @@ class SymbioticCC(object):
 
     def _rec_link_undefined(self, only_func=[]):
         # get undefined functions from the bitcode
-        undefs = self._get_undefined(self.llvmfile, only_func)
+        undefs = self._get_undefined(self.curfile, only_func)
         if self._link_undefined([x.decode('ascii') for x in undefs]):
             # if we linked someting, try get undefined again,
             # because the functions may have added some new undefined
@@ -411,7 +411,7 @@ class SymbioticCC(object):
         else:
             crit, opts = '__assert_fail,__VERIFIER_error', []
 
-        output = '{0}.sliced'.format(self.llvmfile[:self.llvmfile.rfind('.')])
+        output = '{0}.sliced'.format(self.curfile[:self.curfile.rfind('.')])
         cmd = self.options.slicer_cmd + ['-c', crit] + opts
         if self.options.slicer_pta in ['fi', 'fs']:
             cmd.append('-pta')
@@ -429,10 +429,10 @@ class SymbioticCC(object):
         if add_params:
             cmd += add_params
 
-        cmd.append(self.llvmfile)
+        cmd.append(self.curfile)
 
         runcmd(cmd, SlicerWatch(), 'Slicing failed')
-        self.llvmfile = output
+        self.curfile = output
         self._generate_ll()
 
     def optimize(self, passes, disable=[]):
@@ -447,15 +447,15 @@ class SymbioticCC(object):
         if not passes:
             dbg("No passes available for optimizations")
 
-        output = '{0}-opt.bc'.format(self.llvmfile[:self.llvmfile.rfind('.')])
-        cmd = ['opt', '-o', output, self.llvmfile]
+        output = '{0}-opt.bc'.format(self.curfile[:self.curfile.rfind('.')])
+        cmd = ['opt', '-o', output, self.curfile]
         cmd += passes
 
         restart_counting_time()
         runcmd(cmd, CompileWatch(), 'Optimizing the code failed')
         print_elapsed_time('INFO: Optimizations time', color='WHITE')
 
-        self.llvmfile = output
+        self.curfile = output
         self._generate_ll()
 
     def postprocess_llvm(self):
@@ -466,13 +466,13 @@ class SymbioticCC(object):
         if not hasattr(self._tool, 'postprocess_llvm'):
             return
 
-        cmd, output = self._tool.postprocess_llvm(self.llvmfile)
+        cmd, output = self._tool.postprocess_llvm(self.curfile)
         if not cmd:
             return
 
         runcmd(cmd, DbgWatch('compile'),
                   'Failed preprocessing the llvm code')
-        self.llvmfile = output
+        self.curfile = output
         self._generate_ll()
 
     def _compile_sources(self):
@@ -497,7 +497,7 @@ class SymbioticCC(object):
             llvmsrc.append(llvms)
 
         # link all compiled sources to a one bitecode
-        # the result is stored to self.llvmfile
+        # the result is stored to self.curfile
         self.link(llvmsrc, 'code.bc')
 
     def perform_slicing(self):
@@ -586,11 +586,11 @@ class SymbioticCC(object):
         postprocessing steps as for the sliced file
         """
         llvmfile = self.nonsliced_llvmfile
-        tmp = self.llvmfile
-        self.llvmfile = llvmfile
+        tmp = self.curfile
+        self.curfile = llvmfile
         self.postprocessing()
-        llvmfile = self.llvmfile
-        self.llvmfile = tmp
+        llvmfile = self.curfile
+        self.curfile = tmp
 
         return llvmfile
 
@@ -644,12 +644,12 @@ class SymbioticCC(object):
         # compile all sources if the file is not given
         # as a .bc file
         if self.options.source_is_bc:
-            self.llvmfile = self.sources[0]
+            self.curfile = self.sources[0]
         else:
             self._compile_sources()
 
         # make the path absolute
-        self.llvmfile = os.path.abspath(self.llvmfile)
+        self.curfile = os.path.abspath(self.curfile)
         self._generate_ll()
 
         self._get_stats('After compilation ')
@@ -741,7 +741,7 @@ class SymbioticCC(object):
         #  - slice the code w.r.t error sites
         #################### #################### ###################
         # remember the non-sliced llvmfile
-        self.nonsliced_llvmfile = self.llvmfile
+        self.nonsliced_llvmfile = self.curfile
 
         if not self.options.noslice and \
            not self.options.property.termination():
@@ -764,13 +764,13 @@ class SymbioticCC(object):
             # copy the file to final_output
             try:
                 dbg("Renaming the final file from '{0}' to '{1}'"\
-                    .format(self.llvmfile, self.options.final_output))
-                os.rename(self.llvmfile, self.options.final_output)
-                self.llvmfile = self.options.final_output
+                    .format(self.curfile, self.options.final_output))
+                os.rename(self.curfile, self.options.final_output)
+                self.curfile = self.options.final_output
             except OSError as e:
                 msg = 'Cannot create {0}: {1}'.format(
                     self.options.final_output, e.message)
                 raise SymbioticException(msg)
 
-        return self.llvmfile
+        return self.curfile
 
