@@ -37,6 +37,8 @@ except ImportError:
     import symbiotic.benchexec.util as util
     from symbiotic.benchexec.tools.template import BaseTool
 
+from . tool import SymbioticBaseTool
+
 def dump_errors(bindir):
     pths = []
     abd = abspath(join(bindir, 'klee-last'))
@@ -102,12 +104,13 @@ def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
 # we use are own fork of KLEE, so do not use the official
 # benchexec module for klee (FIXME: update the module so that
 # we can use it)
-class SymbioticTool(BaseTool):
+class SymbioticTool(BaseTool, SymbioticBaseTool):
     """
     Symbiotic tool info object
     """
 
     def __init__(self, opts):
+        SymbioticBaseTool.__init__(self, opts)
         self._options = opts
 
     def executable(self):
@@ -159,20 +162,6 @@ class SymbioticTool(BaseTool):
             env.prepend('KLEE_RUNTIME_LIBRARY_PATH',
                         '{0}/llvm-{1}/lib/klee/runtime'.\
                         format(prefix, self.llvm_version()))
-
-    def compilation_options(self):
-        """
-        List of compilation options specific for this tool
-        """
-        opts = []
-        if self._options.property.undefinedness():
-                opts.append('-fsanitize=undefined')
-                opts.append('-fno-sanitize=unsigned-integer-overflow')
-        elif self._options.property.signedoverflow():
-                opts.append('-fsanitize=signed-integer-overflow')
-                opts.append('-fsanitize=shift')
-
-        return opts
 
     def passes_after_compilation(self):
         """

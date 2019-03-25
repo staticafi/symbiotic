@@ -76,41 +76,6 @@ class SymbioticTool(KleeBase):
             self._patterns.append(
                 ('ECONCRETIZED', re.compile('.* concretized symbolic size.*')))
 
-    def instrumentation_options(self):
-        """
-        Returns a triple (c, l, x) where c is the configuration
-        file for instrumentation (or None if no instrumentation
-        should be performed), l is the
-        file with definitions of the instrumented functions
-        and x is True if the definitions should be linked after
-        instrumentation (and False otherwise)
-        """
-
-        if self._options.property.memsafety():
-            # default config file is 'config.json'
-            return (self._options.memsafety_config_file, 'memsafety.c', True)
-
-        if self._options.property.signedoverflow():
-            # default config file is 'config.json'
-            return (self._options.overflow_config_file, 'overflows.c', True)
-
-        if self._options.property.termination():
-            return ('config.json', 'termination.c', True)
-
-        if self._options.property.memcleanup():
-            return ('config-memcleanup.json', 'memsafety.c', True)
-
-        return (None, None, None)
-
-    def slicer_options(self):
-        """
-        Returns tuple (c, opts) where c is the slicing
-        criterion and opts is a list of options
-        """
-
-        return (self._options.slicing_criterion,[])
-
-
     def passes_after_slicing(self):
         """
         Prepare the bitcode for verification after slicing:
