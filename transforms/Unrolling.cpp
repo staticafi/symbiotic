@@ -181,7 +181,5 @@ bool LoopUnroll::runOnLoop(Loop *L, LPPassManager& LPM) {
     replaceSuccessor(LastBlocks, LastBlocks[0], termB);
   }
 
-  llvm::errs() << *F << "\n";
-
   return true;
 }
