@@ -114,10 +114,6 @@ class SymbioticTool(KleeBase):
 
         return (self._options.slicing_criterion,[])
 
-    def passes_after_instrumentation(self):
-        passes = []
-        return passes
-
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
         Compose the command line to execute from the name of the executable
