@@ -9,11 +9,11 @@ from . utils.utils import print_stderr
 from . exceptions import SymbioticException, SymbioticExceptionalResult
 
 def initialize_verifier(opts):
-    if opts.tool_name == 'klee-symbiotic':
-        from . tools.klee_symbiotic import SymbioticTool
-        return SymbioticTool(opts)
     if opts.tool_name == 'klee':
-        from . tools.klee import SymbioticTool
+        if opts.full_instrumentation:
+            from . tools.klee_symbiotic import SymbioticTool
+        else:
+            from . tools.klee import SymbioticTool
         return SymbioticTool(opts)
     elif opts.tool_name == 'ceagle':
         from . tools.ceagle import SymbioticTool

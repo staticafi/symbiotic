@@ -75,6 +75,8 @@ class SymbioticOptions(object):
         self.CPPFLAGS = []
         self.devel_mode = False
         self.instrumentation_files_path = None
+        # instrument tracking the state of the program into the program itself
+        self.full_instrumentation = False
         self.nowitness = False
         # try to automatically find paths with common header files
         self.search_include_paths = False
@@ -164,7 +166,7 @@ def parse_command_line(env):
                                     'statistics', 'working-dir-prefix=', 'sv-comp',
                                     'overflow-with-clang', 'gen-ll', 'gen-c',
                                     'search-include-paths', 'replay-error', 'cc',
-                                    'unroll='])
+                                    'unroll=', 'full-instrumentation'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -343,6 +345,8 @@ def parse_command_line(env):
             options.no_integrity_check = True
         elif opt == '--unroll':
             options.unroll_count = int(arg)
+        elif opt == '--full-instrumentation':
+            options.full_instrumentation = True
 
     return options, args
 
@@ -441,6 +445,9 @@ where OPTS can be following:
     --replay-error            Try replaying a found error on non-sliced code
     --search-include-paths    Try automatically finding paths with standard include directories
     --sv-comp                 Shortcut for SV-COMP settings (malloc-never-fails, etc.)
+    --full-instrumentation    Tranform checking errors to reachability problem, i.e.
+                              instrument tracking of the state of the program directly
+                              into the program.
 
     One (and only one) of the sources must contain 'main' function
 """
