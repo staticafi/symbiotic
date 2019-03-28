@@ -161,7 +161,7 @@ class SymbioticCC(object):
                 out[0].lstrip().decode('ascii').startswith('-force-lifetime-markers')
 
     def cc_disable_optimizations(self):
-        return ['-O0', '-cc1', '-disable-llvm-optzns']
+        return ['-O0', '-disable-llvm-passes']
 
     def _generate_ll(self):
         if not self.options.generate_ll:
