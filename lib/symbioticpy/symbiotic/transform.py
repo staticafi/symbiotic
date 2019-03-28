@@ -152,13 +152,16 @@ class SymbioticCC(object):
         if hasattr(self._tool, 'cc'):
             return self._tool.cc()
 
-        return 'clang'
+        return ['clang']
 
     def cc_has_lifetime_markers(self):
-        retval, out = process_grep([self._get_cc(), '-cc1', '--help'],
+        retval, out = process_grep(self._get_cc() + ['-cc1', '--help'],
                                    '-force-lifetime-markers')
         return retval == 0 and len(out) == 1 and\
                 out[0].lstrip().decode('ascii').startswith('-force-lifetime-markers')
+
+    def cc_disable_optimizations(self):
+        return ['-O0', '-cc1', '-disable-llvm-optzns']
 
     def _generate_ll(self):
         if not self.options.generate_ll:
@@ -181,8 +184,8 @@ class SymbioticCC(object):
         """
 
         # __inline attribute is buggy in clang, remove it using -D__inline
-        cmd = [self._get_cc(), '-c', '-emit-llvm', '-include',
-               'symbiotic.h', '-D__inline='] + opts
+        cmd = self._get_cc() + ['-c', '-emit-llvm', '-include',
+                                'symbiotic.h', '-D__inline='] + opts
 
         if with_g:
             cmd.append('-g')
@@ -475,30 +478,38 @@ class SymbioticCC(object):
         self.curfile = output
         self._generate_ll()
 
-    def _compile_sources(self):
+    def _compile_sources(self, output='code.bc'):
+        """
+        Compile the given sources into LLVM bitcode and link them into one
+        file named \param output. This output file is also set as the self.curfile.
+        """
+
+        opts = ['-Wno-unused-parameter', '-Wno-unknown-attributes',
+                '-Wno-unused-label', '-Wno-unknown-pragmas',
+                '-Wno-unused-command-line-argument']
+
+        if self.options.property.memsafety():
+            if self.cc_has_lifetime_markers():
+                dbg('Clang supports -force-lifetime-markers, using it')
+                opts.append('-Xclang')
+                opts.append('-force-lifetime-markers')
+            else:
+                print_stdout('Clang does not support lifetime markers, scopes are not instrumented', color="BROWN")
+
+        if hasattr(self._tool, 'compilation_options'):
+            opts += self._tool.compilation_options()
+
+        opts += self.cc_disable_optimizations()
+
+
         llvmsrc = []
         for source in self.sources:
-            opts = ['-Wno-unused-parameter', '-Wno-unknown-attributes',
-                    '-Wno-unused-label', '-Wno-unknown-pragmas',
-                    '-Wno-unused-command-line-argument',
-                    '-Xclang', '-disable-llvm-optzns']
-            if hasattr(self._tool, 'compilation_options'):
-                opts += self._tool.compilation_options()
-
-            if self.options.property.memsafety():
-                if self.cc_has_lifetime_markers():
-                    dbg('Clang supports -force-lifetime-markers, using it')
-                    opts.append('-Xclang')
-                    opts.append('-force-lifetime-markers')
-                else:
-                    print_stdout('Clang does not support lifetime markers, scopes are not instrumented', color="BROWN")
-
             llvms = self._compile_to_llvm(source, opts=opts)
             llvmsrc.append(llvms)
 
         # link all compiled sources to a one bitecode
         # the result is stored to self.curfile
-        self.link(llvmsrc, 'code.bc')
+        self.link(llvmsrc, output)
 
     def perform_slicing(self):
         # run optimizations that can make slicing more precise
