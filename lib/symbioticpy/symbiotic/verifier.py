@@ -18,6 +18,9 @@ def initialize_verifier(opts):
     elif opts.tool_name == 'ceagle':
         from . tools.ceagle import SymbioticTool
         return SymbioticTool()
+    elif opts.tool_name == 'ikos':
+        from . tools.ikos import SymbioticTool
+        return SymbioticTool(opts)
     elif opts.tool_name == 'map2check':
         from . tools.map2check import SymbioticTool
         return SymbioticTool(opts)
