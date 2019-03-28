@@ -28,6 +28,9 @@ class SymbioticTool(DivineTool, SymbioticBaseTool):
             env.prepend('PATH', '{0}/divine'.\
                         format(env.symbiotic_dir))
 
+    def cc(self):
+        return ['divine', 'cc']
+
 
    # not needed anymore?
    #def actions_before_verification(self, symbiotic):
