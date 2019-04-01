@@ -2,6 +2,7 @@
 
 from os import environ
 from os.path import isfile, isdir
+from . utils import err
 
 def _set_symbiotic_environ(tool, env, opts):
     if opts.search_include_paths:
