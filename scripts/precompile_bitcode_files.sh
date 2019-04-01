@@ -13,7 +13,7 @@ for LLVM in $PREFIX/llvm-*; do
 	CLANG=$LLVM/bin/clang
 	LLVM_VERSION=${LLVM#*llvm-*}
 	INCLUDE_DIR="llvm-${LLVM_VERSION}/build/lib/clang/${LLVM_VERSION}/include/"
-	CPPFLAGS="-I ${INCLUDE_DIR}"
+	CPPFLAGS="-I ${INCLUDE_DIR} $CPPFLAGS"
 	for F in `find $INSTR/instrumentations/ -name '*.c'`; do
 		NAME=`basename $F`
 		OUT=${NAME%*.c}.bc

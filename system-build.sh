@@ -20,52 +20,25 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-set -x
+set -e
 
-#https://unix.stackexchange.com/a/48550
-set -E
-trap '[ "$?" -ne 77 ] || exit 77' ERR
+source "$(dirname $0)/scripts/build-utils.sh"
 
-exitmsg()
-{
-	echo "$1" >/dev/stderr
-	exit 77
-}
+RUNDIR=`pwd`
+SRCDIR=`dirname $0`
+ABS_RUNDIR=`abspath $RUNDIR`
+ABS_SRCDIR=`abspath $SRCDIR`
 
-abspath() {
-	if which realpath &>/dev/null; then
-		realpath "$1" || exitmsg "Can not get absolute path of $1";
-	elif [[ "$OSTYPE" == *darwin* ]]; then
-		greadlink -f "$1" || exitmsg "Can not get absolute path of $1";
-	else
-		readlink -f "$1" || exitmsg "Can not get absolute path of $1";
-	fi
-}
-
-download_tar()
-{
-	$GET "$1" || exit 1
-	BASENAME="`basename $1`"
-	tar xf "$BASENAME" || exit 1
-	rm -f "BASENAME"
-}
-
-download_zip()
-{
-	$GET "$1" || exit 1
-	BASENAME="`basename $1`"
-	unzip "$BASENAME" || exit 1
-	rm -f "BASENAME"
-}
 
 usage()
 {
-	echo "$0 [shell] [no-llvm] [update] [archive | full-archive] [slicer | scripts | klee | witness | bin] OPTS"
+	echo "$0 [archive | full-archive] [update] [slicer | scripts | klee | witness | bin] OPTS"
 	echo "" # new line
-	echo -e "update   - update repositories"
 	echo -e "build-type=TYPE    - set Release/Debug build"
+	echo -e "llvm-config        - use the given llvm-config binary"
 	echo -e "archive            - create a zip file with symbiotic"
 	echo -e "full-archive       - create a zip file with symbiotic and add non-standard dependencies"
+	echo -e "update             - update repositories"
 	echo "" # new line
 	echo -e "slicer, scripts,"
 	echo -e "klee, witness"
@@ -75,7 +48,6 @@ usage()
 }
 
 export PREFIX=`pwd`/install
-
 export LD_LIBRARY_PATH="$PREFIX/lib:$LD_LIBRARY_PATH"
 export C_INCLUDE_PATH="$PREFIX/include:$C_INCLUDE_PATH"
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/share/pkgconfig:$PKG_CONFIG_PATH"
@@ -84,10 +56,6 @@ FROM='0'
 UPDATE=
 OPTS=
 
-RUNDIR=`pwd`
-SRCDIR=`dirname $0`
-ABS_RUNDIR=`abspath $RUNDIR`
-ABS_SRCDIR=`abspath $SRCDIR`
 ARCHIVE="no"
 FULL_ARCHIVE="no"
 BUILD_KLEE="yes"
@@ -149,38 +117,13 @@ if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
 fi
 
-check_z3() {
-	echo "#include <z3.h>" | gcc - -E &>/dev/null
-}
-
-check_zlib() {
-	echo "#include <zlib.h>" | gcc - -E &>/dev/null
-}
-
-check_32_bit() {
-	echo "#include <stdint.h>" | gcc - -E -m32 &>/dev/null
-}
-
-check_tcmalloc() {
-	echo "#include <gperftools/malloc_extension.h>" | gcc - -E &>/dev/null
-}
-
 HAVE_32_BIT_LIBS=$(if check_32_bit; then echo "yes"; else echo "no"; fi)
 HAVE_Z3=$(if check_z3; then echo "yes"; else echo "no"; fi)
+HAVE_GTEST=$(if check_gtest; then echo "yes"; else echo "no"; fi)
 ENABLE_TCMALLOC=$(if check_tcmalloc; then echo "on"; else echo "off"; fi)
 
 if [ "$HAVE_32_BIT_LIBS" = "no" -a "$BUILD_KLEE" = "yes" ]; then
 	exitmsg "KLEE needs 32-bit headers to build 32-bit versions of runtime libraries"
-fi
-
-if [ "$HAVE_Z3" = "no" -a "$BUILD_STP" = "no" ]; then
-	if [ ! -d "z3" ]; then
-		BUILD_Z3="yes"
-		echo "Will build z3 as it is missing in the system"
-	else
-		BUILD_Z3="yes"
-		echo "Found z3 directory, using that build"
-	fi
 fi
 
 # Try to get the previous build type if no is given
@@ -208,52 +151,6 @@ mkdir -p $PREFIX/lib
 mkdir -p $PREFIX/lib32
 mkdir -p $PREFIX/include
 
-clean_and_exit()
-{
-	CODE="$1"
-
-	if [ "$2" = "git" ]; then
-		git clean -xdf
-	else
-		rm -rf *
-	fi
-
-	exit $CODE
-}
-
-build()
-{
-	make $OPTS CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $@ || exit 1
-	return 0
-}
-
-git_clone_or_pull()
-{
-
-	REPO="$1"
-	FOLDER="$2"
-	shift;shift
-
-	if [ -d "$FOLDER" ]; then
-		if [ "x$UPDATE" = "x1" ]; then
-			cd $FOLDER && git pull && cd -
-		fi
-	else
-		git clone $REPO $FOLDER $@
-	fi
-}
-
-git_submodule_init()
-{
-	cd "$SRCDIR"
-
-	git submodule init || exitmsg "submodule init failed"
-	git submodule update || exitmsg "submodule update failed"
-
-	cd -
-}
-
-GET="curl -LRO"
 check()
 {
 	MISSING=""
@@ -309,7 +206,13 @@ check
 #     Copy the LLVM libraries
 ######################################################################
 
-test -z "$LLVM_CONFIG" && LLVM_CONFIG=llvm-config
+test -z "$LLVM_CONFIG" && LLVM_CONFIG=$(which llvm-config || true)
+
+if [ ! -z $LLVM_CONFIG -a -x $LLVM_CONFIG ]; then
+	echo "Using llvm-config: $LLVM_CONFIG";
+else
+	exitmsg "Cannot find llvm-config binary. Try using llvm-config= switch"
+fi
 
 # LLVM tools that we need
 LLVM_VERSION=$($LLVM_CONFIG --version)
@@ -318,7 +221,12 @@ export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
 mkdir -p $LLVM_PREFIX/bin
 for T in $LLVM_TOOLS; do
-	cp $(which $T) $LLVM_PREFIX/bin
+	TOOL=$(which $T || true)
+	if [ -z "${TOOL}" -o ! -x "${TOOL}" ]; then
+		exitmsg "Cannot find working $T binary".
+	fi
+
+	cp ${TOOL} $LLVM_PREFIX/bin
 done
 
 ######################################################################
@@ -375,35 +283,6 @@ if [ "`pwd`" != $ABS_SRCDIR ]; then
 fi
 
 ######################################################################
-#   googletest
-######################################################################
-if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
-	if [ ! -d googletest ]; then
-		download_zip https://github.com/google/googletest/archive/release-1.7.0.zip || exit 1
-		mv googletest-release-1.7.0 googletest || exit 1
-		rm -f release-1.7.0.zip
-	fi
-
-	pushd googletest
-	mkdir -p build
-	pushd build
-	if [ ! -d CMakeFiles ]; then
-		cmake ..
-	fi
-
-	build || clean_and_exit 1
-	# copy the libraries to LLVM build, there is a "bug" in llvm-config
-	# that requires them
-	cp *.a ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib
-
-	popd; popd
-fi
-
-if [ "`pwd`" != $ABS_SRCDIR ]; then
-	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
-fi
-
-######################################################################
 #   KLEE
 ######################################################################
 if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
@@ -428,12 +307,8 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	STP_FLAGS="-DENABLE_SOLVER_STP=OFF"
 
 	Z3_FLAGS=
-	if [ "$HAVE_Z3" = "yes" -o "$BUILD_Z3" = "yes" ]; then
+	if [ "$HAVE_Z3" = "yes" ]; then
 		Z3_FLAGS=-DENABLE_SOLVER_Z3=ON
-		if [ -d ${ABS_SRCDIR}/z3 ]; then
-			Z3_FLAGS="$Z3_FLAGS -DCMAKE_LIBRARY_PATH=${ABS_SRCDIR}/z3/build/"
-			Z3_FLAGS="$Z3_FLAGS -DCMAKE_INCLUDE_PATH=${ABS_SRCDIR}/z3/src/api"
-		fi
 	else
 		exitmsg "KLEE needs Z3 library"
 	fi
@@ -444,15 +319,20 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 		HAVE_LIT=off
 	fi
 
+	if [ "$HAVE_LIT"="yes" -a "$HAVE_GTEST" = "yes" ]; then
+		ENABLE_TESTS="on"
+	else
+		ENABLE_TESTS="off"
+	fi
+
 	if [ ! -d CMakeFiles ]; then
 
 		cmake .. -DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DKLEE_RUNTIME_BUILD_TYPE=${KLEE_BUILD_TYPE} \
-			-DGTEST_SRC_DIR=$ABS_SRCDIR/googletest \
 			-DLLVM_CONFIG_BINARY=$(abspath ${LLVM_CONFIG}) \
-			-DENABLE_UNIT_TESTS=${HAVE_LIT} \
-			-DENABLE_SYSTEM_TESTS=${HAVE_LIT} \
+			-DENABLE_UNIT_TESTS=${ENABLE_TESTS} \
+			-DENABLE_SYSTEM_TESTS=${ENABLE_TESTS} \
 			-DENABLE_TCMALLOC=${ENABLE_TCMALLOC} \
 			$Z3_FLAGS $STP_FLAGS \
 			|| clean_and_exit 1 "git"
@@ -615,20 +495,7 @@ if [ $FROM -le 7 ]; then
 	cd sbt-instrumentation || exit 1
 	INSTRUMENTATION_VERSION=`git rev-parse HEAD`
 	cd -
-if [ "$BUILD_STP" = "yes" ]; then
-	cd minisat || exit 1
-	MINISAT_VERSION=`git rev-parse HEAD`
-	cd -
-	cd stp || exit 1
-	STP_VERSION=`git rev-parse HEAD`
-	cd -
-fi
 
-if [ "$BUILD_Z3" = "yes" ]; then
-	cd z3 || exit 1
-	Z3_VERSION=`git rev-parse HEAD`
-	cd -
-fi
 	cd klee || exit 1
 	KLEE_VERSION=`git rev-parse HEAD`
 	cd -
@@ -642,40 +509,9 @@ fi
 	echo -e "\t'dg' : '$DG_VERSION'," >> $VERSFILE
 	echo -e "\t'sbt-slicer' : '$SBT_SLICER_VERSION'," >> $VERSFILE
 	echo -e "\t'sbt-instrumentation' : '$INSTRUMENTATION_VERSION'," >> $VERSFILE
-if [ "$BUILD_STP" = "yes" ]; then
-	echo -e "\t'minisat' : '$MINISAT_VERSION'," >> $VERSFILE
-	echo -e "\t'stp' : '$STP_VERSION'," >> $VERSFILE
-fi
-if [ "$BUILD_Z3" = "yes" ]; then
-	echo -e "\t'z3' : '$Z3_VERSION'," >> $VERSFILE
-fi
 	echo -e "\t'klee' : '$KLEE_VERSION'," >> $VERSFILE
 	echo -e "}\n\n" >> $VERSFILE
 	echo "llvm_version = '${LLVM_VERSION}'" >> $VERSFILE
-
-get_external_library()
-{
-	LIB="$(ldd $1 | grep $2 | cut -d ' ' -f 3)"
-	# if this is not library in our installation, return it
-	if [ "$LIB" != "not" ]; then # not found
-		if echo "$LIB" | grep -v -q "$PREFIX"; then
-			echo "$LIB"
-		fi
-	else
-		exitmsg "Did not find library matching $2"
-	fi
-}
-
-get_any_library()
-{
-	LIB="$(ldd $1 | grep $2 | cut -d ' ' -f 3)"
-	# if this is not library in our installation, return it
-	if [ "$LIB" != "not" ]; then # not found
-		echo "$LIB"
-	else
-		exitmsg "Did not find library matching $2"
-	fi
-}
 
 get_klee_dependencies()
 {
