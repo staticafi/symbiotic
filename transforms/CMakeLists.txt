@@ -68,6 +68,7 @@ add_llvm_loadable_module(LLVMsbt
 				BreakCritLoops.cpp
 				DeleteUndefined.cpp
 				ReplaceUBSan.cpp
+				ReplaceAsserts.cpp
 				InstrumentAlloc.cpp
 				CountInstr.cpp
 				MarkVolatile.cpp

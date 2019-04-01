@@ -32,16 +32,16 @@ bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2);
 
 namespace {
 
-class ReplaceUBSan : public FunctionPass {
+class ReplaceAsserts : public FunctionPass {
   public:
     static char ID;
 
-    ReplaceUBSan() : FunctionPass(ID) {}
+    ReplaceAsserts() : FunctionPass(ID) {}
 
     virtual bool runOnFunction(Function &F);
 };
 
-bool ReplaceUBSan::runOnFunction(Function &F)
+bool ReplaceAsserts::runOnFunction(Function &F)
 {
   bool modified = false;
   Module *M = F.getParent();
@@ -59,38 +59,37 @@ bool ReplaceUBSan::runOnFunction(Function &F)
       if (!callee || callee->isIntrinsic())
         continue;
 
-      assert(callee->hasName());
-      StringRef name = callee->getName();
-
-      if (!name.startswith("__ubsan_handle"))
+      if (!callee->isDeclaration())
         continue;
 
-      if (callee->isDeclaration()) {
-        if (!ver_err) {
-          LLVMContext& Ctx = M->getContext();
-          ver_err = M->getOrInsertFunction("__VERIFIER_error",
-                                           Type::getVoidTy(Ctx)
+      assert(callee->hasName());
+      StringRef name = callee->getName();
+      if (!name.equals("__assert_fail"))
+        continue;
+
+      if (!ver_err) {
+        LLVMContext& Ctx = M->getContext();
+        ver_err = M->getOrInsertFunction("__VERIFIER_error",
+                                         Type::getVoidTy(Ctx)
 #if LLVM_VERSION_MAJOR < 5
-                                           , nullptr
+                                       , nullptr
 #endif
                                        );
-        }
-
-        auto CI2 = CallInst::Create(ver_err);
-        CloneMetadata(CI, CI2);
-
-        CI2->insertAfter(CI);
-        CI->eraseFromParent();
-
-        modified = true;
       }
+
+      auto CI2 = CallInst::Create(ver_err);
+      CloneMetadata(CI, CI2);
+
+      CI2->insertAfter(CI);
+      CI->eraseFromParent();
+
+      modified = true;
     }
   }
   return modified;
 }
 
-} // namespace
-
-static RegisterPass<ReplaceUBSan> RUBS("replace-ubsan",
-                                       "Replace ubsan calls with calls to __VERIFIER_error");
-char ReplaceUBSan::ID;
+static RegisterPass<ReplaceAsserts> RASS("replace-asserts",
+                                         "Replace assert calls with calls to __VERIFIER_error");
+char ReplaceAsserts::ID;
+}
