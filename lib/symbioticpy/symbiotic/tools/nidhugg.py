@@ -84,10 +84,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                         format(env.symbiotic_dir, self.llvm_version()))
 
     def actions_after_slicing(self, symbiotic):
-        # unroll the loops
+        # unroll the loops and rename __VERIFIER_atomic_begin/end
+        # to avoid a bug in nidhugg
         symbiotic.run_opt(['-reg2mem', '-sbt-loop-unroll',
                            '-sbt-loop-unroll-count', '5',
-                           '-sbt-loop-unroll-terminate'])
+                           '-sbt-loop-unroll-terminate',
+                           '-replace-verifier-atomic'])
 
     def actions_before_slicing(self, symbiotic):
         symbiotic.link_undefined(['__VERIFIER_atomic_begin',
