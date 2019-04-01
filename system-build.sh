@@ -580,19 +580,8 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 		$LLVM_PREFIX/lib/*.bc* \
 		$LLVM_PREFIX/lib32/*.bc*"
 fi
-if [ ${BUILD_NIDHUGG} = "yes" ];  then
-	LIBRARIES="$LLVM_PREFIX/bin/nidhugg"
-fi
 
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/"
-
-if [ "$BUILD_STP" = "yes" ]; then
-		LIBRARIES="$LIBRARIES $PREFIX/lib/libminisat*.so"
-fi
-
-if [ "$BUILD_Z3" = "yes" ]; then
-		LIBRARIES="$LIBRARIES $PREFIX/lib/libz3*.so"
-fi
 
 	#strip binaries, it will save us 500 MB!
 	strip $BINARIES
@@ -607,7 +596,6 @@ fi
 		bin/gen-c \
 		include/symbiotic.h \
 		include/symbiotic-size_t.h \
-		$LLVM_PREFIX/include/stddef.h \
 		lib/*.c \
 		properties/* \
 		lib/symbioticpy/symbiotic/*.py \
