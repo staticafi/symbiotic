@@ -21,17 +21,14 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #  MA 02110-1301, USA.
 
-set -x
+set -e
 
-#https://unix.stackexchange.com/a/48550
-set -E
-trap '[ "$?" -ne 77 ] || exit 77' ERR
+source "$(dirname $0)/scripts/build-utils.sh"
 
-exitmsg()
-{
-	echo "$1" >/dev/stderr
-	exit 77
-}
+RUNDIR=`pwd`
+SRCDIR=`dirname $0`
+ABS_RUNDIR=`abspath $RUNDIR`
+ABS_SRCDIR=`abspath $SRCDIR`
 
 usage()
 {
@@ -97,37 +94,11 @@ BUILD_SVF='no'
 BUILD_KLEE="yes"
 BUILD_NIDHUGG="no"
 
-check_z3() {
-	echo "#include <z3.h>" | gcc - -E &>/dev/null
-}
-
-check_zlib() {
-	echo "#include <zlib.h>" | gcc - -E &>/dev/null
-}
-
-check_32_bit() {
-	echo "#include <stdint.h>" | gcc - -E -m32 &>/dev/null
-}
 
 HAVE_32_BIT_LIBS=$(if check_32_bit; then echo "yes"; else echo "no"; fi)
 HAVE_Z3=$(if check_z3; then echo "yes"; else echo "no"; fi)
 WITH_ZLIB=$(if check_zlib; then echo "no"; else echo "yes"; fi)
 
-
-abspath() {
-	if which realpath &>/dev/null; then
-		realpath "$1" || exitmsg "Can not get absolute path of $1";
-	elif [[ "$OSTYPE" == *darwin* ]]; then
-		greadlink -f "$1" || exitmsg "Can not get absolute path of $1";
-	else
-		readlink -f "$1" || exitmsg "Can not get absolute path of $1";
-	fi
-}
-
-RUNDIR=`pwd`
-SRCDIR=`dirname $0`
-ABS_RUNDIR=`abspath $RUNDIR`
-ABS_SRCDIR=`abspath $SRCDIR`
 ARCHIVE="no"
 FULL_ARCHIVE="no"
 
@@ -263,52 +234,6 @@ mkdir -p $PREFIX/lib
 mkdir -p $PREFIX/lib32
 mkdir -p $PREFIX/include
 
-clean_and_exit()
-{
-	CODE="$1"
-
-	if [ "$2" = "git" ]; then
-		git clean -xdf
-	else
-		rm -rf *
-	fi
-
-	exit $CODE
-}
-
-build()
-{
-	make $OPTS CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $@ || exit 1
-	return 0
-}
-
-git_clone_or_pull()
-{
-
-	REPO="$1"
-	FOLDER="$2"
-	shift;shift
-
-	if [ -d "$FOLDER" ]; then
-		if [ "x$UPDATE" = "x1" ]; then
-			cd $FOLDER && git pull && cd -
-		fi
-	else
-		git clone $REPO $FOLDER $@
-	fi
-}
-
-git_submodule_init()
-{
-	cd "$SRCDIR"
-
-	git submodule init || exitmsg "submodule init failed"
-	git submodule update || exitmsg "submodule update failed"
-
-	cd -
-}
-
-GET="curl -LRO"
 check()
 {
 	MISSING=""
@@ -392,22 +317,6 @@ check()
 		exitmsg "Need z3 from package or enable building STP or Z3 by using 'build-stp' or 'build-z3' argument."
 	fi
 
-}
-
-download_tar()
-{
-	$GET "$1" || exit 1
-	BASENAME="`basename $1`"
-	tar xf "$BASENAME" || exit 1
-	rm -f "BASENAME"
-}
-
-download_zip()
-{
-	$GET "$1" || exit 1
-	BASENAME="`basename $1`"
-	unzip "$BASENAME" || exit 1
-	rm -f "BASENAME"
 }
 
 # check if we have everything we need
@@ -1045,30 +954,6 @@ fi
 	echo -e "\t'klee' : '$KLEE_VERSION'," >> $VERSFILE
 	echo -e "}\n\n" >> $VERSFILE
 	echo "llvm_version = '${LLVM_VERSION}'" >> $VERSFILE
-
-get_external_library()
-{
-	LIB="$(ldd $1 | grep $2 | cut -d ' ' -f 3)"
-	# if this is not library in our installation, return it
-	if [ "$LIB" != "not" ]; then # not found
-		if echo "$LIB" | grep -v -q "$PREFIX"; then
-			echo "$LIB"
-		fi
-	else
-		exitmsg "Did not find library matching $2"
-	fi
-}
-
-get_any_library()
-{
-	LIB="$(ldd $1 | grep $2 | cut -d ' ' -f 3)"
-	# if this is not library in our installation, return it
-	if [ "$LIB" != "not" ]; then # not found
-		echo "$LIB"
-	else
-		exitmsg "Did not find library matching $2"
-	fi
-}
 
 get_klee_dependencies()
 {
