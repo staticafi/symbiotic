@@ -29,17 +29,20 @@ First of all you must clone the repository:
 $ git clone https://github.com/staticafi/symbiotic
 ```
 
-Run `build.sh` script to compile Symbiotic:
+Run `build.sh` or `system-build.sh` script to compile Symbiotic:
 
 ```
 $ cd symbiotic
 $ ./build.sh -j2
 ```
 
-The build script will complain about missing dependencies if any. You can try using `scripts/install-system-dependencies.sh` script to install the main dependencies (or at least check the names of packages). If the build script continues to complain, you must install the dependencies manually.
+The scripts will complain about missing dependencies if any. You can try using `scripts/install-system-dependencies.sh` script to install the main dependencies (or at least check the names of packages). If the build script continues to complain, you must install the dependencies manually.
+The difference betwee `build.sh` and `system-build.sh` is that `system-build.sh` will
+try to build only the components of Symbiotic, using the system's packages.
+`build.sh`, on the other hand, tries to build also the most of the missing dependencies,
+including LLVM, z3, etc.
 
-If you need to adjust the build process, you can pass different options to the build script.
-Possible options include:
+Possible options for the `build.sh` script include:
   - `build-type=TYPE` (TYPE one of `Release`, `Debug`)
   - `llvm-version=VERSION` (the default `VERSION` is `4.0.1`, other versions are rather experimental)
   - `with-llvm=`, `with-llvm-src=`, `with-llvm-dir=` This set of options orders the script to use already built external LLVM (the build script will build LLVM otherwise if it has not been built already in this folder)
