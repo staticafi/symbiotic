@@ -354,7 +354,7 @@ class SymbioticCC(object):
         for ty in self.options.linkundef:
             for undef in undefs:
                 path = get_path(self.env.symbiotic_dir, ty,
-                                self._tool.name(), undef)
+                                self._tool.name().lower(), undef)
                 if path is None:
                     continue
 
