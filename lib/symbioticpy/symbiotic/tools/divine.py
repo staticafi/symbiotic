@@ -31,6 +31,9 @@ class SymbioticTool(DivineTool, SymbioticBaseTool):
     def cc(self):
         return ['divine', 'cc']
 
+    def actions_before_slicing(self, symbiotic):
+        symbiotic.link_undefined(['__VERIFIER_atomic_begin',
+                                  '__VERIFIER_atomic_end'])
 
    # not needed anymore?
    #def actions_before_verification(self, symbiotic):
