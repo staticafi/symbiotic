@@ -47,36 +47,39 @@ include(GNUInstallDirs)
 message(STATUS "CMAKE_INSTALL_LIBDIR: \"${CMAKE_INSTALL_LIBDIR}\"")
 message(STATUS "CMAKE_INSTALL_INCLUDEDIR: \"${CMAKE_INSTALL_INCLUDEDIR}\"")
 
-
-
 # We need all the symbols with dynamic libs. With static libs, we get errors.
 if (BUILD_SHARED_LIBS)
 	set(LLVM_LINK_COMPONENTS analysis core support)
 endif()
 
-add_llvm_loadable_module(LLVMsbt
-				CloneMetadata.cpp
-				Prepare.cpp
-				RemoveReadOnlyAttr.cpp
-				RemoveErrorCalls.cpp
-				RenameVerifierFuns.cpp
-				MakeNondet.cpp
-				InitializeUninitialized.cpp
-				InternalizeGlobals.cpp
-				RemoveInfiniteLoops.cpp
-				BreakInfiniteLoops.cpp
-				BreakCritLoops.cpp
-				DeleteUndefined.cpp
-				ReplaceUBSan.cpp
-				ReplaceAsserts.cpp
-				InstrumentAlloc.cpp
-				CountInstr.cpp
-				MarkVolatile.cpp
-				DummyMarker.cpp
-				ReplaceLifetimeMarkers.cpp
-				ReplaceVerifierAtomic.cpp
-				Unrolling.cpp
-				PrepareOverflows.cpp)
+set(CPPFILES "CloneMetadata.cpp"
+	     "Prepare.cpp"
+	     "RemoveReadOnlyAttr.cpp"
+	     "RemoveErrorCalls.cpp"
+	     "RenameVerifierFuns.cpp"
+	     "MakeNondet.cpp"
+	     "InitializeUninitialized.cpp"
+	     "InternalizeGlobals.cpp"
+	     "RemoveInfiniteLoops.cpp"
+	     "BreakInfiniteLoops.cpp"
+	     "BreakCritLoops.cpp"
+	     "DeleteUndefined.cpp"
+	     "ReplaceUBSan.cpp"
+	     "ReplaceAsserts.cpp"
+	     "InstrumentAlloc.cpp"
+	     "CountInstr.cpp"
+	     "MarkVolatile.cpp"
+	     "DummyMarker.cpp"
+	     "ReplaceLifetimeMarkers.cpp"
+	     "ReplaceVerifierAtomic.cpp"
+	     "Unrolling.cpp"
+	     "PrepareOverflows.cpp")
+
+if (${LLVM_PACKAGE_VERSION} VERSION_GREATER "7")
+	add_llvm_library(LLVMsbt MODULE ${CPPFILES})
+else()
+	add_llvm_loadable_module(LLVMsbt ${CPPFILES})
+endif()
 
 install(TARGETS LLVMsbt
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
