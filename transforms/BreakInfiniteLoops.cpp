@@ -78,7 +78,7 @@ class BreakInfiniteLoops : public LoopPass {
         // before we make the new block jumping to the header
         std::vector<std::pair<BasicBlock *, unsigned>> to_change;
         for (auto I = pred_begin(header), E = pred_end(header); I != E; ++I) {
-          TerminatorInst *TI = (*I)->getTerminator();
+          auto TI = (*I)->getTerminator();
           for (int i = 0, e = TI->getNumSuccessors(); i < e; ++i) {
             if (TI->getSuccessor(i) == header)
               to_change.emplace_back(*I, i);
@@ -98,7 +98,7 @@ class BreakInfiniteLoops : public LoopPass {
 
         // now change the jump instructions
         for (auto& pr : to_change) {
-          TerminatorInst *TI = pr.first->getTerminator();
+          auto TI = pr.first->getTerminator();
           TI->setSuccessor(pr.second, nb);
         }
 
