@@ -1007,6 +1007,8 @@ fi
 		$LLVM_PREFIX/lib/libLLVMdg.so $LLVM_PREFIX/lib/libLLVMpta.so \
 		$LLVM_PREFIX/lib/libLLVMrd.so $LLVM_PREFIX/lib/libDGAnalysis.so \
 		$LLVM_PREFIX/lib/libPTA.so $LLVM_PREFIX/lib/libRD.so \
+		$LLVM_PREFIX/lib/libdgThreadRegions.so \
+		$LLVM_PREFIX/lib/libdgControlDependence.so \
 		$LLVM_PREFIX/lib/LLVMsbt.so \
 		$LLVM_PREFIX/lib/libPointsToPlugin.so \
 		$LLVM_PREFIX/lib/libRangeAnalysisPlugin.so \
