@@ -300,7 +300,7 @@ void DeleteUndefined::defineFunction(Module *M, Function *F)
     Type *Ty = F->getReturnType();
     AllocaInst *AI = new AllocaInst(Ty
 #if (LLVM_VERSION_MAJOR >= 5)
-    ,AI->getType()->getAddressSpace()
+    ,0
 #endif
     );
 
