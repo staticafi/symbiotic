@@ -128,7 +128,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         # use a default configuration if no other is specicied
         if not options:
             config_paths = os.path.join(os.path.dirname(executable), '..', 'config')
-            additional_options += ['-config', '{0}/svcomp19.properties'.format(config_paths),
+            additional_options += ['-svcomp19', '-heap', '10000M', '-benchmark',
                                    '-timelimit', '900s']
         return [executable, "-setprop", "language=LLVM"] + options + additional_options + tasks
 
