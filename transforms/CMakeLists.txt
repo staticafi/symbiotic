@@ -73,6 +73,8 @@ set(CPPFILES "CloneMetadata.cpp"
 	     "ReplaceLifetimeMarkers.cpp"
 	     "ReplaceVerifierAtomic.cpp"
 	     "Unrolling.cpp"
+	     "ClassifyLoops.cpp"
+	     "ClassifyInstructions.cpp"
 	     "PrepareOverflows.cpp")
 
 if (${LLVM_PACKAGE_VERSION} VERSION_GREATER "7")
