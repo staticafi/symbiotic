@@ -29,7 +29,8 @@ class SymbioticTool(DivineTool, SymbioticBaseTool):
                         format(env.symbiotic_dir))
 
     def cc(self):
-        return ['divine', 'cc']
+        #return ['divine', 'cc']
+        return ['clang', '--target=x86_64-unknown-none-elf']
 
     def actions_before_slicing(self, symbiotic):
         symbiotic.link_undefined(['__VERIFIER_atomic_begin',
