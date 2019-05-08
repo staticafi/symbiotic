@@ -21,6 +21,9 @@ def initialize_verifier(opts):
     elif opts.tool_name == 'ikos':
         from . tools.ikos import SymbioticTool
         return SymbioticTool(opts)
+    elif opts.tool_name == 'cbmc':
+        from . tools.cbmc import SymbioticTool
+        return SymbioticTool(opts)
     elif opts.tool_name == 'map2check':
         from . tools.map2check import SymbioticTool
         return SymbioticTool(opts)
@@ -42,6 +45,9 @@ def initialize_verifier(opts):
         return SymbioticTool(opts)
     elif opts.tool_name == 'divine':
         from . tools.divine import SymbioticTool
+        return SymbioticTool(opts)
+    elif opts.tool_name == 'uautomizer':
+        from . tools.ultimateautomizer import SymbioticTool
         return SymbioticTool(opts)
     elif opts.tool_name == 'cc':
         from . tools.cc import SymbioticTool
