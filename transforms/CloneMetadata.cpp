@@ -46,8 +46,11 @@ bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2)
     }
 
     //assert(metadataI && "Did not find dbg in any instruction of a block");
-    if (metadataI)
+    if (metadataI) {
         i2->setDebugLoc(metadataI->getDebugLoc());
+    } else if (auto pred = i1->getParent()->getUniquePredecessor()) {
+        return CloneMetadata(pred->getTerminator(), i2);
+    }
 
     return metadataI != nullptr;
 }
