@@ -22,6 +22,8 @@
 
 using namespace llvm;
 
+bool CloneMetadata(const llvm::Instruction *, llvm::Instruction *);
+
 class BreakInfiniteLoops : public LoopPass {
   std::map<Function *, BasicBlock *> _exitBBs;
   GlobalVariable *_trueGV = nullptr;
@@ -91,8 +93,19 @@ class BreakInfiniteLoops : public LoopPass {
         // we need.
         BasicBlock *exitBB = getExitBB(header->getParent());
         BasicBlock *nb = BasicBlock::Create(Ctx, "break.inf.loop");
+
         LoadInst *LI = new LoadInst(getConstantTrueGV(*M), "always_true", nb);
-        BranchInst::Create(header, exitBB, LI, nb);
+        if (!CloneMetadata(header->getTerminator(), LI)) {
+            llvm::errs() << "[BreakInfiniteLoops] Failed assigning metadata to: "
+                         << *LI << "\n";
+        }
+
+        auto Br = BranchInst::Create(header, exitBB, LI, nb);
+        if (!CloneMetadata(header->getTerminator(), Br)) {
+            llvm::errs() << "[BreakInfiniteLoops] Failed assigning metadata to: "
+                         << *Br << "\n";
+        }
+
         // insert the new block before header
         nb->insertInto(header->getParent(), header);
 

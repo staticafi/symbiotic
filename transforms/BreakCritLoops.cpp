@@ -31,6 +31,8 @@ class BreakCritLoops : public FunctionPass {
     virtual bool runOnFunction(Function &F);
 };
 
+bool CloneMetadata(const llvm::Instruction *, llvm::Instruction *);
+
 
 bool BreakCritLoops::runOnFunction(Function &F) {
   Module *M = F.getParent();
@@ -58,7 +60,11 @@ bool BreakCritLoops::runOnFunction(Function &F) {
   }
 
   for (auto block : to_process) {
-    block->splitBasicBlock(--block->end(), "crit.blk.split");
+    auto newBB = block->splitBasicBlock(--block->end(), "crit.blk.split");
+    if (!CloneMetadata(block->getTerminator(), block->getTerminator())) {
+        llvm::errs() << "[BreakCritLoops] Failed assigning metadata to: "
+                     << *block->getTerminator() << "\n";
+    }
   }
 
   if (to_process.empty())
