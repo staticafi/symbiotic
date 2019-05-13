@@ -68,7 +68,9 @@ static BasicBlock *createTerminatingBlock(Function *F,
 
   // take the metadata from I, some passes would consider the module
   // broken without the metadata
-  CloneMetadata(I, CI);
+  if (!CloneMetadata(I, CI)) {
+      llvm::errs() << "[Unrolling] Failed assigning metadata to: " << *CI << "\n";
+  }
 
   return block;
 }
@@ -79,6 +81,14 @@ static void redirectEdges(const BasicBlock *origB,
                           const std::map<BasicBlock *, BasicBlock *>& BlocksMap) {
   auto origTI = origB->getTerminator();
   auto newTI = newB->getTerminator();
+
+  // copy the metadata from origTI,
+  // some passes would consider the module
+  // broken without the metadata
+  if (!CloneMetadata(origTI, newTI)) {
+      llvm::errs() << "[Unrolling] Failed assigning metadata to: " << *newTI << "\n";
+  }
+
   for (unsigned i = 0; i < origTI->getNumSuccessors(); ++i) {
       auto it = BlocksMap.find(origTI->getSuccessor(i));
       if (it != BlocksMap.end()) {
