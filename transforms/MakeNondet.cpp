@@ -148,7 +148,7 @@ void MakeNondet::replaceCall(Module& M, CallInst *CI,
 
   AllocaInst *AI = new AllocaInst(CI->getType()
 #if (LLVM_VERSION_MAJOR >= 5)
-  ,AI->getType()->getAddressSpace()
+  , 0
 #endif
   );
   CastInst *CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(M.getContext()));
