@@ -72,9 +72,9 @@ get_llvm_version()
 
 export PREFIX=`pwd`/install
 
-export LD_LIBRARY_PATH="$PREFIX/lib:$LD_LIBRARY_PATH"
-export C_INCLUDE_PATH="$PREFIX/include:$C_INCLUDE_PATH"
-export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/share/pkgconfig:$PKG_CONFIG_PATH"
+# export LD_LIBRARY_PATH="$PREFIX/lib:$LD_LIBRARY_PATH"
+# export C_INCLUDE_PATH="$PREFIX/include:$C_INCLUDE_PATH"
+# export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/share/pkgconfig:$PKG_CONFIG_PATH"
 
 FROM='0'
 NO_LLVM='0'
@@ -383,8 +383,8 @@ build_llvm()
 	# build llvm
 	ONLY_TOOLS="$LLVM_TOOLS" build
 	# copy the generated stddef.h due to compilation of instrumentation libraries
-	mkdir -p "$LLVM_PREFIX/include"
-	cp "lib/clang/${LLVM_VERSION}/include/stddef.h" "$LLVM_PREFIX/include" || exit 1
+	#mkdir -p "$LLVM_PREFIX/include"
+	#cp "lib/clang/${LLVM_VERSION}/include/stddef.h" "$LLVM_PREFIX/include" || exit 1
 
 	popd
 }
@@ -809,11 +809,9 @@ if [ $FROM -le 6 ]; then
 	fi
 
 	# build RA library
-	if [ ! -d "ra/build-${LLVM_VERSION}" ]; then
-		if [ ! -d "ra" ]; then
-			git_clone_or_pull "https://github.com/xvitovs1/ra" ra
-		fi
+	git_clone_or_pull "https://github.com/xvitovs1/ra" ra
 
+	if [ ! -d "ra/build-${LLVM_VERSION}" ]; then
 		mkdir -p ra/build-${LLVM_VERSION}
 		pushd ra/build-${LLVM_VERSION}
 		cmake .. \
@@ -821,9 +819,12 @@ if [ $FROM -le 6 ]; then
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 		|| clean_and_exit 1 "git"
-		make && make install
 		popd;
 	fi
+
+	pushd ra/build-${LLVM_VERSION}
+	make && make install
+	popd;
 
 	mkdir -p build-${LLVM_VERSION}
 	pushd build-${LLVM_VERSION}
@@ -895,7 +896,7 @@ if [ $FROM -le 6 ]; then
 	(build && make install) || exit 1
 
 	# precompile bitcode files
-	scripts/precompile_bitcode_files.sh
+	CPPFLAGS="-I/usr/include $CPPFLAGS" scripts/precompile_bitcode_files.sh
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
@@ -1051,8 +1052,11 @@ fi
 		bin/gen-c \
 		include/symbiotic.h \
 		include/symbiotic-size_t.h \
-		$LLVM_PREFIX/include/stddef.h \
-		lib/*.c \
+		lib/kernel/*.c\
+		lib/libc/*.c\
+		lib/posix/*.c \
+		lib/svcomp/*.c \
+		lib/verifier/*.c \
 		properties/* \
 		lib/symbioticpy/symbiotic/*.py \
 		lib/symbioticpy/symbiotic/benchexec/*.py \
@@ -1061,6 +1065,7 @@ fi
 		lib/symbioticpy/symbiotic/utils/*.py \
 		lib/symbioticpy/symbiotic/witnesses/*.py \
 		LICENSE.txt
+		#$LLVM_PREFIX/include/stddef.h \
 
 	git commit -m "Create Symbiotic distribution `date`" || true
 

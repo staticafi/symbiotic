@@ -11,4 +11,3 @@ install(PROGRAMS scripts/symbiotic scripts/gen-c
 install(DIRECTORY properties
 	DESTINATION ${INSTALL_DATA_DIR}/)
 
-
