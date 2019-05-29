@@ -1,0 +1,52 @@
+language: cpp
+sudo: true
+
+dist: xenial
+
+git:
+  depth: 1
+
+env:
+  - LLVM=4.0
+  - LLVM=5.0
+
+addons:
+  apt:
+    sources:
+      # newer gcc and clang?
+      - sourceline: 'deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial main'
+        key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+      - ubuntu-toolchain-r-test
+      - sourceline: 'deb https://apt.kitware.com/ubuntu/ xenial main'
+        key_url: 'https://apt.kitware.com/keys/kitware-archive-latest.asc'
+    packages:
+      - libc6-dev-i386
+      - linux-libc-dev
+      - libz-dev
+      - cmake
+      - libz3-dev
+      - python3-pip
+      - python3-setuptools
+
+compiler:
+  - clang
+
+script:
+  - git clone --depth 1 https://github.com/tomsik68/travis-llvm.git
+  - cd travis-llvm
+  - chmod +x travis-llvm.sh
+  - ./travis-llvm.sh ${LLVM}
+  - cd ..
+  - sudo ln -s /usr/include/asm-generic /usr/include/asm
+  - ./system-build.sh -j8
+  - pip3 install --user benchexec
+  - PATH=$PATH:/home/travis/.local/bin
+  - cd tests/
+  - sudo chmod o+wt '/sys/fs/cgroup/cpuset/'
+  - sudo chmod o+wt '/sys/fs/cgroup/cpu,cpuacct/user.slice'
+  - sudo chmod o+wt '/sys/fs/cgroup/freezer/'
+  - sudo chmod o+wt '/sys/fs/cgroup/memory/user.slice'
+  - make
+
+notifications:
+    email: false
