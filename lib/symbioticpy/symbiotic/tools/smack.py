@@ -28,6 +28,8 @@ class SymbioticTool(SmackTool, SymbioticBaseTool):
             env.prepend('PATH', '{0}/smack'.\
                         format(env.symbiotic_dir))
 
+        # do not link any functions
+        opts.linkundef = []
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         cmd = SmackTool.cmdline(self, executable, options, tasks, propertyfile, rlimits)
