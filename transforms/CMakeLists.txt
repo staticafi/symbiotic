@@ -77,10 +77,10 @@ set(CPPFILES "CloneMetadata.cpp"
 	     "ClassifyInstructions.cpp"
 	     "PrepareOverflows.cpp")
 
-if (${LLVM_PACKAGE_VERSION} VERSION_GREATER "7")
-	add_llvm_library(LLVMsbt MODULE ${CPPFILES})
-else()
+if (${LLVM_PACKAGE_VERSION} VERSION_LESS "8")
 	add_llvm_loadable_module(LLVMsbt ${CPPFILES})
+else()
+	add_llvm_library(LLVMsbt MODULE ${CPPFILES})
 endif()
 
 install(TARGETS LLVMsbt
