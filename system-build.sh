@@ -408,7 +408,7 @@ if [ $FROM -le 6 ]; then
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 		|| clean_and_exit 1 "git"
-		make && make install
+		(make && make install) || exit 1
 		popd;
 	fi
 
