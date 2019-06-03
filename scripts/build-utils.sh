@@ -86,7 +86,9 @@ git_submodule_init()
 GET="curl -LRO"
 
 check_z3() {
-	echo "#include <z3.h>" | gcc - -E &>/dev/null
+	# z3-devel-4.8.4-2.fc30 on Fedora installs Z3 headers to /usr/include/z3
+	echo "#include <z3.h>" | gcc - -E &>/dev/null \
+		|| echo "#include <z3/z3.h>" | gcc - -E &>/dev/null
 }
 
 check_zlib() {
