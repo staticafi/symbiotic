@@ -226,7 +226,12 @@ for T in $LLVM_TOOLS; do
 		exitmsg "Cannot find working $T binary".
 	fi
 
-	cp ${TOOL} $LLVM_PREFIX/bin
+	if readlink -- "${TOOL}" >/dev/null; then
+		# avoid making copy of a ccache executable (symlink's target)
+		ln -fs "${TOOL}" "${LLVM_PREFIX}/bin/"
+	else
+		cp ${TOOL} $LLVM_PREFIX/bin
+	fi
 done
 
 mkdir -p $LLVM_PREFIX/lib
@@ -587,7 +592,9 @@ fi
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/"
 
 	#strip binaries, it will save us 500 MB!
-	strip $BINARIES
+	for B in $BINARIES; do
+		test -w $B && strip $B
+	done
 
 	git init
 	git add \
