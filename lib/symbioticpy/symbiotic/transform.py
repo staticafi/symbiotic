@@ -28,7 +28,7 @@ class SlicerWatch(ProcessWatch):
 
     def parse(self, line):
         if b'ERROR' in line or b'error' in line:
-            print_stderr(line.decode('utf-8'))
+            print_stderr(line.decode('utf-8'), print_nl=False)
         else:
             dbg(line.decode('utf-8'), 'slicer', print_nl = False,
                 prefix='', color=None)
@@ -105,7 +105,6 @@ def get_optlist_before(optlevel):
                 lst += optimizations[o]
 
     return lst
-
 
 def get_optlist_after(optlevel):
     from . optimizations import optimizations
@@ -438,8 +437,8 @@ class SymbioticCC(object):
         self.curfile = output
         self._generate_ll()
 
-    def optimize(self, passes, disable=[]):
-        if self.options.no_optimize:
+    def optimize(self, passes, disable=[], load_sbt = False):
+        if not passes or self.options.no_optimize:
             return
 
         disable += self.options.disabled_optimizations
@@ -451,7 +450,10 @@ class SymbioticCC(object):
             dbg("No passes available for optimizations")
 
         output = '{0}-opt.bc'.format(self.curfile[:self.curfile.rfind('.')])
-        cmd = ['opt', '-o', output, self.curfile]
+        cmd = ['opt']
+        if load_sbt:
+            cmd += ['-load', 'LLVMsbt.so']
+        cmd += ['-o', output, self.curfile]
         cmd += passes
 
         restart_counting_time()
@@ -512,23 +514,7 @@ class SymbioticCC(object):
         self.link(llvmsrc, output)
 
     def perform_slicing(self):
-        # run optimizations that can make slicing more precise
-        opt = get_optlist_before(self.options.optlevel)
-        if opt:
-            self.optimize(passes=opt)
-
         add_params = []
-        #if not self.options.is32bit:
-        #    add_params.append("-rda=ss")
-
-        # Break the infinite loops just before slicing so that the
-        # optimizations won't make them syntactically infinite again. We must
-        # run reg2mem before breaking to loops, because breaking the loops can
-        # not handle PHI nodes well.
-        self.run_opt(['-reg2mem', '-break-infinite-loops',
-                      '-remove-infinite-loops',
-                      '-mem2reg', '-break-crit-loops', '-lowerswitch'])
-
         self._get_stats('Before slicing ')
 
         print_stdout('INFO: Starting slicing', color='WHITE')
@@ -542,10 +528,7 @@ class SymbioticCC(object):
 
             if self.options.repeat_slicing > 1:
                 opt = get_optlist_after(self.options.optlevel)
-                if opt:
-                    self.optimize(passes=opt)
-                    self.run_opt(['-break-infinite-loops',
-                                  '-remove-infinite-loops'])
+                self.optimize(opt + ['-remove-infinite-loops'], load_sbt=True)
 
         print_elapsed_time('INFO: Total slicing time', color='WHITE')
 
@@ -574,8 +557,7 @@ class SymbioticCC(object):
 
         # optimize the code after slicing and linking and before verification
         opt = get_optlist_after(self.options.optlevel)
-        if opt:
-            self.optimize(passes=opt)
+        self.optimize(passes=opt)
 
         # XXX: we could optimize the code again here...
         print_elapsed_time('INFO: After-slicing optimizations and transformations time',
@@ -599,7 +581,11 @@ class SymbioticCC(object):
         llvmfile = self.nonsliced_llvmfile
         tmp = self.curfile
         self.curfile = llvmfile
+
+        if hasattr(self._tool, 'actions_after_slicing'):
+            self._tool.actions_after_slicing(self)
         self.postprocessing()
+
         llvmfile = self.curfile
         self.curfile = tmp
 
@@ -745,17 +731,32 @@ class SymbioticCC(object):
             # volatile, so that we can run optimizations later on them
             passes.append('-mark-volatile')
 
-        self.run_opt(passes)
+        if passes:
+            self.run_opt(passes)
 
         #################### #################### ###################
         # SLICING
         #  - slice the code w.r.t error sites
         #################### #################### ###################
-        # remember the non-sliced llvmfile
-        self.nonsliced_llvmfile = self.curfile
+
+        # run optimizations if desired
+        passes = get_optlist_before(self.options.optlevel)
+        # Special optimizations for slicing.
+        # Break the infinite loops just before slicing so that the
+        # optimizations won't make them syntactically infinite again. We must
+        # run reg2mem before breaking to loops, because breaking the loops can
+        # not handle PHI nodes well.
+        if not self.options.noslice and 'before-O3' in self.options.optlevel:
+            passes += ['-reg2mem', '-break-infinite-loops',
+                       '-remove-infinite-loops',
+                       '-mem2reg', '-break-crit-loops', '-lowerswitch']
+        self.optimize(passes, load_sbt=True)
 
         if hasattr(self._tool, 'actions_before_slicing'):
             self._tool.actions_before_slicing(self)
+
+        # remember the non-sliced llvmfile
+        self.nonsliced_llvmfile = self.curfile
 
         if not self.options.noslice and \
            not self.options.property.termination():

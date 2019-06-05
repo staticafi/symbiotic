@@ -242,6 +242,7 @@ def parse_command_line(env):
         elif opt == '--no-optimize':
             dbg('Will not optimize the code')
             options.no_optimize = True
+            options.optlevel = []
         elif opt == '--optimize':
             dbg('Optimization levels: ' + arg)
             options.optlevel = arg.split(',')
