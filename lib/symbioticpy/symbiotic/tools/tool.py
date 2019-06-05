@@ -23,26 +23,27 @@ class SymbioticBaseTool(object):
 
         return opts
 
-    def passes_after_compilation(self):
-        """
-        LLVM passes that should be run on the code after the compilation.
-        """
-        # remove definitions of __VERIFIER_* that are not created by us,
-        # make extern globals local, etc. Also remove syntactically infinite loops.
-        passes = []
+   # we run these passes for every tool
+   #def passes_after_compilation(self):
+   #    """
+   #    LLVM passes that should be run on the code after the compilation.
+   #    """
+   #    # remove definitions of __VERIFIER_* that are not created by us,
+   #    # make extern globals local, etc. Also remove syntactically infinite loops.
+   #    passes = []
 
-        if not self._options.property.termination():
-            passes.append('-remove-infinite-loops')
+   #    if not self._options.property.termination():
+   #        passes.append('-remove-infinite-loops')
 
-        if self._options.property.undefinedness() or \
-           self._options.property.signedoverflow():
-            passes.append('-replace-ubsan')
+   #    if self._options.property.undefinedness() or \
+   #       self._options.property.signedoverflow():
+   #        passes.append('-replace-ubsan')
 
-        if self._options.property.signedoverflow() and \
-           not self._options.overflow_with_clang:
-            passes.append('-prepare-overflows')
+   #    if self._options.property.signedoverflow() and \
+   #       not self._options.overflow_with_clang:
+   #        passes.append('-prepare-overflows')
 
-        return passes
+   #    return passes
 
 
     def instrumentation_options(self):
