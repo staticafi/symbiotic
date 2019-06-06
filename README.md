@@ -1,3 +1,6 @@
+
+[![Build Status](https://travis-ci.com/staticafi/symbiotic.svg?branch=master)](https://travis-ci.com/staticafi/symbiotic)
+
 Symbiotic is an open-source tool for finding bugs in sequential computer programs.
 It is based on three well-know techniques:
 instrumentation, static program slicing and symbolic execution.
