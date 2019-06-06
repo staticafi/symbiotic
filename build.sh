@@ -908,16 +908,26 @@ fi
 ######################################################################
 if [ $FROM -le 7 ]; then
 
+	pushd transforms/build-${LLVM_VERSION} || exit 1
 	SYMBIOTIC_VERSION=`git rev-parse HEAD`
-	cd dg || exit 1
+	SYMBIOTIC_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+	popd
+
+	pushd dg/build-${LLVM_VERSION} || exit 1
 	DG_VERSION=`git rev-parse HEAD`
-	cd -
-	cd sbt-slicer || exit 1
+	DG_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+	popd
+
+	pushd sbt-slicer/build-${LLVM_VERSION} || exit 1
 	SBT_SLICER_VERSION=`git rev-parse HEAD`
-	cd -
-	cd sbt-instrumentation || exit 1
+	SBT_SLICER_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+	popd
+
+	pushd sbt-instrumentation/build-${LLVM_VERSION} || exit 1
 	INSTRUMENTATION_VERSION=`git rev-parse HEAD`
-	cd -
+	INSTRUMENTATION_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+	popd
+
 if [ "$BUILD_STP" = "yes" ]; then
 	cd minisat || exit 1
 	MINISAT_VERSION=`git rev-parse HEAD`
@@ -928,13 +938,16 @@ if [ "$BUILD_STP" = "yes" ]; then
 fi
 
 if [ "$BUILD_Z3" = "yes" ]; then
-	cd z3 || exit 1
+	pushd z3/build || exit 1
 	Z3_VERSION=`git rev-parse HEAD`
-	cd -
+	Z3_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+	popd
 fi
-	cd klee || exit 1
+	pushd klee/build-${LLVM_VERSION} || exit 1
 	KLEE_VERSION=`git rev-parse HEAD`
-	cd -
+	KLEE_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+	KLEE_RUNTIME_BUILD_TYPE=$(grep '^KLEE_RUNTIME_BUILD_TYPE[^-]' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+	popd
 
 	VERSFILE="$SRCDIR/lib/symbioticpy/symbiotic/versions.py"
 	echo "#!/usr/bin/python" > $VERSFILE
@@ -953,8 +966,21 @@ if [ "$BUILD_Z3" = "yes" ]; then
 	echo -e "\t'z3' : '$Z3_VERSION'," >> $VERSFILE
 fi
 	echo -e "\t'klee' : '$KLEE_VERSION'," >> $VERSFILE
-	echo -e "}\n\n" >> $VERSFILE
-	echo "llvm_version = '${LLVM_VERSION}'" >> $VERSFILE
+	echo -e "}\n" >> $VERSFILE
+
+	echo -e "llvm_version = '${LLVM_VERSION}'\n" >> $VERSFILE
+
+	echo "build_types = {" >> $VERSFILE
+	echo -e "\t'symbiotic' : '$SYMBIOTIC_BUILD_TYPE'," >> $VERSFILE
+	echo -e "\t'dg' : '$DG_BUILD_TYPE'," >> $VERSFILE
+	echo -e "\t'sbt-slicer' : '$SBT_SLICER_BUILD_TYPE'," >> $VERSFILE
+	echo -e "\t'sbt-instrumentation' : '$INSTRUMENTATION_BUILD_TYPE'," >> $VERSFILE
+if [ "$BUILD_Z3" = "yes" ]; then
+	echo -e "\t'z3' : '$Z3_BUILD_TYPE'," >> $VERSFILE
+fi
+	echo -e "\t'klee' : '$KLEE_BUILD_TYPE'," >> $VERSFILE
+	echo -e "\t'klee-runtime' : '$KLEE_RUNTIME_BUILD_TYPE'," >> $VERSFILE
+	echo -e "}\n" >> $VERSFILE
 
 get_klee_dependencies()
 {

@@ -12,15 +12,17 @@ def get_versions():
     # break the tool-module in benchexec
     VERSION='6.1.0-dev'
     try:
-        from . versions import versions
+        from . versions import versions, build_types
         from . versions import llvm_version as LLVM_VERSION
     except ImportError:
         versions = {
             'symbiotic' : VERSION
         }
+        build_types = {
+        }
         LLVM_VERSION='unknown'
 
-    return (VERSION, versions, LLVM_VERSION)
+    return (VERSION, versions, LLVM_VERSION, build_types)
 
 class SymbioticOptions(object):
     def __init__(self, env):
@@ -113,15 +115,16 @@ def set_svcomp(opts):
     enable_debug('all')
 
 def print_versions():
-    VERSION, _, LLVM_VERSION = get_versions()
+    VERSION, versions, LLVM_VERSION, build_types = get_versions()
     print('version: {0}'.format(VERSION))
     print('LLVM version: {0}'.format(LLVM_VERSION))
     for (k, v) in versions.items():
-        print('{0:<20} -> {1}'.format(k, v))
+        bt = build_types.get(k)
+        print('{0:<20} -> {1}{2}'.format(k, v, ' ({0})'.format(bt) if bt else ''))
 
 # FIXME: move me into a different file, this has nothing to do with options
 def print_short_vers():
-    VERSION, versions, LLVM_VERSION = get_versions()
+    VERSION, versions, LLVM_VERSION, build_types = get_versions()
     vers = '{0}-'.format(VERSION)
     # the LLVM version of the default verifier
     vers += 'llvm-{0}-'.format(LLVM_VERSION)
@@ -132,12 +135,19 @@ def print_short_vers():
         vers += k + ':' + v[:8]
         n += 1
 
+    if 'Debug' in build_types.values():
+        vers += '-DBG'
+
     print(vers)
 
 def print_shortest_vers():
-    VERSION, versions, _ = get_versions()
-    print('{0}-{1}'.format(VERSION, versions['symbiotic'][:8]))
+    VERSION, versions, _, build_types = get_versions()
+    vers = '{0}-{1}'.format(VERSION, versions['symbiotic'][:8])
 
+    if 'Debug' in build_types.values():
+        vers += '-DBG'
+
+    print(vers)
 
 ### FIXME: use argparse
 def parse_command_line(env):
