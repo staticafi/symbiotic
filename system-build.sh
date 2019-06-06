@@ -346,12 +346,6 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 			|| clean_and_exit 1 "git"
 	fi
 
-	if [ "$UPDATE" = "1" ]; then
-		git fetch --all
-		git checkout $KLEE_BRANCH
-		git pull
-	fi
-
 	# clean runtime libs, it may be 32-bit from last build
 	make -C runtime -f Makefile.cmake.bitcode clean 2>/dev/null
 
