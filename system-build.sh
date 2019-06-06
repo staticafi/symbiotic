@@ -234,6 +234,9 @@ for T in $LLVM_TOOLS; do
 	fi
 done
 
+mkdir -p $LLVM_PREFIX/lib
+cp -Lr $(dirname $(which clang))/../lib/clang/ $LLVM_PREFIX/lib/
+
 ######################################################################
 #   dg
 ######################################################################
