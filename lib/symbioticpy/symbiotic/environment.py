@@ -5,11 +5,23 @@ from os.path import isfile, isdir
 from . utils import err, dbg
 from . utils.utils import process_grep
 
-def _get_system_llvm_vers():
-    retval, out = process_grep(['clang', '-v'], 'clang version')
-    if retval != 0 or len(out) != 1:
-        return None
-    return out[0].split()[2].decode('utf-8')
+def _vers_are_same(v1, v2):
+    parts1 = v1.split('.')
+    parts2 = v2.split('.')
+
+    # compare major and minor versions, ignore micro version
+    for i in range(0,2):
+        if parts1[i] != parts2[i]:
+            return False
+    return True
+
+def _check_clang_in_path(llvm_version):
+    versline = process_grep(['clang', '-v'], 'clang version')
+    if versline[0] == 0 and len(versline[1]) == 1:
+        parts = versline[1][0].split()
+        return _vers_are_same(parts[2], llvm_version)
+
+    return False
 
 def _set_symbiotic_environ(tool, env, opts):
     if opts.search_include_paths:
@@ -29,10 +41,19 @@ def _set_symbiotic_environ(tool, env, opts):
 
     if not isdir(llvm_prefix):
         dbg('Did not find a build of LLVM, checking the system LLVM')
-        sysver = _get_system_llvm_vers()
-        if sysver != llvm_version:
-            dbg('LLVM version mismatch: {0} != {1}'.format(sysver, llvm_version))
-            err("Cannot use system LLVM neither the directory with LLVM binaries exists: '{0}'".format(llvm_prefix))
+        if not _check_clang_in_path(llvm_version):
+            dbg("System's LLVM does not have the right version ({0})".format(llvm_version))
+            dbg("Cannot use system LLVM neither the directory with LLVM binaries exists: '{0}'".format(llvm_prefix))
+
+            # last resort -- try whether we have some binaries in the install/ folder
+            dbg("Trying binaries in install/ directory")
+            llvm_prefix = '{0}/install/llvm-{1}'.format(env.symbiotic_dir, llvm_version)
+            env.prepend('PATH', '{0}/bin'.format(llvm_prefix))
+            if not _check_clang_in_path(llvm_version):
+                err('Could not find a suitable LLVM binaries')
+            else:
+                dbg('The binary in install/ folder can do!')
+
         # else we're using the system llvm and we're ok
 
     env.prepend('C_INCLUDE_DIR', '{0}/include'.format(env.symbiotic_dir))

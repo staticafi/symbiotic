@@ -183,8 +183,9 @@ class SymbioticCC(object):
         """
 
         # __inline attribute is buggy in clang, remove it using -D__inline
-        cmd = self._get_cc() + ['-c', '-emit-llvm', '-include',
-                                'symbiotic.h', '-D__inline='] + opts
+        cmd = self._get_cc() + ['-c', '-emit-llvm',
+                                #'-include', 'symbiotic.h',
+                                '-D__inline='] + opts
 
         if with_g:
             cmd.append('-g')
