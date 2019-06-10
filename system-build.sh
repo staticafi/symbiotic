@@ -391,7 +391,7 @@ if [ $FROM -le 6 ]; then
 	pushd "$SRCDIR/sbt-instrumentation" || exitmsg "Cloning failed"
 
 	# bootstrap JSON library if needed
-	if [ ! -d jsoncpp ]; then
+	if [ ! -f jsoncpp/dist/jsoncpp.cpp ]; then
 		./bootstrap-json.sh || exitmsg "Failed generating json files"
 	fi
 
