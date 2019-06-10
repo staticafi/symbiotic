@@ -255,7 +255,7 @@ if [ $FROM -le 1 ]; then
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
-			${SVF_FLAGS} \
+			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
 			|| clean_and_exit 1 "git"
 	fi
 
@@ -276,6 +276,7 @@ if [ $FROM -le 1 ]; then
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
+			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
 			-DDG_PATH=$ABS_SRCDIR/dg \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			|| clean_and_exit 1 "git"
@@ -406,6 +407,7 @@ if [ $FROM -le 6 ]; then
 			-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
+			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
 		|| clean_and_exit 1 "git"
 		(make && make install) || exit 1
 		popd;
@@ -421,6 +423,7 @@ if [ $FROM -le 6 ]; then
 			-DDG_PATH=$ABS_SRCDIR/dg \
 			-DRA_BUILD_PATH=`pwd`/../ra/build-${LLVM_VERSION} \
 			-DRA_SRC_PATH=`pwd`/../ra \
+			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			|| clean_and_exit 1 "git"
 	fi
@@ -449,6 +452,7 @@ if [ $FROM -le 6 ]; then
 			-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
+			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
 			|| clean_and_exit 1
 	fi
 
