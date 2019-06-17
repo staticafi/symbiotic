@@ -156,7 +156,7 @@ def check_components(opts, additional_bins = []):
         from symbiotic.integritycheck import IntegrityChecker
 
         try:
-            _, versions, _ = get_versions()
+            _, versions, _, _= get_versions()
             checker = IntegrityChecker(versions)
             checker.check(opts.tool_name);
         except SymbioticException as e:
