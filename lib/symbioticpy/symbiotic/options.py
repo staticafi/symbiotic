@@ -45,8 +45,6 @@ class SymbioticOptions(object):
         self.explicit_symbolic = False
         self.undef_retval_nosym = False
         self.undefined_are_pure = False
-        # link all that we have by default
-        self.linkundef = ['verifier', 'libc', 'posix', 'kernel']
         self.timeout = 0
         self.add_libc = False
         self.no_lib = False
@@ -64,8 +62,13 @@ class SymbioticOptions(object):
         self.overflow_config_file = 'config.json'
         self.repeat_slicing = 1
         self.dont_exit_on_error = False
-        # these files will be linked unconditionally
+        # folders where to look for models of undefined functions
+        self.linkundef = ['verifier', 'libc', 'posix', 'kernel']
+        # these files will be linked unconditionally just after compilation
         self.link_files = []
+        # these files are going to be linked before slicing if they are undefined
+        # (the rest of undefined functions is linked after slicing)
+        self.link_files_before_slicing = ['__VERIFIER_exit', '__VERIFIER_silent_exit']
         # additional parameters that can be passed right
         # to the slicer and symbolic executor
         self.slicer_cmd = ['sbt-slicer']

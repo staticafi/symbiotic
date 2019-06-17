@@ -755,6 +755,9 @@ class SymbioticCC(object):
         if hasattr(self._tool, 'actions_before_slicing'):
             self._tool.actions_before_slicing(self)
 
+        if self.options.link_files_before_slicing:
+            self.link_undefined(self.options.link_files_before_slicing)
+
         # remember the non-sliced llvmfile
         self.nonsliced_llvmfile = self.curfile
 
