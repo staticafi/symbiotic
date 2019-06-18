@@ -562,7 +562,7 @@ fi
 		$LLVM_PREFIX/lib/libRangeAnalysisPlugin.so \
 		$LLVM_PREFIX/lib/libCheckNSWPlugin.so \
 		$LLVM_PREFIX/lib/libInfiniteLoopsPlugin.so \
-		$LLVM_PREFIX/lib/libValueRelationsPlugin.so
+		$LLVM_PREFIX/lib/libValueRelationsPlugin.so"
 
 if [ ${BUILD_KLEE} = "yes" ];  then
 	LIBRARIES="${LIBRARIES} \
