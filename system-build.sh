@@ -239,7 +239,7 @@ for T in $LLVM_TOOLS; do
 done
 
 mkdir -p $LLVM_PREFIX/lib
-ln -sf $(dirname $(which clang))/../lib/clang/ $LLVM_PREFIX/lib/clang
+ln -sf $(dirname $(which clang))/../lib/clang/ $LLVM_PREFIX/lib/
 
 ######################################################################
 #   dg
