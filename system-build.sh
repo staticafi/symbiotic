@@ -195,6 +195,10 @@ check()
 	if [ "$MISSING" != "" ]; then
 		exitmsg "Missing dependencies: $MISSING"
 	fi
+
+	if [ "$BUILD_KLEE" = "yes" -a "$HAVE_Z3" = "no" ]; then
+		exitmsg "KLEE needs Z3"
+	fi
 }
 
 
