@@ -808,24 +808,6 @@ if [ $FROM -le 6 ]; then
 		./bootstrap-json.sh || exitmsg "Failed generating json files"
 	fi
 
-	# build RA library
-	git_clone_or_pull "https://github.com/xvitovs1/ra" ra
-
-	if [ ! -d "ra/build-${LLVM_VERSION}" ]; then
-		mkdir -p ra/build-${LLVM_VERSION}
-		pushd ra/build-${LLVM_VERSION}
-		cmake .. \
-			-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
-			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
-		|| clean_and_exit 1 "git"
-		popd;
-	fi
-
-	pushd ra/build-${LLVM_VERSION}
-	make && make install
-	popd;
-
 	mkdir -p build-${LLVM_VERSION}
 	pushd build-${LLVM_VERSION}
 	if [ ! -d CMakeFiles ]; then
@@ -1041,8 +1023,7 @@ fi
 		$LLVM_PREFIX/lib/libRangeAnalysisPlugin.so \
 		$LLVM_PREFIX/lib/libCheckNSWPlugin.so \
 		$LLVM_PREFIX/lib/libInfiniteLoopsPlugin.so \
-		$LLVM_PREFIX/lib/libValueRelationsPlugin.so \
-		$LLVM_PREFIX/lib/libRA.so"
+		$LLVM_PREFIX/lib/libValueRelationsPlugin.so
 
 if [ ${BUILD_KLEE} = "yes" ];  then
 	LIBRARIES="${LIBRARIES} \
