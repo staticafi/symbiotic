@@ -155,9 +155,9 @@ class SymbioticCC(object):
 
     def cc_has_lifetime_markers(self):
         retval, out = process_grep(self._get_cc() + ['-cc1', '--help'],
-                                   '-force-lifetime-markers')
+                                   '-fsanitize-address-use-after-scope')
         return retval == 0 and len(out) == 1 and\
-                out[0].lstrip().decode('ascii').startswith('-force-lifetime-markers')
+                out[0].lstrip().decode('ascii').startswith('-fsanitize-address-use-after-scope')
 
     def cc_disable_optimizations(self):
         return ['-O0', '-disable-llvm-passes']
@@ -492,9 +492,9 @@ class SymbioticCC(object):
 
         if self.options.property.memsafety():
             if self.cc_has_lifetime_markers():
-                dbg('Clang supports -force-lifetime-markers, using it')
+                dbg('Clang supports lifetime markers, using it')
                 opts.append('-Xclang')
-                opts.append('-force-lifetime-markers')
+                opts.append('-fsanitize-address-use-after-scope')
             else:
                 print_stdout('Clang does not support lifetime markers, scopes are not instrumented', color="BROWN")
 
