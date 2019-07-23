@@ -80,7 +80,7 @@ def _find_library(lib):
 
 def perform_libraries_check():
     libraries = ['LLVMsbt.so', 'libCheckNSWPlugin.so',
-                 'libPointsToPlugin.so', 'libRA.so',
+                 'libPointsToPlugin.so',
                  'libLLVMdg.so', 'libLLVMpta.so', 'libLLVMrd.so',
                  'libPTA.so', 'libRD.so']
     for lib in libraries:
