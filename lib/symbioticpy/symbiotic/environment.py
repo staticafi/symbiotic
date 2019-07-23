@@ -2,7 +2,14 @@
 
 from os import environ
 from os.path import isfile, isdir
-from . utils import err
+from . utils import err, dbg
+from . utils.utils import process_grep
+
+def _get_system_llvm_vers():
+    retval, out = process_grep(['clang', '-v'], 'clang version')
+    if retval != 0 or len(out) != 1:
+        return None
+    return out[0].split()[2].decode('utf-8')
 
 def _set_symbiotic_environ(tool, env, opts):
     if opts.search_include_paths:
@@ -21,7 +28,12 @@ def _set_symbiotic_environ(tool, env, opts):
     llvm_prefix = '{0}/llvm-{1}'.format(env.symbiotic_dir, llvm_version)
 
     if not isdir(llvm_prefix):
-        err("Directory with LLVM binaries does not exist: '{0}'".format(llvm_prefix))
+        dbg('Did not find a build of LLVM, checking the system LLVM')
+        sysver = _get_system_llvm_vers()
+        if sysver != llvm_version:
+            dbg('LLVM version mismatch: {0} != {1}'.format(sysver, llvm_version))
+            err("Cannot use system LLVM neither the directory with LLVM binaries exists: '{0}'".format(llvm_prefix))
+        # else we're using the system llvm and we're ok
 
     env.prepend('C_INCLUDE_DIR', '{0}/include'.format(env.symbiotic_dir))
 
