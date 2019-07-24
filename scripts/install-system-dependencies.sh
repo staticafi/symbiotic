@@ -8,5 +8,6 @@ if which apt-get &>/dev/null; then
 	sudo ./install-ubuntu.sh
 elif which pacman &>/dev/null; then
 	sudo ./install-arch.sh
+elif which dnf &>/dev/null; then
+	sudo ./install-fedora.sh
 fi
-
