@@ -11,4 +11,4 @@ if ! which g++ &>/dev/null; then
 	fi
 fi
 
-apt-get install curl wget rsync make cmake unzip gcc-multilib
+apt-get install curl wget rsync make cmake unzip gcc-multilib xz-utils
