@@ -4,7 +4,7 @@ set -e
 
 apt-get update
 
-PACKAGES="curl wget rsync make cmake unzip gcc-multilib xz-utils python"
+PACKAGES="curl wget rsync make cmake unzip gcc-multilib xz-utils python zlib1g-dev"
 
 # install clang if there is not suitable compiler
 if ! which g++ &>/dev/null; then
@@ -28,7 +28,7 @@ if !  dpkg -l | grep -q 'llvm.*-dev'; then
 fi
 
 if [ "$INSTALL_Z3" = "y" ]; then
-	PACKAGES="$PACKAGES z3"
+	PACKAGES="$PACKAGES libz3-dev"
 fi
 if [ "$INSTALL_LLVM" = "y" ]; then
 	PACKAGES="$PACKAGES llvm"
