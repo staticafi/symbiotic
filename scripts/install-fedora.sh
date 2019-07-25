@@ -2,7 +2,7 @@
 
 set -e
 
-PACKAGES="curl wget rsync make cmake unzip tar patch glibc-devel.i686 xz zlib"
+PACKAGES="curl wget rsync make cmake unzip tar patch glibc-devel.i686 xz zlib python"
 
 # install clang if there is not suitable compiler
 if ! which g++ &>/dev/null; then
