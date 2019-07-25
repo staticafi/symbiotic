@@ -4,7 +4,7 @@ set -e
 
 apt-get update
 
-PACKAGES="curl wget rsync make cmake unzip gcc-multilib xz-utils"
+PACKAGES="curl wget rsync make cmake unzip gcc-multilib xz-utils python"
 
 # install clang if there is not suitable compiler
 if ! which g++ &>/dev/null; then
