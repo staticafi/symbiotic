@@ -10,4 +10,4 @@ if ! which g++ &>/dev/null; then
 fi
 
 
-dnf install curl wget rsync make cmake unzip tar patch glibc-devel.i686
+dnf install curl wget rsync make cmake unzip tar patch glibc-devel.i686 xz

@@ -10,4 +10,4 @@ if ! which g++ &>/dev/null; then
 fi
 
 
-pacman -S curl wget rsync make cmake unzip lib32-gcc-libs
+pacman -S curl wget rsync make cmake unzip lib32-gcc-libs xz
