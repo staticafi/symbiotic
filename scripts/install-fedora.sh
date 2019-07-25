@@ -2,7 +2,7 @@
 
 set -e
 
-PACKAGES="curl wget rsync make cmake unzip tar patch glibc-devel.i686 xz"
+PACKAGES="curl wget rsync make cmake unzip tar patch glibc-devel.i686 xz zlib"
 
 # install clang if there is not suitable compiler
 if ! which g++ &>/dev/null; then
@@ -29,7 +29,7 @@ if [ "$INSTALL_Z3" = "y" ]; then
 	PACKAGES="$PACKAGES z3-devel"
 fi
 if [ "$INSTALL_LLVM" = "y" ]; then
-	PACKAGES="$PACKAGES llvm-devel"
+	PACKAGES="$PACKAGES llvm-devel llvm-static"
 fi
 
 dnf install $PACKAGES
