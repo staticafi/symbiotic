@@ -8,6 +8,9 @@ class SymbioticTool(CeagleTool):
 
     REQUIRED_PATHS = CeagleTool.REQUIRED_PATHS
 
+    def __init__(self, opts):
+        pass
+
     def llvm_version(self):
         return '3.8.1'
 

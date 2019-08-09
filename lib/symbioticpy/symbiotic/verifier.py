@@ -9,50 +9,10 @@ from . utils.utils import print_stderr
 from . exceptions import SymbioticException, SymbioticExceptionalResult
 
 def initialize_verifier(opts):
-    if opts.tool_name == 'klee':
-        if opts.full_instrumentation:
-            from . tools.klee_symbiotic import SymbioticTool
-        else:
-            from . tools.klee import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'ceagle':
-        from . tools.ceagle import SymbioticTool
-        return SymbioticTool()
-    elif opts.tool_name == 'ikos':
-        from . tools.ikos import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'cbmc':
-        from . tools.cbmc import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'map2check':
-        from . tools.map2check import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'cpachecker':
-        opts.explicit_symbolic = True
-        from . tools.cpachecker import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'skink':
-        from . tools.skink import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'smack':
-        from . tools.smack import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'seahorn':
-        from . tools.seahorn import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'nidhugg':
-        from . tools.nidhugg import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'divine':
-        from . tools.divine import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'uautomizer':
-        from . tools.ultimateautomizer import SymbioticTool
-        return SymbioticTool(opts)
-    elif opts.tool_name == 'cc':
-        from . tools.cc import SymbioticTool
-        return SymbioticTool(opts)
-    else:
+    from . targets import targets
+    try:
+        return targets[opts.tool_name](opts)
+    except KeyValue:
         raise SymbioticException('Unknown verifier: {0}'.format(opts.tool_name))
 
 class ToolWatch(ProcessWatch):

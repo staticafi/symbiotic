@@ -2,7 +2,7 @@ from os.path import join, abspath
 
 from . tool import SymbioticBaseTool
 
-class SymbioticTool(SymbioticBaseTool):
+class CCTarget(SymbioticBaseTool):
     """
     Symbiotic tool info object
     """
