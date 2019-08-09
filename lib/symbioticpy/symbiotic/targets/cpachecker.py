@@ -53,6 +53,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def __init__(self, opts):
         SymbioticBaseTool.__init__(self, opts)
         self._memsafety = opts.property.memsafety()
+        opts.explicit_symbolic = True
 
     REQUIRED_PATHS = [
                   "lib/java/runtime",
