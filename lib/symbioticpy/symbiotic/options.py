@@ -6,7 +6,7 @@ from . utils import err, dbg, enable_debug
 from . exceptions import SymbioticException
 
 def get_versions():
-    """ Return a tuple (VERSION, versions, llvm_versions) """ 
+    """ Return a tuple (VERSION, versions, llvm_versions) """
 
     # the numbers must be separated by '-, otherwise it will
     # break the tool-module in benchexec
@@ -52,7 +52,7 @@ class SymbioticOptions(object):
         self.no_optimize = False
         self.no_verification = False
         self.final_output = None
-        self.witness_output = '{0}/witness.graphml'.format(env.symbiotic_dir)
+        self.witness_output = '{0}/witness.graphml'.format(os.getcwd())
         self.witness_with_source_lines = False
         self.source_is_bc = False
         self.optlevel = ["before-O3", "after-O3"]
@@ -465,4 +465,3 @@ where OPTS can be following:
 
     One (and only one) of the sources must contain 'main' function
 """
-
