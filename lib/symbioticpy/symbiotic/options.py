@@ -63,7 +63,7 @@ class SymbioticOptions(object):
         self.repeat_slicing = 1
         self.dont_exit_on_error = False
         # folders where to look for models of undefined functions
-        self.linkundef = ['verifier', 'libc', 'posix', 'kernel']
+        self.linkundef = ['target', 'verifier', 'libc', 'posix', 'kernel']
         # these files will be linked unconditionally just after compilation
         self.link_files = []
         # these files are going to be linked before slicing if they are undefined
@@ -175,7 +175,7 @@ def parse_command_line(env):
                                     'no-verification', 'output=', 'witness=', 'bc',
                                     'optimize=', 'no-prepare', 'malloc-never-fails',
                                     'pta=', 'no-libc', 'slicing-criterion=',
-                                    'cflags=', 'cppflags=', 'link=', 'verifier=',
+                                    'cflags=', 'cppflags=', 'link=', 'verifier=','target=',
                                     'no-link-undefined', 'repeat-slicing=',
                                     'slicer-params=', 'slicer-cmd=', 'verifier-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
@@ -208,7 +208,7 @@ def parse_command_line(env):
             options.tool_name='cc'
             options.cc_mode = True
             options.no_verification = True
-        elif opt == '--verifier':
+        elif opt == '--verifier' or opt == '--target':
             options.tool_name = arg.lower()
         elif opt == '--libc':
              if arg == 'klee':
