@@ -9,6 +9,20 @@ class SymbioticBaseTool(object):
     def __init__(self, opts):
         self._options = opts
 
+    def executable(self):
+        return 'true'
+
+    def determine_result(self, returncode, returnsignal, output, isTimeout):
+        if returncode != 0 or returnsignal != 0:
+            return 'error'
+        return 'done'
+
+    def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
+        """
+        Compose the command line to execute from the name of the executable
+        """
+        return [executable] + options + tasks
+
     def compilation_options(self):
         """
         List of compilation options specific for the tool

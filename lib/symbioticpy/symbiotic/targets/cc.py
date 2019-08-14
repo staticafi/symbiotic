@@ -16,9 +16,6 @@ class CCTarget(SymbioticBaseTool):
     def llvm_version(self):
         return '7.0.1'
 
-    def executable(self):
-        return 'true'
-
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
         Compose the command line to execute from the name of the executable
@@ -32,7 +29,3 @@ class CCTarget(SymbioticBaseTool):
                  join(self._options.env.symbiotic_dir, 'symbiotic-output.ll')
         return ['llvm-dis', '-o', output] + options + tasks
 
-    def determine_result(self, returncode, returnsignal, output, isTimeout):
-        if returncode != 0 or returnsignal != 0:
-            return 'error'
-        return 'done'
