@@ -41,14 +41,10 @@ class SymbioticOptions(object):
         self.property = get_property(env.symbiotic_dir, None)
         self.noslice = False
         self.malloc_never_fails = False
-        self.noprepare = False
         self.explicit_symbolic = False
         self.undef_retval_nosym = False
         self.undefined_are_pure = False
         self.timeout = 0
-        self.add_libc = False
-        self.no_lib = False
-        self.require_slicer = False
         self.no_optimize = False
         self.no_verification = False
         self.final_output = None
@@ -171,18 +167,17 @@ def parse_command_line(env):
         opts, args = getopt.getopt(argv[1:], '',
                                    ['no-slice', '32', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=', 'version', 'help',
-                                    'libc=', 'old-slicer', 'require-slicer',
                                     'no-verification', 'output=', 'witness=', 'bc',
-                                    'optimize=', 'no-prepare', 'malloc-never-fails',
-                                    'pta=', 'no-libc', 'slicing-criterion=',
-                                    'cflags=', 'cppflags=', 'link=', 'verifier=','target=',
+                                    'optimize=', 'malloc-never-fails',
+                                    'pta=', 'no-link', 'slicing-criterion=',
+                                    'cflags=', 'cppflags=', 'link=',
+                                    'verifier=','target=',
                                     'no-link-undefined', 'repeat-slicing=',
                                     'slicer-params=', 'slicer-cmd=', 'verifier-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
-                                    'save-files', 'version-short', 'no-posix',
-                                    'no-kernel', 'no-verifier-funs', 'no-witness',
+                                    'save-files', 'version-short', 'no-witness',
                                     'witness-with-source-lines', 'dont-exit-on-error',
-                                    'undefined-are-pure', 'no-svcomp-funs',
+                                    'undefined-are-pure',
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file=', 'overflow-config-file=',
                                     'statistics', 'working-dir-prefix=', 'sv-comp',
@@ -210,12 +205,6 @@ def parse_command_line(env):
             options.no_verification = True
         elif opt == '--verifier' or opt == '--target':
             options.tool_name = arg.lower()
-        elif opt == '--libc':
-             if arg == 'klee':
-                 options.add_libc = True
-             else:
-                 print('Unknown libc')
-                 sys.exit(0)
         elif opt == '--version-short':
             print_shortest_vers()
             sys.exit(0)
@@ -231,9 +220,6 @@ def parse_command_line(env):
         elif opt == '--no-witness':
             dbg('Will not create a witness')
             options.nowitness = True
-        elif opt == '--no-prepare':
-            dbg('Will not prepare code')
-            options.noprepare = True
         elif opt == '--explicit-symbolic':
             options.explicit_symbolic = True
         elif opt == '--undefined-retval-nosym':
@@ -241,6 +227,9 @@ def parse_command_line(env):
         elif opt == '--no-link-undefined':
             dbg('Will not try to find and link undefined functions')
             options.nolinkundef = True
+        elif opt == '--no-link':
+            for x in arg.split(','):
+                _remove_linkundef(options, x)
         elif opt == '--malloc-never-fails':
             dbg('Assuming malloc and calloc will never fail')
             options.malloc_never_fails = True
@@ -250,11 +239,6 @@ def parse_command_line(env):
         elif opt == '--no-verification':
             dbg('Will not run verification phase')
             options.no_verification = True
-        elif opt == '--require-slicer':
-            options.require_slicer = True
-        elif opt == '--old-slicer':
-            dbg('Will use old slicer')
-            options.old_slicer = True
         elif opt == '--overflow-with-clang':
             dbg('Will use clang sanitizer for checking overflows.')
             options.overflow_with_clang = True
@@ -335,16 +319,6 @@ def parse_command_line(env):
                 # we should check also for writebility
                 err("'{0}' is not valid prefix for working directory".format(arg))
             options.working_dir_prefix = wdr
-        elif opt == '--no-posix':
-            _remove_linkundef(options, 'posix')
-        elif opt == '--no-kernel':
-            _remove_linkundef(options, 'kernel')
-        elif opt == '--no-verifier-funs':
-            _remove_linkundef(options, 'verifier')
-        elif opt == '--no-svcomp-funs':
-            _remove_linkundef(options, 'svcomp')
-        elif opt == '--no-libc':
-            _remove_linkundef(options, 'libc')
         elif opt == '--witness-with-source-lines':
             options.witness_with_source_lines = True
         elif opt == '--dont-exit-on-error':
@@ -385,17 +359,15 @@ where OPTS can be following:
     --32                      Use 32-bit environment
     --timeout=t               Set timeout to t seconds
     --no-slice                Do not slice the code
-    --no-prepare              Do not prepare the code
     --verifier=name           Use the tool 'name'. Default is KLEE, other tools that
                               can be integrated are Ceagle, CPAchecker, Seahorn,
                               Skink and SMACK.
-    --explicit-symbolic       Do not make all memory symbolic (in prepare phase),
+    --explicit-symbolic       Do not make all memory symbolic,
                               but rely on calls to __VERIFIER_nondet_*
     --undefined-retval-nosym  Do not make return value of undefined functions symbolic,
                               but replace it with 0.
     --malloc-never-fails      Suppose malloc and calloc never return NULL
     --undefined-are-pure      Suppose that undefined functions have no side-effects
-    --require-slicer          Abort if slicing fails (default is to use the original file)
     --no-verification         Do not run verification phase (handy for debugging)
     --optimize=opt1,...       Run optimizations, every item in the optimizations list
                               is a string of type when-level, where when is 'before'
@@ -431,7 +403,7 @@ where OPTS can be following:
                               (flow-insensitive too) points-to analysis when slicing.
                               Default is the old
     --debug=what              Print debug messages, what can be comma separated list of:
-                              all, compile, prepare, slicer
+                              all, compile, slicer
                               In that case you get verbose output. You can just use
                               --debug= to print basic messages.
     --generate-ll             Generate also .ll files (for debugging)
@@ -447,14 +419,10 @@ where OPTS can be following:
     --verifier-params=STR     Pass parameters directly to the verifier
     --save-files              Do not remove working files after running.
                               The files will be stored in the symbiotic_files directory.
-    --no-libc                 Do not link missing functions from libc to the module
-    --no-posix                Do not link missing posix functions
-                              for which we have definition (default=off).
-    --no-kernel               Do not link missing kernel functions for which we have
-                              definition (default=off)
+    --no-link                 Do not link missing functions from the given category
+                              (libc, svcomp, verifier, posix, kernel). The argument
+                              is a comma-separated list of values.
     --no-witness              Do not create a witness
-    --no-verifier-funs        Do not link __VERIFIER_* function definitions (default=off)
-    --no-svcomp-funs          Do not link __VERIFIER_* SV-COMP function definitions (default=off)
     --dont-exit-on-error      Do not exit when the property violation is reached,
                               but continue searching
     --help                    Show help message
