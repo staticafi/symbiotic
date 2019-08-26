@@ -788,7 +788,7 @@ class SymbioticCC(object):
                 self.curfile = self.options.final_output
             except OSError as e:
                 msg = 'Cannot create {0}: {1}'.format(
-                    self.options.final_output, e.message)
+                    self.options.final_output, str(e))
                 raise SymbioticException(msg)
 
         return self.curfile
