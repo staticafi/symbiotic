@@ -27,7 +27,7 @@ class Symbiotic(object):
         self.env = env
 
         if opts is None:
-            self.options = SymbioticOptions(env.symbiotic_dir)
+            self.options = SymbioticOptions()
         else:
             self.options = opts
 

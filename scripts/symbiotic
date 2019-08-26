@@ -27,13 +27,13 @@ pth = os.path.join(os.path.dirname(__file__), '../lib/symbioticpy')
 sys.path.append(os.path.abspath(pth))
 
 from symbiotic.utils import err, dbg
-from symbiotic.utils.utils import print_stdout, print_stderr, get_symbiotic_dir
+from symbiotic.utils.utils import print_stdout
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
 from symbiotic import SymbioticException, Symbiotic
-from symbiotic.verifier import initialize_verifier
-from symbiotic.environment import Environment
 from symbiotic.options import parse_command_line
-from symbiotic.options import usage_msg, print_short_vers, get_versions
+from symbiotic.options import usage_msg, print_short_vers
+from symbiotic.runtime import SetupSymbiotic
+from symbiotic.property import get_property
 
 def dump_paths(dump_as_cmd=False, fun = print_stdout):
     variables = ['PATH', 'LD_LIBRARY_PATH', 'C_INCLUDE_DIR']
@@ -51,75 +51,6 @@ def dump_paths(dump_as_cmd=False, fun = print_stdout):
                 fun('export {0}="{1} ${0}"'.format(v, os.environ[v]))
             else:
                 fun('{0}="{1}"'.format(v, os.environ[v]))
-
-def perform_binaries_check(additional):
-    try:
-        from benchexec.util import find_executable
-    except ImportError:
-        from symbiotic.benchexec.util import find_executable
-
-    executables = ['clang', 'opt', 'llvm-link', 'llvm-nm',
-                   'sbt-instr'] + additional
-    for exe in executables:
-        exe_path = find_executable(exe)
-        if not os.path.isfile(exe_path):
-            err("Cannot find executable '{0}' ('{1}')".format(exe, exe_path))
-        else:
-            dbg("'{0}' is '{1}'".format(os.path.basename(exe), exe_path))
-
-def _find_library(lib):
-    # code taken and modified from benchexec.util.find_executable
-    dirs = os.environ['LD_LIBRARY_PATH'].split(os.path.pathsep)
-
-    for dir_ in dirs:
-        name = os.path.join(dir_, lib)
-        if os.path.isfile(name):
-            return name
-
-    return None
-
-def perform_libraries_check():
-    libraries = ['LLVMsbt.so', 'libCheckNSWPlugin.so',
-                 'libPointsToPlugin.so',
-                 'libLLVMdg.so', 'libLLVMpta.so', 'libLLVMrd.so',
-                 'libPTA.so', 'libRD.so']
-    for lib in libraries:
-        if not _find_library(lib):
-            err("Cannot find library '{0}'".format(lib))
-
-def on_rm_error(func, pth, exc):
-    print_stderr('Failed removing tmp dir: {0})'.format(str(exc[1])), color='RED')
-
-def rm_tmp_dir(d):
-    from shutil import rmtree
-    rmtree(d, onerror=on_rm_error)
-
-def setup_working_directory(opts):
-    """
-    Create temporary directory, either in the current folder or on tmp.
-    Return the path to that directory.
-    """
-
-    from tempfile import mkdtemp
-    from shutil import copy
-
-    if opts.save_files:
-        tmpdir = 'symbiotic_files'
-        try:
-            os.mkdir(tmpdir)
-        except OSError:
-            rm_tmp_dir(tmpdir)
-            os.mkdir(tmpdir)
-    else:
-        if os.path.isdir(opts.working_dir_prefix):
-            prefix = os.path.join(opts.working_dir_prefix, 'symbiotic-')
-        else:
-            dbg('Found no {0} dir, falling-back to curdir: {1}'.format(opts.working_dir_prefix, os.getcwd()))
-            prefix = 'symbiotic-'
-
-        tmpdir = mkdtemp(prefix=prefix, dir='.')
-
-    return tmpdir
 
 def report_results(res):
     """
@@ -146,77 +77,42 @@ def report_results(res):
 
     return res
 
-def check_components(opts, additional_bins = []):
-    # check availability of binaries and libraries
-    perform_binaries_check(additional_bins)
-    perform_libraries_check()
-
-    # this calls the tools, so it must be after setting the environ
-    if not opts.no_integrity_check:
-        from symbiotic.integritycheck import IntegrityChecker
-
-        try:
-            _, versions, _, _= get_versions()
-            checker = IntegrityChecker(versions)
-            checker.check(opts.tool_name);
-        except SymbioticException as e:
-            err('{0}\nIf you are aware of this, you may use --no-integrity-check '\
-                'to suppress this error'.format(str(e)))
-
-def setup_symbiotic():
-    environment = Environment(get_symbiotic_dir())
-    dbg('Symbiotic dir: {0}'.format(environment.symbiotic_dir))
-
-    opts, args = parse_command_line(environment)
-
-    if opts.dump_env_only:
-        tool = initialize_verifier(opts)
-        environment.set(tool, opts)
-        dump_paths(opts.dump_env_cmd)
-
-        sys.exit(0)
-
-    if len(args) < 1:
-        print(usage_msg)
-        sys.exit(1)
-
-    print_short_vers()
-    sources = args
-    tool = initialize_verifier(opts)
-
-    # set environment. That is set PATH and LD_LIBRARY_PATH and so on
-    environment.set(tool, opts)
-
-    dump_paths(fun=dbg)
-    check_bins = [opts.slicer_cmd[0], tool.executable()]
-    if opts.generate_c:
-        check_bins.append('llvm-cbe')
-        check_bins.append('gen-c')
-    check_components(opts, check_bins)
-
-    # get absolute paths to sources
-    sources = opts.sources = list(map(os.path.abspath, sources))
-
-    # change working directory so that we do not mess up the current directory much
-    environment.working_dir = os.path.abspath(setup_working_directory(opts))
-    os.chdir(environment.working_dir)
-    dbg('Working directory: {0}'.format(environment.working_dir))
-    assert environment.symbiotic_dir != environment.working_dir
-
-    return tool, sources, opts, environment
-
-def cleanup_symbiotic(opts, environment):
-    os.chdir(environment.symbiotic_dir)
-    assert environment.symbiotic_dir != environment.working_dir
-    if not opts.save_files:
-        rm_tmp_dir(environment.working_dir)
-
 if __name__ == "__main__":
     # store time when we have started, so that we can
     # measure how long Symbiotic ran
     start_time = time()
 
-    tool, sources, opts, environment = setup_symbiotic()
+    opts, sources = parse_command_line()
+
+    if opts.dump_env_only:
+        tool = initialize_verifier(opts)
+        self.environment.set(tool, opts)
+        dump_paths(opts.dump_env_cmd)
+
+        sys.exit(0)
+
+    if len(sources) < 1:
+        print(usage_msg)
+        sys.exit(1)
+
+    # get absolute paths to sources
+    sources = opts.sources = list(map(os.path.abspath, sources))
+
+    # setup the runtime environment
+    setup = SetupSymbiotic(opts)
+    tool, environment = setup.setup()
+    dump_paths(fun=dbg)
+
+    # setup the property
+    try:
+        opts.property = get_property(environment.symbiotic_dir, opts.propertystr)
+        if opts.property is None:
+            err('Could not derive the right property')
+    except SymbioticException as e:
+        stre = str(e)
+        err(str(e))
+
+    print_short_vers()
 
     if opts.timeout != 0:
         start_timeout(opts.timeout)
@@ -246,7 +142,7 @@ if __name__ == "__main__":
             symbiotic.kill()
             symbiotic.kill_wait()
 
-    cleanup_symbiotic(opts, environment)
+    setup.cleanup()
 
     # print information about how long Symbiotic ran
     print_stdout('INFO: Total time elapsed: {0}'.format(time() - start_time),
