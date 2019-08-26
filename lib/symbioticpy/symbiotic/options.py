@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import os, sys
-from . property import get_property
 from . utils import err, dbg, enable_debug
 from . exceptions import SymbioticException
 
@@ -25,10 +24,9 @@ def get_versions():
     return (VERSION, versions, LLVM_VERSION, build_types)
 
 class SymbioticOptions(object):
-    def __init__(self, env):
+    def __init__(self):
         # source codes
         self.sources = []
-        self.env = env
 
         self.tool_name = 'klee'
         self.is32bit = False
@@ -37,8 +35,8 @@ class SymbioticOptions(object):
         self.generate_ll = False
         self.generate_c = False
         self.cc_mode = False
-        # properties mapped to our names
-        self.property = get_property(env.symbiotic_dir, None)
+        self.propertystr = None
+        self.property = None
         self.noslice = False
         self.malloc_never_fails = False
         self.explicit_symbolic = False
@@ -158,10 +156,10 @@ def translate_flags(output, flags):
             output.append(f)
 
 ### FIXME: use argparse
-def parse_command_line(env):
+def parse_command_line():
     import getopt
     from sys import argv
-    options = SymbioticOptions(env)
+    options = SymbioticOptions()
 
     try:
         opts, args = getopt.getopt(argv[1:], '',
@@ -259,14 +257,7 @@ def parse_command_line(env):
                     options.optlevel = []
                     break
         elif opt == '--prp':
-            try:
-                options.property = get_property(env.symbiotic_dir, arg)
-                if options.property is None:
-                    err('Could not derive the right property')
-            except SymbioticException as e:
-                stre = str(e)
-                err(str(e))
-
+            options.propertystr = arg
         elif opt == '--pta':
             options.slicer_pta = arg
             if not arg in ['fs', 'fi', 'inv']:
