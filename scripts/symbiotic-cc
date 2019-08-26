@@ -1,0 +1,115 @@
+#!/usr/bin/env python
+#
+#  -- Symbiotic tool --
+#      2015 - 2019
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation; either version 2 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program; if not, write to the Free Software
+#  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+#  MA 02110-1301, USA.
+
+import sys
+import os
+from time import time
+
+# set path to our package
+pth = os.path.join(os.path.dirname(__file__), '../lib/symbioticpy')
+sys.path.append(os.path.abspath(pth))
+
+from symbiotic.utils import err, dbg
+from symbiotic.utils.utils import print_stdout, print_stderr, dump_paths
+from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
+from symbiotic import SymbioticException, Symbiotic
+from symbiotic.transform import SymbioticCC
+from symbiotic.options import parse_command_line
+from symbiotic.options import usage_msg
+from symbiotic.runtime import SetupSymbiotic
+from symbiotic.property import get_property
+
+if __name__ == "__main__":
+    # store time when we have started, so that we can
+    # measure how long Symbiotic ran
+    start_time = time()
+
+    opts, sources = parse_command_line()
+
+    if opts.dump_env_only:
+        tool = initialize_verifier(opts)
+        self.environment.set(tool, opts)
+        dump_paths(opts.dump_env_cmd)
+
+        sys.exit(0)
+
+    if len(sources) < 1:
+        print(usage_msg)
+        sys.exit(1)
+
+    # get absolute paths to sources
+    sources = opts.sources = list(map(os.path.abspath, sources))
+
+    if opts.final_output is None:
+        if opts.generate_c:
+            opts.final_output = 'symbiotic-output.c'
+        else:
+            opts.final_output = 'symbiotic-output.bc'
+
+        print_stderr("No output name given, using '{0}'".format(opts.final_output))
+
+        opts.final_output = os.path.abspath(opts.final_output)
+
+    # setup the runtime environment
+    setup = SetupSymbiotic(opts)
+    tool, environment = setup.setup()
+    dump_paths(fun=dbg)
+
+    # setup the property
+    try:
+        opts.property = get_property(environment.symbiotic_dir, opts.propertystr)
+        if opts.property is None:
+            err('Could not derive the right property')
+    except SymbioticException as e:
+        stre = str(e)
+        err(str(e))
+
+    if opts.timeout != 0:
+        start_timeout(opts.timeout)
+    symbiotic = None
+    try:
+        # let the show begin!
+        try:
+            cc = SymbioticCC(sources, tool, opts, environment)
+            cc.run()
+        except SymbioticException as e:
+            sys.stdout.flush()
+            sys.stderr.flush()
+
+            print_stdout('RESULT: ERROR ({0})'.format(str(e)))
+            err(' == FAILURE ==\n{0}'.format(str(e)))
+    except Timeout:
+        sys.stdout.flush()
+        sys.stderr.flush()
+
+        print_stdout('RESULT: timeout')
+    finally:
+        stop_timeout()
+       #if cc:
+       #    cc.terminate()
+       #    cc.kill()
+       #    cc.kill_wait()
+
+    setup.cleanup()
+
+    # print information about how long Symbiotic ran
+    print_stdout('INFO: Total time elapsed: {0}'.format(time() - start_time),
+                 color='WHITE')
+    sys.exit(0)
