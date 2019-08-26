@@ -27,30 +27,13 @@ pth = os.path.join(os.path.dirname(__file__), '../lib/symbioticpy')
 sys.path.append(os.path.abspath(pth))
 
 from symbiotic.utils import err, dbg
-from symbiotic.utils.utils import print_stdout
+from symbiotic.utils.utils import print_stdout, dump_paths
 from symbiotic.utils.timeout import Timeout, start_timeout, stop_timeout
 from symbiotic import SymbioticException, Symbiotic
 from symbiotic.options import parse_command_line
 from symbiotic.options import usage_msg, print_short_vers
 from symbiotic.runtime import SetupSymbiotic
 from symbiotic.property import get_property
-
-def dump_paths(dump_as_cmd=False, fun = print_stdout):
-    variables = ['PATH', 'LD_LIBRARY_PATH', 'C_INCLUDE_DIR']
-    for v in variables:
-        if v in os.environ:
-            if dump_as_cmd:
-                fun('export {0}={1}:${0}'.format(v, os.environ[v]))
-            else:
-                fun('{0}={1}'.format(v, os.environ[v]))
-
-    variables = ['CFLAGS', 'CPPFLAGS']
-    for v in variables:
-        if v in os.environ:
-            if dump_as_cmd:
-                fun('export {0}="{1} ${0}"'.format(v, os.environ[v]))
-            else:
-                fun('{0}="{1}"'.format(v, os.environ[v]))
 
 def report_results(res):
     """

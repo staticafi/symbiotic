@@ -130,3 +130,21 @@ def get_clang_version():
     assert(len(lines) == 1)
 
     return lines[0].split()[2].strip()
+
+def dump_paths(dump_as_cmd=False, fun = print_stdout):
+    variables = ['PATH', 'LD_LIBRARY_PATH', 'C_INCLUDE_DIR']
+    for v in variables:
+        if v in os.environ:
+            if dump_as_cmd:
+                fun('export {0}={1}:${0}'.format(v, os.environ[v]))
+            else:
+                fun('{0}={1}'.format(v, os.environ[v]))
+
+    variables = ['CFLAGS', 'CPPFLAGS']
+    for v in variables:
+        if v in os.environ:
+            if dump_as_cmd:
+                fun('export {0}="{1} ${0}"'.format(v, os.environ[v]))
+            else:
+                fun('{0}="{1}"'.format(v, os.environ[v]))
+
