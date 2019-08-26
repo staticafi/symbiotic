@@ -10,6 +10,7 @@ from . utils.process import ProcessRunner, runcmd
 from . utils.watch import ProcessWatch, DbgWatch
 from . utils.utils import print_stdout, print_stderr, process_grep
 from . exceptions import SymbioticException
+from shutil import move
 
 class PrepareWatch(ProcessWatch):
     def __init__(self, lines=100):
@@ -784,7 +785,7 @@ class SymbioticCC(object):
             try:
                 dbg("Renaming the final file from '{0}' to '{1}'"\
                     .format(self.curfile, self.options.final_output))
-                os.rename(self.curfile, self.options.final_output)
+                move(self.curfile, self.options.final_output)
                 self.curfile = self.options.final_output
             except OSError as e:
                 msg = 'Cannot create {0}: {1}'.format(
