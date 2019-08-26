@@ -2,6 +2,12 @@ from os.path import join, abspath
 
 from . tool import SymbioticBaseTool
 
+try:
+    from symbiotic.versions import llvm_version
+except ImportError:
+    # the default version
+    llvm_version='8.0.1'
+
 class CCTarget(SymbioticBaseTool):
     """
     Symbiotic tool info object
@@ -14,7 +20,7 @@ class CCTarget(SymbioticBaseTool):
         return 'cc'
 
     def llvm_version(self):
-        return '7.0.1'
+        return llvm_version
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
