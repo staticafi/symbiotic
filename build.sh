@@ -819,8 +819,6 @@ if [ $FROM -le 6 ]; then
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DDG_PATH=$ABS_SRCDIR/dg \
-			-DRA_BUILD_PATH=`pwd`/../ra/build-${LLVM_VERSION} \
-			-DRA_SRC_PATH=`pwd`/../ra \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			|| clean_and_exit 1 "git"
 	fi
