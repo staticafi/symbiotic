@@ -407,8 +407,6 @@ if [ $FROM -le 6 ]; then
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
 			-DDG_PATH=$ABS_SRCDIR/dg \
-			-DRA_BUILD_PATH=`pwd`/../ra/build-${LLVM_VERSION} \
-			-DRA_SRC_PATH=`pwd`/../ra \
 			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			|| clean_and_exit 1 "git"
