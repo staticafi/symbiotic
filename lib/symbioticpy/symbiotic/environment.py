@@ -19,7 +19,7 @@ def _check_clang_in_path(llvm_version):
     versline = process_grep(['clang', '-v'], 'clang version')
     if versline[0] == 0 and len(versline[1]) == 1:
         parts = versline[1][0].split()
-        return _vers_are_same(parts[2], llvm_version)
+        return _vers_are_same(parts[2].decode('utf-8'), llvm_version)
 
     return False
 
