@@ -152,6 +152,15 @@ def print_shortest_vers():
 
     print(vers)
 
+def translate_flags(output, flags):
+    for f in flags:
+        if os.path.isfile(f):
+            output.append(os.path.abspath(f))
+        elif f.startswith("-I"):
+            output.append("-I{0}".format(os.path.abspath(f[2:])))
+        else:
+            output.append(f)
+
 ### FIXME: use argparse
 def parse_command_line(env):
     import getopt
@@ -306,9 +315,9 @@ def parse_command_line(env):
             options.source_is_bc = True
             dbg('Given code is bytecode')
         elif opt == '--cflags':
-            options.CFLAGS += arg.split()
+            translate_flags(options.CFLAGS, arg.split())
         elif opt == '--cppflags':
-            options.CPPFLAGS += arg.split()
+            translate_flags(options.CPPFLAGS, arg.split())
         elif opt == '--slicer-params':
             options.slicer_params = arg.split()
         elif opt == '--slicer-cmd':
