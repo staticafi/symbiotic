@@ -12,7 +12,7 @@ def initialize_verifier(opts):
     from . targets import targets
     try:
         return targets[opts.tool_name](opts)
-    except KeyValue:
+    except KeyError:
         raise SymbioticException('Unknown verifier: {0}'.format(opts.tool_name))
 
 class ToolWatch(ProcessWatch):
