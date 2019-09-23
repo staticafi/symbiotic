@@ -13,3 +13,6 @@
 [submodule "klee"]
 	path = klee
 	url = https://github.com/staticafi/klee
+[submodule "llvm2c"]
+	path = llvm2c
+	url = https://github.com/staticafi/llvm2c
