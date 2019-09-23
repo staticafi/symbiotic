@@ -3,6 +3,7 @@
 import os, sys
 from . utils import err, dbg, enable_debug
 from . exceptions import SymbioticException
+from . property import get_property
 
 def get_versions():
     """ Return a tuple (VERSION, versions, llvm_versions) """ 
