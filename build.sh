@@ -1099,12 +1099,7 @@ fi
 		lib/svcomp/*.c \
 		lib/verifier/*.c \
 		properties/* \
-		lib/symbioticpy/symbiotic/*.py \
-		lib/symbioticpy/symbiotic/benchexec/*.py \
-		lib/symbioticpy/symbiotic/benchexec/tools/*.py \
-		lib/symbioticpy/symbiotic/tools/*.py \
-		lib/symbioticpy/symbiotic/utils/*.py \
-		lib/symbioticpy/symbiotic/witnesses/*.py \
+		$(find lib/symbioticpy/symbiotic -name '*.py')\
 		LICENSE.txt
 		#$LLVM_PREFIX/include/stddef.h \
 
