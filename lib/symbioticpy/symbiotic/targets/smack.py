@@ -1,7 +1,6 @@
 try:
     from benchexec.tools.smack import Tool as SmackTool
 except ImportError:
-    print('Using the fallback tool module')
     from .. benchexec.tools.smack import Tool as SmackTool
 
 from . tool import SymbioticBaseTool

@@ -37,6 +37,8 @@ except ImportError:
     import symbiotic.benchexec.result as result
     from symbiotic.benchexec.tools.template import BaseTool
 
+from symbiotic.utils.process import runcmd
+from symbiotic.utils.watch import DbgWatch
 from . tool import SymbioticBaseTool
 
 
@@ -53,7 +55,13 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def __init__(self, opts):
         SymbioticBaseTool.__init__(self, opts)
         self._memsafety = opts.property.memsafety()
+        self._use_llvm_backend = False
+
         opts.explicit_symbolic = True
+
+        if opts.target_settings:
+            if 'use-llvm-backend' in opts.target_settings:
+                self._use_llvm_backend = True
 
     REQUIRED_PATHS = [
                   "lib/java/runtime",
@@ -131,7 +139,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             config_paths = os.path.join(os.path.dirname(executable), '..', 'config')
             additional_options += ['-svcomp19', '-heap', '10000M', '-benchmark',
                                    '-timelimit', '900s']
-        return [executable, "-setprop", "language=LLVM"] + options + additional_options + tasks
+        if self._use_llvm_backend:
+            additional_options += ["-setprop", "language=LLVM"]
+        return [executable] + options + additional_options + tasks
 
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
@@ -240,3 +250,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         """
         # LLVM backend in CPAchecker does not handle switches correctly yet
         return ["-reg2mem", "-lowerswitch", "-simplifycfg"]
+
+    def actions_before_verification(self, symbiotic):
+        if self._use_llvm_backend:
+            return
+
+        output = symbiotic.curfile + '.c'
+        runcmd(['llvm2c', symbiotic.curfile, '--o', output], DbgWatch('all'))
+        symbiotic.curfile = output

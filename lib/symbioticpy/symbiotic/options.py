@@ -83,6 +83,10 @@ class SymbioticOptions(object):
         self.overflow_with_clang = False
         # replay error path
         self.replay_error = False
+        # settings specific for the target, but not the one that are passed on command line
+        # (for those, tool_params)
+        # These are parsed and used by the tool info object.
+        self.target_settings = []
 
         # These were globals previously, move them into stand-alone argparse
         # parser once we switch to argparse
@@ -181,7 +185,7 @@ def parse_command_line():
                                     'statistics', 'working-dir-prefix=', 'sv-comp',
                                     'overflow-with-clang', 'gen-ll', 'gen-c',
                                     'search-include-paths', 'replay-error', 'cc',
-                                    'unroll=', 'full-instrumentation'])
+                                    'unroll=', 'full-instrumentation', 'target-settings'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -299,6 +303,8 @@ def parse_command_line():
             options.slicer_cmd = arg.split()
         elif opt == '--verifier-params':
             options.tool_params = arg.split()
+        elif opt == '--target-settings':
+            options.target_settings = arg.split()
         elif opt == '--link':
             options.link_files += arg.split(',')
         elif opt == '--save-files':

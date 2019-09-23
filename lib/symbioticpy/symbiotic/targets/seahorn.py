@@ -2,7 +2,6 @@ try:
     from benchexec.tools.seahorn import Tool as SeaTool
 except ImportError:
     from .. utils import dbg
-    dbg('Using the fallback tool module')
     from .. benchexec.tools.seahorn import Tool as SeaTool
 
 from . tool import SymbioticBaseTool

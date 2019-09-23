@@ -1,7 +1,6 @@
 try:
     from benchexec.tools.skink import Tool as SkinkTool
 except ImportError:
-    print('Using the fallback tool module')
     from .. benchexec.tools.skink import Tool as SkinkTool
 
 class SymbioticTool(SkinkTool):

@@ -64,6 +64,7 @@ def _set_symbiotic_environ(tool, env, opts):
         env.prepend('PATH', '{0}/dg/build-{1}/tools'.format(env.symbiotic_dir, llvm_version))
         env.prepend('PATH', '{0}/sbt-slicer/build-{1}/src'.format(env.symbiotic_dir, llvm_version))
         env.prepend('PATH', '{0}/sbt-instrumentation/build-{1}/src'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('PATH', '{0}/llvm2c/build-{1}/'.format(env.symbiotic_dir, llvm_version))
 
         env.prepend('LD_LIBRARY_PATH', '{0}/build/lib'.format(llvm_prefix))
         env.prepend('LD_LIBRARY_PATH', '{0}/transforms/build-{1}/'.format(env.symbiotic_dir,llvm_version))
