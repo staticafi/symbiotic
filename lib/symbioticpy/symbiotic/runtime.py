@@ -6,6 +6,7 @@ from . utils import err, dbg
 from . utils.utils import print_stdout, print_stderr, get_symbiotic_dir
 from . environment import Environment
 from . verifier import initialize_verifier
+from . property import get_property
 
 from . exceptions import SymbioticException
 
@@ -109,6 +110,16 @@ class SetupSymbiotic:
     def setup(self):
         self.environment = Environment(get_symbiotic_dir())
         dbg('Symbiotic dir: {0}'.format(self.environment.symbiotic_dir))
+
+        # setup the property (must be done before initializing the verifier)
+        try:
+            self.opts.property = get_property(self.environment.symbiotic_dir,
+                                              self.opts.propertystr)
+            if self.opts.property is None:
+                err('Could not derive the right property')
+        except SymbioticException as e:
+            stre = str(e)
+            err(str(e))
 
         tool = initialize_verifier(self.opts)
 

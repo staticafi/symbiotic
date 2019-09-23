@@ -33,7 +33,6 @@ from symbiotic import SymbioticException, Symbiotic
 from symbiotic.options import parse_command_line
 from symbiotic.options import usage_msg, print_short_vers
 from symbiotic.runtime import SetupSymbiotic
-from symbiotic.property import get_property
 
 def report_results(res):
     """
@@ -85,15 +84,6 @@ if __name__ == "__main__":
     setup = SetupSymbiotic(opts)
     tool, environment = setup.setup()
     dump_paths(fun=dbg)
-
-    # setup the property
-    try:
-        opts.property = get_property(environment.symbiotic_dir, opts.propertystr)
-        if opts.property is None:
-            err('Could not derive the right property')
-    except SymbioticException as e:
-        stre = str(e)
-        err(str(e))
 
     print_short_vers()
 
