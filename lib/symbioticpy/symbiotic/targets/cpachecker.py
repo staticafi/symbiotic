@@ -206,7 +206,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                     newStatus = result.RESULT_FALSE_REACH
                     match = re.match('.* Property violation \(([^:]*)(:.*)?\) found by chosen configuration.*', line)
                     if match and match.group(1) in ['valid-deref', 'valid-free', 'valid-memtrack', 'no-overflow', 'no-deadlock', 'termination']:
-                        newStatus = result.STR_FALSE + '(' + match.group(1) + ')'
+                        newStatus = 'false(' + match.group(1) + ')'
                 else:
                     newStatus = result.RESULT_UNKNOWN
 
