@@ -1,7 +1,6 @@
 try:
     from benchexec.tools.ceagle import Tool as CeagleTool
 except ImportError:
-    print('Using the fallback tool module')
     from .. benchexec.tools.ceagle import Tool as CeagleTool
 
 class SymbioticTool(CeagleTool):
