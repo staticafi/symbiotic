@@ -186,7 +186,7 @@ def parse_command_line():
                                     'statistics', 'working-dir-prefix=', 'sv-comp',
                                     'overflow-with-clang', 'gen-ll', 'gen-c',
                                     'search-include-paths', 'replay-error', 'cc',
-                                    'unroll=', 'full-instrumentation', 'target-settings'])
+                                    'unroll=', 'full-instrumentation', 'target-settings='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
