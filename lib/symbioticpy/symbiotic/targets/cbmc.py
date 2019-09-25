@@ -34,6 +34,12 @@ from symbiotic.utils.process import runcmd
 from symbiotic.utils.watch import DbgWatch
 from . tool import SymbioticBaseTool
 
+try:
+    from symbiotic.versions import llvm_version
+except ImportError:
+    # the default version
+    llvm_version='8.0.1'
+
 class SymbioticTool(BaseTool, SymbioticBaseTool):
     """
     Tool info for CBMC (http://www.cprover.org/cbmc/).
@@ -60,10 +66,10 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
 
     def cmdline(self, executable, options, tasks, propertyfile, rlimits):
-        if propertyfile:
-            options = options + ['--propertyfile', propertyfile]
-        elif ("--xml-ui" not in options):
-            options = options + ["--xml-ui"]
+       #if propertyfile:
+       #    options = options + ['--propertyfile', propertyfile]
+       #elif ("--xml-ui" not in options):
+       #    options = options + ["--xml-ui"]
 
         self.options = options
 
@@ -138,9 +144,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 # SV-COMP mode
                 result_str = output[-1].strip()
 
-                if result_str == 'TRUE' :
+                if result_str == 'TRUE' or result_str == b'VERIFICATION SUCCESSFUL':
                     status = result.RESULT_TRUE_PROP
-                elif 'FALSE' in result_str:
+                elif b'FALSE' in result_str:
                     if result_str == 'FALSE(valid-memtrack)':
                         status = result.RESULT_FALSE_MEMTRACK
                     elif result_str == 'FALSE(valid-deref)':
@@ -171,7 +177,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         """
         Return required version of LLVM
         """
-        return '7.0.1'
+        return llvm_version
 
     def passes_before_verification(self):
         """
