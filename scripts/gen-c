@@ -25,7 +25,7 @@ if [ -z $BITCODE ]; then
 	exit 1
 fi
 
-LLVM2C=llvm-cbe
+LLVM2C=llvm2c
 if [ -z $CCODE ]; then
 	if echo "$BITCODE" | grep -q "\.bc$"; then
 		CCODE=${BITCODE%%.bc}.c
@@ -37,7 +37,7 @@ if [ -z $CCODE ]; then
 	fi
 fi
 
-$LLVM2C "$BITCODE" -o "$CCODE"
+$LLVM2C -o "$CCODE"  "$BITCODE"
 
 
 # llvm-cbe does ugly things with some prototypes, we must fix them
@@ -47,4 +47,6 @@ if [ "$LLVM2C" = "llvm-cbe" ]; then
 	sed -i 's@uint32_t\s\+main(void)@int main(void)@' $CCODE
 	sed -i 's@__noreturn\s\+void\s\+__VERIFIER_error(int,\s\+\.\.\.);@void __VERIFIER_error(void) __attribute__((noreturn));@' $CCODE
 	sed -i 's@__VERIFIER_error\s*(0\s\+/\*dummy\s\+arg\*/)@__VERIFIER_error()@' $CCODE
+else
+	sed -i 's@__VERIFIER_error\s*(\s*...\s*)@__VERIFIER_error()@' $CCODE
 fi
