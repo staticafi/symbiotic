@@ -41,6 +41,11 @@ from symbiotic.utils.process import runcmd
 from symbiotic.utils.watch import DbgWatch
 from . tool import SymbioticBaseTool
 
+try:
+    from symbiotic.versions import llvm_version
+except ImportError:
+    # the default version
+    llvm_version='8.0.1'
 
 SOFTTIMELIMIT = 'timelimit'
 
@@ -242,14 +247,18 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         """
         Return required version of LLVM
         """
-        return '3.9.1'
+        if self._use_llvm_backend:
+            return '3.9.1'
+        else:
+            return llvm_version
 
     def passes_before_verification(self):
         """
         Passes that should run before CPAchecker
         """
         # LLVM backend in CPAchecker does not handle switches correctly yet
-        return ["-reg2mem", "-lowerswitch", "-simplifycfg"]
+        # and llvm2c has a bug with PHI nodes (which are not handled by the LLVM backend either)
+        return ["-lowerswitch", "-simplifycfg", "-reg2mem", "-simplifycfg"]
 
     def actions_before_verification(self, symbiotic):
         if self._use_llvm_backend:
