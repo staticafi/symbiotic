@@ -339,7 +339,7 @@ class SymbioticCC(object):
         self._generate_ll()
 
     def _link_undefined(self, undefs):
-        def get_path(symbdir, ty, tool, name):
+        def _get_path(symbdir, ty, tool, undef):
             path = os.path.abspath('{0}/lib/{1}/{2}/{3}.c'.format(symbdir, ty, tool, undef))
             if os.path.isfile(path):
                 return path
@@ -351,10 +351,18 @@ class SymbioticCC(object):
 
             return None
 
+        def get_path(symbdir, tool, undef):
+            # return the first found definition (in the order of linkundef)
+            for ty in self.options.linkundef:
+                path = _get_path(symbdir, ty, tool, undef)
+                if path:
+                    return path
+            return None
+
+
         tolink = []
-        for ty in self.options.linkundef:
-            for undef in undefs:
-                path = get_path(self.env.symbiotic_dir, ty,
+        for undef in undefs:
+                path = get_path(self.env.symbiotic_dir,
                                 self._tool.name().lower(), undef)
                 if path is None:
                     continue
