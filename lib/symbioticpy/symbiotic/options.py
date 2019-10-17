@@ -105,9 +105,7 @@ def _remove_linkundef(options, what):
         pass
 
 def set_svcomp(opts):
-    global no_integrity_check
-    no_integrity_check = True
-
+    opts.no_integrity_check = True
     opts.malloc_never_fails = True
     opts.explicit_symbolic = True
     opts.search_include_paths = False
