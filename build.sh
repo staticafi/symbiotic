@@ -56,7 +56,7 @@ usage()
 	echo -e "OPTS = options for make (i. e. -j8)"
 }
 
-LLVM_VERSION_DEFAULT=8.0.0
+LLVM_VERSION_DEFAULT=8.0.1
 get_llvm_version()
 {
 	# check whether we have llvm already present
@@ -324,10 +324,16 @@ check
 
 build_llvm()
 {
+	URL=http://llvm.org/releases/${LLVM_VERSION}/
+	# UFFF, for some stupid reason this only release has a different url, the rest (even newer use the previous one)
+	if [ ${LLVM_VERSION} = "8.0.1" ]; then
+		URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/
+	fi
+
 	if [ ! -d "llvm-${LLVM_VERSION}" ]; then
-		$GET http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz || exit 1
-		$GET http://llvm.org/releases/${LLVM_VERSION}/cfe-${LLVM_VERSION}.src.tar.xz || exit 1
-		$GET http://llvm.org/releases/${LLVM_VERSION}/compiler-rt-${LLVM_VERSION}.src.tar.xz || exit 1
+		$GET ${URL}/llvm-${LLVM_VERSION}.src.tar.xz || exit 1
+		$GET ${URL}/cfe-${LLVM_VERSION}.src.tar.xz || exit 1
+		$GET ${URL}/compiler-rt-${LLVM_VERSION}.src.tar.xz || exit 1
 
 		tar -xf llvm-${LLVM_VERSION}.src.tar.xz || exit 1
 		tar -xf cfe-${LLVM_VERSION}.src.tar.xz || exit 1
