@@ -77,6 +77,8 @@ if __name__ == "__main__":
         print(usage_msg)
         sys.exit(1)
 
+    print_short_vers()
+
     # get absolute paths to sources
     sources = opts.sources = list(map(os.path.abspath, sources))
 
@@ -84,8 +86,6 @@ if __name__ == "__main__":
     setup = SetupSymbiotic(opts)
     tool, environment = setup.setup()
     dump_paths(fun=dbg)
-
-    print_short_vers()
 
     if opts.timeout != 0:
         start_timeout(opts.timeout)
