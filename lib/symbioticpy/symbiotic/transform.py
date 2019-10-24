@@ -5,7 +5,7 @@ import sys
 import re
 
 from . options import SymbioticOptions
-from . utils import err, dbg, enable_debug, print_elapsed_time, restart_counting_time
+from . utils import dbg, print_elapsed_time, restart_counting_time
 from . utils.process import ProcessRunner, runcmd
 from . utils.watch import ProcessWatch, DbgWatch
 from . utils.utils import print_stdout, print_stderr, process_grep
