@@ -46,20 +46,27 @@ bool ReplaceLifetimeMarkers::runOnFunction(Function &F)
   bool modified = false;
   Module *M = F.getParent();
   LLVMContext& Ctx = M->getContext();
-  Constant *ver_scope_enter = M->getOrInsertFunction("__VERIFIER_scope_enter",
-                                           Type::getVoidTy(Ctx),
-                                           Type::getInt8PtrTy(Ctx)
+  auto ver_scope_enterC = M->getOrInsertFunction("__VERIFIER_scope_enter",
+                                                 Type::getVoidTy(Ctx),
+                                                 Type::getInt8PtrTy(Ctx)
 #if LLVM_VERSION_MAJOR < 5
-                                       , nullptr
+                                                 , nullptr
 #endif
-                                       );
-  Constant *ver_scope_leave = M->getOrInsertFunction("__VERIFIER_scope_leave",
-                                           Type::getVoidTy(Ctx),
-                                           Type::getInt8PtrTy(Ctx)
+                                                 );
+  auto ver_scope_leaveC = M->getOrInsertFunction("__VERIFIER_scope_leave",
+                                                 Type::getVoidTy(Ctx),
+                                                 Type::getInt8PtrTy(Ctx)
 #if LLVM_VERSION_MAJOR < 5
-                                       , nullptr
+                                                 , nullptr
 #endif
-                                       );
+                                                 );
+#if LLVM_VERSION_MAJOR >= 9
+  auto ver_scope_enter = cast<Function>(ver_scope_enterC.getCallee());
+  auto ver_scope_leave = cast<Function>(ver_scope_leaveC.getCallee());
+#else
+  auto ver_scope_enter = cast<Function>(ver_scope_enterC);
+  auto ver_scope_leave = cast<Function>(ver_scope_leaveC);
+#endif
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
     Instruction *ins = &*I;

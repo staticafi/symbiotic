@@ -59,14 +59,19 @@ bool DummyMarker::runOnFunction(Function &F)
         continue;
     auto fun = calledFun->getName();
     if (fun.equals("malloc") || fun.equals("calloc")) {
-      Constant *dummy = M->getOrInsertFunction("__symbiotic_keep_ptr",
-                                               Type::getVoidTy(Ctx),
-                                               Type::getInt8PtrTy(Ctx)
+      auto dummyC = M->getOrInsertFunction("__symbiotic_keep_ptr",
+                                           Type::getVoidTy(Ctx),
+                                           Type::getInt8PtrTy(Ctx)
 #if LLVM_VERSION_MAJOR < 5
-                                               , nullptr
+                                           , nullptr
 #endif
-                                               );
-      auto new_CI = CallInst::Create(cast<Function>(dummy), {CI});
+                                           );
+#if LLVM_VERSION_MAJOR >= 9
+      auto dummy = cast<Function>(dummyC.getCallee());
+#else
+      auto dummy = cast<Function>(dummyC);
+#endif
+      auto new_CI = CallInst::Create(dummy, {CI});
       CloneMetadata(CI, new_CI);
 
       new_CI->insertAfter(CI);
