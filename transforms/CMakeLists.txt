@@ -53,7 +53,6 @@ if (BUILD_SHARED_LIBS)
 endif()
 
 set(CPPFILES "CloneMetadata.cpp"
-	     "Prepare.cpp"
 	     "RemoveReadOnlyAttr.cpp"
 	     "RemoveErrorCalls.cpp"
 	     "RenameVerifierFuns.cpp"
