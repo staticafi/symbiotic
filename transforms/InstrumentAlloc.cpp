@@ -56,22 +56,33 @@ char InstrumentAllocNeverFails::ID;
 static unsigned allocsite_counter = 0;
 static void replace_malloc(Module *M, CallInst *CI, bool never_fails)
 {
-  Constant *C = nullptr;
+  Value *C = nullptr;
 
-  if (never_fails)
-    C = M->getOrInsertFunction("__VERIFIER_malloc0", CI->getType(), CI->getOperand(0)->getType(),
-                               Type::getInt32Ty(M->getContext()) // identifier
+  if (never_fails) {
+    auto X = M->getOrInsertFunction("__VERIFIER_malloc0", CI->getType(), CI->getOperand(0)->getType(),
+                                    Type::getInt32Ty(M->getContext()) // identifier
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
     );
-  else
-    C = M->getOrInsertFunction("__VERIFIER_malloc", CI->getType(), CI->getOperand(0)->getType(),
-                               Type::getInt32Ty(M->getContext()) // identifier
+#if LLVM_VERSION_MAJOR >= 9
+    C = X.getCallee();
+#else
+    C = X;
+#endif
+  } else {
+    auto X = M->getOrInsertFunction("__VERIFIER_malloc", CI->getType(), CI->getOperand(0)->getType(),
+                                    Type::getInt32Ty(M->getContext()) // identifier
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
     );
+#if LLVM_VERSION_MAJOR >= 9
+    C = X.getCallee();
+#else
+    C = X;
+#endif
+  }
 
   assert(C);
   Function *Malloc = cast<Function>(C);
@@ -98,21 +109,32 @@ static void replace_malloc(Module *M, CallInst *CI, bool never_fails)
 
 static void replace_calloc(Module *M, CallInst *CI, bool never_fails)
 {
-  Constant *C = nullptr;
-  if (never_fails)
-    C = M->getOrInsertFunction("__VERIFIER_calloc0", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(),
-                               Type::getInt32Ty(M->getContext()) // identifier
+  Value *C = nullptr;
+  if (never_fails) {
+    auto X = M->getOrInsertFunction("__VERIFIER_calloc0", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(),
+                                    Type::getInt32Ty(M->getContext()) // identifier
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
     );
-  else
-    C = M->getOrInsertFunction("__VERIFIER_calloc", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(),
-                               Type::getInt32Ty(M->getContext()) // identifier
+#if LLVM_VERSION_MAJOR >= 9
+    C = X.getCallee();
+#else
+    C = X;
+#endif
+  } else {
+    auto X = M->getOrInsertFunction("__VERIFIER_calloc", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(),
+                                    Type::getInt32Ty(M->getContext()) // identifier
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
     );
+#if LLVM_VERSION_MAJOR >= 9
+    C = X.getCallee();
+#else
+    C = X;
+#endif
+  }
 
   assert(C);
   Function *Calloc = cast<Function>(C);

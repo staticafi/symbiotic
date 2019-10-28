@@ -251,17 +251,22 @@ Function *DeleteUndefined::get_verifier_make_nondet(llvm::Module *M)
 
   LLVMContext& Ctx = M->getContext();
   //void verifier_make_symbolic(void *addr, size_t nbytes, const char *name);
-  Constant *C = M->getOrInsertFunction("klee_make_nondet",
-                                       Type::getVoidTy(Ctx),
-                                       Type::getInt8PtrTy(Ctx), // addr
-                                       get_size_t(M),   // nbytes
-                                       Type::getInt8PtrTy(Ctx), // name
-                                       Type::getInt32Ty(Ctx) // identifier
+  auto C = M->getOrInsertFunction("klee_make_nondet",
+                                  Type::getVoidTy(Ctx),
+                                  Type::getInt8PtrTy(Ctx), // addr
+                                  get_size_t(M),   // nbytes
+                                  Type::getInt8PtrTy(Ctx), // name
+                                  Type::getInt32Ty(Ctx) // identifier
 #if LLVM_VERSION_MAJOR < 5
-                                       , nullptr
+                                  , nullptr
 #endif
-                                       );
+                                  );
+
+#if LLVM_VERSION_MAJOR >= 9
+  _vms = cast<Function>(C.getCallee());
+#else
   _vms = cast<Function>(C);
+#endif
 
   calls_count = getKleeMakeNondetCounter(_vms);
 

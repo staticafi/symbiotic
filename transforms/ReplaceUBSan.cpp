@@ -44,7 +44,7 @@ bool ReplaceUBSan::runOnFunction(Function &F)
 {
   bool modified = false;
   Module *M = F.getParent();
-  Constant *ver_err = nullptr;
+  Function *ver_err = nullptr;
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
     Instruction *ins = &*I;
@@ -67,12 +67,17 @@ bool ReplaceUBSan::runOnFunction(Function &F)
       if (callee->isDeclaration()) {
         if (!ver_err) {
           LLVMContext& Ctx = M->getContext();
-          ver_err = M->getOrInsertFunction("__VERIFIER_error",
-                                           Type::getVoidTy(Ctx)
+          auto C = M->getOrInsertFunction("__VERIFIER_error",
+                                          Type::getVoidTy(Ctx)
 #if LLVM_VERSION_MAJOR < 5
-                                           , nullptr
+                                          , nullptr
 #endif
-                                       );
+                                         );
+#if LLVM_VERSION_MAJOR >= 9
+          ver_err = cast<Function>(C.getCallee());
+#else
+          ver_err = cast<Function>(C);
+#endif
         }
 
         auto CI2 = CallInst::Create(ver_err);

@@ -71,7 +71,7 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
         if (!ext) {
           LLVMContext& Ctx = M->getContext();
           Type *argTy = Type::getInt32Ty(Ctx);
-          Constant *extF
+          auto extF
             = M->getOrInsertFunction(useExit ? "__VERIFIER_exit" :
                                                "__VERIFIER_silent_exit",
                                      Type::getVoidTy(Ctx), argTy
