@@ -67,14 +67,18 @@ bool RemoveInfiniteLoops::runOnFunction(Function &F) {
   CallInst* ext;
   LLVMContext& Ctx = M->getContext();
   Type *argTy = Type::getInt32Ty(Ctx);
-  Function *extF
-    = cast<Function>(M->getOrInsertFunction("__VERIFIER_silent_exit",
-                                            Type::getVoidTy(Ctx),
-                                            argTy
+  auto C = M->getOrInsertFunction("__VERIFIER_silent_exit",
+                                  Type::getVoidTy(Ctx),
+                                  argTy
 #if LLVM_VERSION_MAJOR < 5
-                                       , nullptr
+                                  , nullptr
 #endif
-                                       ));
+                                  );
+#if LLVM_VERSION_MAJOR >= 9
+  auto extF = cast<Function>(C.getCallee());
+#else
+  auto extF = cast<Function>(C);
+#endif
 
   std::vector<Value *> args = { ConstantInt::get(argTy, 0) };
 

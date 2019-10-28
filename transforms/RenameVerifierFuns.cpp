@@ -129,10 +129,10 @@ static void replaceCall(Module& M, CallInst *CI, unsigned line, const std::strin
   std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName();
   std::string name = parent_name + ":" + var + ":" + std::to_string(line);
   Function *called_func = CI->getCalledFunction();
-  Constant *new_func = M.getOrInsertFunction(called_func->getName().str() + "_named",
-										     called_func->getAttributes(),
-									         called_func->getReturnType(),
-                                             Type::getInt8PtrTy(M.getContext())
+  auto new_func = M.getOrInsertFunction(called_func->getName().str() + "_named",
+								        called_func->getAttributes(),
+									    called_func->getReturnType(),
+                                        Type::getInt8PtrTy(M.getContext())
 #if LLVM_VERSION_MAJOR < 5
                                              , nullptr
 #endif
