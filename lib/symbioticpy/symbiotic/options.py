@@ -260,6 +260,13 @@ def parse_command_line():
                     options.optlevel = []
                     break
         elif opt == '--prp':
+            if arg == 'valid-free' or arg == 'valid-deref' or arg == 'valid-memtrack':
+                print("WARNING: Separated memsafety properties are not supported "\
+                      "at this moment setting the property to \'memsafety\'")
+                arg = "memsafety"
+            if options.propertystr is not None:
+                print("WARNING: only one property is supported at the moment, "\
+                      "Symbiotic will use the last one specified")
             options.propertystr = arg
         elif opt == '--pta':
             options.slicer_pta = arg
