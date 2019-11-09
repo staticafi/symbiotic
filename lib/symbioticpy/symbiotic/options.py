@@ -48,6 +48,7 @@ class SymbioticOptions(object):
         self.no_verification = False
         self.final_output = None
         self.witness_output = '{0}/witness.graphml'.format(os.getcwd())
+        self.testsuit_output = '{0}/test-suite'.format(os.getcwd())
         self.witness_with_source_lines = False
         self.source_is_bc = False
         self.optlevel = ["before-O3", "after-O3"]
@@ -124,7 +125,8 @@ def set_testcomp(opts):
     opts.malloc_never_fails = True
     opts.explicit_symbolic = True
     opts.search_include_paths = False
-    opts.linkundef.append('svcomp')
+    opts.nowitness = True
+    opts.linkundef.append('testcomp')
     opts.CFLAGS.append("-fbracket-depth=-1")
 
     enable_debug('all')

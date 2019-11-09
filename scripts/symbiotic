@@ -134,6 +134,8 @@ if __name__ == "__main__":
 
     setup.cleanup()
 
+    print_stdout("Generated tests: {0}".format(opts.testsuit_output))
+
     # print information about how long Symbiotic ran
     print_stdout('INFO: Total time elapsed: {0}'.format(time() - start_time),
                  color='WHITE')
