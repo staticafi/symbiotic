@@ -88,7 +88,7 @@ class MetadataWriter(object):
         self._metadata = ET.Element('test-metadata')
         ET.SubElement(self._metadata, 'sourcecodelang').text = 'C'
         ET.SubElement(self._metadata, 'producer').text = 'Symbiotic'
-        if for p in prps:
+        for p in prps:
             ET.SubElement(self._metadata, 'specification').text = p
         ET.SubElement(self._metadata, 'programfile').text = source
         ET.SubElement(self._metadata, 'programhash').text = get_hash(source)
