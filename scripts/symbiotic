@@ -34,6 +34,17 @@ from symbiotic.options import parse_command_line
 from symbiotic.options import usage_msg, print_short_vers
 from symbiotic.runtime import SetupSymbiotic
 
+def create_testcomp_metadata(where, source, prps, is32bit):
+
+    from symbiotic.testsuits.metadata import MetadataWriter
+
+    saveto = os.path.abspath('{0}/metadata.xml'.format(where))
+    os.makedirs(os.path.dirname(saveto), exist_ok=True)
+
+    dbg('Creating TEST-COMP metadata file: {0}'.format(saveto))
+    gen_md = MetadataWriter(source, prps, is32bit)
+    gen_md.write(saveto)
+
 def report_results(res):
     """
     Report result to the user and terminate analysis
@@ -89,6 +100,12 @@ if __name__ == "__main__":
 
     if opts.timeout != 0:
         start_timeout(opts.timeout)
+
+    if opts.test_comp:
+        assert len(sources) == 1
+        create_testcomp_metadata(opts.testsuit_output, sources[0],
+                                 opts.property.getLTL(), opts.is32bit)
+
     symbiotic = None
     try:
         # let the show begin!
