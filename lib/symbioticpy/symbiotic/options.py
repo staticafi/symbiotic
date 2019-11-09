@@ -118,6 +118,17 @@ def set_svcomp(opts):
 
     enable_debug('all')
 
+def set_testcomp(opts):
+    opts.test_comp = True
+    opts.no_integrity_check = True
+    opts.malloc_never_fails = True
+    opts.explicit_symbolic = True
+    opts.search_include_paths = False
+    opts.linkundef.append('svcomp')
+    opts.CFLAGS.append("-fbracket-depth=-1")
+
+    enable_debug('all')
+
 def print_versions():
     VERSION, versions, LLVM_VERSION, build_types = get_versions()
     print('version: {0}'.format(VERSION))
@@ -185,7 +196,7 @@ def parse_command_line():
                                     'undefined-are-pure',
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file=', 'overflow-config-file=',
-                                    'statistics', 'working-dir-prefix=', 'sv-comp',
+                                    'statistics', 'working-dir-prefix=', 'sv-comp', 'test-comp',
                                     'overflow-with-clang', 'gen-ll', 'gen-c',
                                     'search-include-paths', 'replay-error', 'cc',
                                     'unroll=', 'full-instrumentation', 'target-settings='])
@@ -222,6 +233,9 @@ def parse_command_line():
         elif opt == '--sv-comp':
             dbg('Using SV-COMP settings')
             set_svcomp(options)
+        elif opt == '--test-comp':
+            dbg('Using TEST-COMP settings')
+            set_testcomp(options)
         elif opt == '--no-witness':
             dbg('Will not create a witness')
             options.nowitness = True
