@@ -102,6 +102,11 @@ if __name__ == "__main__":
         start_timeout(opts.timeout)
 
     if opts.test_comp:
+        # do not slice for coverage property
+        # FIXME: we can actually slice...
+        if opts.property.coverage():
+            opts.noslice = True
+
         assert len(sources) == 1
         create_testcomp_metadata(opts.testsuit_output, sources[0],
                                  opts.property.getLTL(), opts.is32bit)
