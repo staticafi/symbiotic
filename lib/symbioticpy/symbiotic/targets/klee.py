@@ -119,7 +119,6 @@ class KleeToolFullInstrumentation(KleeBase):
         """
         Compose the command line to execute from the name of the executable
         """
-
         cmd = [executable, '-write-paths',
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
                '-output-stats=0', '--optimize=false', '-only-output-states-covering-new=1',
@@ -185,6 +184,7 @@ class KleeToolFullInstrumentation(KleeBase):
 
         return result.RESULT_ERROR
 
+
 class SymbioticTool(KleeBase):
     """
     Symbiotic tool info object
@@ -236,12 +236,35 @@ class SymbioticTool(KleeBase):
         if self.FullInstr:
             return self.FullInstr.actions_after_compilation(symbiotic)
 
+    def _testcomp_cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
+        """
+        Compose the command line to execute for TEST-COMP
+        """
+
+        cmd = [executable, '-write-paths',
+               '-output-stats=0', '--optimize=false',
+               '-only-output-states-covering-new=1',
+               '-max-memory=7000000']
+
+        if self._options.property.errorcall():
+            cmd.append('-exit-on-error-type=Assert')
+            cmd.append('-dump-states-on-halt=0')
+        else:
+            cmd.append('-max-time=840')
+
+        return cmd + options + tasks
+
+
+
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
         Compose the command line to execute from the name of the executable
         """
 
-        if self.FullInstr:
+        if self._options.test_comp:
+            return self._testcomp_cmdline(executable, options, tasks, propertyfile, rlimits)
+
+        elif self.FullInstr:
             return self.FullInstr.cmdline(executable, options, tasks, propertyfile, rlimits)
 
         cmd = [executable, '-write-paths',
@@ -289,6 +312,25 @@ class SymbioticTool(KleeBase):
         return None
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
+        ##
+        # TEST-COMP
+        # #
+        if self._options.test_comp:
+            if self._options.property.errorcall():
+                found = []
+                for line in output:
+                    fnd = self._parse_klee_output_line(line.decode('ascii'))
+                    if fnd == result.RESULT_FALSE_REACH:
+                        return result.RESULT_DONE
+
+                return result.RESULT_UNKNOWN
+
+            # else its coverage
+            return result.RESULT_DONE
+
+        ##
+        # GENERIC
+        # #
         if self.FullInstr:
             return self.FullInstr.determine_result(returncode, returnsignal, output, isTimeout)
 
