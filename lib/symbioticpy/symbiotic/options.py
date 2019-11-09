@@ -89,6 +89,9 @@ class SymbioticOptions(object):
         # These are parsed and used by the tool info object.
         self.target_settings = []
 
+        self.sv_comp = False
+        self.test_comp = False
+
         # These were globals previously, move them into stand-alone argparse
         # parser once we switch to argparse
         self.no_integrity_check = False
@@ -105,6 +108,7 @@ def _remove_linkundef(options, what):
         pass
 
 def set_svcomp(opts):
+    opts.sv_comp = True
     opts.no_integrity_check = True
     opts.malloc_never_fails = True
     opts.explicit_symbolic = True
