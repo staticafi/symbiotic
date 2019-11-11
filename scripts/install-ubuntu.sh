@@ -15,6 +15,7 @@ fi
 
 INSTALL_Z3="N"
 INSTALL_LLVM="N"
+INSTALL_SQLITE="N"
 
 # Ask for these as the user may have his/her own build
 if !  dpkg -l | grep -q libz3-dev; then
@@ -27,11 +28,21 @@ if !  dpkg -l | grep -q 'llvm.*-dev'; then
 	read INSTALL_LLVM
 fi
 
+if ! dpkg -l | grep -q 'libsqlite3-dev'; then
+	echo "SQLite not found, should I install it? [y/N]"
+	read INSTALL_SQLITE
+fi
+
 if [ "$INSTALL_Z3" = "y" ]; then
 	PACKAGES="$PACKAGES libz3-dev"
 fi
 if [ "$INSTALL_LLVM" = "y" ]; then
 	PACKAGES="$PACKAGES llvm"
 fi
+if [ "$INSTALL_SQLITE" = "y" ]; then
+	PACKAGES="$PACKAGES libsqlite3-dev"
+fi
+
+
 
 apt-get install $PACKAGES
