@@ -39,9 +39,13 @@ def create_testcomp_metadata(where, source, prps, is32bit):
     from symbiotic.testsuits.metadata import MetadataWriter
 
     saveto = os.path.abspath('{0}/metadata.xml'.format(where))
-    os.makedirs(os.path.dirname(saveto), exist_ok=True)
-
     dbg('Creating TEST-COMP metadata file: {0}'.format(saveto))
+
+    try:
+        os.makedirs(os.path.dirname(saveto))
+    except OSError:
+        dbg('The directory for test suite already exists')
+
     gen_md = MetadataWriter(source, prps, is32bit)
     gen_md.write(saveto)
 
