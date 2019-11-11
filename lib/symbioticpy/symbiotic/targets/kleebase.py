@@ -163,18 +163,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                         '{0}/llvm-{1}/lib/klee/runtime'.\
                         format(prefix, self.llvm_version()))
 
-    def passes_after_compilation(self):
-        """
-        Prepare the bitcode for verification - return a list of
-        LLVM passes that should be run on the code
-        """
-        passes = []
-        if not self._options.nowitness:
-            passes.append('-make-nondet')
-            passes.append('-make-nondet-source={0}'.format(self._options.sources[0]))
-
-        return passes
-
     def passes_before_verification(self):
         # for once, delete all undefined functions before the verification
         # (we may have new calls of undefined function because of
