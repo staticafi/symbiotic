@@ -1090,7 +1090,7 @@ if [ "$BUILD_Z3" = "yes" ]; then
 fi
 
 	#strip binaries, it will save us 500 MB!
-	strip $BINARIES
+	strip $BINARIES $LIBRARIES
 
 	git init
 	git add \
