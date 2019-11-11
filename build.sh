@@ -1068,8 +1068,9 @@ fi
 		$LLVM_PREFIX/lib/libInfiniteLoopsPlugin.so \
 		$LLVM_PREFIX/lib/libValueRelationsPlugin.so"
 
+BCFILES=""
 if [ ${BUILD_KLEE} = "yes" ];  then
-	LIBRARIES="${LIBRARIES} \
+	BCFILES="${BCFILES} \
 		$LLVM_PREFIX/lib/klee/runtime/*.bc* \
 		$LLVM_PREFIX/lib32/klee/runtime/*.bc* \
 		$LLVM_PREFIX/lib/*.bc* \
@@ -1095,6 +1096,7 @@ fi
 	git init
 	git add \
 		$BINARIES \
+		$BCFILES \
 		$LIBRARIES \
 		$DEPENDENCIES \
 		$INSTR\
