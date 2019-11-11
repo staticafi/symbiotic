@@ -3,6 +3,7 @@
 from os.path import basename
 from sys import version_info
 from hashlib import sha256 as hashfunc
+from struct import unpack
 
 from sys import version_info
 if version_info < (3, 0):
@@ -68,14 +69,39 @@ def is_zero(obj):
 
     return True
 
+def get_nice_repr(obj):
+    bytes_num = len(obj[1])
+    rep = ''
+    if bytes_num == 8:
+        val = unpack('l', obj[1])[0]
+        rep = "i64: {0}".format(val)
+    elif bytes_num == 4:
+        val = unpack('i', obj[1])[0]
+        rep = "i32: {0}".format(val)
+    elif bytes_num == 2:
+        # unpack needs a buffer of size 4 for an integer
+        val = unpack('h', obj[1])[0]
+        rep = "i16: {0}".format(val)
+    elif bytes_num == 1:
+        # unpack needs a buffer of size 4 for an integer
+        val = unpack('b', o[1])[0]
+        rep = "bool: {0}".format(val)
+    else:
+        return ''
+
+    return rep
+
+
 def print_object(obj):
-    rep = 'len {0} bytes, |'.format(len(obj[1]))
+    rep = 'len {0} bytes, ['.format(len(obj[1]))
     objrepr = get_repr(obj)
     if objrepr == ():
         assert(len(obj[1]) == 0)
         rep += "|"
 
-    for part in objrepr:
+    l = len(objrepr)
+    for n in range(0, l):
+        part  = objrepr[n]
         if version_info.major < 3:
             value = ord(part[0])
         else:
@@ -84,9 +110,16 @@ def print_object(obj):
         value = hex(value)
 
         if part[1] > 1:
-            rep += '{0} times {1}|'.format(part[1], value)
+            rep += '{0} times {1}'.format(part[1], value)
         else:
-            rep += '{0}|'.format(value)
+            rep += '{0}'.format(value)
+        if n == l - 1:
+            rep += ']'
+        else:
+            rep += '|'
+    nice_rep = get_nice_repr(obj)
+    if nice_rep:
+        rep += " ({0})".format(nice_rep)
     print('{0} := {1}'.format(obj[0], rep))
 
 
@@ -144,9 +177,7 @@ class GraphMLWriter(object):
         ET.SubElement(self._entry, 'data', key='entry').text = 'true'
 
     def _parseKtest(self, pathFile):
-        # this code is taken from ktest-tool from KLEE
-        # (but modified)
-        from struct import unpack
+        # this code is taken from ktest-tool from KLEE (but modified)
 
         f = open(pathFile, 'rb')
 
@@ -196,7 +227,6 @@ class GraphMLWriter(object):
         return node, edge
 
     def _dumpObjects(self, ktestfile, originfile):
-        from struct import unpack
 
         objects = self._parseKtest(ktestfile)
         print(' -- ---- --')
