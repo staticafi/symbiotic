@@ -86,16 +86,17 @@ class Symbiotic(object):
                                      self._tool, self.options, self.env)
         res = verifier.run()
 
-        if self.options.replay_error and not self.options.noslice and\
-            hasattr(self._tool, "replay_error_params"):
+        has_error = res and res.startswith('false')
+        if has_error and self.options.replay_error and\
+           not self.options.noslice and\
+           hasattr(self._tool, "replay_error_params"):
             print_stdout("Trying to confirm the error path")
             newres = self.replay_nonsliced(cc)
 
             if res != newres:
                 dbg("Replayed result: {0}".format(newres))
                 res = 'cex not-confirmed'
-
-        has_error = res and res.startswith('false')
+                has_error = False
 
         if has_error and hasattr(self._tool, "describe_error"):
             self._tool.describe_error(cc.curfile)
