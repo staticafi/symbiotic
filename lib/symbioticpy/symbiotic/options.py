@@ -47,7 +47,7 @@ class SymbioticOptions(object):
         self.no_verification = False
         self.final_output = None
         self.witness_output = '{0}/witness.graphml'.format(os.getcwd())
-        self.testsuit_output = '{0}/test-suite'.format(os.getcwd())
+        self.testsuite_output = '{0}/test-suite'.format(os.getcwd())
         self.witness_with_source_lines = False
         self.source_is_bc = False
         self.optlevel = ["before-O3", "after-O3"]
@@ -198,7 +198,7 @@ def parse_command_line():
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file=', 'overflow-config-file=',
                                     'statistics', 'working-dir-prefix=', 'sv-comp', 'test-comp',
-                                    'overflow-with-clang', 'gen-ll', 'gen-c',
+                                    'overflow-with-clang', 'gen-ll', 'gen-c', 'test-suite=',
                                     'search-include-paths', 'replay-error', 'cc',
                                     'unroll=', 'full-instrumentation', 'target-settings='])
                                    # add klee-params
@@ -366,6 +366,8 @@ def parse_command_line():
             options.unroll_count = int(arg)
         elif opt == '--full-instrumentation':
             options.full_instrumentation = True
+        elif opt == '--test-suite':
+            options.testsuite_output = os.path.abspath(arg)
 
     return options, args
 
@@ -458,6 +460,8 @@ where OPTS can be following:
     --replay-error            Try replaying a found error on non-sliced code
     --search-include-paths    Try automatically finding paths with standard include directories
     --sv-comp                 Shortcut for SV-COMP settings (malloc-never-fails, etc.)
+    --test-comp               Shortcut for TEST-COMP settings
+    --test-suit               Output for tests if --test-comp options is on
     --full-instrumentation    Tranform checking errors to reachability problem, i.e.
                               instrument tracking of the state of the program directly
                               into the program.
