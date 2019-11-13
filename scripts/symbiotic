@@ -112,7 +112,7 @@ if __name__ == "__main__":
             opts.noslice = True
 
         assert len(sources) == 1
-        create_testcomp_metadata(opts.testsuit_output, sources[0],
+        create_testcomp_metadata(opts.testsuite_output, sources[0],
                                  opts.property.getLTL(), opts.is32bit)
 
     symbiotic = None
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     setup.cleanup()
 
     if opts.test_comp:
-        print_stdout("Generated tests: {0}".format(opts.testsuit_output))
+        print_stdout("Generated tests: {0}".format(opts.testsuite_output))
 
     # print information about how long Symbiotic ran
     print_stdout('INFO: Total time elapsed: {0}'.format(time() - start_time),
