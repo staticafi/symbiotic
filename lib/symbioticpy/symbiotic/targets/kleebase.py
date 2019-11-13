@@ -197,7 +197,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         rename(ktest, newpath)
 
         params = self._options.tool_params if self._options.tool_params else []
-        params.append('-replay-nondets={0}'.format(ktest))
+        params.append('-replay-nondets={0}'.format(newpath))
 
         return params
 
