@@ -244,6 +244,8 @@ class SymbioticTool(KleeBase):
         cmd = [executable, '-write-paths',
                '-output-stats=0', '--optimize=false',
                '-only-output-states-covering-new=1',
+               '-output-dir={0}'.format(self._options.testsuite_output),
+               '-write-testcases',
                '-max-memory=7000000']
 
         if self._options.property.errorcall():
