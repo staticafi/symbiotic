@@ -116,6 +116,7 @@ def set_svcomp(opts):
     opts.linkundef.append('svcomp')
     opts.CFLAGS.append("-fbracket-depth=-1")
     opts.replay_error = True
+    opts.tool_name='svcomp'
 
     enable_debug('all')
 
@@ -129,6 +130,7 @@ def set_testcomp(opts):
     opts.linkundef.append('testcomp')
     opts.CFLAGS.append("-fbracket-depth=-1")
     opts.replay_error = True
+    opts.tool_name='svcomp'
 
     enable_debug('all')
 

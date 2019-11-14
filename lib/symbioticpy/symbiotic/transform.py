@@ -362,17 +362,17 @@ class SymbioticCC(object):
 
         tolink = []
         for undef in undefs:
-                path = get_path(self.env.symbiotic_dir,
-                                self._tool.name().lower(), undef)
-                if path is None:
-                    continue
+            path = get_path(self.env.symbiotic_dir,
+                            self._tool.name().lower(), undef)
+            if path is None:
+                continue
 
-                output = os.path.abspath('{0}.bc'.format(os.path.basename(path)[:-2]))
-                self._compile_to_llvm(path, output)
-                tolink.append(output)
+            output = os.path.abspath('{0}.bc'.format(os.path.basename(path)[:-2]))
+            self._compile_to_llvm(path, output)
+            tolink.append(output)
 
-                # for debugging
-                self._linked_functions.append(undef)
+            # for debugging
+            self._linked_functions.append(undef)
 
         if tolink:
             self.link(libs=tolink)
@@ -524,8 +524,11 @@ class SymbioticCC(object):
         self.link(llvmsrc, output)
 
     def perform_slicing(self):
-        add_params = []
         self._get_stats('Before slicing ')
+
+        add_params = []
+        if hasattr(self._tool, 'slicing_params'):
+            add_params += self._tool.slicing_params()
 
         print_stdout('INFO: Starting slicing', color='WHITE')
         restart_counting_time()
