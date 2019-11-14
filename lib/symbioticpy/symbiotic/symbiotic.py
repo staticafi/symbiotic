@@ -61,7 +61,9 @@ class Symbiotic(object):
 
     def replay_nonsliced(self, cc):
         bitcode = cc.prepare_unsliced_file()
-        params = self._tool.replay_error_params(cc.curfile)
+        params = []
+        if hasattr(self._tool, "replay_error_params"):
+            params = self._tool.replay_error_params(cc.curfile)
 
         print_stdout('INFO: Replaying error path', color='WHITE')
         restart_counting_time()
@@ -86,10 +88,13 @@ class Symbiotic(object):
                                      self._tool, self.options, self.env)
         res = verifier.run()
 
+        if self.options.replay_error and\
+           not self._tool.can_replay():
+           dbg('Replay required but the tool does not support it')
+
         has_error = res and res.startswith('false')
         if has_error and self.options.replay_error and\
-           not self.options.noslice and\
-           hasattr(self._tool, "replay_error_params"):
+           not self.options.noslice and self._tool.can_replay():
             print_stdout("Trying to confirm the error path")
             newres = self.replay_nonsliced(cc)
 

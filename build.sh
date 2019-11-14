@@ -1077,7 +1077,7 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 		$LLVM_PREFIX/lib32/*.bc*"
 fi
 if [ ${BUILD_NIDHUGG} = "yes" ];  then
-	LIBRARIES="$LLVM_PREFIX/bin/nidhugg"
+	BINARIES="$LLVM_PREFIX/bin/nidhugg"
 fi
 
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/"
