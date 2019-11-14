@@ -786,7 +786,7 @@ if [ $FROM -le 4  -a "$BUILD_NIDHUGG" = "yes" ]; then
 		PATH="$ABS_SRCDIR/llvm-${LLVM_VERSION}/build/bin":$PATH
 
 		autoreconf --install ..
-		../configure --prefix="$LLVM_PREFIX" \
+		../configure --prefix="$LLVM_PREFIX" CXXFLAGS="-I$(pwd)/../deps/immer" \
 			     $NIDHUGG_OPTIONS \
 		  || clean_and_exit 1 "git"
 
