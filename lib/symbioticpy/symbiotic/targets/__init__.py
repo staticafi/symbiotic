@@ -10,6 +10,7 @@ from . seahorn import SymbioticTool as SeahornTool
 from . nidhugg import SymbioticTool as NidhuggTool
 from . divine import SymbioticTool as DivineTool
 from . ultimateautomizer import SymbioticTool as UltimateTool
+from . svcomp import SymbioticTool as SVCompTool
 from . cc import CCTarget
 
 targets = {
@@ -27,6 +28,7 @@ targets = {
     'divine':             DivineTool,
     'ultimateautomizer':  UltimateTool,
     'ultimate':           UltimateTool,
+    'svcomp':             SVCompTool,
     'cc':                 CCTarget
 }
 

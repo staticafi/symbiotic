@@ -54,7 +54,7 @@ class IntegrityChecker(object):
             #print(k,v)
             if k == 'KLEE':
                 # check KLEE only if we are using KLEE
-                if verifier == 'klee' or verifier == 'klee-symbiotic':
+                if verifier.startswith('klee'):
                     vers = self._get_klee_version()
                     expected = self._decode(v)
                     self._check(k, expected, vers)
