@@ -48,6 +48,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def name(self):
         return self.tool.name()
 
+    def can_replay(self):
+        return self.tool.can_replay()
+
     def executable(self):
         return self.tool.executable()
 
@@ -73,6 +76,34 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 dbg("Found threads, will use Nidhugg")
         else:
             dbg('Checking the module failed!')
+
+    def passes_before_verification(self):
+        """
+        Prepare the bitcode for verification after slicing:
+        \return a list of LLVM passes that should be run on the code
+        """
+        passes = []
+        # instrument our malloc -- either the version that can fail,
+        # or the version that can not fail.
+        # KLEE and Nidhugg already assumes that
+        #if self._options.malloc_never_fails:
+        #    passes.append('-instrument-alloc-nf')
+        #else:
+        #    passes.append('-instrument-alloc')
+
+        # remove/replace the rest of undefined functions
+        # for which we do not have a definition and
+        # that has not been removed
+        passes.append('-delete-undefined')
+
+        # for the memsafety property, make functions behave like they have
+        # side-effects, because LLVM optimizations could remove them otherwise,
+        # even though they contain calls to assert
+        if self._options.property.memsafety():
+            passes.append('-remove-readonly-attr')
+
+        return passes
+
 
     def slicing_params(self):
         if self._has_threads:

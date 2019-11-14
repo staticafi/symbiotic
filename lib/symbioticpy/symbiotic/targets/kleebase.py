@@ -113,6 +113,10 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         SymbioticBaseTool.__init__(self, opts)
         self._options = opts
 
+    def can_replay(self):
+        """ Return true if the tool can do error replay """
+        return True
+
     def executable(self):
         """
         Find the path to the executable file that will get executed.

@@ -37,6 +37,10 @@ class SymbioticBaseTool(object):
 
         return opts
 
+    def can_replay(self):
+        """ Return true if the tool can do error replay """
+        return False
+
    # we run these passes for every tool
    #def passes_after_compilation(self):
    #    """
