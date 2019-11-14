@@ -714,7 +714,7 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 		fi
 
 		cmake .. -DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
-			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
+			-DCMAKE_BUILD_TYPE=${KLEE_BUILD_TYPE}\
 			-DKLEE_RUNTIME_BUILD_TYPE=${KLEE_BUILD_TYPE} \
 			-DLLVM_CONFIG_BINARY=${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/bin/llvm-config \
 			-DGTEST_SRC_DIR=$ABS_SRCDIR/googletest \
