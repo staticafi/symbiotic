@@ -581,12 +581,19 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 	BINARIES="$BINARIES $LLVM_PREFIX/bin/klee"
 fi
 
+if [ ${BUILD_LLVM2C} = "yes" ];  then
+	BINARIES="$BINARIES $LLVM_PREFIX/bin/llvm2c"
+fi
+
 	LIBRARIES="\
-		$LLVM_PREFIX/lib/libLLVMdg.so $LLVM_PREFIX/lib/libLLVMpta.so \
-		$LLVM_PREFIX/lib/libLLVMrd.so $LLVM_PREFIX/lib/libDGAnalysis.so \
-		$LLVM_PREFIX/lib/libPTA.so $LLVM_PREFIX/lib/libRD.so \
+		$LLVM_PREFIX/lib/libdgllvmdg.so $LLVM_PREFIX/lib/libdgllvmpta.so \
+		$LLVM_PREFIX/lib/libdgdda.so $LLVM_PREFIX/lib/libdganalysis.so \
+		$LLVM_PREFIX/lib/libdgpta.so $LLVM_PREFIX/lib/libdgllvmdda.so \
+		$LLVM_PREFIX/lib/libdgllvmthreadregions.so\
+		$LLVM_PREFIX/lib/libdgllvmpta.so\
+		$LLVM_PREFIX/lib/libdgllvmcda.so \
 		$LLVM_PREFIX/lib/LLVMsbt.so \
-		$LLVM_PREFIX/lib/libPointsToPlugin.so \
+		$LLVM_PREFIX/lib/libdgPointsToPlugin.so \
 		$LLVM_PREFIX/lib/libRangeAnalysisPlugin.so \
 		$LLVM_PREFIX/lib/libCheckNSWPlugin.so \
 		$LLVM_PREFIX/lib/libInfiniteLoopsPlugin.so \
