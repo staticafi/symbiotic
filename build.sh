@@ -90,6 +90,7 @@ WITH_LLVMCBE='no'
 BUILD_STP='no'
 BUILD_Z3='no'
 BUILD_SVF='no'
+BUILD_PREDATOR='no'
 
 BUILD_KLEE="yes"
 BUILD_NIDHUGG="no"
@@ -144,8 +145,8 @@ while [ $# -gt 0 ]; do
 		build-z3)
 			BUILD_Z3="yes"
 		;;
-		build-svf)
-			BUILD_SVF="yes"
+		build-predator)
+			BUILD_PREDATOR="yes"
 		;;
 		archive)
 			ARCHIVE="yes"
@@ -834,6 +835,30 @@ fi
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+
+######################################################################
+#   Predator
+######################################################################
+if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
+       if [ ! -d predator-${LLVM_VERSION} ]; then
+               git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp2019 predator-${LLVM_VERSION}
+
+       fi
+
+       pushd predator-${LLVM_VERSION}
+
+       if [ ! -d CMakeFiles ]; then
+	       CXX=clang++ ./switch-host-llvm.sh ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/${LLVM_CMAKE_CONFIG_DIR}
+       fi
+
+       (build && make install) || exit 1
+       popd
+fi
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+       exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
 
 
