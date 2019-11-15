@@ -594,6 +594,7 @@ fi
 		$LLVM_PREFIX/lib/libdgllvmcda.so \
 		$LLVM_PREFIX/lib/LLVMsbt.so \
 		$LLVM_PREFIX/lib/libdgPointsToPlugin.so \
+		$LLVM_PREFIX/lib/libPredatorPlugin.so \
 		$LLVM_PREFIX/lib/libRangeAnalysisPlugin.so \
 		$LLVM_PREFIX/lib/libCheckNSWPlugin.so \
 		$LLVM_PREFIX/lib/libInfiniteLoopsPlugin.so \

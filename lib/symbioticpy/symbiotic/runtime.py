@@ -67,7 +67,7 @@ class SetupSymbiotic:
 
     def _perform_libraries_check(self):
         libraries = ['LLVMsbt.so', 'libCheckNSWPlugin.so',
-                     'libdgPointsToPlugin.so',
+                     'libdgPointsToPlugin.so', 'libPredatorPlugin.so',
                      'libdgllvmdg.so', 'libdgllvmpta.so', 'libdgllvmdda.so',
                      'libdgpta.so', 'libdgdda.so', 'libdgllvmcda.so']
         for lib in libraries:
