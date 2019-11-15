@@ -1086,8 +1086,10 @@ fi
 		$LLVM_PREFIX/lib/libdgdda.so $LLVM_PREFIX/lib/libdganalysis.so \
 		$LLVM_PREFIX/lib/libdgpta.so $LLVM_PREFIX/lib/libdgllvmdda.so \
 		$LLVM_PREFIX/lib/libdgllvmthreadregions.so\
+		$LLVM_PREFIX/lib/libdgllvmforkjoin.so\
 		$LLVM_PREFIX/lib/libdgllvmpta.so\
 		$LLVM_PREFIX/lib/libdgllvmcda.so \
+		$LLVM_PREFIX/lib/libdgllvmslicer.so \
 		$LLVM_PREFIX/lib/LLVMsbt.so \
 		$LLVM_PREFIX/lib/libdgPointsToPlugin.so \
 		$LLVM_PREFIX/lib/libPredatorPlugin.so \
@@ -1106,6 +1108,10 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 fi
 if [ ${BUILD_NIDHUGG} = "yes" ];  then
 	BINARIES="$LLVM_PREFIX/bin/nidhugg"
+fi
+
+if [ ${BUILD_PREDATOR} = "yes" ];  then
+	BINARIES="$LLVM_PREFIX/bin/predator_wrapper.py"
 fi
 
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/"
@@ -1137,6 +1143,11 @@ fi
 		lib/posix/*.c \
 		lib/svcomp/*.c \
 		lib/verifier/*.c \
+		lib/verifier/klee/*.c \
+		lib/verifier/ikos/*.c \
+		lib/svcomp/divine/*.c \
+		lib/svcomp/nidhugg/*.c \
+		lib/svcomp/klee/*.c \
 		properties/* \
 		$(find lib/symbioticpy/symbiotic -name '*.py')\
 		LICENSE.txt
