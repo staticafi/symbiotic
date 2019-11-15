@@ -50,13 +50,13 @@ class SymbioticTool(SkinkTool):
             # default config file is 'config.json'
             # slice with respect to the memory handling operations
             return ('__INSTR_mark_pointer,__INSTR_mark_free,__INSTR_mark_allocation',
-                    ['-criteria-are-next-instr'])
+                    ['-memsafety'])
 
         elif self._options.property.memcleanup():
             # default config file is 'config.json'
             # slice with respect to the memory handling operations
             return ('__INSTR_mark_free,__INSTR_mark_allocation',
-                    ['-criteria-are-next-instr'])
+                    ['-memsafety'])
 
         return (self._options.slicing_criterion,[])
 
