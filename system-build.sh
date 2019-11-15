@@ -586,6 +586,7 @@ fi
 		$LLVM_PREFIX/lib/libdgllvmdda.so $LLVM_PREFIX/lib/libdganalysis.so \
 		$LLVM_PREFIX/lib/libdgpta.so $LLVM_PREFIX/lib/libdgdda.so \
 		$LLVM_PREFIX/lib/libdgllvmthreadregions.so \
+		$LLVM_PREFIX/lib/libdgllvmforkjoin.so \
 		$LLVM_PREFIX/lib/libdgllvmcda.so \
 		$LLVM_PREFIX/lib/LLVMsbt.so \
 		$LLVM_PREFIX/lib/libdgPointsToPlugin.so \
