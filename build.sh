@@ -681,12 +681,6 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	mkdir -p klee/build-${LLVM_VERSION}
 	pushd klee/build-${LLVM_VERSION}
 
-	if [ "x$BUILD_TYPE" = "xRelease" ]; then
-		KLEE_BUILD_TYPE="Release+Asserts"
-	else
-		KLEE_BUILD_TYPE="$BUILD_TYPE"
-	fi
-
 	# Our version of KLEE does not work with STP now
 	# STP_FLAGS=
 	# if [ "$BUILD_STP" = "yes" -o -d $ABS_SRCDIR/stp ]; then
@@ -714,8 +708,8 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 		fi
 
 		cmake .. -DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
-			-DCMAKE_BUILD_TYPE=${KLEE_BUILD_TYPE}\
-			-DKLEE_RUNTIME_BUILD_TYPE=${KLEE_BUILD_TYPE} \
+			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
+			-DKLEE_RUNTIME_BUILD_TYPE=${BUILD_TYPE} \
 			-DLLVM_CONFIG_BINARY=${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/bin/llvm-config \
 			-DGTEST_SRC_DIR=$ABS_SRCDIR/googletest \
 			-DENABLE_UNIT_TESTS=ON \
@@ -751,7 +745,7 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 
 	# copy 32-bit library version to prefix
 	mkdir -p $LLVM_PREFIX/lib32/klee/runtime
-	cp ${KLEE_BUILD_TYPE}/lib/*.bc* \
+	cp ${BUILD_TYPE}/lib/*.bc* \
 		$LLVM_PREFIX/lib32/klee/runtime/ \
 		|| exitmsg "Did not build 32-bit klee runtime lib"
 
