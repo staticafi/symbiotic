@@ -772,6 +772,13 @@ if [ $FROM -le 4  -a "$BUILD_NIDHUGG" = "yes" ]; then
 	fi
 
 	mkdir -p nidhugg/build-${LLVM_VERSION}
+
+	pushd nidhugg
+	# get the immer submodule
+	git submodule init
+	git submodule update
+	popd
+
 	pushd nidhugg/build-${LLVM_VERSION}
 
 	if [ "x$BUILD_TYPE" = "xRelease" ]; then
