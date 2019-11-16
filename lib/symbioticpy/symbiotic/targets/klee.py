@@ -56,7 +56,7 @@ class KleeToolFullInstrumentation(KleeBase):
             ('ESYMSOL', re.compile('.*unable to get symbolic solution.*')),
             ('ESILENTLYCONCRETIZED', re.compile('.*silently concretizing.*')),
             ('EEXTRAARGS', re.compile('.*calling .* with extra arguments.*')),
-            #('EABORT' , re.compile('.*abort failure.*')),
+            ('EPTRCMP', re.compile('.*WARNING: comparison of two pointers.*')),
             ('EMALLOC', re.compile('.*found huge malloc, returning 0.*')),
             ('ESKIPFORK', re.compile('.*skipping fork.*')),
             ('EKILLSTATE', re.compile('.*killing.*states \(over memory cap\).*')),
@@ -68,13 +68,6 @@ class KleeToolFullInstrumentation(KleeBase):
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
             ('ERESOLV', re.compile('.*ERROR:.*Could not resolve.*'))
         ]
-
-        if not self._options.property.memsafety():
-            # we do not want this pattern to be found in memsafety benchmarks,
-            # because we insert our own check that do not care about what KLEE
-            # really allocated underneath
-            self._patterns.append(
-                ('ECONCRETIZED', re.compile('.* concretized symbolic size.*')))
 
     def passes_after_slicing(self):
         """
@@ -133,7 +126,6 @@ class KleeToolFullInstrumentation(KleeBase):
     def _parse_klee_output_line(self, line):
         for (key, pattern) in self._patterns:
             if pattern.match(line):
-                # return True so that we know we should terminate
                 if key == 'ASSERTIONFAILED':
                     if self._options.property.memsafety():
                         return result.RESULT_FALSE_DEREF
@@ -211,7 +203,7 @@ class SymbioticTool(KleeBase):
             ('ESYMSOL', re.compile('.*unable to get symbolic solution.*')),
             ('ESILENTLYCONCRETIZED', re.compile('.*silently concretizing.*')),
             ('EEXTRAARGS', re.compile('.*calling .* with extra arguments.*')),
-            #('EABORT' , re.compile('.*abort failure.*')),
+            ('EPTRCMP', re.compile('.*WARNING: comparison of two pointers.*')),
             ('EMALLOC', re.compile('.*found huge malloc, returning 0.*')),
             ('ESKIPFORK', re.compile('.*skipping fork.*')),
             ('EKILLSTATE', re.compile('.*killing.*states \(over memory cap\).*')),
@@ -372,7 +364,7 @@ class SymbioticTool(KleeBase):
                 elif f == result.RESULT_FALSE_TERMINATION and self._options.property.termination():
                     return f
 
-            return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
+            return "{0} ({1})".format(result.RESULT_UNKNOWN, " ".join(found))
 
         return result.RESULT_ERROR
 

@@ -425,29 +425,29 @@ fi
 ######################################################################
 #   llvm2c
 ######################################################################
-if [ $FROM -le 6 ]; then
-	# initialize instrumentation module if not done yet
-	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/llvm2c)" ]; then
-		git_submodule_init
-	fi
+#if [ $FROM -le 6 ]; then
+#        # initialize instrumentation module if not done yet
+#        if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/llvm2c)" ]; then
+#                git_submodule_init
+#        fi
 
-	pushd "$SRCDIR/llvm2c" || exitmsg "Cloning failed"
-	mkdir -p build-${LLVM_VERSION}
-	pushd build-${LLVM_VERSION}
-	if [ ! -d CMakeFiles ]; then
-		cmake .. \
-			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
-			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
-			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
-			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
-			|| clean_and_exit 1 "git"
-	fi
+#        pushd "$SRCDIR/llvm2c" || exitmsg "Cloning failed"
+#        mkdir -p build-${LLVM_VERSION}
+#        pushd build-${LLVM_VERSION}
+#        if [ ! -d CMakeFiles ]; then
+#                cmake .. \
+#                        -DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
+#                        -DCMAKE_INSTALL_LIBDIR:PATH=lib \
+#                        -DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
+#                        -DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
+#                        || clean_and_exit 1 "git"
+#        fi
 
-	(build && make install) || exit 1
+#        (build && make install) || exit 1
 
-	popd
-	popd
-fi
+#        popd
+#        popd
+#fi
 
 
 
@@ -571,8 +571,8 @@ get_klee_dependencies()
 
 	BINARIES="$LLVM_PREFIX/bin/sbt-slicer \
 		  $LLVM_PREFIX/bin/llvm-slicer \
-		  $LLVM_PREFIX/bin/llvm2c \
 		  $LLVM_PREFIX/bin/sbt-instr"
+		  #$LLVM_PREFIX/bin/llvm2c \
 	for B in $LLVM_TOOLS; do
 		BINARIES="$LLVM_PREFIX/bin/${B} $BINARIES"
 	done
