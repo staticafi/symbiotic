@@ -279,6 +279,9 @@ class SymbioticTool(KleeBase):
         else:
             cmd.append('-exit-on-error-type=Assert')
 
+        if self._options.sv_comp:
+            cmd.append('-write-witness')
+
         return cmd + options + tasks
 
     def _parse_klee_output_line(self, line):
