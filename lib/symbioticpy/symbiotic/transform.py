@@ -774,8 +774,12 @@ class SymbioticCC(object):
         # remember the non-sliced llvmfile
         self.nonsliced_llvmfile = self.curfile
 
-        if not self.options.noslice and \
-           not self.options.property.termination():
+        if hasattr(self._tool, 'passes_before_slicing'):
+            passes = self._tool.passes_before_slicing()
+            if passes:
+                self.run_opt(passes)
+
+        if not self.options.noslice:
             self.perform_slicing()
 
         # start a new time era

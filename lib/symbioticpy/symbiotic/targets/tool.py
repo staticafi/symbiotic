@@ -130,5 +130,11 @@ class SymbioticBaseTool(object):
             return ('__INSTR_mark_free,__INSTR_mark_allocation',
                     ['-memsafety'])
 
+        if self._options.property.termination():
+            # have explicitly also __assert_fail, because otherwise it is going
+            # to be sliced away from __INSTR_fail
+            return ('__INSTR_fail,__assert_fail,__VERIFIER_silent_exit',
+                    ['-cd-alg=ntscd'])
+
         return (self._options.slicing_criterion,[])
 
