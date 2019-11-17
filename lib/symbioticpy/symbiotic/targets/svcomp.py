@@ -120,3 +120,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         return self.tool.determine_result(returncode, returnsignal, output, isTimeout)
 
 
+    def generate_witness(self, llvmfile, sources, has_error):
+        if hasattr(self.tool, "generate_witness"):
+            self.tool.generate_witness(llvmfile, sources, has_error)
+

@@ -69,11 +69,12 @@ def generate_graphml(path, source, is_correctness_wit, opts, saveto):
         saveto = '{0}.graphml'.format(basename(path))
         saveto = abspath(saveto)
 
-    gen = GraphMLWriter(source, opts.property.getLTL(), opts.is32bit,
-                        is_correctness_wit, opts.witness_with_source_lines)
+    gen = GraphMLWriter(source, opts.property.getLTL(),
+                        opts.is32bit, is_correctness_wit)
     if not is_correctness_wit:
-        gen.parseError(path, opts.property.termination(), source)
+        gen.parseError(path, opts.property.termination())
     else:
+        gen.createTrivialWitness()
         assert path is None
     gen.write(saveto)
 
