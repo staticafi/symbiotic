@@ -56,7 +56,7 @@ class SymbioticOptions(object):
         self.optlevel = ["before-O3", "after-O3"]
         self.slicer_pta = 'fi'
         self.slicing_criterion = '__assert_fail,__VERIFIER_error'
-        self.memsafety_config_file = 'config.json'
+        self.memsafety_config_file = None
         self.overflow_config_file = 'config.json'
         self.repeat_slicing = 1
         self.dont_exit_on_error = False
