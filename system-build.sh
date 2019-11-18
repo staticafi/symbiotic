@@ -598,6 +598,7 @@ fi
 		$LLVM_PREFIX/lib/libRangeAnalysisPlugin.so \
 		$LLVM_PREFIX/lib/libCheckNSWPlugin.so \
 		$LLVM_PREFIX/lib/libInfiniteLoopsPlugin.so \
+		$LLVM_PREFIX/lib/libLLVMPointsToPlugin.so \
 		$LLVM_PREFIX/lib/libValueRelationsPlugin.so"
 
 if [ ${BUILD_KLEE} = "yes" ];  then
