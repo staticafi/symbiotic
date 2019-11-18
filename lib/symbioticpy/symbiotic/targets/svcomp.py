@@ -112,7 +112,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def slicing_params(self):
         if self._has_threads:
-            return ['-threads']
+            return ['-threads', '-cd-alg=ntscd']
         return []
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
