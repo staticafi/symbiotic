@@ -1120,12 +1120,15 @@ if [ "$BUILD_STP" = "yes" ]; then
 		LIBRARIES="$LIBRARIES $PREFIX/lib/libminisat*.so"
 fi
 
-if [ "$BUILD_Z3" = "yes" ]; then
-		LIBRARIES="$LIBRARIES $PREFIX/lib/libz3*.so"
+if [ "$BUILD_Z3" = "yes" -o "$HAVE_Z3" = "yes" ]; then
+		LIBRARIES="$LIBRARIES $PREFIX/lib/libz3*.so*"
 fi
 
 	#strip binaries, it will save us 500 MB!
-	strip $BINARIES $LIBRARIES
+	for B in $BINARIES $LIBRARIES; do
+		echo "Stripping $B"
+		test -w $B && strip $B
+	done
 
 	git init
 	git add \
