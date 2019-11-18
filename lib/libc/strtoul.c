@@ -41,6 +41,9 @@
 #   define ULONG_MAX	4294967295UL
 #  endif
 
+#ifndef NULL
+#define NULL ((void*)0)
+#endif
 
 /*
  * Convert a string to an unsigned long integer.
