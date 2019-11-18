@@ -42,7 +42,10 @@ class SymbioticOptions(object):
         self.explicit_symbolic = False
         self.undef_retval_nosym = False
         self.undefined_are_pure = False
+        self.require_slicer = False
         self.timeout = 0
+        self.slicer_timeout = 0
+        self.instrumentation_timeout = 0
         self.no_optimize = False
         self.no_verification = False
         self.final_output = None
@@ -187,12 +190,13 @@ def parse_command_line():
     try:
         opts, args = getopt.getopt(argv[1:], '',
                                    ['no-slice', '32', 'prp=', 'no-optimize',
-                                    'debug=', 'timeout=', 'version', 'help',
+                                    'debug=', 'timeout=','slicer-timeout=',
+                                    'instrumentation-timeout=', 'version', 'help',
                                     'no-verification', 'output=', 'witness=', 'bc',
                                     'optimize=', 'malloc-never-fails',
                                     'pta=', 'no-link', 'slicing-criterion=',
                                     'cflags=', 'cppflags=', 'link=',
-                                    'verifier=','target=',
+                                    'verifier=','target=', 'require-slicer',
                                     'no-link-undefined', 'repeat-slicing=',
                                     'slicer-params=', 'slicer-cmd=', 'verifier-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
@@ -312,6 +316,19 @@ def parse_command_line():
             except ValueError:
                 err('Invalid numerical argument for timeout: {0}'.format(arg))
             dbg('Timeout set to {0} sec'.format(arg))
+        elif opt == '--slicer-timeout':
+            try:
+                options.slicer_timeout = int(arg)
+            except ValueError:
+                err('Invalid numerical argument for timeout: {0}'.format(arg))
+            dbg('Timeout of slicer set to {0} sec'.format(arg))
+        elif opt == '--instrumentation-timeout':
+            err('Not implemented yet')
+            try:
+                options.instrumentation_timeout = int(arg)
+            except ValueError:
+                err('Invalid numerical argument for timeout: {0}'.format(arg))
+            dbg('Timeout of instrumentation set to {0} sec'.format(arg))
         elif opt == '--output':
             options.final_output = os.path.abspath(arg)
             dbg('Output will be stored to {0}'.format(arg))
@@ -322,6 +339,8 @@ def parse_command_line():
         elif opt == '--bc':
             options.source_is_bc = True
             dbg('Given code is bytecode')
+        elif opt == '--require-slicer':
+            options.require_slicer = True
         elif opt == '--cflags':
             translate_flags(options.CFLAGS, arg.split())
         elif opt == '--cppflags':
@@ -386,6 +405,8 @@ where OPTS can be following:
     --bc                      Given file is a bytecode
     --32                      Use 32-bit environment
     --timeout=t               Set timeout to t seconds
+    --slicer-timeout=t        Set timeout for slicer (if slicer fails/timeouts,
+                              the original bitcode is used)
     --no-slice                Do not slice the code
     --verifier=name           Use the tool 'name'. Default is KLEE, other tools that
                               can be integrated are Ceagle, CPAchecker, Seahorn,
@@ -465,10 +486,11 @@ where OPTS can be following:
     --search-include-paths    Try automatically finding paths with standard include directories
     --sv-comp                 Shortcut for SV-COMP settings (malloc-never-fails, etc.)
     --test-comp               Shortcut for TEST-COMP settings
-    --test-suit               Output for tests if --test-comp options is on
+    --test-suite              Output for tests if --test-comp options is on
     --full-instrumentation    Tranform checking errors to reachability problem, i.e.
                               instrument tracking of the state of the program directly
                               into the program.
+    --require-slicer          Abort if slicing fails/timeouts
 
     One (and only one) of the sources must contain 'main' function
 """

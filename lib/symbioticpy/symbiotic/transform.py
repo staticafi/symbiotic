@@ -424,7 +424,14 @@ class SymbioticCC(object):
             crit, opts = '__assert_fail,__VERIFIER_error', []
 
         output = '{0}.sliced'.format(self.curfile[:self.curfile.rfind('.')])
-        cmd = self.options.slicer_cmd + ['-c', crit] + opts
+
+
+        if self.options.slicer_timeout > 0:
+            cmd = ['timeout', str(self.options.slicer_timeout)] +\
+                   self.options.slicer_cmd + ['-c', crit] + opts
+        else:
+            cmd = self.options.slicer_cmd + ['-c', crit] + opts
+
         if self.options.slicer_pta in ['fi', 'fs']:
             cmd.append('-pta')
             cmd.append(self.options.slicer_pta)
@@ -443,9 +450,21 @@ class SymbioticCC(object):
 
         cmd.append(self.curfile)
 
-        runcmd(cmd, SlicerWatch(), 'Slicing failed')
-        self.curfile = output
-        self._generate_ll()
+        watch = SlicerWatch()
+        process = ProcessRunner()
+        retval = process.run(cmd, watch)
+        if retval != 0:
+            if retval != 124: # TIMEOUT of slicer
+                for line in watch.getLines():
+                    print_stderr(line.decode('utf-8'), color='RED', print_nl=False)
+                print_stderr("INFO: Slicing FAILED, using the unsliced file.")
+            else: # just keep the unsliced file
+                print_stdout("INFO: Slicing timeouted, using the unsliced file.")
+            if self.options.require_slicer:
+                raise SymbioticException("Slicing failed (and is required)")
+        else:
+            self.curfile = output
+            self._generate_ll()
 
     def optimize(self, passes, disable=[], load_sbt = False):
         if not passes or self.options.no_optimize:
