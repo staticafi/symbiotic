@@ -214,7 +214,10 @@ class SymbioticTool(KleeBase):
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
             ('EMEMALLOC', re.compile('.*KLEE: WARNING: Allocating memory failed.*')),
             ('EMEMLEAK', re.compile('.*memory error: memory leak detected.*')),
+            ('EMEMCLEANUP', re.compile('.*memory error: memory not cleaned up.*')),
             ('EFREEALLOCA', re.compile('.*ERROR:.*free of alloca.*')),
+            ('ERESOLVMEMCLN', re.compile('.*Failed resolving segment in memcleanup check.*')),
+            ('ERESOLVMEMCLN2', re.compile('.*Cannot resolve non-constant segment in memcleanup check.*')),
             ('ERESOLV', re.compile('.*ERROR:.*Could not resolve.*'))
         ]
 
@@ -274,7 +277,7 @@ class SymbioticTool(KleeBase):
             cmd.append('-exit-on-error-type=Free')
             cmd.append('-exit-on-error-type=BadVectorAccess')
         elif self._options.property.memcleanup():
-            cmd.append('-check-leaks')
+            cmd.append('-check-memcleanup')
             cmd.append('-exit-on-error-type=Leak')
         else:
             cmd.append('-exit-on-error-type=Assert')
@@ -296,14 +299,14 @@ class SymbioticTool(KleeBase):
                     else:
                         return result.RESULT_FALSE_REACH
                 elif key == 'EFREE' or key == 'EFREEALLOCA':
-                        return result.RESULT_FALSE_FREE
+                    return result.RESULT_FALSE_FREE
                 elif key == 'EMEMERROR':
-                        return result.RESULT_FALSE_DEREF
+                    return result.RESULT_FALSE_DEREF
                 elif key == 'EMEMLEAK':
-                    if self._options.property.memcleanup():
-                        return result.RESULT_FALSE_MEMCLEANUP
-                    else:
-                        return result.RESULT_FALSE_MEMTRACK
+                    return result.RESULT_FALSE_MEMTRACK
+                elif key == 'EMEMCLEANUP':
+                    return result.RESULT_FALSE_MEMCLEANUP
+
                 return key
 
         return None
