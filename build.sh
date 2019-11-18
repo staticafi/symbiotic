@@ -1107,11 +1107,11 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 		$LLVM_PREFIX/lib32/*.bc*"
 fi
 if [ ${BUILD_NIDHUGG} = "yes" ];  then
-	BINARIES="$LLVM_PREFIX/bin/nidhugg"
+	BINARIES="$BINARIES $LLVM_PREFIX/bin/nidhugg"
 fi
 
 if [ ${BUILD_PREDATOR} = "yes" ];  then
-	BINARIES="$LLVM_PREFIX/bin/predator_wrapper.py"
+	BINARIES="$BINARIES $LLVM_PREFIX/bin/predator_wrapper.py"
 fi
 
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/"
