@@ -180,6 +180,7 @@ class GraphMLWriter(object):
             ns = {None: 'http://graphml.graphdrawing.org/xmlns'}
             self._root = ET.Element('graphml', nsmap=ns)
 
+        self._graphml = ET.ElementTree(self._root)
         self._graph = ET.SubElement(self._root, 'graph', edgedefault="directed")
         entry = ET.SubElement(self._graph, 'node', id='0')
         ET.SubElement(entry, 'data', key='entry').text = 'true'
@@ -221,7 +222,7 @@ class GraphMLWriter(object):
             print(ET.tostring(self._root, pretty_print=True).decode('utf-8'))
 
     def write(self, to):
-        et = self._graphml #ET.ElementTree(self._root)
+        et = self._graphml
         if no_lxml:
             et.write(to, encoding='UTF-8', method="xml",
                      xml_declaration=True)
