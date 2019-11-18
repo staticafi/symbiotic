@@ -73,10 +73,13 @@ bool FindExits::processBlock(BasicBlock& B) {
   exitF->addFnAttr(Attribute::NoReturn);
 
   if (succ_begin(&B) == succ_end(&B)) {
-    auto new_CI = CallInst::Create(exitF, {ConstantInt::get(argTy, 0)});
     auto& BI = B.back();
-    CloneMetadata(&BI, new_CI);
-    new_CI->insertBefore(&BI);
+    if (!isa<ReturnInst>(&BI)) { // return inst does not abort the program,
+                                 // just returns to the caller
+        auto new_CI = CallInst::Create(exitF, {ConstantInt::get(argTy, 0)});
+        CloneMetadata(&BI, new_CI);
+        new_CI->insertBefore(&BI);
+    }
   }
 
   /*
