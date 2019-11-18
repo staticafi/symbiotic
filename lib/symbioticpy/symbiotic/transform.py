@@ -246,6 +246,10 @@ class SymbioticCC(object):
             return
 
         config_file, definitions, shouldlink = self._tool.instrumentation_options()
+        # override the config file if desired
+        if self.options.memsafety_config_file:
+            config_file = self.options.memsafety_config_file
+
         if config_file is None:
             return
 
