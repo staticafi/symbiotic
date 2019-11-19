@@ -99,7 +99,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         # remove/replace the rest of undefined functions
         # for which we do not have a definition and
         # that has not been removed
-        passes.append('-delete-undefined')
+        # KLEE now handles undefined functions
+        # passes.append('-delete-undefined')
 
         # for the memsafety property, make functions behave like they have
         # side-effects, because LLVM optimizations could remove them otherwise,

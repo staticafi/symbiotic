@@ -178,10 +178,10 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if not self._options.explicit_symbolic:
             passes.append('-initialize-uninitialized')
 
-        if self._options.undef_retval_nosym:
-            passes.append('-delete-undefined-nosym')
-        else:
-            passes.append('-delete-undefined')
+       #if self._options.undef_retval_nosym:
+       #    passes.append('-delete-undefined-nosym')
+       #else:
+       #    passes.append('-delete-undefined')
 
         # make external globals non-deterministic
         passes.append('-internalize-globals')

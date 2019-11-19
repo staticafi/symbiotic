@@ -85,10 +85,10 @@ class KleeToolFullInstrumentation(KleeBase):
         # remove/replace the rest of undefined functions
         # for which we do not have a definition and
         # that has not been removed
-        if self._options.undef_retval_nosym:
-            passes.append('-delete-undefined-nosym')
-        else:
-            passes.append('-delete-undefined')
+        #if self._options.undef_retval_nosym:
+        #    passes.append('-delete-undefined-nosym')
+        #else:
+        #    passes.append('-delete-undefined')
 
         # for the memsafety property, make functions behave like they have
         # side-effects, because LLVM optimizations could remove them otherwise,
@@ -116,7 +116,7 @@ class KleeToolFullInstrumentation(KleeBase):
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
                '-output-stats=0', '--optimize=false', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self._options.timeout),
-               '-external-calls=none']
+               '-external-calls=pure']
 
         if not self._options.dont_exit_on_error:
             cmd.append('-exit-on-error-type=Assert')
@@ -268,7 +268,7 @@ class SymbioticTool(KleeBase):
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
                '-output-stats=0', '--optimize=false', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self._options.timeout),
-               '-external-calls=none']
+               '-external-calls=pure']
         if self._options.property.memsafety():
             cmd.append('-check-leaks')
             cmd.append('-exit-on-error-type=Ptr')
