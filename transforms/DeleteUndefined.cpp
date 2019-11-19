@@ -178,6 +178,7 @@ static const char *leave_calls[] = {
   "pthread_mutex_unlock",
   "pthread_mutex_init",
   "pthread_create",
+  "pthread_exit",
   "pthread_join",
   "pthread_cond_init",
   "pthread_cond_wait",
