@@ -57,6 +57,7 @@ bool FindExits::processBlock(BasicBlock& B) {
   bool modified = false;
   Module *M = B.getParent()->getParent();
   LLVMContext& Ctx = M->getContext();
+  bool isMain = B.getParent()->getName().equals("main");
 
   Type *argTy = Type::getInt32Ty(Ctx);
   auto exitC = M->getOrInsertFunction("__VERIFIER_silent_exit",
@@ -74,8 +75,8 @@ bool FindExits::processBlock(BasicBlock& B) {
 
   if (succ_begin(&B) == succ_end(&B)) {
     auto& BI = B.back();
-    if (!isa<ReturnInst>(&BI)) { // return inst does not abort the program,
-                                 // just returns to the caller
+    if (isMain || !isa<ReturnInst>(&BI)) { // return inst does not abort the program
+                                           // (unless in main) just returns to the caller
         auto new_CI = CallInst::Create(exitF, {ConstantInt::get(argTy, 0)});
         CloneMetadata(&BI, new_CI);
         new_CI->insertBefore(&BI);
