@@ -79,8 +79,8 @@ def get_nice_repr(obj):
         rep = "i16: {0}".format(val)
     elif bytes_num == 1:
         # unpack needs a buffer of size 4 for an integer
-        val = unpack('b', o[1])[0]
-        rep = "bool: {0}".format(val)
+        val = unpack('b', obj[1])[0]
+        rep = "i8: {0}".format(val)
     else:
         return ''
 
