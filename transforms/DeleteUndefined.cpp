@@ -79,7 +79,6 @@ char DeleteUndefinedNoSym::ID;
 static const char *leave_calls[] = {
 // KLEE
   "klee_make_symbolic",
-  "klee_make_nondet",
   "klee_assume",
   "klee_abort",
   "klee_silent_exit",
