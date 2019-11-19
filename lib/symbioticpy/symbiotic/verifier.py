@@ -25,7 +25,9 @@ class ToolWatch(ProcessWatch):
     def parse(self, line):
         if b'ERROR' in line or b'WARN' in line or b'Assertion' in line\
            or b'error' in line or b'warn' in line:
-            sys.stderr.write(line.decode('utf-8'))
+            # XXX: this seems horrible, but the line may contain non-ascii characters
+            sys.stderr.write(str(line.strip()))
+            sys.stderr.write('\n')
         else:
             dbg(line.decode('utf-8'), 'all', print_nl=False,
                 prefix='', color=None)
