@@ -1051,6 +1051,15 @@ get_klee_dependencies()
 	echo $LIBS
 }
 
+get_nidhugg_dependencies()
+{
+	KLEE_BIN="$1"
+	LIBS=$(get_external_library $KLEE_BIN libstdc++)
+	LIBS="$LIBS $(get_external_library $KLEE_BIN libboost)"
+
+	echo $LIBS
+}
+
 ######################################################################
 #  create distribution
 ######################################################################
@@ -1064,6 +1073,14 @@ get_klee_dependencies()
 	DEPENDENCIES=""
 	if [ "$FULL_ARCHIVE" = "yes" ]; then
 		DEPS=`get_klee_dependencies $LLVM_PREFIX/bin/klee`
+		if [ ! -z "$DEPS" ]; then
+			for D in $DEPS; do
+				DEST="$PREFIX/lib/$(basename $D)"
+				cmp "$D" "$DEST" || cp -u "$D" "$DEST"
+				DEPENDENCIES="$DEST $DEPENDENCIES"
+			done
+		fi
+		DEPS=`get_nidhugg_dependencies $LLVM_PREFIX/bin/nidhugg`
 		if [ ! -z "$DEPS" ]; then
 			for D in $DEPS; do
 				DEST="$PREFIX/lib/$(basename $D)"
