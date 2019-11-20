@@ -33,7 +33,7 @@ bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2);
 namespace {
 
 llvm::cl::opt<bool> useExit("remove-error-calls-use-exit",
-        llvm::cl::desc("Insert __VERIFIER_exit instead of __VERIFIER_silent_exit\n"),
+        llvm::cl::desc("Insert __VERIFIER_exit(0) instead of __VERIFIER_assume(0)\n"),
         llvm::cl::init(false));
 
 class RemoveErrorCalls : public FunctionPass {
@@ -73,7 +73,7 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
           Type *argTy = Type::getInt32Ty(Ctx);
           auto extF
             = M->getOrInsertFunction(useExit ? "__VERIFIER_exit" :
-                                               "__VERIFIER_silent_exit",
+                                               "__VERIFIER_assume",
                                      Type::getVoidTy(Ctx), argTy
 #if LLVM_VERSION_MAJOR < 5
                                        , nullptr
@@ -84,6 +84,9 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
           ext = std::unique_ptr<CallInst>(CallInst::Create(extF, args));
         }
 
+        // This will insert __VERIFIER_assume(0), which just aborts the path
+        // (if normal exit would be inserted, the tools would check leaks
+        // -- this is just a silent exit)
         auto CI2 = ext->clone();
         CloneMetadata(CI, CI2);
         CI2->insertAfter(CI);
