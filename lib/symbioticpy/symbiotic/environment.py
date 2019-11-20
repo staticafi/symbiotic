@@ -78,6 +78,7 @@ def _set_symbiotic_environ(tool, env, opts):
         env.prepend('PATH', '{0}/llvm-{1}/bin'.format(env.symbiotic_dir, llvm_version))
         env.prepend('LD_LIBRARY_PATH', '{0}/lib'.format(env.symbiotic_dir))
         env.prepend('LD_LIBRARY_PATH', '{0}/lib'.format(llvm_prefix))
+        env.prepend('LD_LIBRARY_PATH', '{0}/predator/lib'.format(llvm_prefix))
         opts.instrumentation_files_path = '{0}/share/sbt-instrumentation/'.format(llvm_prefix)
 
     # Get include paths again now when we have our clang in the path,

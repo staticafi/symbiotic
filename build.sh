@@ -842,19 +842,25 @@ fi
 #   Predator
 ######################################################################
 if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
-       if [ ! -d predator-${LLVM_VERSION} ]; then
+	if [ ! -d predator-${LLVM_VERSION} ]; then
                git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp2019 predator-${LLVM_VERSION}
+	fi
 
-       fi
+	pushd predator-${LLVM_VERSION}
 
-       pushd predator-${LLVM_VERSION}
+	if [ ! -d CMakeFiles ]; then
+	        CXX=clang++ ./switch-host-llvm.sh ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/${LLVM_CMAKE_CONFIG_DIR}
+	fi
 
-       if [ ! -d CMakeFiles ]; then
-	       CXX=clang++ ./switch-host-llvm.sh ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/${LLVM_CMAKE_CONFIG_DIR}
-       fi
+       	build || exit 1
+	mkdir -p $LLVM_PREFIX/predator/lib
+	cp sl_build/*.so $LLVM_PREFIX/predator/lib
+	cp sl_build/slllvm* $LLVM_PREFIX/bin/
+	cp sl_build/*.sh $LLVM_PREFIX/predator/
+	cp build-aux/cclib.sh $LLVM_PREFIX/predator/
+	cp passes-src/passes_build/*.so $LLVM_PREFIX/predator/lib
 
-       (build && make install) || exit 1
-       popd
+	popd
 fi
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
@@ -1111,18 +1117,22 @@ if [ ${BUILD_NIDHUGG} = "yes" ];  then
 	BINARIES="$BINARIES $LLVM_PREFIX/bin/nidhugg"
 fi
 
+SCRIPTS=
 if [ ${BUILD_PREDATOR} = "yes" ];  then
-	BINARIES="$BINARIES $LLVM_PREFIX/bin/predator_wrapper.py"
+	SCRIPTS="$SCRIPTS $LLVM_PREFIX/bin/predator_wrapper.py"
+	SCRIPTS="$SCRIPTS $LLVM_PREFIX/bin/slllvm*"
+	SCRIPTS="$SCRIPTS $LLVM_PREFIX/predator/*.sh"
+	LIBRARIES="$LIBRARIES $LLVM_PREFIX/predator/lib/*.so"
 fi
 
 	INSTR="$LLVM_PREFIX/share/sbt-instrumentation/"
 
 if [ "$BUILD_STP" = "yes" ]; then
-		LIBRARIES="$LIBRARIES $PREFIX/lib/libminisat*.so"
+	LIBRARIES="$LIBRARIES $PREFIX/lib/libminisat*.so"
 fi
 
 if [ "$BUILD_Z3" = "yes" -o "$HAVE_Z3" = "yes" ]; then
-		LIBRARIES="$LIBRARIES $PREFIX/lib/libz3*.so*"
+	LIBRARIES="$LIBRARIES $PREFIX/lib/libz3*.so*"
 fi
 
 	#strip binaries, it will save us 500 MB!
@@ -1135,6 +1145,7 @@ fi
 	git add \
 		$BINARIES \
 		$BCFILES \
+		$SCRIPTS \
 		$LIBRARIES \
 		$DEPENDENCIES \
 		$INSTR\
