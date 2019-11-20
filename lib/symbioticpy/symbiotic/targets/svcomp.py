@@ -123,7 +123,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         return self.tool.cmdline(executable, options, tasks, propertyfile, rlimits)
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
-        return self.tool.determine_result(returncode, returnsignal, output, isTimeout)
+        res = self.tool.determine_result(returncode, returnsignal, output, isTimeout)
+        dbg('Tool result: {0}'.format(res))
+        if res == 'true' and self.tool.name() == 'nidhugg':
+            res='unknown (bounded)'
+        return res
 
 
     def generate_witness(self, llvmfile, sources, has_error):
