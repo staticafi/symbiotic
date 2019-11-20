@@ -4,6 +4,7 @@ import os
 import sys
 import re
 
+from . exceptions import SymbioticExceptionalResult
 from . options import SymbioticOptions
 from . utils import dbg, print_elapsed_time, restart_counting_time
 from . utils.process import ProcessRunner, runcmd
@@ -314,7 +315,20 @@ class SymbioticCC(object):
             cmd.append('--no-linking')
 
         restart_counting_time()
-        runcmd(cmd, InstrumentationWatch(), 'Instrumenting the code failed')
+        watch = InstrumentationWatch()
+
+        process = ProcessRunner()
+        if process.run(cmd, watch) != 0:
+            for line in watch.getLines():
+                if 'PredatorPlugin: Predator found no errors' in line:
+                    raise SymbioticExceptionalResult('true')
+
+            for line in watch.getLines():
+                print_stderr(line.decode('utf-8'),
+                             color='RED', print_nl=False)
+            raise SymbioticException('Instrumenting the code failed')
+
+
         print_elapsed_time('INFO: Instrumentation time', color='WHITE')
 
         self.curfile = output
