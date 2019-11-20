@@ -466,6 +466,9 @@ class SymbioticCC(object):
                 print_stdout("INFO: Slicing timeouted, using the unsliced file.")
             if self.options.require_slicer:
                 raise SymbioticException("Slicing failed (and is required)")
+
+            # act as the slicing was disabled
+            self.options.noslice = True
         else:
             self.curfile = output
             self._generate_ll()
