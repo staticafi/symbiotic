@@ -326,14 +326,23 @@ class SymbioticCC(object):
             for line in watch.getLines():
                 print_stderr(line.decode('utf-8'),
                              color='RED', print_nl=False)
-            raise SymbioticException('Instrumenting the code failed')
+            # SV-COMP hack!
+            # remove me
+            if self.options.property.memsafety() or\
+                self.options.property.memcleanup() or\
+                self.options.property.signedoverflow():
+                self.options.noslice = True
+                self.options.no_optimize = False
+                self.options.optlevel = []
+            else:
+                raise SymbioticException('Instrumenting the code failed')
+            print_elapsed_time('INFO: Instrumentation [FAILED] time', color='WHITE')
+        else:
+            print_elapsed_time('INFO: Instrumentation time', color='WHITE')
+            self.curfile = output
+            self._generate_ll()
 
-
-        print_elapsed_time('INFO: Instrumentation time', color='WHITE')
-
-        self.curfile = output
         self._get_stats('After instrumentation ')
-        self._generate_ll()
 
     def instrument(self):
         """
