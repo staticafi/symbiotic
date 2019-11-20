@@ -99,7 +99,8 @@ class Symbiotic(object):
             newres = self.replay_nonsliced(cc)
 
             if res != newres:
-                dbg("Replayed result: {0}".format(newres))
+                dbg("Original result: '{0}'".format(res))
+                dbg("Replayed result: '{0}'".format(newres))
                 res = 'cex not-confirmed'
                 has_error = False
 
