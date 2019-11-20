@@ -4,6 +4,7 @@ from os.path import basename
 from sys import version_info
 from hashlib import sha256 as hashfunc
 from struct import unpack
+import datetime
 
 from sys import version_info
 if version_info < (3, 0):
@@ -151,6 +152,8 @@ class GraphMLWriter(object):
         ET.SubElement(self._graph, 'data',
                       key='programhash').text = get_hash(self._source)
         ET.SubElement(self._graph, 'data', key='architecture').text = arch
+        ET.SubElement(self._graph, 'data', key='creationtime').text =\
+            '{date:%Y-%m-%dT%H:%M:%S}'.format(date=datetime.datetime.utcnow())
 
     def _addInfiniteLoop(self, lastNode):
         assert lastNode is not None
