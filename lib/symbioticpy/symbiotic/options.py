@@ -120,7 +120,7 @@ def set_svcomp(opts):
     opts.CFLAGS.append("-fbracket-depth=-1")
     opts.replay_error = True
     opts.tool_name='svcomp'
-    opts.slicer_timeout = 400
+    opts.slicer_timeout = 200
 
     enable_debug('all')
 
@@ -135,7 +135,7 @@ def set_testcomp(opts):
     opts.CFLAGS.append("-fbracket-depth=-1")
     opts.replay_error = True
     opts.tool_name='svcomp'
-    opts.slicer_timeout = 400
+    opts.slicer_timeout = 200
 
     enable_debug('all')
 
