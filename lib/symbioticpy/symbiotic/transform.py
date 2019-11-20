@@ -320,7 +320,7 @@ class SymbioticCC(object):
         process = ProcessRunner()
         if process.run(cmd, watch) != 0:
             for line in watch.getLines():
-                if 'PredatorPlugin: Predator found no errors' in line:
+                if b'PredatorPlugin: Predator found no errors' in line:
                     raise SymbioticExceptionalResult('true')
 
             for line in watch.getLines():
