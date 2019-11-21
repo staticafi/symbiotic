@@ -81,6 +81,7 @@ class SymbioticOptions(object):
         # instrument tracking the state of the program into the program itself
         self.full_instrumentation = False
         self.nowitness = False
+        self.executable_witness = False
         # try to automatically find paths with common header files
         self.search_include_paths = False
         # flag for checking overflows with clang sanitizer
@@ -197,7 +198,7 @@ def parse_command_line():
                                     'no-verification', 'output=', 'witness=', 'bc',
                                     'optimize=', 'malloc-never-fails',
                                     'pta=', 'no-link', 'slicing-criterion=',
-                                    'cflags=', 'cppflags=', 'link=',
+                                    'cflags=', 'cppflags=', 'link=', 'executable-witness',
                                     'verifier=','target=', 'require-slicer',
                                     'no-link-undefined', 'repeat-slicing=',
                                     'slicer-params=', 'slicer-cmd=', 'verifier-params=',
@@ -250,6 +251,8 @@ def parse_command_line():
         elif opt == '--no-witness':
             dbg('Will not create a witness')
             options.nowitness = True
+        elif opt == '--executable-witness':
+            options.executable_witness = True
         elif opt == '--explicit-symbolic':
             options.explicit_symbolic = True
         elif opt == '--undefined-retval-nosym':

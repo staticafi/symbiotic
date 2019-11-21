@@ -107,6 +107,9 @@ class Symbiotic(object):
         if has_error and hasattr(self._tool, "describe_error"):
             self._tool.describe_error(cc.curfile)
 
+        if has_error and self.options.executable_witness and hasattr(self._tool, "generate_exec_witness"):
+            self._tool.generate_exec_witness(cc.curfile, self.sources)
+
         if not self.options.nowitness and hasattr(self._tool, "generate_witness"):
             self._tool.generate_witness(cc.curfile, self.sources, has_error)
 

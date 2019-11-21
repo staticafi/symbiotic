@@ -249,6 +249,9 @@ class SymbioticTool(KleeBase):
         else:
             cmd.append('-max-time=840')
 
+        if self._options.executable_witness:
+            cmd.append('-write-harness')
+
         return cmd + options + tasks
 
 
@@ -284,6 +287,9 @@ class SymbioticTool(KleeBase):
 
         if self._options.sv_comp:
             cmd.append('-write-witness')
+
+        if self._options.executable_witness:
+            cmd.append('-write-harness')
 
         return cmd + options + tasks
 
@@ -373,5 +379,4 @@ class SymbioticTool(KleeBase):
             return "{0} ({1})".format(result.RESULT_UNKNOWN, " ".join(found))
 
         return result.RESULT_ERROR
-
 
