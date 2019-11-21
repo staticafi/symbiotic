@@ -67,11 +67,14 @@ def _set_symbiotic_environ(tool, env, opts):
         # predator_wrapper.py
         env.prepend('PATH', '{0}/sbt-instrumentation/analyses'.format(env.symbiotic_dir, llvm_version))
         env.prepend('PATH', '{0}/llvm2c/build-{1}/'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('PATH', '{0}/predator-{1}/sl_build/'.format(env.symbiotic_dir, llvm_version))
 
         env.prepend('LD_LIBRARY_PATH', '{0}/build/lib'.format(llvm_prefix))
         env.prepend('LD_LIBRARY_PATH', '{0}/transforms/build-{1}/'.format(env.symbiotic_dir,llvm_version))
         env.prepend('LD_LIBRARY_PATH', '{0}/dg/build-{1}/lib'.format(env.symbiotic_dir, llvm_version))
         env.prepend('LD_LIBRARY_PATH', '{0}/sbt-instrumentation/build-{1}/analyses'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('LD_LIBRARY_PATH', '{0}/predator-{1}/sl_build/'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('LD_LIBRARY_PATH', '{0}/predator-{1}/passes-src/passes_build/'.format(env.symbiotic_dir, llvm_version))
         opts.instrumentation_files_path = '{0}/sbt-instrumentation/instrumentations/'.format(env.symbiotic_dir)
     else:
         env.prepend('PATH', '{0}/bin'.format(env.symbiotic_dir))
