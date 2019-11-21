@@ -153,7 +153,7 @@ class GraphMLWriter(object):
                       key='programhash').text = get_hash(self._source)
         ET.SubElement(self._graph, 'data', key='architecture').text = arch
         ET.SubElement(self._graph, 'data', key='creationtime').text =\
-            '{date:%Y-%m-%dT%H:%M:%S}'.format(date=datetime.datetime.utcnow())
+            '{date:%Y-%m-%d %T}'.format(date=datetime.datetime.utcnow())
 
     def _addInfiniteLoop(self, lastNode):
         assert lastNode is not None

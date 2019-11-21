@@ -3,6 +3,7 @@
 from os.path import basename
 from sys import version_info
 from hashlib import sha256 as hashfunc
+import datetime
 
 from sys import version_info
 if version_info < (3, 0):
@@ -94,6 +95,8 @@ class MetadataWriter(object):
         ET.SubElement(self._metadata, 'programhash').text = get_hash(source)
         ET.SubElement(self._metadata, 'architecture').text = arch
         ET.SubElement(self._metadata, 'entryfunction').text = 'main'
+        ET.SubElement(self._metadata, 'creationtime').text =\
+            '{date:%Y-%m-%d %T}'.format(date=datetime.datetime.utcnow())
 
     def dump(self):
         if no_lxml:
