@@ -110,6 +110,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
         return passes
 
+    def replay_error_params(self, llvmfile):
+        return self.tool.replay_error_params(llvmfile)
+
 
     def slicing_params(self):
         if self._has_threads:

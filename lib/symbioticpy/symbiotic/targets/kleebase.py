@@ -18,7 +18,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from os.path import basename, dirname, abspath, isfile, join
+from os.path import basename, dirname, abspath, isfile, join, realpath
 from os import listdir, rename
 from symbiotic.utils.utils import print_stdout
 from symbiotic.utils.process import runcmd
@@ -81,10 +81,10 @@ def generate_graphml(path, source, is_correctness_wit, opts, saveto):
 
 def get_testcase(bindir):
     abd = abspath(bindir)
-    for path in listdir('{0}/klee-last'.format(abd)):
+    for path in listdir(abd):
         if path.endswith('.err'):
             # get the corresponding .path file
-            return abspath('{0}/klee-last/{1}'.format(abd, path[:path.find(".")]))
+            return abspath('{0}/{1}'.format(abd, path[:path.find(".")]))
 
 def get_ktest(bindir):
     return get_testcase(bindir) + '.ktest';
@@ -99,7 +99,7 @@ def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
         generate_graphml(None, sources[0], is_correctness_wit, opts, saveto)
         return
 
-    pth = get_ktest(bindir)
+    pth = get_ktest(join(bindir, 'klee-last'))
     generate_graphml(pth, sources[0], is_correctness_wit, opts, saveto)
 
 def generate_exec_witness(bindir, sources, opts, saveto = None):
@@ -108,7 +108,10 @@ def generate_exec_witness(bindir, sources, opts, saveto = None):
         saveto = '{0}.exe'.format(sources[:sources.rfind('.')])
     print('Generating executable witness to : {0}'.format(saveto))
 
-    pth = get_harness_file(bindir)
+    if opts.test_comp:
+        pth = get_harness_file(join(opts.testsuite_output))
+    else:
+        pth = get_harness_file(join(bindir, 'klee-last'))
     runcmd(['clang', '-g', '-fsanitize=address,undefined', pth, sources[0], '-o', saveto])
 
 
@@ -203,16 +206,19 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def replay_error_params(self, llvmfile):
         """ Replay error on the unsliced file """
-        srcdir = dirname(llvmfile)
-        # replay the counterexample on non-sliced module
-        ktest = get_ktest(srcdir)
-        newpath = join(srcdir, basename(ktest))
-        # move the file out of klee-last directory as the new run
-        # will create a new such directory (link)
-        rename(ktest, newpath)
+        if self._options.test_comp:
+            srcdir = self._options.testsuite_output
+            ktest = get_ktest(srcdir)
+        else:
+            srcdir = dirname(llvmfile)
+            # replay the counterexample on non-sliced module
+            ktest = get_ktest(join(srcdir, 'klee-last'))
+        # resolve the symlink to klee-last as it is going to
+        # be overwritten
+        ktest = realpath(ktest)
 
         params = self._options.tool_params if self._options.tool_params else []
-        params.append('-replay-nondets={0}'.format(newpath))
+        params.append('-replay-nondets={0}'.format(ktest))
 
         return params
 
