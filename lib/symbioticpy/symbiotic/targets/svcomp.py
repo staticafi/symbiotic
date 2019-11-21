@@ -134,3 +134,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if hasattr(self.tool, "generate_witness"):
             self.tool.generate_witness(llvmfile, sources, has_error)
 
+    def generate_exec_witness(self, llvmfile, sources):
+        if hasattr(self.tool, "generate_exec_witness"):
+            self.tool.generate_exec_witness(llvmfile, sources)

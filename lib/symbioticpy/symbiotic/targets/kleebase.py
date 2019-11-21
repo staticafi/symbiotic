@@ -21,6 +21,7 @@ limitations under the License.
 from os.path import basename, dirname, abspath, isfile, join
 from os import listdir, rename
 from symbiotic.utils.utils import print_stdout
+from symbiotic.utils.process import runcmd
 from symbiotic.witnesses.witnesses import GraphMLWriter
 
 try:
@@ -88,8 +89,8 @@ def get_testcase(bindir):
 def get_ktest(bindir):
     return get_testcase(bindir) + '.ktest';
 
-def get_path_file(bindir):
-    return get_testcase(bindir) + '.path';
+def get_harness_file(bindir):
+    return get_testcase(bindir) + '.harness.c';
 
 def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
@@ -100,6 +101,15 @@ def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
 
     pth = get_ktest(bindir)
     generate_graphml(pth, sources[0], is_correctness_wit, opts, saveto)
+
+def generate_exec_witness(bindir, sources, opts, saveto = None):
+    assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
+    if saveto is None:
+        saveto = '{0}.exe'.format(sources[:sources.rfind('.')])
+    print('Generating executable witness to : {0}'.format(saveto))
+
+    pth = get_harness_file(bindir)
+    runcmd(['clang', '-g', '-fsanitize=address,undefined', pth, sources[0], '-o', saveto])
 
 
 # we use are own fork of KLEE, so do not use the official
@@ -209,3 +219,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def generate_witness(self, llvmfile, sources, has_error):
         generate_witness(dirname(llvmfile), sources, not has_error,
                          self._options, self._options.witness_output)
+
+    def generate_exec_witness(self, bitcode, sources):
+        out = self._options.witness_output[:self._options.witness_output.rfind('.')+1]+'exe'
+        generate_exec_witness(dirname(bitcode), sources,
+                              self._options, out)
+ 
