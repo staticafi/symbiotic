@@ -838,6 +838,10 @@ if [ "`pwd`" != $ABS_SRCDIR ]; then
 fi
 
 
+if [  -d predator-${LLVM_VERSION} ]; then
+	# we already got a build of predator, so rebuild it
+	BUILD_PREDATOR="yes"
+fi
 ######################################################################
 #   Predator
 ######################################################################
