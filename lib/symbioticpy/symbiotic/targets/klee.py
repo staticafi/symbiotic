@@ -112,7 +112,7 @@ class KleeToolFullInstrumentation(KleeBase):
         """
         Compose the command line to execute from the name of the executable
         """
-        cmd = [executable, '-write-paths',
+        cmd = [executable,
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
                '-output-stats=0', '--optimize=false', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self._options.timeout),
@@ -247,6 +247,7 @@ class SymbioticTool(KleeBase):
             cmd.append('-exit-on-error-type=Assert')
             cmd.append('-dump-states-on-halt=0')
         else:
+            cmd.append('-write-ktests=false')
             cmd.append('-max-time=840')
 
         if self._options.executable_witness:

@@ -92,7 +92,9 @@ class Symbiotic(object):
            not self._tool.can_replay():
            dbg('Replay required but the tool does not support it')
 
-        has_error = res and res.startswith('false')
+        has_error = res and\
+                    (res.startswith('false') or\
+                    (res.startswith('done') and self.options.property.errorcall()))
         if has_error and self.options.replay_error and\
            not self.options.noslice and self._tool.can_replay():
             print_stdout("Trying to confirm the error path")
