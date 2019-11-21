@@ -59,6 +59,7 @@ OPTS=
 ARCHIVE="no"
 FULL_ARCHIVE="no"
 BUILD_KLEE="yes"
+BUILD_PREDATOR="no"
 LLVM_CONFIG=
 
 while [ $# -gt 0 ]; do
@@ -87,6 +88,9 @@ while [ $# -gt 0 ]; do
 		;;
 		'update')
 			UPDATE=1
+		;;
+		build-predator)
+			BUILD_PREDATOR="yes"
 		;;
 
 		llvm-config=*)
@@ -222,6 +226,16 @@ fi
 LLVM_VERSION=$($LLVM_CONFIG --version)
 LLVM_TOOLS="opt clang llvm-link llvm-dis llvm-nm"
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
+
+LLVM_MAJOR_VERSION="${LLVM_VERSION%%\.*}"
+LLVM_MINOR_VERSION=${LLVM_VERSION#*\.}
+LLVM_MINOR_VERSION="${LLVM_MINOR_VERSION%\.*}"
+LLVM_CMAKE_CONFIG_DIR=share/llvm/cmake
+if [ $LLVM_MAJOR_VERSION -gt 3 ]; then
+	LLVM_CMAKE_CONFIG_DIR=lib/cmake/llvm
+elif [ $LLVM_MAJOR_VERSION -ge 3 -a $LLVM_MINOR_VERSION -ge 9 ]; then
+	LLVM_CMAKE_CONFIG_DIR=lib/cmake/llvm
+fi
 
 mkdir -p $LLVM_PREFIX/bin
 for T in $LLVM_TOOLS; do
@@ -382,6 +396,40 @@ fi
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
+
+######################################################################
+#   Predator
+######################################################################
+if [  -d predator-${LLVM_VERSION} ]; then
+	# we already got a build of predator, so rebuild it
+	BUILD_PREDATOR="yes"
+fi
+if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
+	if [ ! -d predator-${LLVM_VERSION} ]; then
+               git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp2019 predator-${LLVM_VERSION}
+	fi
+
+	pushd predator-${LLVM_VERSION}
+
+	if [ ! -d CMakeFiles ]; then
+	        CXX=clang++ ./switch-host-llvm.sh /usr/${LLVM_CMAKE_CONFIG_DIR}
+	fi
+
+       	build || exit 1
+	mkdir -p $LLVM_PREFIX/predator/lib
+	cp sl_build/*.so $LLVM_PREFIX/predator/lib
+	cp sl_build/slllvm* $LLVM_PREFIX/bin/
+	cp sl_build/*.sh $LLVM_PREFIX/predator/
+	cp build-aux/cclib.sh $LLVM_PREFIX/predator/
+	cp passes-src/passes_build/*.so $LLVM_PREFIX/predator/lib
+
+	popd
+fi
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
 
 ######################################################################
 #   instrumentation
@@ -581,6 +629,14 @@ if [ ${BUILD_KLEE} = "yes" ];  then
 	BINARIES="$BINARIES $LLVM_PREFIX/bin/klee"
 fi
 
+SCRIPTS=
+if [ ${BUILD_PREDATOR} = "yes" ];  then
+	SCRIPTS="$SCRIPTS $LLVM_PREFIX/bin/predator_wrapper.py"
+	SCRIPTS="$SCRIPTS $LLVM_PREFIX/bin/slllvm*"
+	SCRIPTS="$SCRIPTS $LLVM_PREFIX/predator/*.sh"
+	LIBRARIES="$LIBRARIES $LLVM_PREFIX/predator/lib/*.so"
+fi
+
 if [ ${BUILD_LLVM2C} = "yes" ];  then
 	BINARIES="$BINARIES $LLVM_PREFIX/bin/llvm2c"
 fi
@@ -621,6 +677,7 @@ fi
 		$BINARIES \
 		$LIBRARIES \
 		$DEPENDENCIES \
+		$SCRIPTS \
 		$INSTR\
 		bin/symbiotic \
 		bin/gen-c \
