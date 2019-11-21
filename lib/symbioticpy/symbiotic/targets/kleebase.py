@@ -98,7 +98,7 @@ def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
         generate_graphml(None, sources[0], is_correctness_wit, opts, saveto)
         return
 
-    pth = get_path_file(bindir)
+    pth = get_ktest(bindir)
     generate_graphml(pth, sources[0], is_correctness_wit, opts, saveto)
 
 
