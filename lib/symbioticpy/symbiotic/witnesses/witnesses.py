@@ -190,20 +190,20 @@ class GraphMLWriter(object):
 
         self._addCInfo()
 
-    def parseError(self, pathFile, is_termination):
+    def parseError(self, ktest, is_termination):
         """
         Parse .path file from klee
-        \param pathFile     the .path file
+        \param ktest        the .ktest file
         \param filename     name of the file the symbiotic ran on
                             -- in the case that we want to stick
                             only to this file in the witness
         """
         assert not self._correctness_wit
 
-        self._dumpObjects('{0}ktest'.format(pathFile[:-4]))
+        self._dumpObjects(ktest)
 
         # parse the graphml file from KLEE
-        self._graphml = ET.parse('{0}graphml'.format(pathFile[:-4]))
+        self._graphml = ET.parse('{0}graphml'.format(ktest[:ktest.rfind('.')+1]))
         assert self._graphml, "Failed parsing witness from KLEE" 
         self._root = self._graphml.getroot()
 
