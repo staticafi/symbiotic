@@ -173,7 +173,6 @@ def _map_property(prps):
     ltl_prps = []
     for prp in prps:
         prp_key = supported_properties.get(prp)
-        print(prp_key)
         if not prp_key:
             prp_key = supported_ltl_properties.get(prp)
             if prp_key:
@@ -208,52 +207,63 @@ def get_property(symbiotic_dir, prp):
     if 'REACHCALL' in prps:
         prop = PropertyUnreachCall(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'properties/unreach-call.prp'))
+            # _get_prp will check that the file exists
+            ltl_prps, prop._prpfile = _get_prp(abspath(join(symbiotic_dir, 'properties/unreach-call.prp')))
+            assert prop._prpfile
     elif 'MEMSAFETY' in prps:
         prop = PropertyMemSafety(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'properties/valid-memsafety.prp'))
+            ltl_prps, prop._prpfile = _get_prp(abspath(join(symbiotic_dir, 'properties/valid-memsafety.prp')))
+            assert prop._prpfile
 
     elif 'MEMCLEANUP' in prps:
         prop = PropertyMemCleanup(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'properties/valid-memcleanup.prp'))
+            ltl_prps, prop._prpfile = _get_prp(abspath(join(symbiotic_dir, 'properties/valid-memcleanup.prp')))
+            assert prop._prpfile
 
     elif 'UNDEF-BEHAVIOR' in prps:
         prop = PropertyDefBehavior(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'properties/def-behavior.prp'))
+            ltl_prps, prop._prpfile = _get_prp(abspath(join(symbiotic_dir, 'properties/def-behavior.prp')))
+            assert prop._prpfile
 
     elif 'SIGNED-OVERFLOW' in prps:
         prop = PropertyNoOverflow(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'properties/no-overflow.prp'))
+            ltl_prps, prop._prpfile = _get_prp(abspath(join(symbiotic_dir, 'properties/no-overflow.prp')))
+            assert prop._prpfile
 
     elif 'TERMINATION' in prps:
         prop = PropertyTermination(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'properties/termination.prp'))
+            ltl_prps, prop._prpfile = _get_prp(abspath(join(symbiotic_dir, 'properties/termination.prp')))
+            assert prop._prpfile
 
     # we do not differentiate different coverage properties now
     elif 'COVER-BRANCHES' in prps:
         prop = PropertyCoverage(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'properties/coverage-branches.prp'))
+            ltl_prps, prop._prpfile = _get_prp(abspath(join(symbiotic_dir, 'properties/coverage-branches.prp')))
+            assert prop._prpfile
 
     elif 'COVER-CONDITIONS' in prps:
         prop = PropertyCoverage(prpfile)
         if prpfile is None:
             prop._prpfile = abspath(join(symbiotic_dir, 'properties/coverage-conditions.prp'))
+            assert prop._prpfile
 
     elif 'COVER-STMTS' in prps:
         prop = PropertyCoverage(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'properties/coverage-statements.prp'))
+            ltl_prps, prop._prpfile = _get_prp(abspath(join(symbiotic_dir, 'properties/coverage-statements.prp')))
+            assert prop._prpfile
 
     elif 'COVER-ERROR' in prps:
         prop = PropertyErrorCall(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'properties/coverage-error-call.prp'))
+            ltl_prps, prop._prpfile = _get_prp(abspath(join(symbiotic_dir, 'properties/coverage-error-call.prp')))
+            assert prop._prpfile
 
     if prop:
         prop._ltl = ltl_prps
