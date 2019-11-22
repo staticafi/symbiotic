@@ -263,7 +263,7 @@ def generate_exec_witness(bindir, sources, opts, saveto = None):
     try:
         from symbiotic.transform import CompileWatch
         runcmd(['clang', '-g', '-fsanitize=address,undefined', pth, sources[0], '-o', saveto],
-               CompileWatch(), 'Generating executable witness failed')
+               CompileWatch(nodbg=True), 'Generating executable witness failed')
     except SymbioticException as e:
         dbg(str(e))
 
