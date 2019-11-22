@@ -20,9 +20,17 @@ limitations under the License.
 """
 from os.path import basename, dirname, abspath, isfile, join, realpath
 from os import listdir, rename
+from struct import unpack
 from symbiotic.utils.utils import print_stdout
 from symbiotic.utils.process import runcmd
 from symbiotic.witnesses.witnesses import GraphMLWriter
+
+from sys import version_info
+from sys import version_info
+if version_info < (3, 0):
+    from io import open
+
+
 
 try:
     from symbiotic.versions import llvm_version
@@ -40,12 +48,149 @@ except ImportError:
 
 from . tool import SymbioticBaseTool
 
+def get_repr(obj):
+    ret = []
+    if not len(obj[1]) > 0:
+        return ()
+
+    b = obj[1][0]
+    num = 1
+    for i in range(1, len(obj[1])):
+        if obj[1][i] != b:
+            ret.append((b, num))
+            b = obj[1][i]
+            num = 1
+        else:
+            num += 1
+
+    ret.append((b, num))
+    return ret
+
+def is_zero(obj):
+    assert len(obj[1]) > 0
+
+    for i in range(1, len(obj[1])):
+        b = obj[1][i]
+        if version_info.major < 3:
+            value = ord(b)
+        else:
+            value = b
+        if value != 0:
+            return False
+
+    return True
+
+def get_nice_repr(obj):
+    bytes_num = len(obj[1])
+    rep = ''
+    if bytes_num == 8:
+        val = unpack('l', obj[1])[0]
+        rep = "i64: {0}".format(val)
+    elif bytes_num == 4:
+        val = unpack('i', obj[1])[0]
+        rep = "i32: {0}".format(val)
+    elif bytes_num == 2:
+        # unpack needs a buffer of size 4 for an integer
+        val = unpack('h', obj[1])[0]
+        rep = "i16: {0}".format(val)
+    elif bytes_num == 1:
+        # unpack needs a buffer of size 4 for an integer
+        val = unpack('b', obj[1])[0]
+        rep = "i8: {0}".format(val)
+    else:
+        return ''
+
+    return rep
+
+def print_object(obj):
+    rep = 'len {0} bytes, ['.format(len(obj[1]))
+    objrepr = get_repr(obj)
+    if objrepr == ():
+        assert(len(obj[1]) == 0)
+        rep += "|"
+
+    l = len(objrepr)
+    for n in range(0, l):
+        part  = objrepr[n]
+        if version_info.major < 3:
+            value = ord(part[0])
+        else:
+            value = part[0]
+
+        value = hex(value)
+
+        if part[1] > 1:
+            rep += '{0} times {1}'.format(part[1], value)
+        else:
+            rep += '{0}'.format(value)
+        if n == l - 1:
+            rep += ']'
+        else:
+            rep += '|'
+    nice_rep = get_nice_repr(obj)
+    if nice_rep:
+        rep += " ({0})".format(nice_rep)
+    print('{0} := {1}'.format(obj[0], rep))
+
+##
+# dumping human readable error
+##
+def _parseKtest(pathFile):
+    # this code is taken from ktest-tool from KLEE (but modified)
+
+    f = open(pathFile, 'rb')
+
+    hdr = f.read(5)
+    if len(hdr) != 5 or (hdr != b'KTEST' and hdr != b"BOUT\n"):
+        print('unrecognized file')
+        sys.exit(1)
+    version, = unpack('>i', f.read(4))
+    if version > 3:
+        print('unrecognized version')
+        sys.exit(1)
+    # skip args
+    numArgs, = unpack('>i', f.read(4))
+    for i in range(numArgs):
+        size, = unpack('>i', f.read(4))
+        f.read(size)
+
+    if version >= 2:
+        unpack('>i', f.read(4))
+        unpack('>i', f.read(4))
+
+    numObjects, = unpack('>i', f.read(4))
+    objects = []
+    for i in range(numObjects):
+        size, = unpack('>i', f.read(4))
+        name = f.read(size)
+        size, = unpack('>i', f.read(4))
+        bytes = f.read(size)
+        objects.append((name, bytes))
+
+    f.close()
+    return objects
+
+def _dumpObjects(ktestfile):
+    objects = _parseKtest(ktestfile)
+    if len(objects) > 100:
+        n = 0
+        for o in objects:
+            if not is_zero(o):
+                print_object(o)
+                n += 1
+
+        print('\nAnd the rest of objects ({0} objects) are 0'.format(len(objects) - n))
+    else:
+        for o in objects:
+            print_object(o)
+
+
 def dump_errors(bindir):
     pths = []
-    abd = abspath(join(bindir, 'klee-last'))
+    abd = abspath(bindir)
     for item in listdir(abd):
         if item.endswith('.err'):
-            dump_error(abspath(join('klee-last', item)))
+            dump_error(abspath(join(abd, item)))
 
 def dump_error(pth):
     if not isfile(pth):
@@ -58,12 +203,14 @@ def dump_error(pth):
         print('\n --- Error trace ---\n')
         for line in f:
             print_stdout(line, print_nl = False)
+        print('\n --- Assignment to nondeterministic values ---\n')
+        _dumpObjects(pth[:-10]+'ktest')
         print('\n --- ----------- ---')
-    except OSError:
+    except OSError as e:
         from symbiotic.utils import dbg
         # this dumping is just for convenience,
         # so do not return any error
-        dbg('Failed dumping the error')
+        dbg('Failed dumping the error: {0}'.format(str(e)))
 
 def generate_graphml(path, source, is_correctness_wit, opts, saveto):
     if saveto is None:
@@ -202,7 +349,10 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         return passes
 
     def describe_error(self, llvmfile):
-        dump_errors(dirname(llvmfile))
+        if self._options.test_comp:
+            dump_errors(self._options.testsuite_output)
+        else:
+            dump_errors(join(dirname(llvmfile), 'klee-last'))
 
     def replay_error_params(self, llvmfile):
         """ Replay error on the unsliced file """

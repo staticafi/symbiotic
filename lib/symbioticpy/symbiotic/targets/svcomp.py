@@ -132,6 +132,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             res='unknown (bounded)'
         return res
 
+    def describe_error(self, llvmfile):
+        if hasattr(self.tool, 'describe_error'):
+            self.tool.describe_error(llvmfile)
 
     def generate_witness(self, llvmfile, sources, has_error):
         if hasattr(self.tool, "generate_witness"):
