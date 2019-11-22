@@ -253,12 +253,13 @@ class SymbioticTool(KleeBase):
             cmd.append('-write-ktests=false')
             cmd.append('-max-time=840')
 
+        if not self._options.nowitness:
+            cmd.append('-write-witness')
+
         if self._options.executable_witness:
             cmd.append('-write-harness')
 
         return cmd + options + tasks
-
-
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
@@ -291,7 +292,7 @@ class SymbioticTool(KleeBase):
         else:
             cmd.append('-exit-on-error-type=Assert')
 
-        if self._options.sv_comp:
+        if not self._options.nowitness:
             cmd.append('-write-witness')
 
         if self._options.executable_witness:

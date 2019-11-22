@@ -80,7 +80,8 @@ class SymbioticOptions(object):
         self.instrumentation_files_path = None
         # instrument tracking the state of the program into the program itself
         self.full_instrumentation = False
-        self.nowitness = False
+        # generate SV-COMP witnesses
+        self.nowitness = True
         self.executable_witness = False
         # try to automatically find paths with common header files
         self.search_include_paths = False
@@ -113,6 +114,7 @@ def _remove_linkundef(options, what):
 
 def set_svcomp(opts):
     opts.sv_comp = True
+    opts.nowitness = False
     opts.no_integrity_check = True
     opts.malloc_never_fails = True
     opts.explicit_symbolic = True
@@ -131,7 +133,6 @@ def set_testcomp(opts):
     opts.malloc_never_fails = True
     opts.explicit_symbolic = True
     opts.search_include_paths = False
-    opts.nowitness = True
     opts.linkundef.append('testcomp')
     opts.CFLAGS.append("-fbracket-depth=-1")
     opts.replay_error = True
@@ -248,9 +249,6 @@ def parse_command_line():
         elif opt == '--test-comp':
             dbg('Using TEST-COMP settings')
             set_testcomp(options)
-        elif opt == '--no-witness':
-            dbg('Will not create a witness')
-            options.nowitness = True
         elif opt == '--executable-witness':
             options.executable_witness = True
         elif opt == '--explicit-symbolic':
@@ -338,6 +336,7 @@ def parse_command_line():
             options.final_output = os.path.abspath(arg)
             dbg('Output will be stored to {0}'.format(arg))
         elif opt == '--witness':
+            options.nowitness=False
             options.witness_output = os.path.expanduser(arg)
             options.witness_output = os.path.abspath(options.witness_output)
             dbg('Witness will be stored to {0}'.format(arg))
@@ -463,8 +462,6 @@ where OPTS can be following:
     --generate-ll             Generate also .ll files (for debugging)
     --output=FILE             Store the final code (that is to be run by a tool) to FILE
     --witness=FILE            Store witness into FILE (default is witness.graphml)
-    --witness-with-source-lines
-                              Store source lines into the witness (may have memory overhead).
     --cflags=flags
     --cppflags=flags          Append extra CFLAGS and CPPFLAGS to use while compiling,
                               the environment CFLAGS and CPPFLAGS are used too
@@ -476,7 +473,6 @@ where OPTS can be following:
     --no-link                 Do not link missing functions from the given category
                               (libc, svcomp, verifier, posix, kernel). The argument
                               is a comma-separated list of values.
-    --no-witness              Do not create a witness
     --dont-exit-on-error      Do not exit when the property violation is reached,
                               but continue searching
     --help                    Show help message
