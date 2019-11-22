@@ -67,14 +67,16 @@ class PrintWatch(ProcessWatch):
 class CompileWatch(ProcessWatch):
     """ Parse output of compilation """
 
-    def __init__(self):
+    def __init__(self, nodbg = False):
         ProcessWatch.__init__(self)
+        self.nodbg = nodbg
 
     def parse(self, line):
         if b'error:' in line:
             print_stderr('cc: {0}'.format(line.decode('utf-8')), color='BROWN')
         else:
-            dbg(line.decode('utf-8'), 'compile', print_nl=False)
+            if not self.nodbg:
+                dbg(line.decode('utf-8'), 'compile', print_nl=False)
 
 
 class UnsuppWatch(ProcessWatch):
