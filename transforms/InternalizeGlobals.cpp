@@ -25,7 +25,6 @@ bool CloneMetadata(const llvm::Instruction *, llvm::Instruction *);
 class InternalizeGlobals : public ModulePass {
     Function *_vms = nullptr; // verifier_make_nondet function
     Type *_size_t_Ty = nullptr; // type of size_t
-    unsigned calls_count = 0;
 
     std::unique_ptr<DataLayout> DL;
 
@@ -109,13 +108,12 @@ bool InternalizeGlobals::initializeExternalGlobals(Module& M) {
     std::vector<Value *> args;
     args.push_back(CastI);
     args.push_back(ConstantInt::get(get_size_t(&M), DL->getTypeAllocSize(Ty)));
-    std::string nameStr = "extern-global:" + (GV->hasName() ? GV->getName().str() : "--");
+    std::string nameStr = GV->hasName() ? GV->getName().str() : "extern-global";
     Constant *name
         = ConstantDataArray::getString(Ctx, nameStr);
     GlobalVariable *nameG = new GlobalVariable(M, name->getType(), true /*constant */,
                                                GlobalVariable::PrivateLinkage, name);
     args.push_back(ConstantExpr::getPointerCast(nameG, Type::getInt8PtrTy(Ctx)));
-    args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx), ++calls_count));
     CallInst *CI = CallInst::Create(vms, args);
 
     Function *main = M.getFunction("main");
@@ -139,30 +137,6 @@ bool InternalizeGlobals::initializeExternalGlobals(Module& M) {
   return modified;
 }
 
-static unsigned getKleeMakeNondetCounter(const Function *F) {
-    using namespace llvm;
-
-    unsigned max = 0;
-    for (auto I = F->use_begin(), E = F->use_end(); I != E; ++I) {
-#if ((LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR < 5))
-        const Value *use = *I;
-#else
-        const Value *use = I->getUser();
-#endif
-        auto CI = dyn_cast<CallInst>(use);
-        assert(CI && "The use is not call");
-
-        auto C = dyn_cast<ConstantInt>(CI->getArgOperand(3));
-        assert(C && "Invalid operand in klee_make_nondet");
-
-        auto val = C->getZExtValue();
-        if (val > max)
-            max = val;
-    }
-
-    return max;
-}
-
 Function *InternalizeGlobals::get_verifier_make_nondet(llvm::Module *M)
 {
   if (_vms)
@@ -170,12 +144,11 @@ Function *InternalizeGlobals::get_verifier_make_nondet(llvm::Module *M)
 
   LLVMContext& Ctx = M->getContext();
   //void verifier_make_symbolic(void *addr, size_t nbytes, const char *name);
-  auto C = M->getOrInsertFunction("klee_make_nondet",
+  auto C = M->getOrInsertFunction("__VERIFIER_make_nondet",
                                    Type::getVoidTy(Ctx),
                                    Type::getInt8PtrTy(Ctx), // addr
                                    get_size_t(M),   // nbytes
-                                   Type::getInt8PtrTy(Ctx), // name
-                                   Type::getInt32Ty(Ctx) // identifier
+                                   Type::getInt8PtrTy(Ctx) // name
 #if LLVM_VERSION_MAJOR < 5
                                    , nullptr
 #endif
@@ -186,7 +159,6 @@ Function *InternalizeGlobals::get_verifier_make_nondet(llvm::Module *M)
   _vms = cast<Function>(C);
 #endif
 
-  calls_count = getKleeMakeNondetCounter(_vms);
 
   return _vms;
 }

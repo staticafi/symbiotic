@@ -96,17 +96,13 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         #else:
         #    passes.append('-instrument-alloc')
 
-        # remove/replace the rest of undefined functions
-        # for which we do not have a definition and
-        # that has not been removed
-        # KLEE now handles undefined functions
-        # passes.append('-delete-undefined')
-
         # for the memsafety property, make functions behave like they have
         # side-effects, because LLVM optimizations could remove them otherwise,
         # even though they contain calls to assert
         if self._options.property.memsafety():
             passes.append('-remove-readonly-attr')
+
+        passes.append('-internalize-globals')
 
         return passes
 

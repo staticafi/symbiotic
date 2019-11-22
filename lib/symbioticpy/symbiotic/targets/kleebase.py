@@ -335,7 +335,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         passes = []
 
         # make the uninitialized variables symbolic (if desired)
-        if not self._options.explicit_symbolic:
+        if not (self._options.explicit_symbolic and
+                self._options.sv_comp and self._options.test_comp):
             passes.append('-initialize-uninitialized')
 
        #if self._options.undef_retval_nosym:

@@ -635,6 +635,10 @@ class SymbioticCC(object):
         if hasattr(self._tool, 'actions_before_verification'):
             self._tool.actions_before_verification(self)
 
+        # delete-undefined may insert __VERIFIER_make_nondet
+        # and also other funs like __errno_location may be included
+        self.link_undefined()
+
     def prepare_unsliced_file(self):
         """
         Get the unsliced file and perform the same
