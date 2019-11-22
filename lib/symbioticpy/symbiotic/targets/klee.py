@@ -48,7 +48,7 @@ class KleeToolFullInstrumentation(KleeBase):
             ('ASSERTIONFAILED', re.compile('.*ASSERTION FAIL:.*')),
             ('ESTPTIMEOUT', re.compile('.*query timed out (resolve).*')),
             ('EKLEETIMEOUT', re.compile('.*HaltTimer invoked.*')),
-            ('EEXTENCALL', re.compile('.*failed external call.*')),
+            ('EEXTENCALL', re.compile('.*failed external call*')),
             ('ELOADSYM', re.compile('.*ERROR: unable to load symbol.*')),
             ('EINVALINST', re.compile('.*LLVM ERROR: Code generator does not support.*')),
             ('EKLEEASSERT', re.compile('.*klee: .*Assertion .* failed.*')),

@@ -204,7 +204,7 @@ def dump_error(pth):
         for line in f:
             print_stdout(line, print_nl = False)
         print('\n --- Assignment to nondeterministic values ---\n')
-        _dumpObjects(pth[:-10]+'ktest')
+        _dumpObjects(pth[:pth.find('.')+1]+'ktest')
         print('\n --- ----------- ---')
     except OSError as e:
         # this dumping is just for convenience,
