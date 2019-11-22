@@ -122,7 +122,9 @@ supported_ltl_properties = {
     'CHECK( init(main()), LTL(G ! overflow) )'                         : 'SIGNED-OVERFLOW',
     'CHECK( init(main()), LTL(G def-behavior) )'                       : 'UNDEF-BEHAVIOR',
     'CHECK( init(main()), LTL(F end) )'                                : 'TERMINATION',
-    'COVER( init(main()), FQL(COVER EDGES(@DECISIONEDGE)) )'           : 'COVERAGE',
+    'COVER( init(main()), FQL(COVER EDGES(@DECISIONEDGE)) )'           : 'COVER-BRANCHES',
+    'COVER( init(main()), FQL(COVER EDGES(@CONDITIONEDGE)) )'          : 'COVER-CONDITIONS',
+    'COVER( init(main()), FQL(COVER EDGES(@BASICBLOCKENTRY)) )'        : 'COVER-STMTS',
     'COVER( init(main()), FQL(COVER EDGES(@CALL(__VERIFIER_error))) )' : 'COVER-ERROR',
 }
 
@@ -138,7 +140,10 @@ supported_properties = {
     'memsafety'                                                : 'MEMSAFETY',
     'memcleanup'                                               : 'MEMCLEANUP',
     'termination'                                              : 'TERMINATION',
-    'coverage'                                                 : 'COVERAGE',
+    'coverage'                                                 : 'COVER-STMTS',
+    'cover-branches'                                           : 'COVER-BRANCHES',
+    'cover-conditions'                                         : 'COVER-CONDITIONS',
+    'cover-statements'                                         : 'COVER-STMTS',
     'cover-error'                                              : 'COVER-ERROR',
 }
 
@@ -168,6 +173,7 @@ def _map_property(prps):
     ltl_prps = []
     for prp in prps:
         prp_key = supported_properties.get(prp)
+        print(prp_key)
         if not prp_key:
             prp_key = supported_ltl_properties.get(prp)
             if prp_key:
@@ -228,15 +234,26 @@ def get_property(symbiotic_dir, prp):
         if prpfile is None:
             prop._prpfile = abspath(join(symbiotic_dir, 'properties/termination.prp'))
 
-    elif 'COVERAGE' in prps:
+    # we do not differentiate different coverage properties now
+    elif 'COVER-BRANCHES' in prps:
         prop = PropertyCoverage(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyCoverage.prp'))
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/coverage-branches.prp'))
+
+    elif 'COVER-CONDITIONS' in prps:
+        prop = PropertyCoverage(prpfile)
+        if prpfile is None:
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/coverage-conditions.prp'))
+
+    elif 'COVER-STMTS' in prps:
+        prop = PropertyCoverage(prpfile)
+        if prpfile is None:
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/coverage-statements.prp'))
 
     elif 'COVER-ERROR' in prps:
         prop = PropertyErrorCall(prpfile)
         if prpfile is None:
-            prop._prpfile = abspath(join(symbiotic_dir, 'properties/PropertyCoverError.prp'))
+            prop._prpfile = abspath(join(symbiotic_dir, 'properties/coverage-error-call.prp'))
 
     if prop:
         prop._ltl = ltl_prps
