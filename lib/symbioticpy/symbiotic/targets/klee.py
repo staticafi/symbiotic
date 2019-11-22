@@ -113,7 +113,7 @@ class KleeToolFullInstrumentation(KleeBase):
         """
         Compose the command line to execute from the name of the executable
         """
-        cmd = [executable,
+        cmd = [executable, '--max-memory=8000',
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
                '-output-stats=0', '--optimize=false', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self._options.timeout),
@@ -238,12 +238,13 @@ class SymbioticTool(KleeBase):
         Compose the command line to execute for TEST-COMP
         """
 
-        cmd = [executable,
-               '-output-stats=0', '--optimize=false',
-               '-only-output-states-covering-new=1',
+        cmd = [executable, '--optimize=false',
+               '--use-call-paths=0', '--output-stats=0',
+               #'--output-istats=0',
+               #'-only-output-states-covering-new=1',
                '-output-dir={0}'.format(self._options.testsuite_output),
                '-write-testcases',
-               '-max-memory=7000000']
+               '-max-memory=8000']
 
         if self._options.property.errorcall():
             cmd.append('-exit-on-error-type=Assert')
@@ -272,9 +273,11 @@ class SymbioticTool(KleeBase):
 
         cmd = [executable,
                '-dump-states-on-halt=0', '-silent-klee-assume=1',
-               '-output-stats=0', '--optimize=false', '-only-output-states-covering-new=1',
+               '--output-stats=0', '--use-call-paths=0',
+               '--optimize=false',
+               #'--output-istats=0', '-only-output-states-covering-new=1',
                '-max-time={0}'.format(self._options.timeout),
-               '-external-calls=pure']
+               '-external-calls=pure', '-max-memory=8000']
         if self._options.property.memsafety():
             cmd.append('-check-leaks')
             cmd.append('-exit-on-error-type=Ptr')
