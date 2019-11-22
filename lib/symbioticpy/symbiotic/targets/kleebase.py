@@ -22,6 +22,7 @@ from os.path import basename, dirname, abspath, isfile, join, realpath
 from os import listdir, rename
 from struct import unpack
 from symbiotic.utils.utils import print_stdout
+from symbiotic.utils import dbg
 from symbiotic.utils.process import runcmd
 from symbiotic.witnesses.witnesses import GraphMLWriter
 
@@ -194,7 +195,6 @@ def dump_errors(bindir):
 
 def dump_error(pth):
     if not isfile(pth):
-        from symbiotic.utils import dbg
         dbg("Couldn't find the file with error description")
         return
 
@@ -207,7 +207,6 @@ def dump_error(pth):
         _dumpObjects(pth[:-10]+'ktest')
         print('\n --- ----------- ---')
     except OSError as e:
-        from symbiotic.utils import dbg
         # this dumping is just for convenience,
         # so do not return any error
         dbg('Failed dumping the error: {0}'.format(str(e)))
@@ -259,7 +258,14 @@ def generate_exec_witness(bindir, sources, opts, saveto = None):
         pth = get_harness_file(join(opts.testsuite_output))
     else:
         pth = get_harness_file(join(bindir, 'klee-last'))
-    runcmd(['clang', '-g', '-fsanitize=address,undefined', pth, sources[0], '-o', saveto])
+
+    from symbiotic.exceptions import SymbioticException
+    try:
+        from symbiotic.transform import CompileWatch
+        runcmd(['clang', '-g', '-fsanitize=address,undefined', pth, sources[0], '-o', saveto],
+               CompileWatch(), 'Generating executable witness failed')
+    except SymbioticException as e:
+        dbg(str(e))
 
 
 # we use are own fork of KLEE, so do not use the official
@@ -335,8 +341,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         passes = []
 
         # make the uninitialized variables symbolic (if desired)
-        if not (self._options.explicit_symbolic and
-                self._options.sv_comp and self._options.test_comp):
+        if not self._options.explicit_symbolic:
             passes.append('-initialize-uninitialized')
 
        #if self._options.undef_retval_nosym:
