@@ -104,7 +104,15 @@ class Symbiotic(object):
                 dbg("Original result: '{0}'".format(res))
                 dbg("Replayed result: '{0}'".format(newres))
                 res = 'cex not-confirmed'
-                has_error = False
+
+                # if we did not replay the original error, but we found a different error
+                # on this path, report it, since it should be real
+                if self.options.sv_comp or self.options.test_comp:
+                    has_error = newres and\
+                                (newes.startswith('false') or\
+                                (newes.startswith('done') and self.options.property.errorcall()))
+                else:
+                    has_error = False
 
         if has_error and hasattr(self._tool, "describe_error"):
             self._tool.describe_error(cc.curfile)
