@@ -89,10 +89,14 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
         // -- this is just a silent exit)
         auto CI2 = ext->clone();
         CloneMetadata(CI, CI2);
-        CI2->insertAfter(CI);
         // insert also unreachable inst
-        new UnreachableInst(Ctx, CI);
+        CI2->insertAfter(CI);
         CI->eraseFromParent();
+
+        // The unreachable inst is already there since
+        // the original instruction was aborting the program
+        //auto UI = new UnreachableInst(Ctx, CI2);
+        //CloneMetadata(CI, UI);
 
         modified = true;
       }
