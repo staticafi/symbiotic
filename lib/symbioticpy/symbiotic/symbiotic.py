@@ -103,7 +103,6 @@ class Symbiotic(object):
             if res != newres:
                 dbg("Original result: '{0}'".format(res))
                 dbg("Replayed result: '{0}'".format(newres))
-                res = 'cex not-confirmed'
 
                 # if we did not replay the original error, but we found a different error
                 # on this path, report it, since it should be real
@@ -111,7 +110,9 @@ class Symbiotic(object):
                     has_error = newres and\
                                 (newres.startswith('false') or\
                                 (newres.startswith('done') and self.options.property.errorcall()))
+                    res = newres
                 else:
+                    res = 'cex not-confirmed'
                     has_error = False
 
         if has_error and hasattr(self._tool, "describe_error"):
