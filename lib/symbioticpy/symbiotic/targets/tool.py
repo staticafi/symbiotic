@@ -128,7 +128,7 @@ class SymbioticBaseTool(object):
             # default config file is 'config.json'
             # slice with respect to the memory handling operations
             # (exit causes leaks)
-            return ('__INSTR_mark_free,__INSTR_mark_allocation,__VERIFIER_exit,exit',
+            return ('__INSTR_mark_free,__INSTR_mark_allocation,__INSTR_mark_exit',
                     ['-memsafety'])
 
         if self._options.property.termination():
