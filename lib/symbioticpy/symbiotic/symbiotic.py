@@ -84,12 +84,9 @@ class Symbiotic(object):
         if self.options.no_verification:
             return 'No verification'
 
-        try:
-            verifier = SymbioticVerifier(bitcode, self.sources,
-                                         self._tool, self.options, self.env)
-            res = verifier.run()
-        except SymbioticException:
-            res = 'error'
+        verifier = SymbioticVerifier(bitcode, self.sources,
+                                     self._tool, self.options, self.env)
+        res = verifier.run()
 
         # if we crashed on the sliced file, try running on the unsliced file
         # (do this optional, as well as for slicer and instrumentation)

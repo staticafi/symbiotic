@@ -22,6 +22,8 @@
 
 using namespace llvm;
 
+bool CloneMetadata(const llvm::Instruction *, llvm::Instruction *);
+
 class InstrumentNontermination : public LoopPass {
   bool checkFunction(Function *F);
   bool instrumentLoop(Loop *L);
@@ -126,7 +128,7 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
 #if (LLVM_VERSION_MAJOR >= 5)
         , G->getType()->getAddressSpace()
 #endif
-        ); 
+        );
 
         // puth the alloca on the beginning of the function
         newVal->insertBefore(header->getParent()->getBasicBlockList().front().getTerminator());
@@ -203,6 +205,7 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
     // insert the assertion that all the values are the same
     assert(_assert);
     auto *CI = CallInst::Create(_assert, {lastCond});
+    CloneMetadata(lastCond, CI);
     CI->insertBefore(term);
   }
 
