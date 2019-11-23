@@ -31,6 +31,10 @@ bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2);
 
 namespace {
 
+llvm::cl::opt<bool> justRemove("replace-ubsan-just-remove",
+        llvm::cl::desc("Just remove the UBSan checks instead of replacing them with error call\n"),
+        llvm::cl::init(false));
+
 class ReplaceUBSan : public FunctionPass {
   public:
     static char ID;
@@ -65,6 +69,14 @@ bool ReplaceUBSan::runOnFunction(Function &F)
         continue;
 
       if (callee->isDeclaration()) {
+        // just remove ?
+        if (justRemove) {
+          CI->eraseFromParent();
+          modified = true;
+          continue;
+        }
+
+        // replace
         if (!ver_err) {
           LLVMContext& Ctx = M->getContext();
           auto C = M->getOrInsertFunction("__VERIFIER_error",

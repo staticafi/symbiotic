@@ -765,6 +765,19 @@ class SymbioticCC(object):
         self.link_unconditional()
 
         passes = []
+        # NOTE: remove error calls must go first as the other passes
+        # may include error calss
+        if self.options.property.memsafety() or \
+           self.options.property.undefinedness() or \
+           self.options.property.signedoverflow() or \
+           self.options.property.termination() or \
+           self.options.property.memcleanup():
+            # remove the original calls to __VERIFIER_error/__assert_fail
+            passes.append('-remove-error-calls')
+
+        if self.options.property.memcleanup():
+            passes.append('-remove-error-calls-use-exit')
+
         if not self.options.property.termination():
             passes.append('-remove-infinite-loops')
 
@@ -774,20 +787,8 @@ class SymbioticCC(object):
 
         if self.options.property.signedoverflow() and \
            not self.options.overflow_with_clang:
+            passes.append('-replace-ubsan-just-remove')
             passes.append('-prepare-overflows')
-
-        if self.options.property.memsafety() or \
-           self.options.property.undefinedness() or \
-           self.options.property.signedoverflow() or \
-           self.options.property.termination():
-            # remove the original calls to __VERIFIER_error/__assert_fail
-            passes.append('-remove-error-calls')
-        if self.options.property.memcleanup():
-            passes.append('-remove-error-calls')
-            passes.append('-remove-error-calls-use-exit')
-
-        if self.options.property.signedoverflow() and \
-           not self.options.overflow_with_clang:
             passes.append('-mem2reg')
             passes.append('-break-crit-edges')
 

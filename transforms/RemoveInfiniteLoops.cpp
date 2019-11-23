@@ -67,7 +67,7 @@ bool RemoveInfiniteLoops::runOnFunction(Function &F) {
   CallInst* ext;
   LLVMContext& Ctx = M->getContext();
   Type *argTy = Type::getInt32Ty(Ctx);
-  auto C = M->getOrInsertFunction("__VERIFIER_silent_exit",
+  auto C = M->getOrInsertFunction("__VERIFIER_assume",
                                   Type::getVoidTy(Ctx),
                                   argTy
 #if LLVM_VERSION_MAJOR < 5
@@ -88,8 +88,8 @@ bool RemoveInfiniteLoops::runOnFunction(Function &F) {
     CloneMetadata(&*(block->begin()), ext);
     ext->insertBefore(T);
 
-    // replace the jump with unreachable, since exit will terminate
-    // the computation
+    // replace the jump with unreachable,
+    // since the assume(0) will terminate the computation
     new UnreachableInst(Ctx, T);
     T->eraseFromParent();
   }

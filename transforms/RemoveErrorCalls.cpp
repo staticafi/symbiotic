@@ -49,6 +49,7 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
 {
   bool modified = false;
   Module *M = F.getParent();
+  LLVMContext& Ctx = M->getContext();
   std::unique_ptr<CallInst> ext;
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E;) {
@@ -69,7 +70,6 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
       if (name.equals("__VERIFIER_error") ||
           name.equals("__assert_fail")) {
         if (!ext) {
-          LLVMContext& Ctx = M->getContext();
           Type *argTy = Type::getInt32Ty(Ctx);
           auto extF
             = M->getOrInsertFunction(useExit ? "__VERIFIER_exit" :
@@ -90,6 +90,8 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
         auto CI2 = ext->clone();
         CloneMetadata(CI, CI2);
         CI2->insertAfter(CI);
+        // insert also unreachable inst
+        new UnreachableInst(Ctx, CI);
         CI->eraseFromParent();
 
         modified = true;
