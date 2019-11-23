@@ -84,9 +84,26 @@ class Symbiotic(object):
         if self.options.no_verification:
             return 'No verification'
 
-        verifier = SymbioticVerifier(bitcode, self.sources,
-                                     self._tool, self.options, self.env)
-        res = verifier.run()
+        try:
+            verifier = SymbioticVerifier(bitcode, self.sources,
+                                         self._tool, self.options, self.env)
+            res = verifier.run()
+        except SymbioticException:
+            res = 'error'
+
+        # if we crashed on the sliced file, try running on the unsliced file
+        # (do this optional, as well as for slicer and instrumentation)
+        if not self.options.noslice and \
+           (self.options.sv_comp or self.options.test_comp) and \
+            res.lower().startswith('error') or res.lower().startswith('unknown'):
+            print_stdout("INFO: Failed on the sliced code, trying on the unsliced code",
+                         color="WHITE")
+            bitcode = cc.prepare_unsliced_file()
+            verifier = SymbioticVerifier(bitcode, self.sources,
+                                         self._tool, self.options, self.env)
+            res = verifier.run()
+            self.options.replay_error = False # now we do not need to replay the error
+            print_elapsed_time('INFO: Running on unsliced code time', color='WHITE')
 
         if self.options.replay_error and\
            not self._tool.can_replay():
