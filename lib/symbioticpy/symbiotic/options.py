@@ -61,7 +61,7 @@ class SymbioticOptions(object):
         self.repeat_slicing = 1
         self.dont_exit_on_error = False
         # folders where to look for models of undefined functions
-        self.linkundef = ['target', 'verifier', 'libc', 'posix', 'kernel']
+        self.linkundef = ['verifier', 'libc', 'posix', 'kernel']
         # these files will be linked unconditionally just after compilation
         self.link_files = []
         # these files are going to be linked before slicing if they are undefined
@@ -134,7 +134,7 @@ def set_testcomp(opts):
     opts.malloc_never_fails = True
     opts.explicit_symbolic = True
     opts.search_include_paths = False
-    opts.linkundef.append('testcomp')
+    opts.linkundef.append('svcomp')
     opts.CFLAGS.append("-fbracket-depth=-1")
     opts.replay_error = True
     opts.tool_name='svcomp'

@@ -372,12 +372,12 @@ class SymbioticCC(object):
         self._generate_ll()
 
     def _link_undefined(self, undefs):
-        def _get_path(symbdir, ty, tool, undef):
+        def _get_path(symbdir, llvmver, ty, tool, undef):
             # check also if we have precompiled .bc files
             if self.options.is32bit:
-                path = os.path.abspath('{0}/lib32/{1}/{2}/{3}.bc'.format(symbdir, ty, tool, undef))
+                path = os.path.abspath('{0}/llvm-{1}/lib32/{2}/{3}/{4}.bc'.format(symbdir, llvmver, ty, tool, undef))
             else:
-                path = os.path.abspath('{0}/lib/{1}/{2}/{3}.bc'.format(symbdir, ty, tool, undef))
+                path = os.path.abspath('{0}/llvm-{1}/lib/{2}/{3}/{4}.bc'.format(symbdir, llvmver, ty, tool, undef))
             if os.path.isfile(path):
                 return path
 
@@ -387,9 +387,9 @@ class SymbioticCC(object):
 
             # do we have at least a generic implementation?
             if self.options.is32bit:
-                path = os.path.abspath('{0}/lib32/{1}/{2}.bc'.format(symbdir, ty, undef))
+                path = os.path.abspath('{0}/llvm-{1}/lib32/{2}/{3}.bc'.format(symbdir, llvmver, ty, undef))
             else:
-                path = os.path.abspath('{0}/lib/{1}/{2}.bc'.format(symbdir, ty, undef))
+                path = os.path.abspath('{0}/llvm-{1}/lib/{2}/{3}.bc'.format(symbdir, llvmver, ty, undef))
             if os.path.isfile(path):
                 return path
 
@@ -399,10 +399,10 @@ class SymbioticCC(object):
 
             return None
 
-        def get_path(symbdir, tool, undef):
+        def get_path(symbdir, llvmver, tool, undef):
             # return the first found definition (in the order of linkundef)
             for ty in self.options.linkundef:
-                path = _get_path(symbdir, ty, tool, undef)
+                path = _get_path(symbdir, llvmver, ty, tool, undef)
                 if path:
                     return path
             return None
@@ -410,7 +410,7 @@ class SymbioticCC(object):
 
         tolink = []
         for undef in undefs:
-            path = get_path(self.env.symbiotic_dir,
+            path = get_path(self.env.symbiotic_dir, self._tool.llvm_version(),
                             self._tool.name().lower(), undef)
             if path is None:
                 continue
