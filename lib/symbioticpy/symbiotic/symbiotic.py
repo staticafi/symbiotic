@@ -109,7 +109,8 @@ class Symbiotic(object):
                 if self.options.sv_comp or self.options.test_comp:
                     has_error = newres and\
                                 (newres.startswith('false') or\
-                                (newres.startswith('done') and self.options.property.errorcall()))
+                                (newres.startswith('done') and\
+                                 self.options.property.errorcall()))
                     res = newres
                 else:
                     res = 'cex not-confirmed'
@@ -118,7 +119,8 @@ class Symbiotic(object):
         if has_error and hasattr(self._tool, "describe_error"):
             self._tool.describe_error(cc.curfile)
 
-        if has_error and self.options.executable_witness and hasattr(self._tool, "generate_exec_witness"):
+        if has_error and self.options.executable_witness and\
+           hasattr(self._tool, "generate_exec_witness"):
             self._tool.generate_exec_witness(cc.curfile, self.sources)
 
         if not self.options.nowitness and hasattr(self._tool, "generate_witness"):
