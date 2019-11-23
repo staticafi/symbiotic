@@ -326,7 +326,6 @@ def parse_command_line():
                 err('Invalid numerical argument for timeout: {0}'.format(arg))
             dbg('Timeout of slicer set to {0} sec'.format(arg))
         elif opt == '--instrumentation-timeout':
-            err('Not implemented yet')
             try:
                 options.instrumentation_timeout = int(arg)
             except ValueError:
