@@ -77,6 +77,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         else:
             dbg('Checking the module failed!')
 
+        if hasattr(self.tool, 'actions_before_slicing'):
+            self.tool.actions_before_slicing(symbiotic)
+
     def passes_before_slicing(self):
         if self._options.property.termination():
             return ['-find-exits']
@@ -117,6 +120,10 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if self._has_threads:
             return ['-threads', '-cd-alg=ntscd']
         return []
+
+    def actions_after_slicing(self, symbiotic):
+        if hasattr(self.tool, 'actions_after_slicing'):
+            self.tool.actions_after_slicing(symbiotic)
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """

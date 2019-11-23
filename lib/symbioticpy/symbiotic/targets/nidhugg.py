@@ -87,7 +87,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         # unroll the loops and rename __VERIFIER_atomic_begin/end
         # to avoid a bug in nidhugg
         symbiotic.run_opt(['-reg2mem', '-sbt-loop-unroll',
-                           '-sbt-loop-unroll-count', '5',
+                           '-sbt-loop-unroll-count', '7',
                            '-sbt-loop-unroll-terminate',
                            '-replace-verifier-atomic'])
 
@@ -101,7 +101,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         """
 
         # for now use 5
-        cmd = [executable, '-sc', '-disable-mutex-init-requirement']
+        cmd = [executable, '-sc', '-rf', '-disable-mutex-init-requirement']
         return cmd + options + tasks
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
