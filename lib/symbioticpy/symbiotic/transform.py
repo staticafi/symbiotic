@@ -369,11 +369,26 @@ class SymbioticCC(object):
 
     def _link_undefined(self, undefs):
         def _get_path(symbdir, ty, tool, undef):
+            # check also if we have precompiled .bc files
+            if self.options.is32bit:
+                path = os.path.abspath('{0}/lib32/{1}/{2}/{3}.bc'.format(symbdir, ty, tool, undef))
+            else:
+                path = os.path.abspath('{0}/lib/{1}/{2}/{3}.bc'.format(symbdir, ty, tool, undef))
+            if os.path.isfile(path):
+                return path
+
             path = os.path.abspath('{0}/lib/{1}/{2}/{3}.c'.format(symbdir, ty, tool, undef))
             if os.path.isfile(path):
                 return path
 
             # do we have at least a generic implementation?
+            if self.options.is32bit:
+                path = os.path.abspath('{0}/lib32/{1}/{2}.bc'.format(symbdir, ty, undef))
+            else:
+                path = os.path.abspath('{0}/lib/{1}/{2}.bc'.format(symbdir, ty, undef))
+            if os.path.isfile(path):
+                return path
+
             path = os.path.abspath('{0}/lib/{1}/{2}.c'.format(symbdir, ty, undef))
             if os.path.isfile(path):
                 return path
@@ -396,7 +411,8 @@ class SymbioticCC(object):
             if path is None:
                 continue
 
-            output = os.path.abspath('{0}.bc'.format(os.path.basename(path)[:-2]))
+            basename = os.path.basename(path)
+            output = os.path.abspath('{0}.bc'.format(basename[:basename.rfind('.')]))
             self._compile_to_llvm(path, output)
             tolink.append(output)
 
