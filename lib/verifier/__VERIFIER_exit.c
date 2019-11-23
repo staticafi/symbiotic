@@ -1,5 +1,5 @@
 extern void exit(int);
 void __VERIFIER_exit(int status) __attribute__((noreturn,noinline));
 void __VERIFIER_exit(int status) {
-	_exit(status);
+	exit(status);
 }
