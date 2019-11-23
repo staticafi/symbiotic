@@ -109,8 +109,8 @@ class Symbiotic(object):
                 # on this path, report it, since it should be real
                 if self.options.sv_comp or self.options.test_comp:
                     has_error = newres and\
-                                (newes.startswith('false') or\
-                                (newes.startswith('done') and self.options.property.errorcall()))
+                                (newres.startswith('false') or\
+                                (newres.startswith('done') and self.options.property.errorcall()))
                 else:
                     has_error = False
 
