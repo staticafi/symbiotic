@@ -70,6 +70,15 @@ bool InternalizeGlobals::initializeExternalGlobals(Module& M) {
       continue;
     }
 
+    // skip standard objects defined in libc
+    if (GV->hasName()) {
+      const auto& name = GV->getName();
+      if (name.equals("stdin") || name.equals("stderr") ||
+          name.equals("stdout")) {
+        continue;
+      }
+    }
+
     // what memory will be made symbolic
     Value *memory = GV;
 
