@@ -74,6 +74,7 @@ set(CPPFILES "CloneMetadata.cpp"
 	     "ReplaceLifetimeMarkers.cpp"
 	     "ReplaceVerifierAtomic.cpp"
 	     "Unrolling.cpp"
+	     "InstrumentNontermination.cpp"
 	     "ClassifyLoops.cpp"
 	     "ClassifyInstructions.cpp"
 	     "PrepareOverflows.cpp")

@@ -96,13 +96,16 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         #else:
         #    passes.append('-instrument-alloc')
 
+        passes.append('-internalize-globals')
+
         # for the memsafety property, make functions behave like they have
         # side-effects, because LLVM optimizations could remove them otherwise,
         # even though they contain calls to assert
         if self._options.property.memsafety():
             passes.append('-remove-readonly-attr')
-
-        passes.append('-internalize-globals')
+        elif self._options.property.termination():
+            passes.append('-instrument-nontermination')
+            passes.append('-O3')
 
         return passes
 
