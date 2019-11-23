@@ -312,7 +312,12 @@ class SymbioticCC(object):
         print_stdout('INFO: Starting instrumentation', color='WHITE')
 
         output = '{0}-inst.bc'.format(self.curfile[:self.curfile.rfind('.')])
-        cmd = ['sbt-instr', config, self.curfile, definitionsbc, output]
+        if self.options.instrumentation_timeout > 0:
+            cmd = ['timeout', str(self.options.instrumentation_timeout)]
+        else:
+            cmd = []
+
+        cmd += ['sbt-instr', config, self.curfile, definitionsbc, output]
         if not shouldlink:
             cmd.append('--no-linking')
 
@@ -320,7 +325,8 @@ class SymbioticCC(object):
         watch = InstrumentationWatch()
 
         process = ProcessRunner()
-        if process.run(cmd, watch) != 0:
+        retval = process.run(cmd, watch)
+        if retval != 0:
             for line in watch.getLines():
                 if b'PredatorPlugin: Predator found no errors' in line:
                     raise SymbioticExceptionalResult('true')
@@ -328,11 +334,9 @@ class SymbioticCC(object):
             for line in watch.getLines():
                 print_stderr(line.decode('utf-8'),
                              color='RED', print_nl=False)
-            # SV-COMP hack!
-            # remove me
-            if self.options.property.memsafety() or\
-                self.options.property.memcleanup() or\
-                self.options.property.signedoverflow():
+            # on timeout, just proceed, but avoid slicing and such,
+            # since it depends on instrumentation
+            if retval == 124 or self.options.sv_comp:
                 self.options.noslice = True
                 self.options.no_optimize = False
                 self.options.optlevel = []
