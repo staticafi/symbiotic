@@ -75,7 +75,7 @@ bool ReplaceAsserts::runOnFunction(Function &F)
 #endif
                                          );
 #if LLVM_VERSION_MAJOR >= 9
-        ver_err = cast<Function>(C.getCallee());
+        ver_err = cast<Function>(C.getCallee()->stripPointerCasts());
 #else
         ver_err = cast<Function>(C);
 #endif
