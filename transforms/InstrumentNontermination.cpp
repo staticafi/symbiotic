@@ -60,7 +60,8 @@ bool InstrumentNontermination::checkFunction(Function *F) {
       return false;
 
   if (F->getName().equals("__VERIFIER_assume") ||
-      F->getName().equals("__VERIFIER_assert"))
+      F->getName().equals("__VERIFIER_assert") ||
+      F->getName().startswith("__VERIFIER_nondet_"))
     return true;
   return false;
 }
