@@ -114,10 +114,10 @@ class Symbiotic(object):
             print_stdout("Trying to confirm the error path")
             newres = self.replay_nonsliced(cc)
 
-            if res != newres:
-                dbg("Original result: '{0}'".format(res))
-                dbg("Replayed result: '{0}'".format(newres))
+            dbg("Original result: '{0}'".format(res))
+            dbg("Replayed result: '{0}'".format(newres))
 
+            if res != newres:
                 # if we did not replay the original error, but we found a different error
                 # on this path, report it, since it should be real
                 if self.options.sv_comp or self.options.test_comp:
@@ -125,7 +125,11 @@ class Symbiotic(object):
                                 (newres.startswith('false') or\
                                 (newres.startswith('done') and\
                                  self.options.property.errorcall()))
-                    res = newres
+                    if has_error:
+                        res = newres
+                    else:
+                        res = 'cex not-confirmed'
+                        has_error = False
                 else:
                     res = 'cex not-confirmed'
                     has_error = False
