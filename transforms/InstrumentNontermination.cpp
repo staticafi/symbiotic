@@ -117,7 +117,7 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
   // and store the last recent value from the original
   // variable
   for (auto *v : variables) {
-    //errs() << "INFO: variable: " << *v << "\n";
+    errs() << "INFO: variable: " << *v << "\n";
     Instruction *newVal = nullptr;
     if (auto *I = dyn_cast<Instruction>(v)) {
         newVal = I->clone();
@@ -140,6 +140,10 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
 
     assert(newVal);
     mapping[v] = newVal;
+  }
+
+  if (mapping.empty()) {
+      return false; // nothing to do
   }
 
   // store the state of variables at the loop head
