@@ -50,8 +50,14 @@ bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2)
         i2->setDebugLoc(metadataI->getDebugLoc());
     } else if (auto pred = i1->getParent()->getUniquePredecessor()) {
         return CloneMetadata(pred->getTerminator(), i2);
+    } else {
+      DebugLoc DL;
+      if (auto SP = i1->getParent()->getParent()->getSubprogram()) {
+        DL = DebugLoc::get(SP->getScopeLine(), 0, SP);
+      }
+      i2->setDebugLoc(DL);
     }
 
-    return metadataI != nullptr;
+    return i2->hasMetadata();
 }
 

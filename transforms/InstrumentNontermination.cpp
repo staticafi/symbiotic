@@ -16,6 +16,7 @@
 #include "llvm/IR/Type.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/IR/DebugInfoMetadata.h"
 
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/LoopPass.h"
@@ -80,6 +81,12 @@ bool InstrumentNontermination::checkFunction(Function *F,
   if (F->getName().equals("__VERIFIER_assume") ||
       F->getName().equals("__VERIFIER_assert") ||
       F->getName().startswith("__VERIFIER_nondet_") ||
+      F->getName().startswith("__VERIFIER_exit") ||
+      F->getName().startswith("__VERIFIER_silent_exit") ||
+      F->getName().startswith("exit") ||
+      F->getName().startswith("_exit") ||
+      F->getName().startswith("abort") ||
+      F->getName().startswith("klee_silent_exit") ||
       F->getName().startswith("llvm.dbg."))
     return true;
 
@@ -195,8 +202,15 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
     auto *LI = new LoadInst(it.first);
     auto *SI = new StoreInst(LI, it.second);
 
-    header->getInstList().push_front(SI);
-    header->getInstList().push_front(LI);
+    auto where = header->getFirstNonPHIOrDbg();
+    assert(where);
+    if (where == header->getTerminator()) {
+      header->getInstList().push_front(SI);
+      header->getInstList().push_front(LI);
+    } else {
+      LI->insertAfter(where);
+      SI->insertAfter(LI);
+    }
   }
 
   // compare the old and new values after the iteration of the loop
@@ -270,6 +284,18 @@ bool InstrumentNontermination::instrumentEmptyLoop(Loop *L) {
   // (since it passed our checks and it does not use any
   // variables, we know it may not terminate even from
   // some call)
+
+  /* NOTE: this check is redundant:
+   * after all the check we did, this must be potentionally
+   * non-terminating. It may not be syntactically non-terminating,
+   * it can be something like:
+   *
+   * while(nondet_bool())
+   * {}
+   *
+   * But since it does not changes memory and calls
+   * only functions without side-effects (or nondet()),
+   * we know that there exist a cycle in the state space
   std::set<BasicBlock *> visited;
   visited.insert(header);
   auto *cur = header;
@@ -284,11 +310,12 @@ bool InstrumentNontermination::instrumentEmptyLoop(Loop *L) {
         break;
     }
   } while (true);
+  */
 
   // it is an infinite loop
+  auto M = header->getParent()->getParent();
+  auto& Ctx = M->getContext();
   if (!_fail) {
-    auto M = header->getParent()->getParent();
-    auto& Ctx = M->getContext();
     auto F = M->getOrInsertFunction("__INSTR_fail",
                                     Type::getVoidTy(Ctx) // retval
 #if LLVM_VERSION_MAJOR < 5
@@ -300,7 +327,7 @@ bool InstrumentNontermination::instrumentEmptyLoop(Loop *L) {
 #else
     _fail = cast<Function>(F);
 #endif
-    _fail->addFnAttr(Attribute::NoReturn);
+    _fail->setDoesNotReturn();
   }
 
   assert(_fail);
@@ -308,7 +335,6 @@ bool InstrumentNontermination::instrumentEmptyLoop(Loop *L) {
     auto *term = (*I)->getTerminator();
     auto *CI = CallInst::Create(_fail);
     CloneMetadata(term, CI);
-    llvm::errs() << *CI << "\n";
     CI->insertBefore(term);
   }
 
