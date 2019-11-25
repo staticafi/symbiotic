@@ -258,12 +258,16 @@ bool InstrumentNontermination::instrumentEmptyLoop(Loop *L) {
 #else
     _fail = cast<Function>(F);
 #endif
+    _fail->addFnAttr(Attribute::NoReturn);
   }
 
   assert(_fail);
-  auto *CI = CallInst::Create(_fail);
-  CloneMetadata(header->getTerminator(), CI);
-  CI->insertBefore(header->getTerminator());
+  for (auto I = pred_begin(header), E = pred_end(header); I != E; ++I) {
+    auto *term = (*I)->getTerminator();
+    auto *CI = CallInst::Create(_fail);
+    CloneMetadata(term, CI);
+    CI->insertBefore(term);
+  }
 
   llvm::errs() << "Instrumented an empty loop with abort.\n";
 }
