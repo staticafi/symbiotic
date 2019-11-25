@@ -28,6 +28,7 @@ class InstrumentNontermination : public LoopPass {
   bool checkFunction(Function *F);
   bool instrumentLoop(Loop *L);
   bool instrumentLoop(Loop *L, const std::set<llvm::Value *>& variables);
+  bool instrumentEmptyLoop(Loop *L);
 
   llvm::Value *getOperand(llvm::Value *v) {
       if (isa<Constant>(v) ||
@@ -38,6 +39,7 @@ class InstrumentNontermination : public LoopPass {
   }
 
   Function *_assert{nullptr};
+  Function *_fail{nullptr};
 
   public:
     static char ID;
@@ -143,7 +145,7 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
   }
 
   if (mapping.empty()) {
-      return false; // nothing to do
+      return instrumentEmptyLoop(L);
   }
 
   // store the state of variables at the loop head
@@ -218,6 +220,53 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
   return true;
 }
 
+bool InstrumentNontermination::instrumentEmptyLoop(Loop *L) {
+  auto *header = L->getHeader();
+
+  // go after unique successors and if you get to a loop,
+  // we know this loop does not terminate
+  // (since it passed our checks and it does not use any
+  // variables, we know it may not terminate even from
+  // some call)
+  std::set<BasicBlock *> visited;
+  visited.insert(header);
+  auto *cur = header;
+  do {
+    cur = cur->getUniqueSuccessor();
+    if (!cur) // no loop
+        return false;
+
+    assert(L->contains(cur));
+    if (!visited.insert(cur).second) {
+        // hit a cycle
+        break;
+    }
+  } while (true);
+
+  // it is an infinite loop
+  if (!_fail) {
+    auto M = header->getParent()->getParent();
+    auto& Ctx = M->getContext();
+    auto F = M->getOrInsertFunction("__INSTR_fail",
+                                    Type::getVoidTy(Ctx) // retval
+#if LLVM_VERSION_MAJOR < 5
+                                    , nullptr
+#endif
+                                    );
+#if LLVM_VERSION_MAJOR >= 9
+    _fail = cast<Function>(F.getCallee()->stripPointerCasts());
+#else
+    _fail = cast<Function>(F);
+#endif
+  }
+
+  assert(_fail);
+  auto *CI = CallInst::Create(_fail);
+  CloneMetadata(header->getTerminator(), CI);
+  CI->insertBefore(header->getTerminator());
+
+  llvm::errs() << "Instrumented an empty loop with abort.\n";
+}
 
 static RegisterPass<InstrumentNontermination> CL("instrument-nontermination",
                                                   "Insert trivial checks for state space cycles");
