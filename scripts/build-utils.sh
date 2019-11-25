@@ -131,5 +131,3 @@ get_any_library()
 	fi
 }
 
-
-
