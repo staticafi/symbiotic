@@ -4,7 +4,7 @@ import sys
 
 from . utils import dbg
 from . utils import dbg, print_elapsed_time, restart_counting_time
-from . utils.process import runcmd
+from . utils.process import runcmd, ProcessRunner
 from . utils.watch import ProcessWatch, DbgWatch
 from . utils.utils import print_stderr, print_stdout
 from . exceptions import SymbioticException, SymbioticExceptionalResult
@@ -65,15 +65,19 @@ class SymbioticVerifier(object):
 
         returncode = 0
         watch = ToolWatch(self._tool)
-        try:
-            runcmd(cmd, watch, 'Running the verifier failed')
-        except SymbioticException as e:
-            print_stderr(str(e), color='RED')
-            returncode = 1
+
+        process = ProcessRunner()
+        returncode = process.run(cmd, watch)
+        if returncode != 0:
+            dbg('The verifier return non-0 return status')
 
         print_elapsed_time('INFO: Verification time', color='WHITE')
         res = self._tool.determine_result(returncode, 0,
                                           watch.getLines(), False)
+        if res.lower().startswith('error'):
+            for line in watch.getLines():
+                print_stderr(line.decode('utf-8'),
+                             color='RED', print_nl=False)
         return res
 
     def run_verification(self):
