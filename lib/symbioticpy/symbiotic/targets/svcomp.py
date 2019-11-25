@@ -108,9 +108,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             passes.append('-remove-readonly-attr')
         elif self._options.property.termination():
             passes.append('-instrument-nontermination')
-            passes.append('-O3')
 
         return passes
+
+    def actions_before_verification(self, symbiotic):
+        symbiotic.optimize('-O3')
 
     def replay_error_params(self, llvmfile):
         return self.tool.replay_error_params(llvmfile)
