@@ -63,9 +63,9 @@ bool InstrumentNontermination::checkFunction(Function *F) {
 
   if (F->getName().equals("__VERIFIER_assume") ||
       F->getName().equals("__VERIFIER_assert") ||
-      F->getName().startswith("__VERIFIER_nondet_"))
+      F->getName().startswith("__VERIFIER_nondet_") ||
+      F->getName().startswith("llvm.dbg."))
     return true;
-  return false;
 }
 
 bool InstrumentNontermination::instrumentLoop(Loop *L) {
