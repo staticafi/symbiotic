@@ -112,7 +112,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         return passes
 
     def actions_before_verification(self, symbiotic):
-        symbiotic.optimize('-O3')
+        symbiotic.optimize(['-O3'])
 
     def replay_error_params(self, llvmfile):
         return self.tool.replay_error_params(llvmfile)
