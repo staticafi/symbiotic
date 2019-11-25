@@ -239,9 +239,10 @@ class SymbioticTool(KleeBase):
         """
 
         cmd = [executable, '--optimize=false',
+               '-use-forked-solver=0',
                '--use-call-paths=0', '--output-stats=0',
+               '-istats-write-interval=60s',
                #'--output-istats=0',
-               #'-only-output-states-covering-new=1',
                '-output-dir={0}'.format(self._options.testsuite_output),
                '-write-testcases',
                '-max-memory=8000']
@@ -250,6 +251,7 @@ class SymbioticTool(KleeBase):
             cmd.append('-exit-on-error-type=Assert')
             cmd.append('-dump-states-on-halt=0')
         else:
+            cmd.append('-only-output-states-covering-new=1')
             cmd.append('-write-ktests=false')
             cmd.append('-max-time=840')
 
@@ -258,6 +260,8 @@ class SymbioticTool(KleeBase):
 
         if self._options.executable_witness:
             cmd.append('-write-harness')
+
+        cmd.append('-output-source=false')
 
         return cmd + options + tasks
 
@@ -273,10 +277,13 @@ class SymbioticTool(KleeBase):
             return self.FullInstr.cmdline(executable, options, tasks, propertyfile, rlimits)
 
         cmd = [executable,
-               '-dump-states-on-halt=0', '-silent-klee-assume=1',
+               '-dump-states-on-halt=0',
                '--output-stats=0', '--use-call-paths=0',
-               '--optimize=false',
-               #'--output-istats=0', '-only-output-states-covering-new=1',
+               '--optimize=false', '-silent-klee-assume=1',
+               '-istats-write-interval=60s',
+               #'--output-istats=0',
+               '-only-output-states-covering-new=1',
+               '-use-forked-solver=0',
                '-max-time={0}'.format(self._options.timeout),
                '-external-calls=pure', '-max-memory=8000']
         if self._options.property.memsafety():
@@ -297,6 +304,10 @@ class SymbioticTool(KleeBase):
 
         if self._options.executable_witness:
             cmd.append('-write-harness')
+
+        # we have the disassembly already (it may be a bit different,
+        # but we may remove this switch during debugging)
+        cmd.append('-output-source=false')
 
         return cmd + options + tasks
 
