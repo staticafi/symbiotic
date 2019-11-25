@@ -112,9 +112,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             return 'ERROR (no output)'
 
         for line in output:
-            if line.strip() == 'No errors were detected.':
+            line = str(line.strip())
+            if line == 'No errors were detected.':
                 return result.RESULT_TRUE_PROP
-            elif line.strip() == 'Error detected:':
+            elif line == 'Error detected:':
+                return result.RESULT_FALSE_REACH
+            elif 'Error: Assertion violation at' in line:
                 return result.RESULT_FALSE_REACH
 
         if returncode != 0:
