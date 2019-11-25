@@ -25,17 +25,31 @@ using namespace llvm;
 bool CloneMetadata(const llvm::Instruction *, llvm::Instruction *);
 
 class InstrumentNontermination : public LoopPass {
-  bool checkFunction(Function *F);
+  bool checkInstruction(Instruction& I, std::set<llvm::Value *>& variables,
+                        std::vector<llvm::Function *> callstack);
+  bool checkFunction(Function *F, std::set<llvm::Value *>& variables,
+                     std::vector<llvm::Function *> callstack);
   bool instrumentLoop(Loop *L);
   bool instrumentLoop(Loop *L, const std::set<llvm::Value *>& variables);
   bool instrumentEmptyLoop(Loop *L);
 
-  llvm::Value *getOperand(llvm::Value *v) {
-      if (isa<Constant>(v) ||
-          isa<AllocaInst>(v) || isa<GlobalVariable>(v)) {
-          return v;
+  bool checkOperand(llvm::Value *v,
+                    std::set<llvm::Value *>& usedValues,
+                    bool nestedCall) {
+      if (isa<AllocaInst>(v)) {
+          if (!nestedCall) {
+            usedValues.insert(v); // we do not care about allocas from nested calls
+          }
+          return true;
+      } else if (isa<GlobalVariable>(v)) {
+          usedValues.insert(v);
+          return true;
       }
-      return nullptr;
+      // check only after global, global is also constant
+      if (isa<Constant>(v))
+          return true;
+
+      return false;
   }
 
   Function *_assert{nullptr};
@@ -57,7 +71,9 @@ class InstrumentNontermination : public LoopPass {
     }
 };
 
-bool InstrumentNontermination::checkFunction(Function *F) {
+bool InstrumentNontermination::checkFunction(Function *F,
+                                             std::set<llvm::Value *>& usedValues,
+                                             std::vector<llvm::Function *> callstack) {
   if (!F) // call via pointer
       return false;
 
@@ -66,6 +82,24 @@ bool InstrumentNontermination::checkFunction(Function *F) {
       F->getName().startswith("__VERIFIER_nondet_") ||
       F->getName().startswith("llvm.dbg."))
     return true;
+
+  for (auto *onstack : callstack) {
+      if (onstack == F) {
+          return false; // recursion
+      }
+  }
+
+  callstack.push_back(F);
+
+  for (auto& B : *F) {
+    for (auto& I : B) {
+      if (!checkInstruction(I, usedValues, callstack)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 bool InstrumentNontermination::instrumentLoop(Loop *L) {
@@ -75,36 +109,44 @@ bool InstrumentNontermination::instrumentLoop(Loop *L) {
     // check that the loop reads and writes only to known
     // locations (allocas and global variables)
     for (auto& I : *block) {
-      if (auto *CI = dyn_cast<CallInst>(&I)) {
-          if (!checkFunction(CI->getCalledFunction())) {
-            return false;
-          }
-      } else if (auto LI = dyn_cast<LoadInst>(&I)) {
-        if (auto v = getOperand(LI->getPointerOperand())) {
-          if (!isa<ConstantInt>(v)) {
-            usedValues.insert(v);
-          }
-        } else {
-          return false;
-        }
-      } else if (auto SI = dyn_cast<StoreInst>(&I)) {
-        if (auto p = getOperand(SI->getPointerOperand())) {
-          if (!isa<ConstantInt>(p)) {
-            usedValues.insert(p);
-          }
-        } else {
-          return false;
-        }
-      } else {
-        if (I.mayReadOrWriteMemory()) {
-          llvm::errs() << "WARNING: Unhandled instr: " << I << "\n";
-          return false;
-        }
+      // hmm... could be implemented more efficiently,
+      // but it should be quite fast even though.
+      if (!checkInstruction(I, usedValues, {})) {
+        return false;
       }
     }
   }
 
+  // all ok
   return instrumentLoop(L, usedValues);
+}
+
+bool InstrumentNontermination::checkInstruction(Instruction& I,
+                                                std::set<llvm::Value*>& usedValues,
+                                                std::vector<llvm::Function *> callstack) {
+  bool isNested = !callstack.empty();
+  //llvm::errs() << "checking (" << isNested << "): " << I << "\n";
+
+  if (auto *CI = dyn_cast<CallInst>(&I)) {
+    if (!checkFunction(CI->getCalledFunction(), usedValues, callstack)) {
+      return false;
+    }
+  } else if (auto LI = dyn_cast<LoadInst>(&I)) {
+    if (!checkOperand(LI->getPointerOperand(), usedValues, isNested)) {
+      return false;
+    }
+  } else if (auto SI = dyn_cast<StoreInst>(&I)) {
+    if (!checkOperand(SI->getPointerOperand(), usedValues, isNested)) {
+      return false;
+    }
+  } else {
+    if (I.mayReadOrWriteMemory()) {
+      llvm::errs() << "WARNING: Unhandled instr: " << I << "\n";
+      return false;
+    }
+  }
+
+  return true;
 }
 
 
@@ -119,7 +161,7 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
   // and store the last recent value from the original
   // variable
   for (auto *v : variables) {
-    errs() << "INFO: variable: " << *v << "\n";
+    //errs() << "INFO: variable: " << *v << "\n";
     Instruction *newVal = nullptr;
     if (auto *I = dyn_cast<Instruction>(v)) {
         newVal = I->clone();
@@ -266,6 +308,7 @@ bool InstrumentNontermination::instrumentEmptyLoop(Loop *L) {
     auto *term = (*I)->getTerminator();
     auto *CI = CallInst::Create(_fail);
     CloneMetadata(term, CI);
+    llvm::errs() << *CI << "\n";
     CI->insertBefore(term);
   }
 
