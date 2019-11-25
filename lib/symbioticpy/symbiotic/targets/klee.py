@@ -61,6 +61,7 @@ class KleeToolFullInstrumentation(KleeBase):
             ('ESKIPFORK', re.compile('.*skipping fork.*')),
             ('EKILLSTATE', re.compile('.*killing.*states \(over memory cap\).*')),
             ('EMEMALLOC', re.compile('.*KLEE: WARNING: Allocating memory failed.*')),
+            ('EROSYMB', re.compile('.*cannot make readonly object symbolic.*')),
             ('ESTACKOVFLW', re.compile('.*WARNING: Maximum stack size reached.*')),
             ('EMEMERROR', re.compile('.*memory error: out of bound pointer.*')),
             ('EMAKESYMBOLIC', re.compile(
@@ -215,6 +216,7 @@ class SymbioticTool(KleeBase):
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
             ('EMEMALLOC', re.compile('.*KLEE: WARNING: Allocating memory failed.*')),
             ('ESTACKOVFLW', re.compile('.*WARNING: Maximum stack size reached.*')),
+            ('EROSYMB', re.compile('.*cannot make readonly object symbolic.*')),
             ('EMEMLEAK', re.compile('.*memory error: memory leak detected.*')),
             ('EMEMCLEANUP', re.compile('.*memory error: memory not cleaned up.*')),
             ('EFREEALLOCA', re.compile('.*ERROR:.*free of alloca.*')),
