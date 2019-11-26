@@ -137,6 +137,7 @@ supported_properties = {
     'undef-behavior'                                           : 'UNDEF-BEHAVIOR',
     'undefined'                                                : 'UNDEF-BEHAVIOR',
     'signed-overflow'                                          : 'SIGNED-OVERFLOW',
+    'no-overflow'                                              : 'SIGNED-OVERFLOW',
     'memsafety'                                                : 'MEMSAFETY',
     'memcleanup'                                               : 'MEMCLEANUP',
     'termination'                                              : 'TERMINATION',
