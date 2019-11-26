@@ -31,12 +31,19 @@ using namespace llvm;
 namespace {
 
 class MarkVolatile : public FunctionPass {
+    bool has_unmarked{false};
   public:
     static char ID;
 
     MarkVolatile() : FunctionPass(ID) {}
 
-    virtual bool runOnFunction(Function &F);
+    bool runOnFunction(Function &F) override;
+    
+    bool doFinalization(Module& M) override {
+      if (has_unmarked) {
+        errs() << "[Warning]: some marked instruction were not made volatile\n";
+      }
+    }
 };
 
 bool MarkVolatile::runOnFunction(Function &F)
@@ -75,8 +82,9 @@ bool MarkVolatile::runOnFunction(Function &F)
           MI->setVolatile(ConstantInt::getTrue(ctx));
           modified = true;
       } else {
-          errs() << "[Warning]: this marked instruction was not made volatile:\n";
-          errs() << *nextIt << "\n";
+          has_unmarked = true;
+          //errs() << "[Warning]: this marked instruction was not made volatile:\n";
+          //errs() << *nextIt << "\n";
       }
     }
   }
