@@ -5,16 +5,15 @@ from hashlib import sha256 as hashfunc
 import datetime
 import re
 
-no_lxml = False
-try:
-    from lxml import etree as ET
-except ImportError:
-    no_lxml = True
-
+# no_lxml = False
+# try:
+#     from lxml import etree as ET
+# except ImportError:
+#     no_lxml = True
+no_lxml = True
 if no_lxml:
     # if this fails, then we're screwed, so let the script die
     from xml.etree import ElementTree as ET
-
 
 def get_hash(source):
     f = open(source, 'r', encoding='utf-8')
@@ -36,7 +35,7 @@ class GraphMLWriter(object):
         self._graph = None
 
         # this prevents adding ns0 prefix to all tags
-        ET.register_namespace("graphml", "http://graphml.graphdrawing.org/xmlns")
+        ET.register_namespace("", "http://graphml.graphdrawing.org/xmlns")
 
     def _addCInfo(self):
         assert self._root is not None
@@ -89,8 +88,8 @@ class GraphMLWriter(object):
         if no_lxml:
             self._root = ET.Element('graphml')
         else:
-            ns = {None: 'http://graphml.graphdrawing.org/xmlns'}
-            self._root = ET.Element('graphml', nsmap=ns)
+            #ns = {"": 'http://graphml.graphdrawing.org/xmlns'}
+            self._root = ET.Element('graphml')
 
         self._graphml = ET.ElementTree(self._root)
         self._graph = ET.SubElement(self._root, 'graph', edgedefault="directed")
