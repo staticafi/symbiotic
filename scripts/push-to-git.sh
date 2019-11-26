@@ -27,6 +27,7 @@ get_nidhugg_dependencies()
 ######################################################################
 # copy license
 cp LICENSE.txt $PREFIX/
+cp README.md $PREFIX/
 
 # copy the symbiotic python module
 cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
@@ -155,7 +156,7 @@ git add \
 	lib/svcomp/klee/*.c \
 	properties/* \
 	$(find lib/symbioticpy/symbiotic -name '*.py')\
-	LICENSE.txt
+	LICENSE.txt README.md
 	#$LLVM_PREFIX/include/stddef.h \
 
 git commit -m "Create Symbiotic distribution `date`" || true
