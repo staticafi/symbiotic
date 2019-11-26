@@ -1,7 +1,9 @@
 #include "symbiotic-size_t.h"
 
 void klee_make_symbolic(void *, size_t, const char *);
-void __VERIFIER_assume(int);
+extern void __VERIFIER_assume(int);
+extern _Bool __VERIFIER_nondet__Bool(void);
+extern char __VERIFIER_nondet_char(void);
 
 static char dummy_env[20];
 
@@ -11,10 +13,11 @@ char *getenv(const char *name) {
 
 	unsigned int idx = __VERIFIER_nondet_uint();
 	__VERIFIER_assume(idx < sizeof(dummy_env));
-	dummy_env[idx] = '\0';
 
-	if (idx > 0)
-		klee_make_symbolic(dummy_env, idx + 1, "dummy_env");
+	for (unsigned int i = 0; i < idx; ++i) {
+		dummy_env[i] = __VERIFIER_nondet_char();
+	}
+	dummy_env[idx] = '\0';
 
 	return dummy_env;
 }
