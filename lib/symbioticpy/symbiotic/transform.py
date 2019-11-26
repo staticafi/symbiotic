@@ -164,7 +164,7 @@ class SymbioticCC(object):
                 out[0].lstrip().decode('ascii').startswith('-fsanitize-address-use-after-scope')
 
     def cc_disable_optimizations(self):
-        return ['-O0', '-disable-llvm-passes', '-Xclang', '-disable-O0-optnone']
+        return ['-O0', '-disable-llvm-passes']
 
     def _generate_ll(self):
         if not self.options.generate_ll:
