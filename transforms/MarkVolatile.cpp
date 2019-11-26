@@ -38,11 +38,12 @@ class MarkVolatile : public FunctionPass {
     MarkVolatile() : FunctionPass(ID) {}
 
     bool runOnFunction(Function &F) override;
-    
+
     bool doFinalization(Module& M) override {
       if (has_unmarked) {
         errs() << "[Warning]: some marked instruction were not made volatile\n";
       }
+      return false;
     }
 };
 
