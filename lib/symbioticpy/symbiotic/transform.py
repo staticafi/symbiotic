@@ -417,7 +417,6 @@ class SymbioticCC(object):
 
             basename = os.path.basename(path)
             bcfile='{0}.bc'.format(basename[:basename.rfind('.')])
-            print(path, basename, bcfile)
             output = os.path.abspath(bcfile)
             self._compile_to_llvm(path, output)
             tolink.append(output)
