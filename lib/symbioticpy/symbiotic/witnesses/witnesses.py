@@ -36,7 +36,7 @@ class GraphMLWriter(object):
         self._graph = None
 
         # this prevents adding ns0 prefix to all tags
-        ET.register_namespace("", "http://graphml.graphdrawing.org/xmlns")
+        ET.register_namespace("graphml", "http://graphml.graphdrawing.org/xmlns")
 
     def _addCInfo(self):
         assert self._root is not None
