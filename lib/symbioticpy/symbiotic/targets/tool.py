@@ -121,7 +121,7 @@ class SymbioticBaseTool(object):
         if self._options.property.memsafety():
             # default config file is 'config.json'
             # slice with respect to the memory handling operations
-            return ('__INSTR_mark_pointer,__INSTR_mark_free,__INSTR_mark_allocation',
+            return ('__INSTR_mark_pointer,__INSTR_mark_free,__INSTR_mark_allocation,__INSTR_mark_exit',
                     ['-memsafety'])
 
         elif self._options.property.memcleanup():
