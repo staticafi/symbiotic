@@ -35,6 +35,12 @@ llvm::cl::opt<bool> justRemove("replace-ubsan-just-remove",
         llvm::cl::desc("Just remove the UBSan checks instead of replacing them with error call\n"),
         llvm::cl::init(false));
 
+llvm::cl::opt<bool> keepShifts("replace-ubsan-keep-shifts",
+        llvm::cl::desc("Keep checks for shifts (i.e., replace them with error call, the rest of ubsan is removed"),
+        llvm::cl::init(false));
+
+
+
 class ReplaceUBSan : public FunctionPass {
   public:
     static char ID;
@@ -68,9 +74,11 @@ bool ReplaceUBSan::runOnFunction(Function &F)
       if (!name.startswith("__ubsan_handle"))
         continue;
 
+      bool isshift = name.startswith("__ubsan_handle_shift");
+
       if (callee->isDeclaration()) {
         // just remove ?
-        if (justRemove) {
+        if (justRemove && (!keepShifts || !isshift)) {
           CI->eraseFromParent();
           modified = true;
           continue;

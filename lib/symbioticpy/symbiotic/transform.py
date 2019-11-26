@@ -789,6 +789,7 @@ class SymbioticCC(object):
         if self.options.property.signedoverflow() and \
            not self.options.overflow_with_clang:
             passes.append('-replace-ubsan-just-remove')
+            passes.append('-replace-ubsan-keep-shifts')
             passes.append('-prepare-overflows')
             passes.append('-mem2reg')
             passes.append('-break-crit-edges')
