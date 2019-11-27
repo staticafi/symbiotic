@@ -110,6 +110,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             passes.append('-remove-readonly-attr')
         elif self._options.property.termination():
             passes.append('-instrument-nontermination')
+            passes.append('-instrument-nontermination-mark-header')
 
         return passes
 

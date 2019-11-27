@@ -21,6 +21,10 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/LoopPass.h"
 
+llvm::cl::opt<bool> insertHeader("instrument-nontermination-mark-header",
+        llvm::cl::desc("Insert a function that marks the header of the loop"),
+        llvm::cl::init(false));
+
 using namespace llvm;
 
 bool CloneMetadata(const llvm::Instruction *, llvm::Instruction *);
@@ -55,6 +59,25 @@ class InstrumentNontermination : public LoopPass {
 
   Function *_assert{nullptr};
   Function *_fail{nullptr};
+  Function *_header{nullptr};
+
+  Function *getHeaderFun(Module *M) {
+    if (!_header) {
+      auto& Ctx = M->getContext();
+      auto F = M->getOrInsertFunction("__INSTR_check_nontermination_header",
+                                      Type::getVoidTy(Ctx) // retval
+#if LLVM_VERSION_MAJOR < 5
+                                      , nullptr
+#endif
+                                      );
+#if LLVM_VERSION_MAJOR >= 9
+      _header = cast<Function>(F.getCallee()->stripPointerCasts());
+#else
+      _header = cast<Function>(F);
+#endif
+    }
+    return _header;
+  }
 
   public:
     static char ID;
@@ -210,6 +233,15 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
     } else {
       LI->insertAfter(where);
       SI->insertAfter(LI);
+    }
+
+    if (insertHeader) {
+        auto h = getHeaderFun(header->getParent()->getParent());
+        auto *CI = CallInst::Create(_header);
+        // copy the location from terminator, so that we have
+        // the right debug loc
+        CloneMetadata(header->getTerminator(), CI);
+        CI->insertBefore(header->getTerminator());
     }
   }
 
