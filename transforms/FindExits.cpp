@@ -83,26 +83,31 @@ bool FindExits::processBlock(BasicBlock& B) {
     }
   }
 
-  /*
-  for (auto I = B.begin(), E = B.end(); I != E;) {
-    Instruction *ins = &*I;
-    ++I;
-    if (auto CI = dyn_cast<CallInst>(ins)) {
+  // Change __VERIFIER_assume for __INSTR_check_assume,
+  // as assume(0) is taken as non-terminating
+  for (auto& I : B) {
+    if (auto CI = dyn_cast<CallInst>(&I)) {
       auto calledFun = dyn_cast<Function>(CI->getCalledValue()->stripPointerCasts());
       if (!calledFun)
           continue;
+      if (calledFun->getName().equals("__VERIFIER_assume")) {
+        auto ICAC = M->getOrInsertFunction("__INSTR_check_assume",
+                                           Type::getVoidTy(Ctx), argTy
+#if LLVM_VERSION_MAJOR < 5
+                                           , nullptr
+#endif
+                                       );
+#if LLVM_VERSION_MAJOR >= 9
+        auto ICA = cast<Function>(ICAC.getCallee());
+#else
+        auto ICA = cast<Function>(ICAC);
+#endif
 
-      if (calledFun->hasFnAttribute(Attribute::NoReturn))
-          ...
-
-      auto new_CI = CallInst::Create(exitF);
-      CloneMetadata(CI, new_CI);
-      new_CI->insertAfter(CI);
-
-      modified = true;
+          CI->setCalledFunction(ICA);
+          modified = true;
+      }
     }
   }
-  */
 
   return modified;
 }
