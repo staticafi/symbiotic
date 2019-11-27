@@ -63,27 +63,6 @@ class GraphMLWriter(object):
         ET.SubElement(self._graph, 'data', key='creationtime').text =\
             '{date:%Y-%m-%d %T}'.format(date=datetime.datetime.utcnow())
 
-    def _addInfiniteLoop(self, lastNode):
-        assert lastNode is not None
-        assert self._graph is not None
-
-        for c in list(lastNode):
-            key = c.attrib.get('key')
-            if key and key == 'violation':
-                lastNode.remove(c)
-                break
-
-        loop_node = ET.SubElement(self._graph, 'node', id="cycle")
-        ET.SubElement(loop_node, 'data', key='cyclehead').text = 'true'
-        enter_loop_edge = ET.SubElement(self._graph, 'edge',
-                            source=lastNode.attrib["id"],
-                            target="cycle")
-        ET.SubElement(enter_loop_edge, 'data', key='enterLoopHead').text = 'true'
-        enter_loop_edge = ET.SubElement(self._graph, 'edge',
-                            source="cycle",
-                            target="cycle")
-        ET.SubElement(enter_loop_edge, 'data', key='enterLoopHead').text = 'true'
-
     def createTrivialWitness(self):
         if no_lxml:
             self._root = ET.Element('graphml')
@@ -115,13 +94,6 @@ class GraphMLWriter(object):
 
         assert len(self._root.getchildren()) == 1
         self._graph = list(self._root.getchildren())[0]
-
-        if is_termination:
-            # do it this way for the cases when parser added xmlns stuff to the tag names
-            nodes = [x for x in list(self._graph) if x.tag.endswith('node')]
-            assert len(nodes) > 0
-            self._addInfiniteLoop(nodes[-1])
-
         self._addCInfo()
 
     def dump(self):
