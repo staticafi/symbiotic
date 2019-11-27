@@ -225,8 +225,12 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
     auto *LI = new LoadInst(it.first);
     auto *SI = new StoreInst(LI, it.second);
 
+    CloneMetadata(header->getTerminator(), LI);
+    CloneMetadata(header->getTerminator(), SI);
+
     auto where = header->getFirstNonPHIOrDbg();
     assert(where);
+
     if (where == header->getTerminator()) {
       header->getInstList().push_front(SI);
       header->getInstList().push_front(LI);
@@ -263,6 +267,13 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
       auto *newVal = new LoadInst(it.first);
       auto *oldVal = new LoadInst(it.second);
       auto *cmp = new ICmpInst(ICmpInst::ICMP_EQ, newVal, oldVal);
+
+      auto md = term->getPrevNonDebugInstruction();
+      if (!md || !md->hasMetadata())
+          md = term;
+      CloneMetadata(md, newVal);
+      CloneMetadata(md, oldVal);
+      CloneMetadata(md, cmp);
       newVal->insertBefore(term);
       oldVal->insertBefore(term);
       cmp->insertBefore(term);
@@ -300,7 +311,10 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
     // insert the assertion that all the values are the same
     assert(_assert);
     auto *CI = CallInst::Create(_assert, {lastCond});
-    CloneMetadata(lastCond, CI);
+    if (lastCond->hasMetadata())
+      CloneMetadata(lastCond, CI);
+    else
+      CloneMetadata(term, CI);
     CI->insertBefore(term);
   }
 
