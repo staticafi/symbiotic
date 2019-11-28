@@ -25,6 +25,35 @@
 using namespace llvm;
 
 class RemoveInfiniteLoops : public FunctionPass {
+    bool isLoop(BasicBlock *block) {
+     // check if this is a block that unconditionally jumps on itself
+     std::set<BasicBlock *> visited;
+     visited.insert(block);
+     auto *cur = block;
+     do {
+       cur = cur->getUniqueSuccessor();
+       if (!cur) {// no loop
+           return false;
+       }
+
+       if (!visited.insert(cur).second) {
+           // hit a cycle
+           return true;
+       }
+       for (auto& I : *block) {
+           if (I.mayWriteToMemory())
+               return false;
+           if (isa<CallInst>(&I))
+               return false;
+           if (isa<ReturnInst>(&I))
+               return false;
+       }
+     } while (true);
+
+     assert(false && "Should not be reachable");
+     return false;
+    }
+
   public:
     static char ID;
 
@@ -45,20 +74,8 @@ bool RemoveInfiniteLoops::runOnFunction(Function &F) {
 
   std::vector<BasicBlock *> to_process;
   for (BasicBlock& block : F) {
-    // if this is a block that jumps on itself (it has the only instruction
-    // which is the jump)
-    if (block.size() == 1) {
-        auto succ = block.getUniqueSuccessor();
-        if (!succ)
-            continue;
-        // empty block with self-loop
-        if (succ == &block)
-            to_process.push_back(&block);
-
-        // two empty blocks mutually calling themselves
-        if (succ->size() == 1 && succ->getUniqueSuccessor() == &block)
-            to_process.push_back(&block);
-    }
+    if (isLoop(&block))
+        to_process.push_back(&block);
   }
 
   if (to_process.empty())
