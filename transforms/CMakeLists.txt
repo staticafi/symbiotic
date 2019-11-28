@@ -77,6 +77,7 @@ set(CPPFILES "CloneMetadata.cpp"
 	     "InstrumentNontermination.cpp"
 	     "ClassifyLoops.cpp"
 	     "ClassifyInstructions.cpp"
+	     "Prepare.cpp"
 	     "PrepareOverflows.cpp")
 
 if (${LLVM_PACKAGE_VERSION} VERSION_LESS "8")

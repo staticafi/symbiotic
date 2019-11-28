@@ -82,6 +82,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if hasattr(self.tool, 'actions_before_slicing'):
             self.tool.actions_before_slicing(symbiotic)
 
+    def passes_after_compilation(self):
+        return ['-prepare']
+
     def passes_before_slicing(self):
         if self._options.property.termination():
             return ['-find-exits']
