@@ -781,6 +781,8 @@ class SymbioticCC(object):
 
         if self.options.property.memcleanup():
             passes.append('-remove-error-calls-use-exit')
+        elif self.options.property.termination():
+            passes.append('-remove-error-calls-use-silent-exit')
 
         if not self.options.property.termination():
             passes.append('-remove-infinite-loops')

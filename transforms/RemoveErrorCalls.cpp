@@ -36,6 +36,10 @@ llvm::cl::opt<bool> useExit("remove-error-calls-use-exit",
         llvm::cl::desc("Insert __VERIFIER_exit(0) instead of __VERIFIER_assume(0)\n"),
         llvm::cl::init(false));
 
+llvm::cl::opt<bool> useSilentExit("remove-error-calls-use-silent-exit",
+        llvm::cl::desc("Insert __VERIFIER_exit(0) instead of __VERIFIER_assume(0)\n"),
+        llvm::cl::init(false));
+
 class RemoveErrorCalls : public FunctionPass {
   public:
     static char ID;
@@ -70,11 +74,16 @@ bool RemoveErrorCalls::runOnFunction(Function &F)
       if (name.equals("__VERIFIER_error") ||
           name.equals("__assert_fail")) {
         if (!ext) {
+          const char *fun = "__VERIFIER_assume";
+          if (useExit) {
+              fun = "__VERIFIER_exit";
+          }
+          if (useSilentExit) {
+              fun = "__VERIFIER_silent_exit";
+          }
           Type *argTy = Type::getInt32Ty(Ctx);
           auto extF
-            = M->getOrInsertFunction(useExit ? "__VERIFIER_exit" :
-                                               "__VERIFIER_assume",
-                                     Type::getVoidTy(Ctx), argTy
+            = M->getOrInsertFunction(fun, Type::getVoidTy(Ctx), argTy
 #if LLVM_VERSION_MAJOR < 5
                                        , nullptr
 #endif
