@@ -290,16 +290,20 @@ class SymbioticTool(KleeBase):
                '-external-calls=pure', '-max-memory=8000']
         if self._options.property.memsafety():
             cmd.append('-check-leaks')
-            cmd.append('-exit-on-error-type=Ptr')
-            cmd.append('-exit-on-error-type=Leak')
-            cmd.append('-exit-on-error-type=ReadOnly')
-            cmd.append('-exit-on-error-type=Free')
-            cmd.append('-exit-on-error-type=BadVectorAccess')
         elif self._options.property.memcleanup():
             cmd.append('-check-memcleanup')
-            cmd.append('-exit-on-error-type=Leak')
-        else:
-            cmd.append('-exit-on-error-type=Assert')
+
+        if not self._options.dont_exit_on_error:
+            if self._options.property.memsafety():
+                cmd.append('-exit-on-error-type=Ptr')
+                cmd.append('-exit-on-error-type=Leak')
+                cmd.append('-exit-on-error-type=ReadOnly')
+                cmd.append('-exit-on-error-type=Free')
+                cmd.append('-exit-on-error-type=BadVectorAccess')
+            elif self._options.property.memcleanup():
+                cmd.append('-exit-on-error-type=Leak')
+            else:
+                cmd.append('-exit-on-error-type=Assert')
 
         if not self._options.nowitness:
             cmd.append('-write-witness')
