@@ -49,7 +49,7 @@ def create_testcomp_metadata(where, source, prps, is32bit):
     gen_md = MetadataWriter(source, prps, is32bit)
     gen_md.write(saveto)
 
-def report_results(res):
+def report_results(res, svcomp):
     """
     Report result to the user and terminate analysis
     """
@@ -67,9 +67,10 @@ def report_results(res):
         color = 'RED'
         print_stdout('Failure!', color=color)
 
-    sys.stdout.flush()
-    print_stdout('RESULT: ', print_nl=False)
-    print_stdout(res, color=color)
+    if svcomp:
+        sys.stdout.flush()
+        print_stdout('RESULT: ', print_nl=False)
+        print_stdout(res, color=color)
     sys.stdout.flush()
 
     return res
@@ -128,7 +129,7 @@ if __name__ == "__main__":
             print_stdout('RESULT: ERROR ({0})'.format(str(e)))
             err(' == FAILURE ==\n{0}'.format(str(e)))
 
-        report_results(res or "no result")
+        report_results(res or "no result", opts.test_comp or opts.sv_comp)
     except Timeout:
         sys.stdout.flush()
         sys.stderr.flush()
