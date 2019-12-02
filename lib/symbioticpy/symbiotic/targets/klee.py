@@ -68,6 +68,7 @@ class KleeToolFullInstrumentation(KleeBase):
                 '.*memory error: invalid pointer: make_symbolic.*')),
             ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
+            ('EUNREACH', re.compile('.*reached "unreachable" instruction.*')),
             ('ERESOLV', re.compile('.*ERROR:.*Could not resolve.*'))
         ]
 
