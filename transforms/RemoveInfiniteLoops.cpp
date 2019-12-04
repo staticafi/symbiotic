@@ -31,6 +31,15 @@ class RemoveInfiniteLoops : public FunctionPass {
      visited.insert(block);
      auto *cur = block;
      do {
+       for (auto& I : *block) {
+           if (I.mayWriteToMemory())
+               return false;
+           if (isa<CallInst>(&I))
+               return false;
+           if (isa<ReturnInst>(&I))
+               return false;
+       }
+
        cur = cur->getUniqueSuccessor();
        if (!cur) {// no loop
            return false;
@@ -39,14 +48,6 @@ class RemoveInfiniteLoops : public FunctionPass {
        if (!visited.insert(cur).second) {
            // hit a cycle
            return true;
-       }
-       for (auto& I : *block) {
-           if (I.mayWriteToMemory())
-               return false;
-           if (isa<CallInst>(&I))
-               return false;
-           if (isa<ReturnInst>(&I))
-               return false;
        }
      } while (true);
 
