@@ -59,7 +59,7 @@ class SymbioticOptions(object):
         self.memsafety_config_file = None
         self.overflow_config_file = 'config.json'
         self.repeat_slicing = 1
-        self.dont_exit_on_error = False
+        self.exit_on_error = False
         # folders where to look for models of undefined functions
         self.linkundef = ['verifier', 'libc', 'posix', 'kernel']
         # these files will be linked unconditionally just after compilation
@@ -125,6 +125,7 @@ def set_svcomp(opts):
     opts.tool_name='svcomp'
     opts.slicer_timeout = 300
     opts.instrumentation_timeout = 400
+    opts.exit_on_error = True
 
     enable_debug('all')
 
@@ -140,6 +141,7 @@ def set_testcomp(opts):
     opts.tool_name='svcomp'
     opts.slicer_timeout = 300
     opts.instrumentation_timeout = 400
+    opts.exit_on_error = True # do we want that?
 
     enable_debug('all')
 
@@ -207,7 +209,7 @@ def parse_command_line():
                                     'slicer-params=', 'slicer-cmd=', 'verifier-params=',
                                     'explicit-symbolic', 'undefined-retval-nosym',
                                     'save-files', 'version-short', 'no-witness',
-                                    'witness-with-source-lines', 'dont-exit-on-error',
+                                    'witness-with-source-lines', 'exit-on-error',
                                     'undefined-are-pure',
                                     'no-integrity-check', 'dump-env', 'dump-env-cmd',
                                     'memsafety-config-file=', 'overflow-config-file=',
@@ -371,8 +373,8 @@ def parse_command_line():
             options.working_dir_prefix = wdr
         elif opt == '--witness-with-source-lines':
             options.witness_with_source_lines = True
-        elif opt == '--dont-exit-on-error':
-            options.dont_exit_on_error = True
+        elif opt == '--exit-on-error':
+            options.exit_on_error = True
         elif opt == '--statistics':
             options.stats = True
         elif opt == '--memsafety-config-file':
@@ -474,7 +476,7 @@ where OPTS can be following:
     --no-link                 Do not link missing functions from the given category
                               (libc, svcomp, verifier, posix, kernel). The argument
                               is a comma-separated list of values.
-    --dont-exit-on-error      Do not exit when the property violation is reached,
+    --exit-on-error           Exit after the first error is found.
                               but continue searching
     --help                    Show help message
     --version                 Return version

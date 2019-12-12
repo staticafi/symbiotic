@@ -121,7 +121,7 @@ class KleeToolFullInstrumentation(KleeBase):
                '-max-time={0}'.format(self._options.timeout),
                '-external-calls=pure']
 
-        if not self._options.dont_exit_on_error:
+        if self._options.exit_on_error:
             cmd.append('-exit-on-error-type=Assert')
 
         return cmd + options + tasks
@@ -294,7 +294,7 @@ class SymbioticTool(KleeBase):
         elif self._options.property.memcleanup():
             cmd.append('-check-memcleanup')
 
-        if not self._options.dont_exit_on_error:
+        if self._options.exit_on_error:
             if self._options.property.memsafety():
                 cmd.append('-exit-on-error-type=Ptr')
                 cmd.append('-exit-on-error-type=Leak')
