@@ -37,10 +37,15 @@ if [ "$INSTALL_LLVM" = "y" ]; then
 	PACKAGES="$PACKAGES llvm-devel llvm-static"
 fi
 if [ "$INSTALL_SQLITE" = "y" ]; then
-	PACKAGES="$PACKAGES libsqlite3-devel"
+	PACKAGES="$PACKAGES libsq3-devel"
 fi
 
-
-
-dnf install $PACKAGES
+if which yum &>/dev/null; then
+	yum install $PACKAGES
+elif which dnf &>/dev/null; then
+	dnf install $PACKAGES
+else
+	echo "Unknown package manager" 1>&2
+	exit 1
+fi
 
