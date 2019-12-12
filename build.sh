@@ -960,8 +960,10 @@ if [ $FROM -le 6 ]; then
 
 	(build && make install) || exit 1
 
+#if [ "$ARCHIVE" = "yes" ]; then
 	# precompile bitcode files
 	CPPFLAGS="-I/usr/include $CPPFLAGS" scripts/precompile_bitcode_files.sh
+#fi
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
