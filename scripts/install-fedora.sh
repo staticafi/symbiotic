@@ -14,6 +14,7 @@ fi
 INSTALL_Z3="N"
 INSTALL_LLVM="N"
 INSTALL_SQLITE="N"
+INSTALL_ZLIB="N"
 
 # Ask for these as the user may have his/her own build
 if ! rpm -qa | grep -q z3-devel; then
@@ -25,10 +26,16 @@ if ! rpm -qa | grep -q llvm-devel; then
 	echo "LLVM not found, should I install it? [y/N]"
 	read INSTALL_LLVM
 fi
-if ! rpm -qa | grep -q libsqlite3-devel; then
+if ! rpm -qa | grep -q libsq3-devel; then
 	echo "SQLite not found, should I install it? [y/N]"
 	read INSTALL_SQLITE
 fi
+if ! rpm -qa | grep -q zlib-static; then
+	echo "zlib not found, should I install it? [y/N]"
+	read INSTALL_ZLIB
+fi
+
+
 
 if [ "$INSTALL_Z3" = "y" ]; then
 	PACKAGES="$PACKAGES z3-devel"
@@ -38,6 +45,9 @@ if [ "$INSTALL_LLVM" = "y" ]; then
 fi
 if [ "$INSTALL_SQLITE" = "y" ]; then
 	PACKAGES="$PACKAGES libsq3-devel"
+fi
+if [ "$INSTALL_ZLIB" = "y" ]; then
+	PACKAGES="$PACKAGES zlib-static"
 fi
 
 if which yum &>/dev/null; then

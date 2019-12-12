@@ -14,6 +14,7 @@ fi
 INSTALL_Z3="N"
 INSTALL_LLVM="N"
 INSTALL_SQLITE="N"
+INSTALL_ZLIB="N"
 
 # Ask for these as the user may have his/her own build
 if ! pacman -Qqe | grep -q z3; then
@@ -31,6 +32,11 @@ if ! pacman -Qqe | grep -q sqlite; then
 	read INSTALL_SQLITE
 fi
 
+if ! pacman -Qqe | grep -q zlib; then
+	echo "zlib not found, should I install it? [y/N]"
+	read INSTALL_ZLIB
+fi
+
 if [ "$INSTALL_Z3" = "y" ]; then
 	PACKAGES="$PACKAGES z3"
 fi
@@ -39,6 +45,9 @@ if [ "$INSTALL_LLVM" = "y" ]; then
 fi
 if [ "$INSTALL_SQLITE" = "y" ]; then
 	PACKAGES="$PACKAGES libsqlite3"
+fi
+if [ "$INSTALL_ZLIB" = "y" ]; then
+	PACKAGES="$PACKAGES zlib"
 fi
 
 
