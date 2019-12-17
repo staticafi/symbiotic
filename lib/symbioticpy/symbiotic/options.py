@@ -93,6 +93,9 @@ class SymbioticOptions(object):
         # (for those, tool_params)
         # These are parsed and used by the tool info object.
         self.target_settings = []
+        # how to report the results? Types are: normal, short, sv-comp.
+        # Some of the types can be used simultaneously
+        self.report_type = ['normal']
 
         self.sv_comp = False
         self.test_comp = False
@@ -126,6 +129,7 @@ def set_svcomp(opts):
     opts.slicer_timeout = 300
     opts.instrumentation_timeout = 400
     opts.exit_on_error = True
+    opts.report_type.append('sv-comp')
 
     enable_debug('all')
 
@@ -142,6 +146,7 @@ def set_testcomp(opts):
     opts.slicer_timeout = 300
     opts.instrumentation_timeout = 400
     opts.exit_on_error = True # do we want that?
+    opts.report_type.append('sv-comp')
 
     enable_debug('all')
 
@@ -216,6 +221,7 @@ def parse_command_line():
                                     'statistics', 'working-dir-prefix=', 'sv-comp', 'test-comp',
                                     'overflow-with-clang', 'gen-ll', 'gen-c', 'test-suite=',
                                     'search-include-paths', 'replay-error', 'cc',
+                                    'report=',
                                     'unroll=', 'full-instrumentation', 'target-settings='])
                                    # add klee-params
     except getopt.GetoptError as e:
@@ -228,6 +234,8 @@ def parse_command_line():
             sys.exit(0)
         elif opt == '--debug':
             enable_debug(arg.split(','))
+        elif opt == '--report':
+            options.report_type=arg.split(',')
         elif opt == '--gen-ll':
             options.generate_ll = True
         elif opt == '--gen-c':
@@ -462,6 +470,8 @@ where OPTS can be following:
                               all, compile, slicer
                               In that case you get verbose output. You can just use
                               --debug= to print basic messages.
+    --report=STR              A comma-separated list of {normal, short, sv-comp}
+                              that affects how symbiotic-verify reports the results.
     --generate-ll             Generate also .ll files (for debugging)
     --output=FILE             Store the final code (that is to be run by a tool) to FILE
     --witness=FILE            Store witness into FILE (default is witness.graphml)

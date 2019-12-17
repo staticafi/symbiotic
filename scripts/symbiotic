@@ -129,7 +129,8 @@ if __name__ == "__main__":
             print_stdout('RESULT: ERROR ({0})'.format(str(e)))
             err(' == FAILURE ==\n{0}'.format(str(e)))
 
-        report_results(res or "no result", opts.test_comp or opts.sv_comp)
+        report_results(res or "no result",
+                       opts.test_comp or opts.sv_comp or 'sv-comp' in opts.report_type)
     except Timeout:
         sys.stdout.flush()
         sys.stderr.flush()
