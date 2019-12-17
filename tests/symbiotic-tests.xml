@@ -2,6 +2,9 @@
 <!DOCTYPE benchmark PUBLIC "+//IDN sosy-lab.org//DTD BenchExec benchmark 1.4//EN" "http://www.sosy-lab.org/benchexec/benchmark-1.4.dtd">
 <benchmark tool="symbiotic" timelimit="20 s" memlimit="2 GB" cpuCores="1">
 
+<option name="--no-integrity-check"/>
+<option name="--report=sv-comp"/>
+
 <rundefinition name="reach">
   <tasks name="reach-tests">
     <includesfile>reach.set</includesfile>
