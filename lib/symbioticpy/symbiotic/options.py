@@ -66,7 +66,7 @@ class SymbioticOptions(object):
         self.link_files = []
         # these files are going to be linked before slicing if they are undefined
         # (the rest of undefined functions is linked after slicing)
-        self.link_files_before_slicing = ['__VERIFIER_exit', '__VERIFIER_silent_exit']
+        self.link_files_before_slicing = ['__VERIFIER_exit', '__VERIFIER_silent_exit', '__VERIFIER_assert']
         # additional parameters that can be passed right
         # to the slicer and symbolic executor
         self.slicer_cmd = ['sbt-slicer']
