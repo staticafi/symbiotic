@@ -60,6 +60,7 @@ ARCHIVE="no"
 FULL_ARCHIVE="no"
 BUILD_KLEE="yes"
 BUILD_PREDATOR="no"
+BUILD_LLVM2C='yes'
 LLVM_CONFIG=
 
 while [ $# -gt 0 ]; do
@@ -85,6 +86,9 @@ while [ $# -gt 0 ]; do
 		;;
 		'no-klee')
 			BUILD_KLEE=no
+		;;
+		'no-llvm2c')
+			BUILD_LLVM2C="no"
 		;;
 		'update')
 			UPDATE=1
@@ -396,31 +400,9 @@ fi
 ######################################################################
 #   llvm2c
 ######################################################################
-#if [ $FROM -le 6 ]; then
-#        # initialize instrumentation module if not done yet
-#        if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/llvm2c)" ]; then
-#                git_submodule_init
-#        fi
-
-#        pushd "$SRCDIR/llvm2c" || exitmsg "Cloning failed"
-#        mkdir -p build-${LLVM_VERSION}
-#        pushd build-${LLVM_VERSION}
-#        if [ ! -d CMakeFiles ]; then
-#                cmake .. \
-#                        -DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
-#                        -DCMAKE_INSTALL_LIBDIR:PATH=lib \
-#                        -DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
-#                        -DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
-#                        || clean_and_exit 1 "git"
-#        fi
-
-#        (build && make install) || exit 1
-
-#        popd
-#        popd
-#fi
-
-
+if [ $FROM -le 6 -a "$BUILD_LLVM2C" = "yes" ]; then
+	source scripts/build-llvm2c.sh
+fi
 
 ######################################################################
 #   transforms (LLVMsbt.so)

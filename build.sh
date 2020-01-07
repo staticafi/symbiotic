@@ -91,6 +91,7 @@ BUILD_STP='no'
 BUILD_Z3='no'
 BUILD_SVF='no'
 BUILD_PREDATOR='no'
+BUILD_LLVM2C='yes'
 
 BUILD_KLEE="yes"
 BUILD_NIDHUGG="no"
@@ -131,6 +132,9 @@ while [ $# -gt 0 ]; do
 		;;
 		'no-klee')
 			BUILD_KLEE=no
+		;;
+		'no-llvm2c')
+			BUILD_LLVM2C="no"
 		;;
 		'build-nidhugg')
 			BUILD_NIDHUGG="yes"
@@ -740,31 +744,8 @@ fi
 ######################################################################
 #   llvm2c
 ######################################################################
-if [ $FROM -le 6 ]; then
-	# initialize instrumentation module if not done yet
-	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/llvm2c)" ]; then
-		git_submodule_init
-	fi
-
-	pushd "$SRCDIR/llvm2c" || exitmsg "Cloning failed"
-	mkdir -p build-${LLVM_VERSION}
-	pushd build-${LLVM_VERSION}
-	if [ ! -d CMakeFiles ]; then
-		cmake .. \
-			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
-			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
-			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
-			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
-			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
-			-DLLVM_DIR=$LLVM_DIR \
-			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
-			|| clean_and_exit 1 "git"
-	fi
-
-	(build && make install) || exit 1
-
-	popd
-	popd
+if [ $FROM -le 6 -a "$BUILD_LLVM2C" = "yes" ]; then
+	source scripts/build-llvm2c.sh
 fi
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
