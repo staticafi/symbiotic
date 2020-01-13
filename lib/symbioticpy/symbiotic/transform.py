@@ -209,6 +209,10 @@ class SymbioticCC(object):
         else:
             llvmfile = output
 
+        if self.options.generate_ll:
+            # make the bitcode better readable if we generate the .ll files
+            cmd.append("-fno-discard-value-names")
+
         cmd.append(llvmfile)
         cmd.append(source)
 
