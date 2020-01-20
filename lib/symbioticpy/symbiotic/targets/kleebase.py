@@ -131,7 +131,7 @@ def print_object(obj):
     nice_rep = get_nice_repr(obj)
     if nice_rep:
         rep += " ({0})".format(nice_rep)
-    print('{0} := {1}'.format(obj[0], rep))
+    print('{0} := {1}'.format(obj[0].decode('ascii'), rep))
 
 ##
 # dumping human readable error
@@ -203,7 +203,7 @@ def dump_error(pth):
         print('\n --- Error trace ---\n')
         for line in f:
             print_stdout(line, print_nl = False)
-        print('\n --- Assignment to nondeterministic values ---\n')
+        print('\n --- Sequence of non-deterministic values [function:file:line:col] ---\n')
         _dumpObjects(pth[:pth.find('.')+1]+'ktest')
         print('\n --- ----------- ---')
     except OSError as e:
