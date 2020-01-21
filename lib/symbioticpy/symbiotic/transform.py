@@ -202,17 +202,16 @@ class SymbioticCC(object):
         if self.options.is32bit:
             cmd.append('-m32')
 
+        if self.options.generate_ll:
+            # make the bitcode better readable if we generate the .ll files
+            cmd.append("-fno-discard-value-names")
+
         cmd.append('-o')
         if output is None:
             basename = os.path.basename(source)
             llvmfile = '{0}.bc'.format(basename[:basename.rfind('.')])
         else:
             llvmfile = output
-
-        if self.options.generate_ll:
-            # make the bitcode better readable if we generate the .ll files
-            cmd.append("-fno-discard-value-names")
-
         cmd.append(llvmfile)
         cmd.append(source)
 
