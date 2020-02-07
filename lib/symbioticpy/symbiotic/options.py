@@ -227,7 +227,6 @@ def parse_command_line():
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
 
-
     for opt, arg in opts:
         if opt == '--help':
             print(usage_msg)
