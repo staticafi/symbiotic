@@ -68,6 +68,7 @@ class KleeToolFullInstrumentation(KleeBase):
                 '.*memory error: invalid pointer: make_symbolic.*')),
             ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
+            ('EGLOBLFREE', re.compile('.*ERROR:.*free of global.*')),
             ('EUNREACH', re.compile('.*reached "unreachable" instruction.*')),
             ('ERESOLV', re.compile('.*ERROR:.*Could not resolve.*'))
         ]
@@ -215,6 +216,7 @@ class SymbioticTool(KleeBase):
                 '.*memory error: invalid pointer: make_symbolic.*')),
             ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
+            ('EGLOBLFREE', re.compile('.*ERROR:.*free of global.*')),
             ('EMEMALLOC', re.compile('.*KLEE: WARNING: Allocating memory failed.*')),
             ('ESTACKOVFLW', re.compile('.*WARNING: Maximum stack size reached.*')),
             ('EROSYMB', re.compile('.*cannot make readonly object symbolic.*')),
@@ -329,7 +331,7 @@ class SymbioticTool(KleeBase):
                         return result.RESULT_FALSE_TERMINATION
                     else:
                         return result.RESULT_FALSE_REACH
-                elif key == 'EFREE' or key == 'EFREEALLOCA':
+                elif key == 'EFREE' or key == 'EFREEALLOCA' or key=='EGLOBLFREE':
                     return result.RESULT_FALSE_FREE
                 elif key == 'EMEMERROR':
                     return result.RESULT_FALSE_DEREF
