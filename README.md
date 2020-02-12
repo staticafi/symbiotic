@@ -323,17 +323,17 @@ However, it can use many other tools for the analysis. Here is the list
 of supported tools (some of them are integrated rather experimentally
 and may not work seamlessly):
 
-tool        | switch
--------------------------
-KLEE        | --klee
-CPAchecker  | --target=cpachecker
-DIVINE      | --target=divine
-CBMC        | --target=cbmc
-SMACK       | --target=smack
-SeaHorn     | --target=seahorn
-Nidhugg     | --target=nidhugg
-IKOS        | --target=ikos
-UAutomizer  | --target=ultimate
+|tool        | switch               |
+|------------|----------------------|
+|KLEE        | `--target=klee`      |
+|CPAchecker  | `--target=cpachecker`|
+|DIVINE      | `--target=divine`    |
+|CBMC        | `--target=cbmc`      |
+|SMACK       | `--target=smack`     |
+|SeaHorn     | `--target=seahorn`   |
+|Nidhugg     | `--target=nidhugg`   |
+|IKOS        | `--target=ikos`      |
+|UAutomizer  | `--target=ultimate`  |
 
 ### CC mode
 
