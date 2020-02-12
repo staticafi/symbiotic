@@ -2,7 +2,7 @@
 
 set -e
 
-PACKAGES="curl wget rsync make cmake unzip lib32-gcc-libs xz python"
+PACKAGES="curl wget rsync make cmake unzip lib32-glibc xz python"
 
 # install clang if there is not suitable compiler
 if ! which g++ &>/dev/null; then
@@ -49,6 +49,5 @@ fi
 if [ "$INSTALL_ZLIB" = "y" ]; then
 	PACKAGES="$PACKAGES zlib"
 fi
-
 
 pacman -S $PACKAGES
