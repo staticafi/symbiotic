@@ -207,7 +207,7 @@ def parse_command_line():
                                     'instrumentation-timeout=', 'version', 'help',
                                     'no-verification', 'output=', 'witness=', 'bc',
                                     'optimize=', 'malloc-never-fails',
-                                    'pta=', 'no-link', 'slicing-criterion=',
+                                    'pta=', 'no-link=', 'slicing-criterion=',
                                     'cflags=', 'cppflags=', 'link=', 'executable-witness',
                                     'verifier=','target=', 'require-slicer',
                                     'no-link-undefined', 'repeat-slicing=',
