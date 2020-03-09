@@ -47,7 +47,7 @@ usage()
 	echo -e "OPTS = options for make (i. e. -j8)"
 }
 
-export PREFIX=`pwd`/install
+export PREFIX=${PREFIX:-`pwd`/install}
 export LD_LIBRARY_PATH="$PREFIX/lib:$LD_LIBRARY_PATH"
 export C_INCLUDE_PATH="$PREFIX/include:$C_INCLUDE_PATH"
 export PKG_CONFIG_PATH="$PREFIX/lib/pkgconfig:$PREFIX/share/pkgconfig:$PKG_CONFIG_PATH"

@@ -1,6 +1,5 @@
 INSTR="sbt-instrumentation/"
 LIBS="lib/"
-PREFIX="install"
 
 set -e
 
