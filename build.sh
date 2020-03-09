@@ -70,7 +70,7 @@ get_llvm_version()
 	fi
 }
 
-export PREFIX=`pwd`/install
+export PREFIX=${PREFIX:-`pwd`/install}
 
 # export LD_LIBRARY_PATH="$PREFIX/lib:$LD_LIBRARY_PATH"
 # export C_INCLUDE_PATH="$PREFIX/include:$C_INCLUDE_PATH"
