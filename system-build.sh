@@ -277,6 +277,7 @@ if [ $FROM -le 1 ]; then
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
+			-DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
 			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
 			|| clean_and_exit 1 "git"
 	fi
@@ -301,6 +302,7 @@ if [ $FROM -le 1 ]; then
 			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
 			-DDG_PATH=$ABS_SRCDIR/dg \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
+			-DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
 			|| clean_and_exit 1 "git"
 	fi
 

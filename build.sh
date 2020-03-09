@@ -522,6 +522,7 @@ if [ $FROM -le 1 ]; then
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
+			-DCMAKE_INSTALL_RPATH="\$ORIGIN/../lib" \
 			${SVF_FLAGS} \
 			|| clean_and_exit 1 "git"
 	fi
@@ -548,6 +549,7 @@ if [ $FROM -le 1 ]; then
 			-DLLVM_DIR=$LLVM_DIR \
 			-DDG_PATH=$ABS_SRCDIR/dg \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
+			-DCMAKE_INSTALL_RPATH="\$ORIGIN/../lib" \
 			|| clean_and_exit 1 "git"
 	fi
 
