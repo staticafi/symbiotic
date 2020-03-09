@@ -244,15 +244,21 @@ fi
 mkdir -p $LLVM_PREFIX/bin
 for T in $LLVM_TOOLS; do
 	TOOL=$(which $T || true)
-	if [ -z "${TOOL}" -o ! -x "${TOOL}" ]; then
-		exitmsg "Cannot find working $T binary".
+
+	# always avoid making copy of a ccache executable (symlink's target)
+	if [[ "$TOOL" =~ "ccache" ]]; then
+		TOOL="/usr/bin/$T"
 	fi
 
-	if readlink -- "${TOOL}" >/dev/null; then
-		# avoid making copy of a ccache executable (symlink's target)
-		ln -fs "${TOOL}" "${LLVM_PREFIX}/bin/"
+	if [ -z "${TOOL}" -o ! -x "${TOOL}" ]; then
+		exitmsg "Cannot find working $T binary"
+	fi
+
+	# copy the binaries only with full-archive option
+	if [ "$FULL_ARCHIVE" = "no" ] || readlink -- "${TOOL}" > /dev/null; then
+		ln -fs "${TOOL}" "${LLVM_PREFIX}/bin"
 	else
-		cp ${TOOL} $LLVM_PREFIX/bin
+		cp -rf "${TOOL}" "${LLVM_PREFIX}/bin"
 	fi
 done
 
