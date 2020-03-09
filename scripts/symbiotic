@@ -23,7 +23,8 @@ import os
 from time import time
 
 # set path to our package
-pth = os.path.join(os.path.dirname(__file__), '../lib/symbioticpy')
+exec_path = os.readlink(__file__) if os.path.islink(__file__) else __file__
+pth = os.path.join(os.path.dirname(exec_path), '../lib/symbioticpy')
 sys.path.append(os.path.abspath(pth))
 
 from symbiotic.utils import err, dbg
