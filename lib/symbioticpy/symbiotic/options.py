@@ -446,15 +446,19 @@ where OPTS can be following:
     --repeat-slicing=N        Repeat slicing N times
     --prp=property            Specify property that should hold. It is either LTL formula
                               as specivied by SV-COMP, or one of following shortcuts:
-                                null-deref      -- program is free of null-dereferences
-                                valid-deref     -- all dereferences are valid
-                                valid-free      -- all free() calls are valid
-                                valid-memtrack  -- all memory is freed
-                                memsafety       -- valid-deref + valid-free
-                                                   + valid-memtrack
+                                null-deref         -- program is free of null-dereferences
+                                memsafety          -- program does not use invalid memory
+                                                      (e.g., no double-free,
+                                                       no invalid dereference, etc.)
                                 undefined-behavior -- check for undefined behaviour
-                                  or undef-behavior
+                                undef-behavior
+                                undefined
                                 signed-overflow -- check for signed integer overflow
+                                no-overflow
+                                termination     -- try checking whether the program
+                                                   always terminates
+                                coverage        -- generate tests with as high coverage
+                                                   as possible
                               The string can be given on line or in a file.
     --memsafety-config-file   Set the configuration file for memsafety. The files
                               can be found in share/sbt-instrumentation/memsafety/
