@@ -13,6 +13,12 @@ class Property:
         """ Check for memory safety violations """
         return False
 
+    def nullderef(self):
+        """
+        Check for null dereferences (this property is distinct from memsafety)
+        """
+        return False
+
     def memcleanup(self):
         """ Check for memory leaks """
         return False
@@ -51,6 +57,13 @@ class Property:
     def getLTL(self):
         return self._ltl
 
+
+class PropertyNullDeref(Property):
+    def __init__(self, prpfile = None):
+        Property.__init__(self, prpfile)
+
+    def nullderef(self):
+        return True
 
 class PropertyMemSafety(Property):
     def __init__(self, prpfile = None):
@@ -216,7 +229,11 @@ def get_property(symbiotic_dir, prp):
         if prpfile is None:
             ltl_prps, prop._prpfile = _get_prp(abspath(join(symbiotic_dir, 'properties/valid-memsafety.prp')))
             assert prop._prpfile
-
+    elif 'NULL-DEREF' in prps:
+        prop = PropertyNullDeref(prpfile)
+        if prpfile is None:
+            ltl_prps, prop._prpfile = _get_prp(abspath(join(symbiotic_dir, 'properties/no-null-deref.prp')))
+            assert prop._prpfile
     elif 'MEMCLEANUP' in prps:
         prop = PropertyMemCleanup(prpfile)
         if prpfile is None:

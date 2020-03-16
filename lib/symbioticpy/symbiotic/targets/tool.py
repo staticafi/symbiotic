@@ -66,7 +66,8 @@ class SymbioticBaseTool(object):
 
     def instrumentation_options(self):
         """
-        Returns a triple (c, l, x) where c is the configuration
+        Returns a triple (d, c, l, x) where d is the directory
+        with configuration files, c is the configuration
         file for instrumentation (or None if no instrumentation
         should be performed), l is the
         file with definitions of the instrumented functions
@@ -74,39 +75,51 @@ class SymbioticBaseTool(object):
         instrumentation (and False otherwise)
         """
 
+        if self._options.property.signedoverflow() and\
+             self._options.overflow_with_clang:
+            # clang already instrumented all that we need
+             return (None, None, None, None)
+
         if self._options.full_instrumentation:
             if self._options.property.memsafety():
                 # default config file is 'config.json'
-                return (self._options.memsafety_config_file, 'memsafety.c', True)
+                return ('memsafety', self._options.memsafety_config_file,
+                        'memsafety.c', True)
 
             if self._options.property.signedoverflow():
                 # default config file is 'config.json'
-                return (self._options.overflow_config_file, 'overflows.c', True)
+                return ('int_overflows', self._options.overflow_config_file,
+                        'overflows.c', True)
 
             if self._options.property.termination():
-                return ('config.json', 'termination.c', True)
+                return ('termination', 'config.json', 'termination.c', True)
 
             if self._options.property.memcleanup():
-                return ('config-memcleanup.json', 'memsafety.c', True)
+                return ('memsafety', 'config-memcleanup.json', 'memsafety.c', True)
 
-            return (None, None, None)
+            return (None, None, None, None)
         else:
             # NOTE: we do not want to link the functions with memsafety/cleanup
             # because then the optimizations could remove the calls to markers
             if self._options.property.memsafety():
-                return ('config-marker.json', 'marker.c', False)
+                return ('memsafety', 'config-marker.json', 'marker.c', False)
 
             if self._options.property.memcleanup():
-                return ('config-marker-memcleanup.json', 'marker.c', False)
+                return ('memsafety', 'config-marker-memcleanup.json',
+                        'marker.c', False)
 
             if self._options.property.signedoverflow():
                 # default config file is 'config.json'
-                return (self._options.overflow_config_file, 'overflows.c', True)
+                return ('int_overflows', self._options.overflow_config_file,
+                        'overflows.c', True)
 
             if self._options.property.termination():
-                return ('config.json', 'termination.c', True)
+                return ('termination', 'config.json', 'termination.c', True)
 
-            return (None, None, None)
+            if self._options.property.nullderef():
+                return ('null_deref', 'config.json', 'null_deref.c', False)
+
+            return (None, None, None, None)
 
     def slicer_options(self):
         """
@@ -136,6 +149,11 @@ class SymbioticBaseTool(object):
             # to be sliced away from __INSTR_fail
             return ('__INSTR_fail,__assert_fail,__VERIFIER_silent_exit,__INSTR_check_assume',
                     ['-cd-alg=ntscd'])
+
+        if self._options.property.nullderef():
+            # default config file is 'config.json'
+            # slice with respect to the memory handling operations
+            return ('__INSTR_mark_pointer', ['-criteria-are-next-instr'])
 
         return (self._options.slicing_criterion,[])
 

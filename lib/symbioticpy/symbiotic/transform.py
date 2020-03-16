@@ -251,9 +251,12 @@ class SymbioticCC(object):
         if not hasattr(self._tool, 'instrumentation_options'):
             return
 
-        config_file, definitions, shouldlink = self._tool.instrumentation_options()
+        config_dir, config_file, definitions, shouldlink =\
+            self._tool.instrumentation_options()
+
         # override the config file if desired
-        if self.options.memsafety_config_file:
+        if self.options.property.memsafety() and\
+            self.options.memsafety_config_file:
             config_file = self.options.memsafety_config_file
 
         if config_file is None:
@@ -271,25 +274,7 @@ class SymbioticCC(object):
         prefix = self.options.instrumentation_files_path
 
         definitionsbc = None
-        if self.options.property.memsafety():
-            # default config file is 'config.json'
-            config = prefix + 'memsafety/' + config_file
-            config_dir = 'memsafety'
-        elif self.options.property.termination():
-            # default config file is 'config.json'
-            config = prefix + 'termination/' + config_file
-            config_dir = 'termination'
-        elif self.options.property.signedoverflow() and \
-             not self.options.overflow_with_clang:
-            config = prefix + 'int_overflows/' + config_file
-            config_dir = 'int_overflows'
-        elif self.options.property.memcleanup():
-            config = prefix + 'memsafety/' + config_file
-            config_dir = 'memsafety'
-        elif self.options.property.signedoverflow():
-            return
-        else:
-            raise SymbioticException('BUG: Unhandled property')
+        config = os.path.join(prefix, config_dir, config_file)
 
         if not os.path.isfile(config):
             raise SymbioticException("Not a valid config file: '{0}'".format(config))
@@ -300,7 +285,7 @@ class SymbioticCC(object):
         if os.path.isfile(precompiled_bc):
             definitionsbc = precompiled_bc
         else:
-            definitions = prefix + config_dir + '/{0}'.format(definitions)
+            definitions = os.path.join(prefix, config_dir, definitions)
             assert os.path.isfile(definitions)
 
         # module with defintions of instrumented functions

@@ -303,6 +303,8 @@ class SymbioticTool(KleeBase):
                 cmd.append('-exit-on-error-type=ReadOnly')
                 cmd.append('-exit-on-error-type=Free')
                 cmd.append('-exit-on-error-type=BadVectorAccess')
+            elif self._options.property.nullderef():
+                cmd.append('-exit-on-error-type=Ptr')
             elif self._options.property.memcleanup():
                 cmd.append('-exit-on-error-type=Leak')
             else:
@@ -401,6 +403,9 @@ class SymbioticTool(KleeBase):
                 elif f == result.RESULT_FALSE_MEMCLEANUP and self._options.property.memcleanup():
                     return f
                 elif f == result.RESULT_FALSE_TERMINATION and self._options.property.termination():
+                    return f
+                elif f == result.RESULT_FALSE_DEREF\
+                    and self._options.property.nullderef():
                     return f
 
             return "{0} ({1})".format(result.RESULT_UNKNOWN, " ".join(found))
