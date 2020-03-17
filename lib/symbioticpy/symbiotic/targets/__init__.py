@@ -12,6 +12,8 @@ from . divine import SymbioticTool as DivineTool
 from . ultimateautomizer import SymbioticTool as UltimateTool
 from . svcomp import SymbioticTool as SVCompTool
 from . slowbeast import SymbioticTool as SlowbeastTool
+from . predatorhp import SymbioticTool as PredatorHPTool
+from . predator import SymbioticTool as PredatorTool
 from . cc import CCTarget
 
 targets = {
@@ -31,6 +33,8 @@ targets = {
     'ultimate':           UltimateTool,
     'svcomp':             SVCompTool,
     'slowbeast':          SlowbeastTool,
+    'predatorhp':         PredatorHPTool,
+    'predator':         PredatorTool,
     'cc':                 CCTarget
 }
 
