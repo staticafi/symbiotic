@@ -112,16 +112,16 @@ class SetupSymbiotic:
         dbg('Symbiotic dir: {0}'.format(self.environment.symbiotic_dir))
 
         # setup the property (must be done before initializing the verifier)
+        # and then initialize the verifier
         try:
             self.opts.property = get_property(self.environment.symbiotic_dir,
                                               self.opts.propertystr)
             if self.opts.property is None:
                 err('Could not derive the right property')
-        except SymbioticException as e:
-            stre = str(e)
-            err(str(e))
 
-        tool = initialize_verifier(self.opts)
+            tool = initialize_verifier(self.opts)
+        except SymbioticException as e:
+            err(str(e))
 
         # set environment. That is set PATH and LD_LIBRARY_PATH and so on
         self.environment.set(tool, self.opts)
