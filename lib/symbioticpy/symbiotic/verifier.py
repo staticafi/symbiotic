@@ -73,7 +73,7 @@ class SymbioticVerifier(object):
 
         print_elapsed_time('INFO: Verification time', color='WHITE')
         res = self._tool.determine_result(returncode, 0,
-                                          watch.getLines(), False)
+                                          map(lambda x: x.decode('utf-8'), watch.getLines()), False)
         if res.lower().startswith('error'):
             for line in watch.getLines():
                 print_stderr(line.decode('utf-8'),
