@@ -51,7 +51,6 @@ class SymbioticOptions(object):
         self.final_output = None
         self.witness_output = '{0}/witness.graphml'.format(os.getcwd())
         self.testsuite_output = '{0}/test-suite'.format(os.getcwd())
-        self.witness_with_source_lines = False
         self.source_is_bc = False
         self.optlevel = ["before-O3", "after-O3"]
         self.slicer_pta = 'fi'
@@ -378,8 +377,6 @@ def parse_command_line():
                 # we should check also for writebility
                 err("'{0}' is not valid prefix for working directory".format(arg))
             options.working_dir_prefix = wdr
-        elif opt == '--witness-with-source-lines':
-            options.witness_with_source_lines = True
         elif opt == '--exit-on-error':
             options.exit_on_error = True
         elif opt == '--statistics':
