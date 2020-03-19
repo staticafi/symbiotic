@@ -475,7 +475,7 @@ where OPTS can be following:
                               --debug= to print basic messages.
     --report=STR              A comma-separated list of {normal, short, sv-comp}
                               that affects how symbiotic-verify reports the results.
-    --generate-ll             Generate also .ll files (for debugging)
+    --gen-ll                  Generate also .ll files (for debugging)
     --output=FILE             Store the final code (that is to be run by a tool) to FILE
     --witness=FILE            Store witness into FILE (default is witness.graphml)
     --cflags=flags

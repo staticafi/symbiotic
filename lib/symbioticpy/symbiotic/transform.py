@@ -166,12 +166,25 @@ class SymbioticCC(object):
     def cc_disable_optimizations(self):
         return ['-O0', '-disable-llvm-passes']
 
-    def _generate_ll(self):
+    def _save_ll(self):
+        """
+        This is _generate_ll() that is enabled
+        only when save_files is turned on (so that we do not
+        generate .ll redundantly)
+        """
+        if not self.options.save_files:
+            return
+        return self._generate_ll()
+
+    def _generate_ll(self, outf=None):
         if not self.options.generate_ll:
             return
+        cmd = ["llvm-dis", self.curfile]
+        if outf is not None:
+            cmd += ['-o', outf]
 
         try:
-            runcmd(["llvm-dis", self.curfile], CompileWatch(),
+            runcmd(cmd, CompileWatch(),
                     "Generating .ll file from '{0}' failed".format(self.curfile))
         except SymbioticException as e:
             dbg(str(e))
@@ -233,7 +246,7 @@ class SymbioticCC(object):
 
         runcmd(cmd, PrepareWatch(), 'Prepare phase failed')
         self.curfile = output
-        self._generate_ll()
+        self._save_ll()
 
     def _get_stats(self, prefix=''):
         if not self.options.stats:
@@ -334,7 +347,7 @@ class SymbioticCC(object):
         else:
             print_elapsed_time('INFO: Instrumentation time', color='WHITE')
             self.curfile = output
-            self._generate_ll()
+            self._save_ll()
 
         self._get_stats('After instrumentation ')
 
@@ -357,7 +370,7 @@ class SymbioticCC(object):
         runcmd(cmd, DbgWatch('compile'),
                'Failed linking llvm file with libraries')
         self.curfile = output
-        self._generate_ll()
+        self._save_ll()
 
     def _link_undefined(self, undefs):
         def _get_path(symbdir, llvmver, ty, tool, undef):
@@ -505,7 +518,7 @@ class SymbioticCC(object):
             self.options.noslice = True
         else:
             self.curfile = output
-            self._generate_ll()
+            self._save_ll()
 
     def optimize(self, passes, disable=[], load_sbt = False):
         if not passes or self.options.no_optimize:
@@ -531,7 +544,7 @@ class SymbioticCC(object):
         print_elapsed_time('INFO: Optimizations time', color='WHITE')
 
         self.curfile = output
-        self._generate_ll()
+        self._save_ll()
 
     def postprocess_llvm(self):
         """
@@ -548,7 +561,7 @@ class SymbioticCC(object):
         runcmd(cmd, DbgWatch('compile'),
                   'Failed preprocessing the llvm code')
         self.curfile = output
-        self._generate_ll()
+        self._save_ll()
 
     def _compile_sources(self, output='code.bc'):
         """
@@ -727,7 +740,7 @@ class SymbioticCC(object):
 
         # make the path absolute
         self.curfile = os.path.abspath(self.curfile)
-        self._generate_ll()
+        self._save_ll()
 
         self._get_stats('After compilation ')
 
@@ -869,8 +882,13 @@ class SymbioticCC(object):
             try:
                 dbg("Renaming the final file from '{0}' to '{1}'"\
                     .format(self.curfile, self.options.final_output))
-                move(self.curfile, self.options.final_output)
-                self.curfile = self.options.final_output
+                if self.options.generate_ll and\
+                    self.options.final_output.endswith('.ll'):
+                    self._generate_ll(self.options.final_output)
+                else:
+                    move(self.curfile, self.options.final_output)
+                    self.curfile = self.options.final_output
+                    self._generate_ll()
             except OSError as e:
                 msg = 'Cannot create {0}: {1}'.format(
                     self.options.final_output, str(e))
