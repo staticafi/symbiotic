@@ -243,16 +243,18 @@ class SymbioticTool(KleeBase):
         Compose the command line to execute for TEST-COMP
         """
 
+        opts = self._options
+
         cmd = [executable, '--optimize=false',
                '-use-forked-solver=0',
                '--use-call-paths=0', '--output-stats=0',
                '-istats-write-interval=60s',
                #'--output-istats=0',
-               '-output-dir={0}'.format(self._options.testsuite_output),
+               '-output-dir={0}'.format(opts.testsuite_output),
                '-write-testcases',
                '-max-memory=8000']
 
-        if self._options.property.errorcall():
+        if opts.property.errorcall():
             cmd.append('-exit-on-error-type=Assert')
             cmd.append('-dump-states-on-halt=0')
         else:
@@ -260,10 +262,10 @@ class SymbioticTool(KleeBase):
             cmd.append('-write-ktests=false')
             cmd.append('-max-time=840')
 
-        if not self._options.nowitness:
+        if not opts.nowitness:
             cmd.append('-write-witness')
 
-        if self._options.executable_witness:
+        if opts.executable_witness:
             cmd.append('-write-harness')
 
         cmd.append('-output-source=false')
@@ -275,7 +277,10 @@ class SymbioticTool(KleeBase):
         Compose the command line to execute from the name of the executable
         """
 
-        if self._options.test_comp:
+        opts = self._options
+        prop = opts.property
+
+        if opts.test_comp:
             return self._testcomp_cmdline(executable, options, tasks, propertyfile, rlimits)
 
         elif self.FullInstr:
@@ -289,31 +294,34 @@ class SymbioticTool(KleeBase):
                #'--output-istats=0',
                '-only-output-states-covering-new=1',
                '-use-forked-solver=0',
-               '-max-time={0}'.format(self._options.timeout),
+               '-max-time={0}'.format(opts.timeout),
                '-external-calls=pure', '-max-memory=8000']
-        if self._options.property.memsafety():
-            cmd.append('-check-leaks')
-        elif self._options.property.memcleanup():
+        if prop.memsafety():
+            if opts.sv_comp:
+                cmd.append('-check-leaks')
+            else: # if not in SV-COMP, consider any unfreed memory as a leak
+                cmd.append('-check-memcleanup')
+        elif prop.memcleanup():
             cmd.append('-check-memcleanup')
 
-        if self._options.exit_on_error:
-            if self._options.property.memsafety():
+        if opts.exit_on_error:
+            if prop.memsafety():
                 cmd.append('-exit-on-error-type=Ptr')
                 cmd.append('-exit-on-error-type=Leak')
                 cmd.append('-exit-on-error-type=ReadOnly')
                 cmd.append('-exit-on-error-type=Free')
                 cmd.append('-exit-on-error-type=BadVectorAccess')
-            elif self._options.property.nullderef():
+            elif prop.nullderef():
                 cmd.append('-exit-on-error-type=Ptr')
-            elif self._options.property.memcleanup():
+            elif prop.memcleanup():
                 cmd.append('-exit-on-error-type=Leak')
             else:
                 cmd.append('-exit-on-error-type=Assert')
 
-        if not self._options.nowitness:
+        if not opts.nowitness:
             cmd.append('-write-witness')
 
-        if self._options.executable_witness:
+        if opts.executable_witness:
             cmd.append('-write-harness')
 
         # we have the disassembly already (it may be a bit different,
@@ -323,13 +331,15 @@ class SymbioticTool(KleeBase):
         return cmd + options + tasks
 
     def _parse_klee_output_line(self, line):
+        opts = self._options
+
         for (key, pattern) in self._patterns:
             if pattern.match(line):
                 # return True so that we know we should terminate
                 if key.startswith('ASSERTIONFAILED'):
-                    if self._options.property.signedoverflow():
+                    if opts.property.signedoverflow():
                         return result.RESULT_FALSE_OVERFLOW
-                    elif self._options.property.termination():
+                    elif opts.property.termination():
                         return result.RESULT_FALSE_TERMINATION
                     else:
                         return result.RESULT_FALSE_REACH
@@ -347,11 +357,14 @@ class SymbioticTool(KleeBase):
         return None
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
+        opts = self._options
+        prop = opts.property
+
         ##
         # TEST-COMP
         # #
-        if self._options.test_comp:
-            if self._options.property.errorcall():
+        if opts.test_comp:
+            if prop.errorcall():
                 found = []
                 for line in output:
                     fnd = self._parse_klee_output_line(line.decode('ascii'))
@@ -391,21 +404,29 @@ class SymbioticTool(KleeBase):
             if 'EINITVALS' in found: # EINITVALS would break the validity of the found error
                 return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
 
+            FALSE_REACH = result.RESULT_FALSE_REACH
+            FALSE_OVERFLOW = result.RESULT_FALSE_OVERFLOW
+            FALSE_FREE = result.RESULT_FALSE_FREE
+            FALSE_DEREF = result.RESULT_FALSE_DEREF
+            FALSE_MEMTRACK = result.RESULT_FALSE_MEMTRACK
+            FALSE_MEMCLEANUP = result.RESULT_FALSE_MEMCLEANUP
+            FALSE_TERMINATION = result.RESULT_FALSE_TERMINATION
+
             for f in found:
                 # we found error that we sought for?
-                if f == result.RESULT_FALSE_REACH and self._options.property.assertions():
+                if f == FALSE_REACH and prop.assertions():
                     return f
-                elif f == result.RESULT_FALSE_OVERFLOW and self._options.property.signedoverflow():
+                elif f == FALSE_OVERFLOW and prop.signedoverflow():
                     return f
-                elif f in [result.RESULT_FALSE_FREE, result.RESULT_FALSE_DEREF, result.RESULT_FALSE_MEMTRACK]\
-                    and self._options.property.memsafety():
+                elif f in (FALSE_FREE, FALSE_DEREF, FALSE_MEMTRACK)\
+                    and prop.memsafety():
                     return f
-                elif f == result.RESULT_FALSE_MEMCLEANUP and self._options.property.memcleanup():
+                elif f == FALSE_MEMCLEANUP and\
+                    (prop.memcleanup() or prop.memsafety() and not opts.sv_comp):
                     return f
-                elif f == result.RESULT_FALSE_TERMINATION and self._options.property.termination():
+                elif f == FALSE_TERMINATION and prop.termination():
                     return f
-                elif f == result.RESULT_FALSE_DEREF\
-                    and self._options.property.nullderef():
+                elif f == FALSE_DEREF and prop.nullderef():
                     return f
 
             return "{0} ({1})".format(result.RESULT_UNKNOWN, " ".join(found))
