@@ -36,6 +36,10 @@ from symbiotic.options import usage_msg
 from symbiotic.runtime import SetupSymbiotic
 from symbiotic.property import get_property
 
+def generate_c(inpt, output):
+    from symbiotic.utils.process import runcmd
+    runcmd(['llvm2c', '-o', output, inpt])
+
 if __name__ == "__main__":
     # store time when we have started, so that we can
     # measure how long Symbiotic ran
@@ -57,15 +61,20 @@ if __name__ == "__main__":
     # get absolute paths to sources
     sources = opts.sources = list(map(os.path.abspath, sources))
 
+    final_output = None
     if opts.final_output is None:
         if opts.generate_c:
-            opts.final_output = 'symbiotic-output.c'
+            # for C output, we do it manually here
+            final_output = os.path.abspath('symbiotic-output.c')
         else:
-            opts.final_output = 'symbiotic-output.bc'
+            final_output = os.path.abspath('symbiotic-output.bc')
+            opts.final_output = final_output # let SymbioticCC rename the file
 
         print_stderr("No output name given, using '{0}'".format(opts.final_output))
-
-        opts.final_output = os.path.abspath(opts.final_output)
+    elif opts.generate_c:
+        final_output = os.path.abspath(opts.final_output)
+        opts.final_output = None # make CC not to rename the file as we want to
+                                 # do it manually here
 
     # setup the runtime environment
     setup = SetupSymbiotic(opts)
@@ -89,6 +98,9 @@ if __name__ == "__main__":
         try:
             cc = SymbioticCC(sources, tool, opts, environment)
             cc.run()
+            if opts.generate_c:
+                generate_c(cc.curfile, final_output)
+
         except SymbioticException as e:
             sys.stdout.flush()
             sys.stderr.flush()
