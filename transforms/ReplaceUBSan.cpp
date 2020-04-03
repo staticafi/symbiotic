@@ -21,6 +21,7 @@
 #else
   #include "llvm/Support/InstIterator.h"
 #endif
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include <llvm/IR/DebugInfoMetadata.h>
