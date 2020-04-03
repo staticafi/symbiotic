@@ -1,12 +1,6 @@
 cmake_minimum_required(VERSION 3.3)
 project(sbt-transforms)
 
-set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED on)
-# explicitly add -std=c++11, some cmake versions
-# fail adding it even with CMAKE_CXX_STANDARD
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -fno-rtti")
-
 find_package(LLVM REQUIRED CONFIG)
 
 list(APPEND CMAKE_MODULE_PATH "${LLVM_DIR}")
@@ -19,6 +13,21 @@ include(HandleLLVMOptions)
 
 include(LLVMConfig)
 include(AddLLVM)
+
+# explicitly add -std=c++11 (c++14), some cmake versions
+# fail adding it even with CMAKE_CXX_STANDARD,
+# LLVM 10 and newer require at least C++14 standard
+if (${LLVM_PACKAGE_VERSION} VERSION_GREATER_EQUAL "10.0")
+  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+else()
+  # otherwise we need C++11 standard
+  set(CMAKE_CXX_STANDARD 11)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+endif()
+
+set(CMAKE_CXX_STANDARD_REQUIRED on)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-unused-parameter -Wno-unused-variable -fno-rtti")
 
 if (NOT ${LLVM_PACKAGE_VERSION} VERSION_GREATER "3.4")
   llvm_replace_compiler_option(CMAKE_CXX_FLAGS "-frtti" "-fno-rtti")
