@@ -247,8 +247,9 @@ elif [ $LLVM_MAJOR_VERSION -ge 3 -a $LLVM_MINOR_VERSION -ge 9 ]; then
 fi
 
 LLVM_BIN_DIR=$("$LLVM_CONFIG" --bindir)
+LLVM_LIB_DIR=$("$LLVM_CONFIG" --libdir)
 
-mkdir -p $LLVM_PREFIX/bin
+mkdir -p "$LLVM_PREFIX/bin"
 for T in $LLVM_TOOLS; do
 	TOOL="$LLVM_BIN_DIR/$T"
 	if [ ! -x "${TOOL}" ]; then
@@ -268,8 +269,12 @@ for T in $LLVM_TOOLS; do
 	fi
 done
 
-mkdir -p $LLVM_PREFIX/lib
-ln -sf $(dirname $(which clang))/../lib/clang/ $LLVM_PREFIX/lib/
+mkdir -p "$LLVM_PREFIX/lib"
+CLANG_LIB_DIR="$LLVM_LIB_DIR/clang"
+if [ ! -d "$CLANG_LIB_DIR" ]; then
+	exitmsg "Invalid path to clang libraries: $CLANG_LIB_DIR"
+fi
+ln -sf "$CLANG_LIB_DIR" "$LLVM_PREFIX/lib/"
 
 ######################################################################
 #   dg
