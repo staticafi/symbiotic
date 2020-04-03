@@ -19,7 +19,7 @@
 using namespace llvm;
 
 namespace {
-  class ClassifyInstr : public BasicBlockPass {
+  class ClassifyInstr : public FunctionPass {
       bool stack_array{false};
       bool stack_var_array{false};
       bool has_malloc{false}, has_calloc{false},
@@ -73,16 +73,18 @@ namespace {
     public:
       static char ID;
 
-      ClassifyInstr() : BasicBlockPass(ID) {}
+      ClassifyInstr() : FunctionPass(ID) {}
 
-      bool runOnBasicBlock(BasicBlock &B) override {
-        for (auto& I : B) {
+      bool runOnFunction(Function &F) override {
+        for (auto& B : F) {
+          for (auto& I : B) {
             classifyInstruction(I);
+          }
         }
         return false;
       }
 
-      bool doFinalization(Module&) {
+      bool doFinalization(Module&) override {
         if (stack_array)
             llvm::errs() << "array on stack\n";
         if (stack_var_array)
