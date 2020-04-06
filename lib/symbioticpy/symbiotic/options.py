@@ -413,7 +413,7 @@ Usage: symbiotic OPTS sources
 
 where OPTS can be following:
 
-    --bc                      Given file is a bytecode
+    --bc                      Given files are LLVM bitcode (force this assumption)
     --32                      Use 32-bit environment
     --timeout=t               Set timeout to t seconds
     --slicer-timeout=t        Set timeout for slicer (if slicer fails/timeouts,
@@ -506,6 +506,10 @@ where OPTS can be following:
                               into the program.
     --require-slicer          Abort if slicing fails/timeouts
 
-    One (and only one) of the sources must contain 'main' function
+    The sources can be LLVM bitcode, C code, or both mixed together.
+    C files are compiled into LLVM bitcode and all the input files are linked
+    together. Therefore, the input files must all be linkable together
+    (no functions re-definitions, etc.). Also, exactly one of the input files
+    must contain the 'main' function.
 """
 

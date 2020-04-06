@@ -579,21 +579,30 @@ class SymbioticCC(object):
                 opts.append('-Xclang')
                 opts.append('-fsanitize-address-use-after-scope')
             else:
-                print_stdout('Clang does not support lifetime markers, scopes are not instrumented', color="BROWN")
+                print_stdout('Clang does not support lifetime markers, '
+                             'scopes are not instrumented', color="BROWN")
 
         if hasattr(self._tool, 'compilation_options'):
             opts += self._tool.compilation_options()
 
         opts += self.cc_disable_optimizations()
 
-
         llvmsrc = []
+        options = self.options
         for source in self.sources:
-            llvms = self._compile_to_llvm(source, opts=opts)
+            if options.source_is_bc:
+                dbg("Treating '{0}' as LLVM bitcode (required)".format(source))
+                llvms = source
+            elif source.endswith('.bc') or source.endswith('.ll'):
+                dbg("Treating '{0}' as LLVM bitcode (according to suffix)".format(source))
+                llvms = source
+            else:
+                llvms = self._compile_to_llvm(source, opts=opts)
             llvmsrc.append(llvms)
 
         # link all compiled sources to a one bitecode
         # the result is stored to self.curfile
+        dbg("Linking all input files into one file")
         self.link(llvmsrc, output)
 
     def perform_slicing(self):
@@ -731,12 +740,8 @@ class SymbioticCC(object):
         #  - compile the code into LLVM bitcode
         #################### #################### ###################
 
-        # compile all sources if the file is not given
-        # as a .bc file
-        if self.options.source_is_bc:
-            self.curfile = self.sources[0]
-        else:
-            self._compile_sources()
+        # compile all given sources
+        self._compile_sources()
 
         # make the path absolute
         self.curfile = os.path.abspath(self.curfile)
