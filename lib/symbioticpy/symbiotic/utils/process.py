@@ -43,9 +43,8 @@ class ProcessRunner(object):
             msg = ' '.join(cmd) + '\n'
             raise SymbioticException(msg + str(e))
 
-        while True:
-            line = ProcessRunner.current_process.stdout.readline()
-            if line == b'' and ProcessRunner.current_process.poll() is not None:
+        for line in ProcessRunner.current_process.stdout:
+            if line == b'':
                 break
 
             watch.putLine(line)
