@@ -303,6 +303,9 @@ class SymbioticTool(KleeBase):
                 cmd.append('-check-memcleanup')
         elif prop.memcleanup():
             cmd.append('-check-memcleanup')
+        elif prop.unreachcall():
+            assert len(prop.getcalls()) == 1, "Multiple error functions unsupported yet"
+            cmd.append('-error-fn={0}'.format(prop.getcalls()[0]))
 
         if opts.exit_on_error:
             if prop.memsafety():
@@ -414,7 +417,7 @@ class SymbioticTool(KleeBase):
 
             for f in found:
                 # we found error that we sought for?
-                if f == FALSE_REACH and prop.assertions():
+                if f == FALSE_REACH and prop.unreachcall():
                     return f
                 elif f == FALSE_OVERFLOW and prop.signedoverflow():
                     return f
