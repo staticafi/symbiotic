@@ -472,16 +472,16 @@ class SymbioticCC(object):
         if hasattr(self._tool, 'slicer_options'):
             crit, opts = self._tool.slicer_options()
         else:
-            crit, opts = '__assert_fail,__VERIFIER_error', []
+            crit, opts = ['__assert_fail,__VERIFIER_error'], []
 
         output = '{0}.sliced'.format(self.curfile[:self.curfile.rfind('.')])
 
 
         if self.options.slicer_timeout > 0:
             cmd = ['timeout', str(self.options.slicer_timeout)] +\
-                   self.options.slicer_cmd + ['-c', crit] + opts
+                   self.options.slicer_cmd + ['-c', ",".join(crit)] + opts
         else:
-            cmd = self.options.slicer_cmd + ['-c', crit] + opts
+            cmd = self.options.slicer_cmd + ['-c', ",".join(crit)] + opts
 
         if self.options.slicer_pta in ['fi', 'fs']:
             cmd.append('-pta')

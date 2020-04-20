@@ -129,31 +129,37 @@ class SymbioticBaseTool(object):
 
         if self._options.full_instrumentation:
             # all is reachability
-            return (self._options.slicing_criterion,[])
+            return (['__VERIFIER_error,__assert_fail'],[])
 
-        if self._options.property.memsafety():
+        prop = self._options.property
+        if prop.memsafety():
             # default config file is 'config.json'
             # slice with respect to the memory handling operations
-            return ('__INSTR_mark_pointer,__INSTR_mark_free,__INSTR_mark_allocation,__INSTR_mark_exit',
+            return (['__INSTR_mark_pointer','__INSTR_mark_free',
+                    '__INSTR_mark_allocation','__INSTR_mark_exit'],
                     ['-memsafety'])
 
-        elif self._options.property.memcleanup():
+        elif prop.memcleanup():
             # default config file is 'config.json'
             # slice with respect to the memory handling operations
             # (exit causes leaks)
-            return ('__INSTR_mark_free,__INSTR_mark_allocation,__INSTR_mark_exit',
+            return (['__INSTR_mark_free','__INSTR_mark_allocation','__INSTR_mark_exit'],
                     ['-memsafety'])
 
-        if self._options.property.termination():
+        if prop.termination():
             # have explicitly also __assert_fail, because otherwise it is going
             # to be sliced away from __INSTR_fail
-            return ('__INSTR_fail,__assert_fail,__VERIFIER_silent_exit,__INSTR_check_assume',
+            return (['__INSTR_fail','__assert_fail',
+                     '__VERIFIER_silent_exit', '__INSTR_check_assume'],
                     ['-cd-alg=ntscd'])
 
-        if self._options.property.nullderef():
+        if prop.nullderef():
             # default config file is 'config.json'
             # slice with respect to the memory handling operations
-            return ('__INSTR_mark_pointer', ['-criteria-are-next-instr'])
+            return (['__INSTR_mark_pointer'], ['-criteria-are-next-instr'])
 
-        return (self._options.slicing_criterion,[])
+        if prop.unreachcall():
+            return (prop.getcalls(), [])
+
+        return ([],[])
 

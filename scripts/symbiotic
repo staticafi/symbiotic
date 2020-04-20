@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
         assert len(sources) == 1
         create_testcomp_metadata(opts.testsuite_output, sources[0],
-                                 opts.property.getLTL(), opts.is32bit)
+                                 opts.property.ltl(), opts.is32bit)
 
     symbiotic = None
     try:
