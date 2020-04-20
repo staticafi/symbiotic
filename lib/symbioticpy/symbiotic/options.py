@@ -54,7 +54,6 @@ class SymbioticOptions(object):
         self.source_is_bc = False
         self.optlevel = ["before-O3", "after-O3"]
         self.slicer_pta = 'fi'
-        self.slicing_criterion = '__assert_fail,__VERIFIER_error'
         self.memsafety_config_file = None
         self.overflow_config_file = 'config.json'
         self.repeat_slicing = 1
@@ -206,7 +205,7 @@ def parse_command_line():
                                     'instrumentation-timeout=', 'version', 'help',
                                     'no-verification', 'output=', 'witness=', 'bc',
                                     'optimize=', 'malloc-never-fails',
-                                    'pta=', 'no-link=', 'slicing-criterion=',
+                                    'pta=', 'no-link=',
                                     'cflags=', 'cppflags=', 'link=', 'executable-witness',
                                     'verifier=','target=', 'require-slicer',
                                     'no-link-undefined', 'repeat-slicing=',
@@ -314,9 +313,6 @@ def parse_command_line():
                 err('Points-to analysis can be one of: fs, fi, inv')
 
             dbg('Points-to: {0}'.format(arg))
-        elif opt == '--slicing-criterion':
-            options.slicing_criterion = arg
-            dbg('Slicing criterion: {0}'.format(arg))
         elif opt == '--repeat-slicing':
             try:
                 options.repeat_slicing = int(arg)
@@ -438,8 +434,6 @@ where OPTS can be following:
                               by providing a string when-opt-what, e.g. before-opt-iconstprop
     --no-optimize             Don't optimize the code (same as --optimize=none)
     --libc=klee               Link klee-libc.bc to the module
-    --slicing-criterion=C     Slice to slicing criterion (function call-sites) 'C'
-                              (default is '__assert_fail')
     --repeat-slicing=N        Repeat slicing N times
     --prp=property            Specify property that should hold. It is either LTL formula
                               as specivied by SV-COMP, or one of following shortcuts:

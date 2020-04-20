@@ -216,7 +216,7 @@ def generate_graphml(path, source, is_correctness_wit, opts, saveto):
         saveto = '{0}.graphml'.format(basename(path))
         saveto = abspath(saveto)
 
-    gen = GraphMLWriter(source, opts.property.getLTL(),
+    gen = GraphMLWriter(source, opts.property.ltl(),
                         opts.is32bit, is_correctness_wit)
     if not is_correctness_wit:
         gen.parseError(path, opts.property.termination())
