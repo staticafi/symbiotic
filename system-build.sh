@@ -246,21 +246,22 @@ elif [ $LLVM_MAJOR_VERSION -ge 3 -a $LLVM_MINOR_VERSION -ge 9 ]; then
 	LLVM_CMAKE_CONFIG_DIR=lib/cmake/llvm
 fi
 
+LLVM_BIN_DIR=$("$LLVM_CONFIG" --bindir)
+
 mkdir -p $LLVM_PREFIX/bin
 for T in $LLVM_TOOLS; do
-	TOOL=$(which $T || true)
-
-	# always avoid making copy of a ccache executable (symlink's target)
-	if [[ "$TOOL" =~ "ccache" ]]; then
-		TOOL="/usr/bin/$T"
+	TOOL="$LLVM_BIN_DIR/$T"
+	if [ ! -x "${TOOL}" ]; then
+		exitmsg "Cannot find working $T binary".
 	fi
 
-	if [ -z "${TOOL}" -o ! -x "${TOOL}" ]; then
-		exitmsg "Cannot find working $T binary"
+	TOOL_VERSION=$("$TOOL" --version)
+	if [[ ! "$TOOL_VERSION" =~ "$LLVM_VERSION" ]]; then
+		exitmsg "$T has wrong version. Expected: $LLVM_VERSION Found: $TOOL_VERSION"
 	fi
 
 	# copy the binaries only with full-archive option
-	if [ "$FULL_ARCHIVE" = "no" ] || readlink -- "${TOOL}" > /dev/null; then
+	if [ "$FULL_ARCHIVE" = "no" ] ; then
 		ln -fs "${TOOL}" "${LLVM_PREFIX}/bin"
 	else
 		cp -rf "${TOOL}" "${LLVM_PREFIX}/bin"
