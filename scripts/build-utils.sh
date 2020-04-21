@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -x
 
@@ -55,6 +55,20 @@ build()
 {
 	make $OPTS CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $@ || exit 1
 	return 0
+}
+
+check_llvm_tool()
+{
+	TOOL_PATH="$1"
+	TOOL_NAME="$(basename "$1")"
+	if [ ! -x "$TOOL_PATH" ]; then
+		exitmsg "Cannot find working $TOOL_NAME binary".
+	fi
+
+	TOOL_VERSION=$("$TOOL_PATH" --version)
+	if [[ ! "$TOOL_VERSION" =~ "$LLVM_VERSION" ]]; then
+		exitmsg "$TOOL_NAME has wrong version. Expected: $LLVM_VERSION Found: $TOOL_VERSION"
+	fi
 }
 
 git_clone_or_pull()
