@@ -304,8 +304,12 @@ class SymbioticTool(KleeBase):
         elif prop.memcleanup():
             cmd.append('-check-memcleanup')
         elif prop.unreachcall():
-            assert len(prop.getcalls()) == 1, "Multiple error functions unsupported yet"
-            cmd.append('-error-fn={0}'.format(prop.getcalls()[0]))
+            # filter out the non-standard error calls,
+            # because we support only one such call atm.
+            calls = [c for x in prop.getcalls() if x not in ['__VERIFIER_error', '__assert_fail']]
+            if calls:
+                assert len(calls) == 1, "Multiple error functions unsupported yet"
+                cmd.append('-error-fn={0}'.format(calls[0]))
 
         if opts.exit_on_error:
             if prop.memsafety():
