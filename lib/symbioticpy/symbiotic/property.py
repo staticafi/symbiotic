@@ -132,7 +132,7 @@ class PropertyUnreachCall(Property):
 class PropertyAssertions(PropertyUnreachCall):
     def __init__(self, prpfile = None):
         super().__init__(prpfile)
-        self.calls = ['__assert_fail, __VERIFIER_error']
+        self.calls = ['__assert_fail', '__VERIFIER_error']
 
     def assertions(self):
         return True

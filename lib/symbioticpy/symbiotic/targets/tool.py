@@ -129,7 +129,7 @@ class SymbioticBaseTool(object):
 
         if self._options.full_instrumentation:
             # all is reachability
-            return (['__VERIFIER_error,__assert_fail'],[])
+            return (['__VERIFIER_error','__assert_fail'],[])
 
         prop = self._options.property
         if prop.memsafety():
