@@ -59,12 +59,18 @@ class Property:
         """ Is the property described by a generic LTL formula(e)? """
         return self._ltl
 
+    def help(self):
+        return "unspecified property"
+
 class PropertyNullDeref(Property):
     def __init__(self, prpfile = None):
         Property.__init__(self, prpfile)
 
     def nullderef(self):
         return True
+
+    def help(self):
+        return "null pointer dereferences"
 
 class PropertyMemSafety(Property):
     def __init__(self, prpfile = None):
@@ -73,12 +79,18 @@ class PropertyMemSafety(Property):
     def memsafety(self):
         return True
 
+    def help(self):
+        return "invalid dereferences, invalid free, memory leaks, etc."
+
 class PropertyMemCleanup(Property):
     def __init__(self, prpfile = None):
         Property.__init__(self, prpfile)
 
     def memcleanup(self):
         return True
+
+    def help(self):
+        return "unfreed memory"
 
 
 class PropertyNoOverflow(Property):
@@ -88,6 +100,9 @@ class PropertyNoOverflow(Property):
     def signedoverflow(self):
         return True
 
+    def help(self):
+        return "signed integer overflow"
+
 
 class PropertyDefBehavior(Property):
     def __init__(self, prpfile = None):
@@ -95,6 +110,9 @@ class PropertyDefBehavior(Property):
 
     def undefinedness(self):
         return True
+
+    def help(self):
+        return "undefined behavior"
 
 
 class PropertyUnreachCall(Property):
@@ -107,6 +125,9 @@ class PropertyUnreachCall(Property):
 
     def getcalls(self):
         return self.calls
+
+    def help(self):
+        return "reachability of calls to {0}".format(",".join(self.calls))
 
 class PropertyAssertions(PropertyUnreachCall):
     def __init__(self, prpfile = None):
@@ -123,12 +144,8 @@ class PropertyTermination(Property):
     def termination(self):
         return True
 
-class PropertyErrorCall(Property):
-    def __init__(self, prpfile = None):
-        Property.__init__(self, prpfile)
-
-    def errorcall(self):
-        return True
+    def help(self):
+        return "non-terminating loops and recursion"
 
 class PropertyCoverage(Property):
     def __init__(self, prpfile = None):
@@ -146,27 +163,46 @@ class PropertyCoverage(Property):
     def coverConditions(self):
         return False
 
-class PropertyCoverBranches(Property):
+class PropertyCoverBranches(PropertyCoverage):
     def __init__(self, prpfile = None):
         Property.__init__(self, prpfile)
 
     def coverBranches(self):
         return True
 
-class PropertyCoverConditions(Property):
+    def help(self):
+        return "generating tests to maximize the coverage of branches"
+
+class PropertyCoverConditions(PropertyCoverage):
     def __init__(self, prpfile = None):
         Property.__init__(self, prpfile)
 
     def coverConditions(self):
         return True
 
-class PropertyCoverStmts(Property):
+    def help(self):
+        return "generating tests to maximize the coverage of conditions"
+
+class PropertyCoverStmts(PropertyCoverage):
     def __init__(self, prpfile = None):
         Property.__init__(self, prpfile)
 
     def coverStmts(self):
         return True
 
+    def help(self):
+        return "generating tests to maximize the coverage of statements"
+
+# FIXME: remove this in favor of UnreachCall
+class PropertyErrorCall(PropertyCoverage):
+    def __init__(self, prpfile = None):
+        Property.__init__(self, prpfile)
+
+    def errorcall(self):
+        return True
+
+    def help(self):
+        return "generating tests that cover calls of __VERIFIER_error"
 
 supported_ltl_properties = {
     'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )'         : PropertyUnreachCall,
@@ -184,6 +220,8 @@ supported_ltl_properties = {
 }
 
 supported_properties = {
+    'assert'                                                   : PropertyAssertions,
+    'assertions'                                               : PropertyAssertions,
     'valid-deref'                                              : PropertyMemSafety,
     'valid-free'                                               : PropertyMemSafety,
     'valid-memtrack'                                           : PropertyMemSafety,
@@ -315,7 +353,7 @@ def _assign_default_prpfile(p, symbiotic_dir):
         elif p.errorcall():
             p._prpfile = join(prpfile, 'coverage-error-call.prp')
         else:
-            raise SymbioticException("unhandled property: {0}".format(p))
+            raise SymbioticException("unhandled covereage property: {0}".format(p))
     else:
         raise SymbioticException("unhandled property: {0}".format(p))
 
@@ -356,6 +394,5 @@ def get_property(symbiotic_dir, prp):
 
     # FOR NOW squeeze all memsafety properties into one
     properties = _merge_memsafety_prop(set(properties))
-    print(properties)
     assert len(properties) == 1, "Multiple properties unsupported at this moment"
     return properties[0]

@@ -122,6 +122,8 @@ if __name__ == "__main__":
         create_testcomp_metadata(opts.testsuite_output, sources[0],
                                  opts.property.ltl(), opts.is32bit)
 
+
+    print_stdout("INFO: Looking for {0}".format(opts.property.help()), color="BLUE")
     symbiotic = None
     try:
         # let the show begin!
