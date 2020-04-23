@@ -2,12 +2,11 @@
 
 set -e
 
-TMPPACKAGES="curl wget rsync make cmake unzip lib32-glibc xz python"
 PACKAGES=""
 
-for PACKAGE in $TMPPACKAGES; do
-	if ! pacman -Qq | grep -q $PACKAGE; then
-		PACKAGES="$PACKAGES $PACKAGE"
+for PKG in curl wget rsync make cmake unzip lib32-glibc xz python; do
+	if ! pacman -Qq | grep -q $PKG; then
+		PACKAGES="$PACKAGES $PKG"
 	fi
 done
 
@@ -57,4 +56,4 @@ if [ "$INSTALL_ZLIB" = "y" ]; then
 	PACKAGES="$PACKAGES zlib"
 fi
 
-pacman -S $PACKAGES
+test ! -z "$PACKAGES" && pacman -S $PACKAGES
