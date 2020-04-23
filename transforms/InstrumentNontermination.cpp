@@ -4,6 +4,7 @@
 // License. See LICENSE.TXT for details.
 
 #include <vector>
+#include <set>
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/BasicBlock.h"
@@ -269,9 +270,13 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
       auto *oldVal = new LoadInst(it.second);
       auto *cmp = new ICmpInst(ICmpInst::ICMP_EQ, newVal, oldVal);
 
+#if LLVM_VERSION_MAJOR > 7
       auto md = term->getPrevNonDebugInstruction();
       if (!md || !md->hasMetadata())
           md = term;
+#else
+      auto md = term;
+#endif
       CloneMetadata(md, newVal);
       CloneMetadata(md, oldVal);
       CloneMetadata(md, cmp);
