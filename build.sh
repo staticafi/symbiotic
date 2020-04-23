@@ -249,6 +249,11 @@ check()
 		MISSING="curl"
 	fi
 
+	if ! which true ; then
+		echo "Need 'which' command."
+		MISSING="which"
+	fi
+
 	if ! patch --version &>/dev/null; then
 		echo "Need 'patch' utility"
 		MISSING="patch $MISSING"

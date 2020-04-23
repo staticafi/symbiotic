@@ -167,6 +167,11 @@ check()
 		MISSING="curl"
 	fi
 
+	if ! which true ; then
+		echo "Need 'which' command."
+		MISSING="which"
+	fi
+
 	if [ "$BUILD_KLEE" = "yes" ]; then
 		if ! which unzip &>/dev/null; then
 			echo "Need 'unzip' utility"
