@@ -62,39 +62,36 @@ if (BUILD_SHARED_LIBS)
 	set(LLVM_LINK_COMPONENTS analysis core support)
 endif()
 
-set(CPPFILES "CloneMetadata.cpp"
-	     "CheckModule.cpp"
-	     "RemoveReadOnlyAttr.cpp"
-	     "RemoveErrorCalls.cpp"
-	     "FindExits.cpp"
-	     "RenameVerifierFuns.cpp"
-	     "MakeNondet.cpp"
-	     "InitializeUninitialized.cpp"
-	     "InternalizeGlobals.cpp"
-	     "RemoveInfiniteLoops.cpp"
-	     "BreakInfiniteLoops.cpp"
-	     "BreakCritLoops.cpp"
-	     "DeleteUndefined.cpp"
-	     "ReplaceUBSan.cpp"
-	     "ReplaceAsserts.cpp"
-	     "InstrumentAlloc.cpp"
-	     "CountInstr.cpp"
-	     "MarkVolatile.cpp"
-	     "DummyMarker.cpp"
-	     "ReplaceLifetimeMarkers.cpp"
-	     "ReplaceVerifierAtomic.cpp"
-	     "Unrolling.cpp"
-	     "InstrumentNontermination.cpp"
-	     "ClassifyLoops.cpp"
-	     "ClassifyInstructions.cpp"
-	     "Prepare.cpp"
-	     "PrepareOverflows.cpp")
+add_library(LLVMsbt MODULE "BreakCritLoops.cpp"
+                           "BreakInfiniteLoops.cpp"
+                           "CheckModule.cpp"
+                           "ClassifyInstructions.cpp"
+                           "ClassifyLoops.cpp"
+                           "CloneMetadata.cpp"
+                           "CountInstr.cpp"
+                           "DeleteUndefined.cpp"
+                           "DummyMarker.cpp"
+                           "FindExits.cpp"
+                           "InitializeUninitialized.cpp"
+                           "InstrumentAlloc.cpp"
+                           "InstrumentNontermination.cpp"
+                           "InternalizeGlobals.cpp"
+                           "MakeNondet.cpp"
+                           "MarkVolatile.cpp"
+                           "Prepare.cpp"
+                           "PrepareOverflows.cpp"
+                           "RemoveErrorCalls.cpp"
+                           "RemoveInfiniteLoops.cpp"
+                           "RemoveReadOnlyAttr.cpp"
+                           "RenameVerifierFuns.cpp"
+                           "ReplaceAsserts.cpp"
+                           "ReplaceLifetimeMarkers.cpp"
+                           "ReplaceUBSan.cpp"
+                           "ReplaceVerifierAtomic.cpp"
+                           "Unrolling.cpp")
 
-if (${LLVM_PACKAGE_VERSION} VERSION_LESS "8")
-	add_llvm_loadable_module(LLVMsbt ${CPPFILES})
-else()
-	add_llvm_library(LLVMsbt MODULE ${CPPFILES})
-endif()
+# remove lib prefix for compatibility with older releases
+set_target_properties(LLVMsbt PROPERTIES PREFIX "")
 
 install(TARGETS LLVMsbt
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
