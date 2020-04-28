@@ -13,7 +13,6 @@ if (${LLVM_PACKAGE_VERSION} VERSION_LESS_EQUAL "3.7")
   include(HandleLLVMOptions)
 endif()
 
-include(LLVMConfig)
 include(AddLLVM)
 
 # explicitly add -std=c++11 (c++14), some cmake versions
@@ -35,10 +34,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wno-unused-para
 if (NOT ${LLVM_PACKAGE_VERSION} VERSION_GREATER "3.4")
   llvm_replace_compiler_option(CMAKE_CXX_FLAGS "-frtti" "-fno-rtti")
 endif()
-
-set(INSTALL_BIN_DIR ${CMAKE_INSTALL_PREFIX} CACHE PATH "Installation directory for executables")
-set(INSTALL_INC_DIR include CACHE PATH "Installation directory for headers")
-set(INSTALL_DATA_DIR ${CMAKE_INSTALL_PREFIX} CACHE PATH "Installation directory for data files")
 
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(${LLVM_INCLUDE_DIRS})
