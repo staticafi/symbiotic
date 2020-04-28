@@ -59,7 +59,7 @@ message(STATUS "CMAKE_INSTALL_INCLUDEDIR: \"${CMAKE_INSTALL_INCLUDEDIR}\"")
 
 # We need all the symbols with dynamic libs. With static libs, we get errors.
 if (BUILD_SHARED_LIBS)
-	set(LLVM_LINK_COMPONENTS analysis core support)
+  set(LLVM_LINK_COMPONENTS analysis core support)
 endif()
 
 add_library(LLVMsbt MODULE "BreakCritLoops.cpp"
@@ -94,4 +94,4 @@ add_library(LLVMsbt MODULE "BreakCritLoops.cpp"
 set_target_properties(LLVMsbt PROPERTIES PREFIX "")
 
 install(TARGETS LLVMsbt
-	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
