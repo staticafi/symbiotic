@@ -345,6 +345,9 @@ def parse_command_line():
             options.witness_output = os.path.expanduser(arg)
             options.witness_output = os.path.abspath(options.witness_output)
             dbg('Witness will be stored to {0}'.format(arg))
+        elif opt == '--no-witness':
+            # can override nowitness set by --sv-comp
+            options.nowitness=True
         elif opt == '--bc':
             options.source_is_bc = True
             dbg('Given code is bytecode')
