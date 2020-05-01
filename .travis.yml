@@ -43,6 +43,8 @@ script:
   - cd ..
   - sudo ln -s /usr/include/asm-generic /usr/include/asm
   - ./system-build.sh -j8
+  - pip3 install --user --upgrade pip
+  - pip3 install --user --ignore-installed PyYAML
   - pip3 install --user benchexec
   - PATH=$PATH:/home/travis/.local/bin
   - cd tests/
