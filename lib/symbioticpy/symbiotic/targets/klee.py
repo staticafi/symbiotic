@@ -158,7 +158,7 @@ class KleeToolFullInstrumentation(KleeBase):
 
         found = []
         for line in output:
-            fnd = self._parse_klee_output_line(line.decode('ascii'))
+            fnd = self._parse_klee_output_line(line)
             if fnd:
                 found.append(fnd)
 
