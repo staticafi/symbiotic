@@ -628,6 +628,7 @@ class SymbioticCC(object):
         print_elapsed_time('INFO: Total slicing time', color='WHITE')
 
         self._get_stats('After slicing ')
+        raise SymbioticExceptionalResult('done')
 
     def postprocessing(self):
         passes = []
