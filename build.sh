@@ -337,24 +337,32 @@ check
 build_llvm()
 {
 	URL=http://llvm.org/releases/${LLVM_VERSION}/
+	CLANG_NAME="cfe"
 	# UFFF, for some stupid reason this only release has a different url, the rest (even newer use the previous one)
 	if [ ${LLVM_VERSION} = "8.0.1" ]; then
 		URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/
+	elif [ ${LLVM_VERSION} = "10.0.0" ]; then
+		URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/
+	        CLANG_NAME="clang"
 	fi
 
+	LLVM_URL=${URL}/llvm-${LLVM_VERSION}.src.tar.xz
+	CLANG_URL=${URL}/$CLANG_NAME-${LLVM_VERSION}.src.tar.xz
+	RT_URL=${URL}/compiler-rt-${LLVM_VERSION}.src.tar.xz
+
 	if [ ! -d "llvm-${LLVM_VERSION}" ]; then
-		$GET ${URL}/llvm-${LLVM_VERSION}.src.tar.xz || exit 1
-		$GET ${URL}/cfe-${LLVM_VERSION}.src.tar.xz || exit 1
-		$GET ${URL}/compiler-rt-${LLVM_VERSION}.src.tar.xz || exit 1
+		$GET $LLVM_URL || exit 1
+		$GET $CLANG_URL || exit 1
+		$GET $RT_URL || exit 1
 
 		tar -xf llvm-${LLVM_VERSION}.src.tar.xz || exit 1
-		tar -xf cfe-${LLVM_VERSION}.src.tar.xz || exit 1
+		tar -xf $CLANG_NAME-${LLVM_VERSION}.src.tar.xz || exit 1
 		tar -xf compiler-rt-${LLVM_VERSION}.src.tar.xz || exit 1
 
                 # rename llvm folder
                 mv llvm-${LLVM_VERSION}.src llvm-${LLVM_VERSION}
 		# move clang to llvm/tools and rename to clang
-		mv cfe-${LLVM_VERSION}.src llvm-${LLVM_VERSION}/tools/clang
+		mv $CLANG_NAME-${LLVM_VERSION}.src llvm-${LLVM_VERSION}/tools/clang
 		mv compiler-rt-${LLVM_VERSION}.src llvm-${LLVM_VERSION}/tools/clang/runtime/compiler-rt
 
 		# apply our patches for LLVM/Clang
@@ -366,7 +374,7 @@ build_llvm()
 		fi
 
 		rm -f llvm-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
-		rm -f cfe-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
+		rm -f $CLANG_NAME-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
 		rm -f compiler-rt-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
 	fi
 	if [ $WITH_LLVMCBE = "yes" ]; then

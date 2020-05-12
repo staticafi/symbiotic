@@ -35,21 +35,25 @@ cp -r $SRCDIR/lib/symbioticpy $PREFIX/lib || exit 1
 # copy dependencies
 DEPENDENCIES=""
 if [ "$FULL_ARCHIVE" = "yes" ]; then
-	DEPS=`get_klee_dependencies $LLVM_PREFIX/bin/klee`
-	if [ ! -z "$DEPS" ]; then
-		for D in $DEPS; do
-			DEST="$PREFIX/lib/$(basename $D)"
-			cmp "$D" "$DEST" || cp -u "$D" "$DEST"
-			DEPENDENCIES="$DEST $DEPENDENCIES"
-		done
+	if [ "$BUILD_KLEE" = "yes" ]; then
+		DEPS=`get_klee_dependencies $LLVM_PREFIX/bin/klee`
+		if [ ! -z "$DEPS" ]; then
+			for D in $DEPS; do
+				DEST="$PREFIX/lib/$(basename $D)"
+				cmp "$D" "$DEST" || cp -u "$D" "$DEST"
+				DEPENDENCIES="$DEST $DEPENDENCIES"
+			done
+		fi
 	fi
-	DEPS=`get_nidhugg_dependencies $LLVM_PREFIX/bin/nidhugg`
-	if [ ! -z "$DEPS" ]; then
-		for D in $DEPS; do
-			DEST="$PREFIX/lib/$(basename $D)"
-			cmp "$D" "$DEST" || cp -u "$D" "$DEST"
-			DEPENDENCIES="$DEST $DEPENDENCIES"
-		done
+	if [ "$BUILD_NIDHUGG" = "yes" ]; then
+		DEPS=`get_nidhugg_dependencies $LLVM_PREFIX/bin/nidhugg`
+		if [ ! -z "$DEPS" ]; then
+			for D in $DEPS; do
+				DEST="$PREFIX/lib/$(basename $D)"
+				cmp "$D" "$DEST" || cp -u "$D" "$DEST"
+				DEPENDENCIES="$DEST $DEPENDENCIES"
+			done
+		fi
 	fi
 fi
 
