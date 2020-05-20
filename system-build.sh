@@ -376,7 +376,9 @@ if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 	pushd predator-${LLVM_VERSION}
 
 	if [ ! -d CMakeFiles ]; then
-		CXX=clang++ ./switch-host-llvm.sh "$LLVM_DIR"
+		"$LLVM_BIN_DIR/clang++" # plain clang has already been tested above
+		CC="$LLVM_BIN_DIR/clang" CXX="$LLVM_BIN_DIR/clang++" \
+			./switch-host-llvm.sh "$LLVM_DIR"
 	fi
 
        	build || exit 1
