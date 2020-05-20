@@ -239,15 +239,40 @@ export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 LLVM_MAJOR_VERSION="${LLVM_VERSION%%\.*}"
 LLVM_MINOR_VERSION=${LLVM_VERSION#*\.}
 LLVM_MINOR_VERSION="${LLVM_MINOR_VERSION%\.*}"
-LLVM_CMAKE_CONFIG_DIR=share/llvm/cmake
-if [ $LLVM_MAJOR_VERSION -gt 3 ]; then
-	LLVM_CMAKE_CONFIG_DIR=lib/cmake/llvm
-elif [ $LLVM_MAJOR_VERSION -ge 3 -a $LLVM_MINOR_VERSION -ge 9 ]; then
-	LLVM_CMAKE_CONFIG_DIR=lib/cmake/llvm
-fi
 
 LLVM_BIN_DIR=$("$LLVM_CONFIG" --bindir)
 LLVM_LIB_DIR=$("$LLVM_CONFIG" --libdir)
+
+# LLVM 4.0+ -> $(llvm-config --cmakedir)
+# LLVM 3.9  -> $(llvm-config --libdir)/cmake/llvm
+# older     -> Fedora/RHEL + Git build: $(llvm-config --prefix)/share/llvm/cmake
+#              Debian based: /usr/share/llvm-x.y/cmake
+#              Other: TODO
+LLVM_DIR=$("$LLVM_CONFIG" --cmakedir 2> /dev/null || true)
+if [ -z "$LLVM_DIR" ]; then
+	if [ "$LLVM_MAJOR_VERSION" -eq 3 -a "$LLVM_MINOR_VERSION" -eq 9 ]; then
+		LLVM_DIR="$LLVM_LIB_DIR/cmake/llvm"
+	else
+		echo "LLVM 3.8 and lower do not have a uniform location of LLVMConfig.cmake."
+		echo "If this fails, please, file an issue."
+		echo "Trying some defaults:"
+
+		# Git + Fedora/RHEL
+		LLVM_DIR="$("$LLVM_CONFIG" --prefix)/share/llvm/cmake"
+		if [ ! -f "$LLVM_DIR/LLVMConfig.cmake" ]; then
+			# Debian based
+			LLVM_DIR="/usr/share/llvm-$LLVM_MAJOR_VERSION.$LLVM_MINOR_VERSION/cmake"
+		fi
+	fi
+
+	if [ ! -f "$LLVM_DIR/LLVMConfig.cmake" ]; then
+		exitmsg "Cannot find LLVMConfig.cmake file in $LLVM_DIR."
+	fi
+
+	if ! grep "$LLVM_VERSION" "$LLVM_DIR/LLVMConfigVersion.cmake" ; then
+		exitmsg "llvm-config and LLVMConfig.cmake versions do not match."
+	fi
+fi
 
 mkdir -p "$LLVM_PREFIX/bin"
 for T in $LLVM_TOOLS; do
@@ -288,7 +313,7 @@ if [ $FROM -le 1 ]; then
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
-			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
+			-DLLVM_DIR="$LLVM_DIR" \
 			|| clean_and_exit 1 "git"
 	fi
 
@@ -309,7 +334,7 @@ if [ $FROM -le 1 ]; then
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
-			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
+			-DLLVM_DIR="$LLVM_DIR" \
 			-DDG_PATH=$ABS_SRCDIR/dg \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
@@ -351,7 +376,7 @@ if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 	pushd predator-${LLVM_VERSION}
 
 	if [ ! -d CMakeFiles ]; then
-	        CXX=clang++ ./switch-host-llvm.sh /usr/${LLVM_CMAKE_CONFIG_DIR}
+		CXX=clang++ ./switch-host-llvm.sh "$LLVM_DIR"
 	fi
 
        	build || exit 1
@@ -394,7 +419,7 @@ if [ $FROM -le 6 ]; then
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
 			-DDG_PATH=$ABS_SRCDIR/dg \
-			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
+			-DLLVM_DIR="$LLVM_DIR" \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			|| clean_and_exit 1 "git"
 	fi
@@ -430,7 +455,7 @@ if [ $FROM -le 6 ]; then
 			-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
-			-DLLVM_DIR=$($LLVM_CONFIG --cmakedir) \
+			-DLLVM_DIR="$LLVM_DIR" \
 			|| clean_and_exit 1
 	fi
 
