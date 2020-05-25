@@ -479,6 +479,12 @@ fi
 
 LLVM_CONFIG=${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/bin/llvm-config
 
+if [ "$LLVM_MAJOR_VERSION" -lt 6 ]; then
+        echo "LLVM version too low for llvm2c, I'm not building it"
+        BUILD_LLVM2C="no"
+fi
+
+
 ######################################################################
 #   SVF
 ######################################################################

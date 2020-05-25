@@ -270,6 +270,11 @@ done
 mkdir -p $LLVM_PREFIX/lib
 ln -sf $(dirname $(which clang))/../lib/clang/ $LLVM_PREFIX/lib/
 
+if [ "$LLVM_MAJOR_VERSION" -lt 6 ]; then
+        echo "LLVM version too low for llvm2c, I'm not building it"
+        BUILD_LLVM2C="no"
+fi
+
 ######################################################################
 #   dg
 ######################################################################
