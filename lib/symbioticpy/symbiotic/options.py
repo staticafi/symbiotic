@@ -52,6 +52,7 @@ class SymbioticOptions(object):
         self.witness_output = '{0}/witness.graphml'.format(os.getcwd())
         self.testsuite_output = '{0}/test-suite'.format(os.getcwd())
         self.source_is_bc = False
+        self.argv = []
         self.optlevel = ["before-O3", "after-O3"]
         self.slicer_pta = 'fi'
         self.memsafety_config_file = None
@@ -205,7 +206,7 @@ def parse_command_line():
                                     'instrumentation-timeout=', 'version', 'help',
                                     'no-verification', 'output=', 'witness=', 'bc',
                                     'optimize=', 'malloc-never-fails',
-                                    'pta=', 'no-link=',
+                                    'pta=', 'no-link=', 'argv=',
                                     'cflags=', 'cppflags=', 'link=', 'executable-witness',
                                     'verifier=','target=', 'require-slicer',
                                     'no-link-undefined', 'repeat-slicing=',
@@ -246,6 +247,8 @@ def parse_command_line():
         elif opt == '--version-short':
             print_shortest_vers()
             sys.exit(0)
+        elif opt == '--argv':
+            options.argv = arg.split(',')
         elif opt == '--version':
             print_versions()
             sys.exit(0)
@@ -475,6 +478,7 @@ where OPTS can be following:
     --cflags=flags
     --cppflags=flags          Append extra CFLAGS and CPPFLAGS to use while compiling,
                               the environment CFLAGS and CPPFLAGS are used too
+    --argv=args               A comma-separated list of arguments for the main function
     --slicer-params=STR       Pass parameters directly to slicer
     --slicer-cmd=STR          Command to run slicer, default: sbt-slicer
     --verifier-params=STR     Pass parameters directly to the verifier
