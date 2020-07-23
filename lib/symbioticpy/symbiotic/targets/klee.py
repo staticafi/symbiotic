@@ -125,7 +125,7 @@ class KleeToolFullInstrumentation(KleeBase):
         if self._options.exit_on_error:
             cmd.append('-exit-on-error-type=Assert')
 
-        return cmd + options + tasks
+        return cmd + options + tasks + self._options.argv
 
     def _parse_klee_output_line(self, line):
         for (key, pattern) in self._patterns:
@@ -337,7 +337,7 @@ class SymbioticTool(KleeBase):
         # but we may remove this switch during debugging)
         cmd.append('-output-source=false')
 
-        return cmd + options + tasks
+        return cmd + options + tasks + self._options.argv
 
     def _parse_klee_output_line(self, line):
         opts = self._options
