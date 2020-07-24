@@ -223,6 +223,7 @@ class SymbioticTool(KleeBase):
             ('EMEMLEAK', re.compile('.*memory error: memory leak detected.*')),
             ('EMEMCLEANUP', re.compile('.*memory error: memory not cleaned up.*')),
             ('EFREEALLOCA', re.compile('.*ERROR:.*free of alloca.*')),
+            ('EINVREALLOC', re.compile('.*memory error:.*invalid pointer:.*realloc*')),
             ('ERESOLVMEMCLN', re.compile('.*Failed resolving segment in memcleanup check.*')),
             ('ERESOLVMEMCLN2', re.compile('.*Cannot resolve non-constant segment in memcleanup check.*')),
             ('ERESOLV', re.compile('.*ERROR:.*Could not resolve.*'))
@@ -352,7 +353,7 @@ class SymbioticTool(KleeBase):
                         return result.RESULT_FALSE_REACH
                 elif key == 'EFREE' or key == 'EFREEALLOCA' or key=='EGLOBLFREE':
                     return result.RESULT_FALSE_FREE
-                elif key == 'EMEMERROR':
+                elif key in ('EMEMERROR', 'EINVREALLOC'):
                     return result.RESULT_FALSE_DEREF
                 elif key == 'EMEMLEAK':
                     return result.RESULT_FALSE_MEMTRACK
