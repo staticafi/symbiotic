@@ -1,4 +1,9 @@
+#include <symbiotic-size_t.h>
+
 typedef signed long int time_t;
+
+extern void klee_make_symbolic(void *, size_t, const char *);
+extern void klee_assume(unsigned long);
 
 time_t time(time_t *tloc) {
 	time_t ret;

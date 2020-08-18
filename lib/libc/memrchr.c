@@ -3,7 +3,7 @@
 void *memrchr(const void *mem, int c, size_t n)
 {
 	int i;
-	unsigned char *byte = mem;
+	const unsigned char *byte = mem;
 	for (i = n - 1; i >= 0; --i)
 		if (byte[i] == (unsigned char) c)
 			return (void *) byte;

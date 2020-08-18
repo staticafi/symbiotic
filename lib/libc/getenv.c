@@ -4,10 +4,13 @@ void klee_make_symbolic(void *, size_t, const char *);
 extern void __VERIFIER_assume(int);
 extern _Bool __VERIFIER_nondet__Bool(void);
 extern char __VERIFIER_nondet_char(void);
+extern unsigned __VERIFIER_nondet_uint(void);
 
 static char dummy_env[20];
 
 char *getenv(const char *name) {
+	(void) name;
+
 	if (__VERIFIER_nondet__Bool())
 		return ((char *) 0);
 
