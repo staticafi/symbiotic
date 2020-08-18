@@ -1,4 +1,5 @@
 extern int __VERIFIER_nondet_int(void);
+extern void __VERIFIER_assume(int);
 
 typedef signed long int time_t;
 
@@ -24,6 +25,8 @@ static struct tm __localtime;
  * will yield different results, which is not nice and correct */
 struct tm *localtime (const time_t *timer)
 {
+   (void) timer;
+
    __localtime.tm_sec   = __VERIFIER_nondet_int();
    __localtime.tm_min   = __VERIFIER_nondet_int();
    __localtime.tm_hour  = __VERIFIER_nondet_int();
