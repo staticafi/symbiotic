@@ -240,7 +240,7 @@ static std::string strip(const std::string& str) {
     size_t start = 0, end = str.length() - 1;
     while (start < str.length() && std::isspace(str[start]))
         ++start;
-    while (end >= 0 && std::isspace(str[end]))
+    while (std::isspace(str[end]))
         --end;
     assert(start <= end);
     return str.substr(start, end - start + 1);
@@ -250,10 +250,10 @@ static std::string lastWord(const std::string& str) {
     size_t end = str.length() - 1;
 
     // skip the whitespace at the end
-    while (end >= 0 && std::isspace(str[end]))
+    while (std::isspace(str[end]))
         --end;
 
-    while (end >= 0 && !std::isspace(str[end])) {
+    while (!std::isspace(str[end])) {
         if (end == 0)
             return str;
 
