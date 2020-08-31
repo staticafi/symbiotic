@@ -100,7 +100,7 @@ static void redirectEdges(const BasicBlock *origB,
 
 static void replaceSuccessor(const std::vector<BasicBlock *>& Blocks,
                              BasicBlock *oldB, BasicBlock *newB) {
-  for (auto i = 0; i < Blocks.size(); ++i) {
+  for (size_t i = 0; i < Blocks.size(); ++i) {
     auto origTI = Blocks[i]->getTerminator();
     for (unsigned i = 0; i < origTI->getNumSuccessors(); ++i) {
       auto succ = origTI->getSuccessor(i);
@@ -124,7 +124,7 @@ static void redirectValues(BasicBlock *newB,
      //for (auto i = 0; i < PHI->getNumIncomingValues(); ++i) {
      //}
     } else {
-      for (auto i = 0; i < I.getNumOperands(); ++i) {
+      for (unsigned i = 0; i < I.getNumOperands(); ++i) {
         if (VMap.count(I.getOperand(i))) {
           I.setOperand(i, VMap[I.getOperand(i)]);
         }
@@ -151,7 +151,7 @@ cloneLoopBody(Function *F, const std::vector<BasicBlock *> Blocks) {
 
   // we got new basic blocks, now redirect the edges
   // and PHI values and such
-  for (auto i = 0; i < Blocks.size(); ++i) {
+  for (size_t i = 0; i < Blocks.size(); ++i) {
       redirectEdges(Blocks[i], NewBlocks[i], BlocksMap);
       redirectValues(NewBlocks[i], VMap, BlocksMap);
   }
