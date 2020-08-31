@@ -144,7 +144,7 @@ void MakeNondet::replaceCall(Module& M, CallInst *CI,
                                       unsigned line, const std::string& var) {
   // NOTE: this must be called before using call_identifier
   auto make_nondet = get_verifier_make_nondet(M);
-  std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName();
+  std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName().str();
   std::string name = parent_name + ":" + var + ":" + std::to_string(line);
   Constant *name_const = ConstantDataArray::getString(M.getContext(), name);
   GlobalVariable *nameG = new GlobalVariable(M, name_const->getType(), true /*constant */,
@@ -187,7 +187,7 @@ void MakeNondet::replaceCall(Module& M, CallInst *CI,
 void MakeNondet::handleAlloc(Module& M, CallInst *CI,
                                       unsigned line, const std::string& var) {
   auto make_nondet = get_verifier_make_nondet(M);
-  std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName();
+  std::string parent_name = cast<Function>(CI->getParent()->getParent())->getName().str();
   std::string name = parent_name + ":" + var + ":" + std::to_string(line);
   Constant *name_const = ConstantDataArray::getString(M.getContext(), name);
   GlobalVariable *nameG = new GlobalVariable(M, name_const->getType(), true /*constant */,
