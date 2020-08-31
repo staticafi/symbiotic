@@ -64,12 +64,15 @@ struct PrepareOverflows : public FunctionPass {
       switch (II->getIntrinsicID()) {
           case Intrinsic::sadd_with_overflow:
             handleSBinOpIntrinsic(II, Instruction::BinaryOps::Add);
+            break;
           case Intrinsic::ssub_with_overflow:
             handleSBinOpIntrinsic(II, Instruction::BinaryOps::Sub);
+            break;
           case Intrinsic::smul_with_overflow:
             handleSBinOpIntrinsic(II, Instruction::BinaryOps::Mul);
+            break;
           default:
-            return;
+            break;
       }
   }
 
