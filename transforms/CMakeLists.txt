@@ -9,7 +9,8 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 
-if (${LLVM_PACKAGE_VERSION} VERSION_LESS_EQUAL "3.7")
+# This is probably unnecessary
+if (${LLVM_PACKAGE_VERSION} VERSION_LESS "3.8")
   # needed for LLVM 3.7
   set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR})
   set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR})
@@ -21,7 +22,7 @@ include(AddLLVM)
 # explicitly add -std=c++11 (c++14), some cmake versions
 # fail adding it even with CMAKE_CXX_STANDARD,
 # LLVM 10 and newer require at least C++14 standard
-if (${LLVM_PACKAGE_VERSION} VERSION_GREATER_EQUAL "10.0")
+if (${LLVM_PACKAGE_VERSION} VERSION_GREATER "9.0")
   set(CMAKE_CXX_STANDARD 14)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 else()
