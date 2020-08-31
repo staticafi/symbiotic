@@ -82,7 +82,11 @@ void MakeNondet::runOnFunction(Function &F) {
 
   for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
     if (CallInst *CI = dyn_cast<CallInst>(&*I)) {
+#if LLVM_VERSION_MAJOR >= 8
+      auto fun = dyn_cast<Function>(CI->getCalledOperand()->stripPointerCasts());
+#else
       auto fun = dyn_cast<Function>(CI->getCalledValue()->stripPointerCasts());
+#endif
       if (!fun)
           continue;
       auto name = fun->getName();

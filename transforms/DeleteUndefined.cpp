@@ -373,7 +373,11 @@ bool DeleteUndefined::runOnFunction(Function &F)
       if (CI->isInlineAsm())
         continue;
 
+#if LLVM_VERSION_MAJOR >= 8
+      Value *val = CI->getCalledOperand()->stripPointerCasts();
+#else
       Value *val = CI->getCalledValue()->stripPointerCasts();
+#endif
       Function *callee = dyn_cast<Function>(val);
       // if this is intrinsic call or a call via a function pointer,
       // let it be

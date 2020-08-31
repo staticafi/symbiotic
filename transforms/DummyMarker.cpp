@@ -54,7 +54,11 @@ bool DummyMarker::runOnFunction(Function &F)
     if (!CI)
         continue;
 
+#if LLVM_VERSION_MAJOR >= 8
+    auto calledFun = dyn_cast<Function>(CI->getCalledOperand()->stripPointerCasts());
+#else
     auto calledFun = dyn_cast<Function>(CI->getCalledValue()->stripPointerCasts());
+#endif
     if (!calledFun)
         continue;
     auto fun = calledFun->getName();

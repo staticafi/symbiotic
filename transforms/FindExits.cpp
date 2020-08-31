@@ -87,7 +87,11 @@ bool FindExits::processBlock(BasicBlock& B) {
   // as assume(0) is taken as non-terminating
   for (auto& I : B) {
     if (auto CI = dyn_cast<CallInst>(&I)) {
+#if LLVM_VERSION_MAJOR >= 8
+      auto calledFun = dyn_cast<Function>(CI->getCalledOperand()->stripPointerCasts());
+#else
       auto calledFun = dyn_cast<Function>(CI->getCalledValue()->stripPointerCasts());
+#endif
       if (!calledFun)
           continue;
       if (calledFun->getName().equals("__VERIFIER_assume")) {
