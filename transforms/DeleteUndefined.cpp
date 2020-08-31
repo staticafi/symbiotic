@@ -303,11 +303,14 @@ void DeleteUndefined::defineFunction(Module *M, Function *F)
     ReturnInst::Create(Ctx, Constant::getNullValue(F->getReturnType()), block);
   } else {
     Type *Ty = F->getReturnType();
-    AllocaInst *AI = new AllocaInst(Ty
+    AllocaInst *AI = new AllocaInst(
+        Ty,
 #if (LLVM_VERSION_MAJOR >= 5)
-    ,0
+        0,
 #endif
-    );
+        nullptr,
+        "",
+        static_cast<Instruction*>(nullptr)); // to prevent constructor ambiguity
 
     block->getInstList().push_back(AI);
 
@@ -332,7 +335,11 @@ void DeleteUndefined::defineFunction(Module *M, Function *F)
     CallInst *CI = CallInst::Create(vms, args);
     CI->insertAfter(CastI);
 
-    LoadInst *LI = new LoadInst(AI, "undefret", block);
+    LoadInst *LI = new LoadInst(
+        AI->getType()->getPointerElementType(),
+        AI,
+        "undefret",
+        block);
     ReturnInst::Create(Ctx, LI, block);
   }
 
