@@ -49,7 +49,7 @@ struct PrepareOverflows : public FunctionPass {
       if (!CI->getCalledFunction() || !CI->getCalledFunction()->hasName())
           return;
 
-      auto search = relevantFunctions.find(CI->getCalledFunction()->getName());
+      auto search = relevantFunctions.find(CI->getCalledFunction()->getName().str());
       if(search != relevantFunctions.end()) {
           deleteInsts.insert(CI);
       }

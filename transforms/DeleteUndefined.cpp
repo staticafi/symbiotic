@@ -321,7 +321,7 @@ void DeleteUndefined::defineFunction(Module *M, Function *F)
     args.push_back(CastI);
     args.push_back(ConstantInt::get(get_size_t(M),
                    M->getDataLayout().getTypeAllocSize(Ty)));
-    std::string namestr = F->getName();
+    std::string namestr = F->getName().str();
     namestr += ":undeffun:0";
     Constant *name = ConstantDataArray::getString(Ctx, namestr);
     GlobalVariable *nameG = new GlobalVariable(*M, name->getType(), true /*constant */,
