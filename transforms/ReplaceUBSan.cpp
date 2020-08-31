@@ -64,7 +64,11 @@ bool ReplaceUBSan::runOnFunction(Function &F)
       if (CI->isInlineAsm())
         continue;
 
+#if LLVM_VERSION_MAJOR >= 8
+      const Value *val = CI->getCalledOperand()->stripPointerCasts();
+#else
       const Value *val = CI->getCalledValue()->stripPointerCasts();
+#endif
       const Function *callee = dyn_cast<Function>(val);
       if (!callee || callee->isIntrinsic())
         continue;

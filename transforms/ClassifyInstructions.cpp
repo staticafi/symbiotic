@@ -37,7 +37,11 @@ namespace {
               stack_array = true;
           }
         } else if (auto CI = dyn_cast<CallInst>(&I)) {
+#if LLVM_VERSION_MAJOR >= 8
+            auto CV = CI->getCalledOperand()->stripPointerCasts();
+#else
             auto CV = CI->getCalledValue()->stripPointerCasts();
+#endif
             if (CV) {
                 const auto& name = cast<Function>(CV)->getName();
                 if (name.equals("malloc")) {
