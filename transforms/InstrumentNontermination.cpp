@@ -201,11 +201,14 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
     } else if (auto *G = dyn_cast<GlobalValue>(v)) {
         // create a new alloca that
         // is going to be inserted at the beginning of the header
-        newVal = new AllocaInst(G->getType()->getContainedType(0)
+        newVal = new AllocaInst(
+            G->getType()->getContainedType(0),
 #if (LLVM_VERSION_MAJOR >= 5)
-        , G->getType()->getAddressSpace()
+            G->getType()->getAddressSpace(),
 #endif
-        );
+            nullptr,
+            "",
+            static_cast<Instruction*>(nullptr)); // prevents constructor ambiguity
 
         // puth the alloca on the beginning of the function
         newVal->insertBefore(header->getParent()->getBasicBlockList().front().getTerminator());
@@ -224,8 +227,13 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
 
   // store the state of variables at the loop head
   for (auto& it : mapping) {
-    auto *LI = new LoadInst(it.first);
-    auto *SI = new StoreInst(LI, it.second);
+    auto *LI = new LoadInst(
+        it.first->getType()->getPointerElementType(),
+        it.first,
+        "",
+        static_cast<Instruction*>(nullptr));
+    auto *SI = new StoreInst(LI, it.second, false,
+        static_cast<Instruction*>(nullptr));
 
     CloneMetadata(header->getTerminator(), LI);
     CloneMetadata(header->getTerminator(), SI);
@@ -266,8 +274,16 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
     // a cycle in the state space)
     Instruction *lastCond = nullptr;
     for (auto& it : mapping) {
-      auto *newVal = new LoadInst(it.first);
-      auto *oldVal = new LoadInst(it.second);
+      auto *newVal = new LoadInst(
+          it.first->getType()->getPointerElementType(),
+          it.first,
+          "",
+          static_cast<Instruction*>(nullptr));
+      auto *oldVal = new LoadInst(
+          it.second->getType()->getPointerElementType(),
+          it.second,
+          "",
+          static_cast<Instruction*>(nullptr));
       auto *cmp = new ICmpInst(ICmpInst::ICMP_EQ, newVal, oldVal);
 
 #if LLVM_VERSION_MAJOR > 7

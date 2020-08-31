@@ -94,7 +94,13 @@ class BreakInfiniteLoops : public LoopPass {
         BasicBlock *exitBB = getExitBB(header->getParent());
         BasicBlock *nb = BasicBlock::Create(Ctx, "break.inf.loop");
 
-        LoadInst *LI = new LoadInst(getConstantTrueGV(*M), "always_true", nb);
+        GlobalVariable * gv = getConstantTrueGV(*M);
+        LoadInst *LI = new LoadInst(
+            gv->getType()->getPointerElementType(),
+            gv,
+            "always_true",
+            nb);
+
         if (!CloneMetadata(header->getTerminator(), LI)) {
             llvm::errs() << "[BreakInfiniteLoops] Failed assigning metadata to: "
                          << *LI << "\n";

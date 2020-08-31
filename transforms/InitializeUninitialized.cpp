@@ -250,11 +250,14 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             // when this is not an array allocation,
             // store the symbolic value into the allocated memory using normal StoreInst.
             // That will allow slice away more unneeded allocations
-            auto AIS = new AllocaInst(AI->getAllocatedType()
+            auto AIS = new AllocaInst(
+                AI->getAllocatedType(),
 #if (LLVM_VERSION_MAJOR >= 5)
-            , AI->getType()->getAddressSpace()
+                AI->getType()->getAddressSpace(),
 #endif
-            );
+                nullptr,
+                "",
+                static_cast<Instruction*>(nullptr));
             AIS->insertAfter(AI);
 
             // we created a new allocation, so now we will make it nondeterministic
@@ -269,9 +272,12 @@ bool InitializeUninitialized::runOnFunction(Function &F)
             CastI->insertAfter(AIS);
             CI->insertAfter(CastI);
 
-
-            LI = new LoadInst(AIS);
-            SI = new StoreInst(LI, AI);
+            LI = new LoadInst(
+                AIS->getType()->getPointerElementType(),
+                AIS,
+                "",
+                static_cast<Instruction*>(nullptr));
+            SI = new StoreInst(LI, AI, false, static_cast<Instruction*>(nullptr));
             LI->insertAfter(CI);
             SI->insertAfter(LI);
 

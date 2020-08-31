@@ -150,11 +150,15 @@ void MakeNondet::replaceCall(Module& M, CallInst *CI,
   GlobalVariable *nameG = new GlobalVariable(M, name_const->getType(), true /*constant */,
                                              GlobalVariable::PrivateLinkage, name_const);
 
-  AllocaInst *AI = new AllocaInst(CI->getType()
+  AllocaInst *AI = new AllocaInst(
+      CI->getType(),
 #if (LLVM_VERSION_MAJOR >= 5)
-  , 0
+      0,
 #endif
-  );
+      nullptr,
+      "",
+      static_cast<Instruction*>(nullptr));
+
   CastInst *CastI = CastInst::CreatePointerCast(AI, Type::getInt8PtrTy(M.getContext()));
 
   std::vector<Value *> args;
@@ -173,7 +177,13 @@ void MakeNondet::replaceCall(Module& M, CallInst *CI,
   if (auto Loc = CI->getDebugLoc())
     new_CI->setDebugLoc(Loc);
 
-  LoadInst *LI = new LoadInst(AI, name);
+  LoadInst *LI = new LoadInst(
+#if LLVM_VERSION_MAJOR >= 8
+      AI->getType()->getPointerElementType(),
+#endif
+      AI,
+      name,
+      static_cast<Instruction*>(nullptr));
 
   new_CI->insertBefore(CI);
 
