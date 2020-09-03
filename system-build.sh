@@ -233,6 +233,8 @@ fi
 
 # LLVM tools that we need
 LLVM_VERSION=$($LLVM_CONFIG --version)
+LLVM_VERSION=${LLVM_VERSION%git}
+
 LLVM_TOOLS="opt clang llvm-link llvm-dis llvm-nm"
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
