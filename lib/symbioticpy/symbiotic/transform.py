@@ -474,6 +474,8 @@ class SymbioticCC(object):
         else:
             crit, opts = ['__assert_fail,__VERIFIER_error'], []
 
+        assert len(crit) > 0
+
         output = '{0}.sliced'.format(self.curfile[:self.curfile.rfind('.')])
 
 
