@@ -407,6 +407,7 @@ bool InstrumentNontermination::instrumentEmptyLoop(Loop *L) {
   }
 
   llvm::errs() << "Instrumented an empty loop with abort.\n";
+  return true;
 }
 
 static RegisterPass<InstrumentNontermination> CL("instrument-nontermination",
