@@ -69,7 +69,7 @@ static RegisterPass<RemoveInfiniteLoops> RIL("remove-infinite-loops",
                                              "and replace them with exit(0)");
 char RemoveInfiniteLoops::ID;
 
-void CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2);
+bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2);
 
 bool RemoveInfiniteLoops::runOnFunction(Function &F) {
   Module *M = F.getParent();
