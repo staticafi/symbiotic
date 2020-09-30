@@ -310,9 +310,7 @@ void DeleteUndefined::defineFunction(Module *M, Function *F)
 #endif
         nullptr,
         "",
-        static_cast<Instruction*>(nullptr)); // to prevent constructor ambiguity
-
-    block->getInstList().push_back(AI);
+        block);
 
     // insert initialization of the new global variable
     // at the beginning of main

@@ -156,6 +156,9 @@ void MakeNondet::replaceCall(Module& M, CallInst *CI,
       0,
 #endif
       nullptr,
+#if LLVM_VERSION_MAJOR >= 11
+      M.getDataLayout().getPrefTypeAlign(CI->getType()),
+#endif
       "",
       static_cast<Instruction*>(nullptr));
 
@@ -183,6 +186,10 @@ void MakeNondet::replaceCall(Module& M, CallInst *CI,
 #endif
       AI,
       name,
+#if LLVM_VERSION_MAJOR >= 11
+      false,
+      AI->getAlign(),
+#endif
       static_cast<Instruction*>(nullptr));
 
   new_CI->insertBefore(CI);

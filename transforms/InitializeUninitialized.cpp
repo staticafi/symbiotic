@@ -256,6 +256,9 @@ bool InitializeUninitialized::runOnFunction(Function &F)
                 AI->getType()->getAddressSpace(),
 #endif
                 nullptr,
+#if LLVM_VERSION_MAJOR >= 11
+                AI->getAlign(),
+#endif
                 "",
                 static_cast<Instruction*>(nullptr));
             AIS->insertAfter(AI);
@@ -276,8 +279,19 @@ bool InitializeUninitialized::runOnFunction(Function &F)
                 AIS->getType()->getPointerElementType(),
                 AIS,
                 "",
+#if LLVM_VERSION_MAJOR >= 11
+                false,
+                AIS->getAlign(),
+#endif
                 static_cast<Instruction*>(nullptr));
-            SI = new StoreInst(LI, AI, false, static_cast<Instruction*>(nullptr));
+            SI = new StoreInst(
+                LI,
+                AI,
+                false,
+#if LLVM_VERSION_MAJOR >= 11
+                LI->getAlign(),
+#endif
+                static_cast<Instruction*>(nullptr));
             LI->insertAfter(CI);
             SI->insertAfter(LI);
 
