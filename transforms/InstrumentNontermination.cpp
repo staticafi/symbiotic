@@ -208,10 +208,8 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
 #endif
             nullptr,
             "",
-            static_cast<Instruction*>(nullptr)); // prevents constructor ambiguity
-
-        // puth the alloca on the beginning of the function
-        newVal->insertBefore(header->getParent()->getBasicBlockList().front().getTerminator());
+            // put the alloca on the beginning of the function
+            header->getParent()->getBasicBlockList().front().getTerminator());
     } else {
       llvm::errs() << "ERROR: Unhandled copying: " << *v << "\n";
       return false;
@@ -231,8 +229,18 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
         it.first->getType()->getPointerElementType(),
         it.first,
         "",
+#if LLVM_VERSION_MAJOR >= 11
+        false,
+        header->getModule()->getDataLayout()
+            .getABITypeAlign(it.first->getType()),
+#endif
         static_cast<Instruction*>(nullptr));
-    auto *SI = new StoreInst(LI, it.second, false,
+    auto *SI = new StoreInst(LI,
+        it.second,
+        false,
+#if LLVM_VERSION_MAJOR >= 11
+        LI->getAlign(),
+#endif
         static_cast<Instruction*>(nullptr));
 
     CloneMetadata(header->getTerminator(), LI);
@@ -278,12 +286,12 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
           it.first->getType()->getPointerElementType(),
           it.first,
           "",
-          static_cast<Instruction*>(nullptr));
+          term);
       auto *oldVal = new LoadInst(
           it.second->getType()->getPointerElementType(),
           it.second,
           "",
-          static_cast<Instruction*>(nullptr));
+          term);
       auto *cmp = new ICmpInst(ICmpInst::ICMP_EQ, newVal, oldVal);
 
 #if LLVM_VERSION_MAJOR > 7
@@ -296,8 +304,6 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
       CloneMetadata(md, newVal);
       CloneMetadata(md, oldVal);
       CloneMetadata(md, cmp);
-      newVal->insertBefore(term);
-      oldVal->insertBefore(term);
       cmp->insertBefore(term);
 
       if (lastCond) {
