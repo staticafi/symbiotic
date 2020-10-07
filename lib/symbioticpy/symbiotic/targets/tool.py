@@ -164,7 +164,7 @@ class SymbioticBaseTool(object):
         if prop.signedoverflow():
             # default config file is 'config.json'
             # slice wrt asserts checking for the overflow
-            return (['__assert_fail', '__VERIFIER_error'],[])
+            return (['__VERIFIER_error'],[])
 
         return ([],[])
 
