@@ -17,6 +17,10 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 
+// for checking irreducibility
+#include "llvm/Analysis/LoopIterator.h"
+#include "llvm/Analysis/CFG.h"
+
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/LoopPass.h"
 
@@ -26,10 +30,17 @@ class ClassifyLoops : public LoopPass {
    bool any{false};
    bool nested{false};
    bool nonterm{false};
+   bool irreducible{false};
+
    public:
     static char ID;
 
     ClassifyLoops() : LoopPass(ID) {}
+
+    void getAnalysisUsage(AnalysisUsage &AU) const override {
+      AU.setPreservesCFG();
+      AU.addRequired<LoopInfoWrapperPass>();
+    }
 
     bool runOnLoop(Loop *L, LPPassManager &LPM) override {
       any = true;
@@ -47,6 +58,14 @@ class ClassifyLoops : public LoopPass {
         }
       }
 
+      if (!irreducible) {
+        // XXX: hmm, not sure this is working...
+        LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+        LoopBlocksRPO RPOT(L);
+        RPOT.perform(&LI);
+        irreducible = containsIrreducibleCFG<const BasicBlock *>(RPOT, LI);
+      }
+
       return false;
     }
 
@@ -57,6 +76,8 @@ class ClassifyLoops : public LoopPass {
               llvm::errs() << "  nested loops\n";
           if (nonterm)
               llvm::errs() << "  nonterm loops\n";
+          if (irreducible)
+              llvm::errs() << "  irreducible loops\n";
       }
       return false;
     }
