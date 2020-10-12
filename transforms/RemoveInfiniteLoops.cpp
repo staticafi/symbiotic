@@ -94,9 +94,9 @@ bool RemoveInfiniteLoops::runOnFunction(Function &F) {
 #endif
                                   );
 #if LLVM_VERSION_MAJOR >= 9
-  auto extF = cast<Function>(C.getCallee());
+  auto extF = cast<Function>(C.getCallee()->stripPointerCasts());
 #else
-  auto extF = cast<Function>(C);
+  auto extF = cast<Function>(C->stripPointerCasts());
 #endif
 
   std::vector<Value *> args = { ConstantInt::get(argTy, 0) };
