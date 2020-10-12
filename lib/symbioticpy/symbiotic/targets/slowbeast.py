@@ -56,15 +56,23 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             return ''
 
         no_path_killed = False
+        have_problem = False
+        no_errors = False
         for line in output:
-            if 'Assertion failed: assertion failed!' in line:
+            if 'assertion failed!' in line:
                 return result.RESULT_FALSE_REACH
-            if 'Assertion failed: __VERIFIER_error called!' in line:
+            if '__VERIFIER_error called!' in line:
                 return result.RESULT_FALSE_REACH
             elif 'Killed paths: 0' in line:
                 no_path_killed = True
-            elif 'Found errors: 0' in line and no_path_killed:
-                return result.RESULT_TRUE_PROP
+            elif 'Did not extend the path and reached entry of CFG' in line or\
+                 'a problem was met' in line:
+                 have_problem = True
+            elif 'Found errors: 0' in line:
+                no_errors = True
+
+        if no_errors and no_path_killed and not have_problem:
+            return result.RESULT_TRUE_PROP
         if returncode != 0 or returnsignal:
             return result.RESULT_ERROR
         return result.RESULT_UNKNOWN
