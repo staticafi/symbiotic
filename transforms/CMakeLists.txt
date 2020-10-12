@@ -65,6 +65,7 @@ endif()
 
 add_library(LLVMsbt MODULE "BreakCritLoops.cpp"
                            "BreakInfiniteLoops.cpp"
+                           "AInliner.cpp"
                            "CheckModule.cpp"
                            "ClassifyInstructions.cpp"
                            "ClassifyLoops.cpp"

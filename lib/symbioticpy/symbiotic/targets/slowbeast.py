@@ -47,15 +47,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         """
         # LLVM backend in CPAchecker does not handle switches correctly yet
         # and llvm2c has a bug with PHI nodes (which are not handled by the LLVM backend either)
-        return ["-lowerswitch", "-simplifycfg", "-reg2mem", "-simplifycfg"]
+        return ["-lowerswitch", "-simplifycfg",
+                "-reg2mem", "-simplifycfg",
+                "-ainline", "-O3", "-reg2mem"]
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
-        """
-        @param returncode: code returned by CPAchecker
-        @param returnsignal: signal, which terminated CPAchecker
-        @param output: the output of CPAchecker
-        @return: status of CPAchecker after executing a run
-        """
         if isTimeout:
             return ''
 
