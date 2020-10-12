@@ -75,11 +75,14 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         no_path_killed = False
         have_problem = False
         no_errors = False
+        found_error = False
         for line in output:
             if 'assertion failed!' in line:
-                return result.RESULT_FALSE_REACH
+                found_error = True
             if 'None: __VERIFIER_error called!' in line:
-                return result.RESULT_FALSE_REACH
+                found_error = True
+            if 'Error found.' in line:
+                found_error = True
             elif 'Killed paths: 0' in line:
                 no_path_killed = True
             elif 'Did not extend the path and reached entry of CFG' in line or\
@@ -88,6 +91,10 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             elif 'Found errors: 0' in line:
                 no_errors = True
 
+        if found_error and not no_errors:
+            if self._options.property.termination():
+                return result.RESULT_FALSE_TERMINATION
+            return result.RESULT_FALSE_REACH
         if no_errors and no_path_killed and not have_problem:
             return result.RESULT_TRUE_PROP
         if returncode != 0 or returnsignal:
