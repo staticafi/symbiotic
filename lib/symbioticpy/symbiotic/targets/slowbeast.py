@@ -36,7 +36,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def cmdline(self, executable, options, tasks, propertyfile, rlimits):
         assert len(tasks) == 1
-        assert self._options.property.assertions()
+        assert self._options.property.assertions() or\
+               self._options.property.termination()
 
         return ['sb'] + options + tasks
 
@@ -60,13 +61,13 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
         no_path_killed = False
         for line in output:
-            if b'Assertion failed: assertion failed!' in line:
+            if 'Assertion failed: assertion failed!' in line:
                 return result.RESULT_FALSE_REACH
-            if b'Assertion failed: __VERIFIER_error called!' in line:
+            if 'Assertion failed: __VERIFIER_error called!' in line:
                 return result.RESULT_FALSE_REACH
-            elif b'Killed paths: 0' in line:
+            elif 'Killed paths: 0' in line:
                 no_path_killed = True
-            elif b'Found errors: 0' in line and no_path_killed:
+            elif 'Found errors: 0' in line and no_path_killed:
                 return result.RESULT_TRUE_PROP
         if returncode != 0 or returnsignal:
             return result.RESULT_ERROR
