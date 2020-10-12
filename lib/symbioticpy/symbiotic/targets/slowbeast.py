@@ -23,7 +23,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def __init__(self, opts):
         SymbioticBaseTool.__init__(self, opts)
-        self._memsafety = self._options.property.memsafety()
 
     def name(self):
         return 'slowbeast'
@@ -41,15 +40,33 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
         return ['sb'] + options + tasks
 
+    def set_environment(self, symbiotic_dir, opts):
+        """
+        Set environment for the tool
+        """
+        # do not link any functions
+        opts.linkundef = []
+
+    def passes_before_slicing(self):
+        if self._options.property.termination():
+            return ['-find-exits']
+        return []
+
     def passes_before_verification(self):
         """
         Passes that should run before CPAchecker
         """
-        # LLVM backend in CPAchecker does not handle switches correctly yet
-        # and llvm2c has a bug with PHI nodes (which are not handled by the LLVM backend either)
-        return ["-lowerswitch", "-simplifycfg",
-                "-reg2mem", "-simplifycfg",
-                "-ainline", "-O3", "-reg2mem"]
+        passes = []
+        if self._options.property.termination():
+            passes.append('-instrument-nontermination')
+            passes.append('-instrument-nontermination-mark-header')
+
+        return passes + ["-lowerswitch", "-simplifycfg",
+                         "-reg2mem", "-simplifycfg",
+                         "-ainline", "-O3", "-reg2mem"]
+
+    def actions_before_verification(self, symbiotic):
+        symbiotic.optimize(['-O3'])
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         if isTimeout:
@@ -61,7 +78,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         for line in output:
             if 'assertion failed!' in line:
                 return result.RESULT_FALSE_REACH
-            if '__VERIFIER_error called!' in line:
+            if 'None: __VERIFIER_error called!' in line:
                 return result.RESULT_FALSE_REACH
             elif 'Killed paths: 0' in line:
                 no_path_killed = True
