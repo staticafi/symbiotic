@@ -455,9 +455,11 @@ fi
 if [ -z "$WITH_LLVM" ]; then
 	export LLVM_DIR=$ABS_RUNDIR/llvm-${LLVM_VERSION}/build/$LLVM_CMAKE_CONFIG_DIR
 	export LLVM_BUILD_PATH=$ABS_RUNDIR/llvm-${LLVM_VERSION}/build/
+	export LLVM_CONFIG=${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/bin/llvm-config
 else
 	export LLVM_DIR=$WITH_LLVM/$LLVM_CMAKE_CONFIG_DIR
 	export LLVM_BUILD_PATH=$WITH_LLVM
+	export LLVM_CONFIG=${WITH_LLVM}/bin/llvm-config
 fi
 
 if [ -z "$WITH_LLVM_SRC" ]; then
@@ -664,7 +666,9 @@ if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	build || clean_and_exit 1
 	# copy the libraries to LLVM build, there is a "bug" in llvm-config
 	# that requires them
-	cp *.a ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib
+	if [ -d ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib ]; then
+	  cp *.a ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/lib
+	fi
 
 	popd; popd
 fi
