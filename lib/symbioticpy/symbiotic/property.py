@@ -118,7 +118,7 @@ class PropertyDefBehavior(Property):
 class PropertyUnreachCall(Property):
     def __init__(self, prpfile = None):
         Property.__init__(self, prpfile)
-        self.calls = ['__VERIFIER_error'] # the default value
+        self.calls = ['reach_error'] # the default value
 
     def unreachcall(self):
         return True
