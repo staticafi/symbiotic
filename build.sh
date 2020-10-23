@@ -891,7 +891,7 @@ if [ $FROM -le 6 ]; then
 
 #if [ "$ARCHIVE" = "yes" ]; then
 	# precompile bitcode files
-	CPPFLAGS="-I/usr/include $CPPFLAGS" scripts/precompile_bitcode_files.sh
+	CFLAGS="-I$LLVM_BUILD_PATH/lib/clang/$LLVM_VERSION/include/" CPPFLAGS="-I/usr/include $CPPFLAGS" scripts/precompile_bitcode_files.sh
 #fi
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
