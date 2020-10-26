@@ -4,7 +4,7 @@
 # development if needed. This build script is meant to be more
 # of a guide how to build Symbiotic, it may not work in all cases.
 #
-#  (c) Marek Chalupa, 2016 - 2019
+#  (c) Marek Chalupa, 2016 - 2020
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -341,7 +341,7 @@ build_llvm()
 	# UFFF, for some stupid reason this only release has a different url, the rest (even newer use the previous one)
 	if [ ${LLVM_VERSION} = "8.0.1" ]; then
 		URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/
-	elif [ ${LLVM_MAJOR_VERSION} -ge 10 ]; then
+	elif [ ${LLVM_MAJOR_VERSION} -ge 9 ]; then
 		URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VERSION}/
 	        CLANG_NAME="clang"
 	fi
