@@ -779,25 +779,26 @@ class SymbioticCC(object):
         passes = []
         # NOTE: remove error calls must go first as the other passes
         # may include error calss
-        if self.options.property.memsafety() or \
-           self.options.property.undefinedness() or \
-           self.options.property.signedoverflow() or \
-           self.options.property.termination() or \
-           self.options.property.memcleanup():
+        prp = self.options.property
+        if prp.memsafety() or \
+           prp.undefinedness() or \
+           prp.signedoverflow() or \
+           prp.termination() or \
+           prp.memcleanup():
             # remove the original calls to __VERIFIER_error/__assert_fail
             passes.append('-remove-error-calls')
 
-        if self.options.property.memcleanup():
+        if prp.memcleanup():
             passes.append('-remove-error-calls-use-exit')
 
-        if not self.options.property.termination():
+        if not prp.termination():
             passes.append('-remove-infinite-loops')
 
-        if self.options.property.undefinedness() or \
-           self.options.property.signedoverflow():
+        if prp.undefinedness() or \
+           prp.signedoverflow():
             passes.append('-replace-ubsan')
 
-        if self.options.property.signedoverflow() and \
+        if prp.signedoverflow() and \
            not self.options.overflow_with_clang:
             passes.append('-replace-ubsan-just-remove')
             passes.append('-replace-ubsan-keep-shifts')
