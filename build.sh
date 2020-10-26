@@ -341,8 +341,8 @@ build_llvm()
 	# UFFF, for some stupid reason this only release has a different url, the rest (even newer use the previous one)
 	if [ ${LLVM_VERSION} = "8.0.1" ]; then
 		URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/
-	elif [ ${LLVM_VERSION} = "10.0.0" ]; then
-		URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/
+	elif [ ${LLVM_MAJOR_VERSION} -ge 10 ]; then
+		URL=https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VERSION}/
 	        CLANG_NAME="clang"
 	fi
 
@@ -424,6 +424,11 @@ build_llvm()
 #   get LLVM either from user provided location or from the internet,
 #   bulding it
 ######################################################################
+
+LLVM_MAJOR_VERSION="${LLVM_VERSION%%\.*}"
+LLVM_MINOR_VERSION=${LLVM_VERSION#*\.}
+LLVM_MINOR_VERSION="${LLVM_MINOR_VERSION%\.*}"
+
 if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	if [ -z "$WITH_LLVM" ]; then
 		build_llvm
@@ -442,9 +447,6 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 fi
 
 
-LLVM_MAJOR_VERSION="${LLVM_VERSION%%\.*}"
-LLVM_MINOR_VERSION=${LLVM_VERSION#*\.}
-LLVM_MINOR_VERSION="${LLVM_MINOR_VERSION%\.*}"
 LLVM_CMAKE_CONFIG_DIR=share/llvm/cmake
 if [ $LLVM_MAJOR_VERSION -gt 3 ]; then
 	LLVM_CMAKE_CONFIG_DIR=lib/cmake/llvm
