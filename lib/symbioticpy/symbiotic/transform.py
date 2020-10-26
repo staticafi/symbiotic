@@ -788,7 +788,7 @@ class SymbioticCC(object):
             # remove the original calls to __VERIFIER_error/__assert_fail
             passes.append('-remove-error-calls')
 
-        if prp.memcleanup():
+        if prp.memcleanup() or prp.termination():
             passes.append('-remove-error-calls-use-exit')
 
         if not prp.termination():
