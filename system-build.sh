@@ -3,7 +3,7 @@
 # Build Symbiotic from scratch and setup environment for
 # development if needed. Try using only system libraries.
 #
-#  (c) Marek Chalupa, 2016 - 2019
+#  (c) Marek Chalupa, 2016 - 2020
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -372,18 +372,18 @@ if [  -d predator-${LLVM_VERSION} ]; then
 fi
 if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 	if [ ! -d predator-${LLVM_VERSION} ]; then
-               git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp2019 predator-${LLVM_VERSION}
+               git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp2021 predator-${LLVM_VERSION}
 	fi
 
 	pushd predator-${LLVM_VERSION}
 
 	if [ ! -d CMakeFiles ]; then
-		"$LLVM_BIN_DIR/clang++" # plain clang has already been tested above
+		which "$LLVM_BIN_DIR/clang++" # plain clang has already been tested above
 		CC="$LLVM_BIN_DIR/clang" CXX="$LLVM_BIN_DIR/clang++" \
 			./switch-host-llvm.sh "$LLVM_DIR"
 	fi
 
-       	build || exit 1
+    build || exit 1
 	mkdir -p $LLVM_PREFIX/predator/lib
 	cp sl_build/*.so $LLVM_PREFIX/predator/lib
 	cp sl_build/slllvm* $LLVM_PREFIX/bin/
