@@ -784,7 +784,7 @@ fi
 ######################################################################
 if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 	if [ ! -d predator-${LLVM_VERSION} ]; then
-               git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp2019 predator-${LLVM_VERSION}
+               git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp2021 predator-${LLVM_VERSION}
 	fi
 
 	pushd predator-${LLVM_VERSION}
