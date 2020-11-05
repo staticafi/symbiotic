@@ -36,6 +36,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def cmdline(self, executable, options, tasks, propertyfile, rlimits):
         assert len(tasks) == 1
         assert self._options.property.assertions() or\
+               self._options.property.unreachcall() or\
                self._options.property.termination()
 
         return ['sb'] + options + tasks
