@@ -38,7 +38,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         assert self._options.property.unreachcall() or\
                self._options.property.termination()
 
-        return ['sb', '-se-exit-on-error'] + options + tasks
+        arch = '-pointer-bitwidth={0}'.format(32 if self._options.is32bit else 64)
+        return ['sb', '-se-exit-on-error', arch] + options + tasks
 
     def set_environment(self, symbiotic_dir, opts):
         """
