@@ -84,9 +84,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         for line in output:
             if 'assertion failed!' in line:
                 found_error = True
-            if 'None: __VERIFIER_error called!' in line:
+            elif 'assertion failure:' in line:
                 found_error = True
-            if 'Error found.' in line:
+            elif 'None: __VERIFIER_error called!' in line:
+                found_error = True
+            elif 'Error found.' in line:
                 found_error = True
             elif 'Killed paths: 0' in line:
                 no_path_killed = True
