@@ -15,7 +15,10 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_os_ostream.h"
 #include "llvm/Transforms/Utils/Cloning.h"
-//#include "llvm/Analysis/CallGraph.h"
+
+llvm::cl::list<std::string> noinline("ainline-noinline",
+        llvm::cl::desc("Do not inline the given functions (comma-separated)\n"),
+        llvm::cl::CommaSeparated);
 
 using namespace llvm;
 
@@ -42,6 +45,14 @@ bool AgressiveInliner::runOnModule(Module& M) {
   return changed;
 }
 
+static bool shouldIgnore(const std::string& name) {
+    for (const auto& ignore : noinline) {
+        if (name == ignore)
+            return true;
+    }
+    return false;
+}
+
 bool AgressiveInliner::runOnFunction(Function &F) {
     bool changed = false;
     std::vector<CallInst *> calls;
@@ -56,11 +67,20 @@ bool AgressiveInliner::runOnFunction(Function &F) {
     // FIXME: this is really stupid naive way to inline...
     for (auto *CI : calls) {
         //llvm::errs() << "Inlining: " <<*CI << "\n";
+        auto *CV = CI->getCalledValue()->stripPointerCasts();
+        auto *fun = llvm::dyn_cast<llvm::Function>(CV);
+        if (!fun)
+            continue; // funptr
+
+        auto name = fun->getName().str();
+        if (shouldIgnore(name))
+            continue;
+
         InlineFunctionInfo IFI;
         auto result = InlineFunction(CI, IFI);
         if (!result) {
-           //llvm::errs() << "Failed inlining: " << *CI << "\n";
-           //llvm::errs() << "  " << static_cast<const char *>(result) << "\n";
+          //llvm::errs() << "Failed inlining: " << *CI << "\n";
+          //llvm::errs() << "  " << static_cast<const char *>(result) << "\n";
         } else {
             changed = true;
         }
