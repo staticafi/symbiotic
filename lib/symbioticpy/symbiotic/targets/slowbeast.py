@@ -35,8 +35,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def cmdline(self, executable, options, tasks, propertyfile, rlimits):
         assert len(tasks) == 1
-        assert self._options.property.assertions() or\
-               self._options.property.unreachcall() or\
+        assert self._options.property.unreachcall() or\
                self._options.property.termination()
 
         return ['sb'] + options + tasks
@@ -57,14 +56,19 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         """
         Passes that should run before CPAchecker
         """
+        prp = self._options.property
         passes = []
-        if self._options.property.termination():
+        if prp.termination():
             passes.append('-instrument-nontermination')
             passes.append('-instrument-nontermination-mark-header')
 
-        return passes + ["-lowerswitch", "-simplifycfg",
-                         "-reg2mem", "-simplifycfg",
-                         "-ainline", "-O3", "-reg2mem"]
+        passes += ["-lowerswitch", "-simplifycfg", "-reg2mem",
+                   "-simplifycfg", "-ainline"]
+        if prp.unreachcall():
+            passes.append("-ainline-noinline")
+            # FIXME: get rid of the __VERIFIER_assert hack
+            passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert")
+        return passes + ["-O3", "-reg2mem"]
 
     def actions_before_verification(self, symbiotic):
         symbiotic.optimize(['-O3'])
