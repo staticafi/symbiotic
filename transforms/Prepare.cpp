@@ -59,7 +59,6 @@ bool Prepare::runOnModule(Module &M) {
     "__VERIFIER_nondet_bool",
     "__VERIFIER_nondet__Bool",
     "__VERIFIER_nondet_size_t",
-    "ldv_is_err",
     nullptr
   };
 
