@@ -35,11 +35,15 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def cmdline(self, executable, options, tasks, propertyfile, rlimits):
         assert len(tasks) == 1
-        assert self._options.property.unreachcall() or\
-               self._options.property.termination()
+        prp = self._options.property
+        assert prp.unreachcall() or prp.termination()
 
         arch = '-pointer-bitwidth={0}'.format(32 if self._options.is32bit else 64)
-        return ['sb', '-se-exit-on-error', arch] + options + tasks
+        cmd = ['sb', '-se-exit-on-error', arch]
+        if prp.unreachcall():
+            funs = ','.join(prp.getcalls())
+            cmd.append('-error-fn={funs}')
+        return cmd + options + tasks
 
     def set_environment(self, symbiotic_dir, opts):
         """
