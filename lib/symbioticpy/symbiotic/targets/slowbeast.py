@@ -38,7 +38,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         assert self._options.property.unreachcall() or\
                self._options.property.termination()
 
-        return ['sb'] + options + tasks
+        return ['sb', '-se-exit-on-error'] + options + tasks
 
     def set_environment(self, symbiotic_dir, opts):
         """
