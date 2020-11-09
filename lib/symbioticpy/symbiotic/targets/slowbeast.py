@@ -42,7 +42,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         cmd = ['sb', '-se-exit-on-error', arch]
         if prp.unreachcall():
             funs = ','.join(prp.getcalls())
-            cmd.append('-error-fn={funs}')
+            cmd.append(f'-error-fn={funs}')
         return cmd + options + tasks
 
     def set_environment(self, symbiotic_dir, opts):
