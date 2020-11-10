@@ -86,13 +86,17 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         have_problem = False
         no_errors = False
         found_error = False
+        memerr = False
+        asserterr = False
         for line in output:
             if 'assertion failed!' in line:
-                found_error = True
+                asserterr = True
             elif 'assertion failure:' in line:
-                found_error = True
+                asserterr = True
             elif 'None: __VERIFIER_error called!' in line:
-                found_error = True
+                asserterr = True
+            elif 'memory error - uninitialized read' in line:
+                memerr = True
             elif 'Error found.' in line:
                 found_error = True
             elif 'Killed paths: 0' in line:
@@ -104,11 +108,20 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 no_errors = True
 
         if found_error and not no_errors:
-            if self._options.property.termination():
-                return result.RESULT_FALSE_TERMINATION
-            return result.RESULT_FALSE_REACH
+            if asserterr:
+                if self._options.property.termination():
+                    return result.RESULT_FALSE_TERMINATION
+                return result.RESULT_FALSE_REACH
+            elif memerr:
+                return f"{result.RESULT_UNKNOWN}(uninit mem)"
+                # we do not support memsafety yet...
+                #return result.RESULT_FALSE_DEREF
+            else:
+                return f"{result.RESULT_UNKNOWN}(unknown-err)"
         if no_errors and no_path_killed and not have_problem:
             return result.RESULT_TRUE_PROP
-        if returncode != 0 or returnsignal:
-            return result.RESULT_ERROR
+        if returncode != 0:
+            return f"{result.RESULT_ERROR}(returned {returncode})"
+        if returnsignal:
+            return f"{result.RESULT_ERROR}(signal {returnsignal})"
         return result.RESULT_UNKNOWN
