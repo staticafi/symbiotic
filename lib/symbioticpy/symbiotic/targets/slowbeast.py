@@ -41,8 +41,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
         exe = abspath(self.executable())
         arch = '-pointer-bitwidth={0}'.format(32 if self._options.is32bit else 64)
-        #cmd = ['python', exe, '-se-exit-on-error', arch]
-        cmd = ['python', '-O', exe, '-se-exit-on-error', arch]
+        cmd = ['python3', exe, '-se-exit-on-error', arch]
+        #cmd = ['python3', '-O', exe, '-se-exit-on-error', arch]
         if prp.unreachcall():
             funs = ','.join(prp.getcalls())
             cmd.append(f'-error-fn={funs}')
