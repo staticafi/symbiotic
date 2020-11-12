@@ -87,7 +87,12 @@ class SymbioticVerifier(object):
     def run_verification(self):
         print_stdout('INFO: Starting verification', color='WHITE')
         restart_counting_time()
-        res = self._run_verifier(self._tools[0])
+        for tool in self._tools:
+            res = self._run_verifier(tool)
+            sw = res.lower().startswith
+            # we got an answer, we can finish
+            if sw('true') or sw('false'):
+                return res
         print_elapsed_time("INFO: Verification time", color='WHITE')
         return res
 
