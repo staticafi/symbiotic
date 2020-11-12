@@ -33,7 +33,7 @@ except ImportError:
     from symbiotic.benchexec.tools.template import BaseTool
 
 from . klee import SymbioticTool as KleeTool
-from . nidhugg import SymbioticTool as NidhuggTool
+from . slowbeast import SymbioticTool as SlowbeastTool
 
 class SymbioticTool(BaseTool, SymbioticBaseTool):
     """
@@ -46,8 +46,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         self._env = None
         self._has_threads = False
 
+    def verifiers(self):
+        return (KleeTool(self._options),
+                SlowbeastTool(self._options))
+
     def name(self):
-        return self.tool.name()
+        return 'svcomp'
 
     def can_replay(self):
         return self.tool.can_replay()
