@@ -53,40 +53,43 @@ class SymbioticVerifier(object):
         self._linked_functions = []
 
         # tool to use
-        self._tool = tool
+        self._tools = [tool]
 
     def command(self, cmd):
         return runcmd(cmd, DbgWatch('all'),
                       "Failed running command: {0}".format(" ".join(cmd)))
 
-    def _run_verifier(self, cmd):
-        print_stdout('INFO: Starting verification', color='WHITE')
-        restart_counting_time()
-
-        returncode = 0
-        watch = ToolWatch(self._tool)
-
+    def _run_tool(self, tool, prp, params):
+        cmd = tool.cmdline(tool.executable(), params,
+                           [self.curfile], prp, [])
+        watch = ToolWatch(tool)
         process = ProcessRunner()
+
         returncode = process.run(cmd, watch)
         if returncode != 0:
             dbg('The verifier return non-0 return status')
 
-        print_elapsed_time('INFO: Verification time', color='WHITE')
-        res = self._tool.determine_result(returncode, 0,
-                                          map(lambda x: x.decode('utf-8'), watch.getLines()), False)
+        res = tool.determine_result(returncode, 0,
+                                    map(lambda x: x.decode('utf-8'),
+                                        watch.getLines()),
+                                    False)
         if res.lower().startswith('error'):
             for line in watch.getLines():
                 print_stderr(line.decode('utf-8'),
                              color='RED', print_nl=False)
         return res
 
-    def run_verification(self):
+    def _run_verifier(self, tool):
         params = self.override_params or self.options.tool_params
-        cmd = self._tool.cmdline(self._tool.executable(),
-                                 params, [self.curfile],
-                                 self.options.property.getPrpFile(), [])
+        prp = self.options.property.getPrpFile()
+        return self._run_tool(tool, prp, params)
 
-        return self._run_verifier(cmd)
+    def run_verification(self):
+        print_stdout('INFO: Starting verification', color='WHITE')
+        restart_counting_time()
+        res = self._run_verifier(self._tools[0])
+        print_elapsed_time("INFO: Verification time", color='WHITE')
+        return res
 
     def run(self):
         try:
