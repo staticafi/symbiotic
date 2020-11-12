@@ -88,7 +88,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         no_path_killed = False
         have_problem = False
         no_errors = False
-        found_error = False
         memerr = False
         asserterr = False
         for line in output:
@@ -100,8 +99,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 asserterr = True
             elif 'memory error - uninitialized read' in line:
                 memerr = True
-            elif 'Error found.' in line:
-                found_error = True
             elif 'Killed paths: 0' in line:
                 no_path_killed = True
             elif 'Did not extend the path and reached entry of CFG' in line or\
@@ -110,7 +107,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             elif 'Found errors: 0' in line:
                 no_errors = True
 
-        if found_error and not no_errors:
+        if not no_errors:
             if asserterr:
                 if self._options.property.termination():
                     return result.RESULT_FALSE_TERMINATION
