@@ -71,7 +71,7 @@ class Symbiotic(object):
         verifier = SymbioticVerifier(bitcode, self.sources,
                                      self._tool, self.options,
                                      self.env, params)
-        res = verifier.run()
+        res, _ = verifier.run()
 
         print_elapsed_time('INFO: Replaying error path time', color='WHITE')
 
@@ -86,7 +86,8 @@ class Symbiotic(object):
 
         verifier = SymbioticVerifier(bitcode, self.sources,
                                      self._tool, self.options, self.env)
-        res = verifier.run()
+        # result and the tool that decided this result
+        res, tool = verifier.run()
 
         # if we crashed on the sliced file, try running on the unsliced file
         # (do this optional, as well as for slicer and instrumentation)
@@ -98,19 +99,19 @@ class Symbiotic(object):
             bitcode = cc.prepare_unsliced_file()
             verifier = SymbioticVerifier(bitcode, self.sources,
                                          self._tool, self.options, self.env)
-            res = verifier.run()
+            res, tool = verifier.run()
             self.options.replay_error = False # now we do not need to replay the error
             print_elapsed_time('INFO: Running on unsliced code time', color='WHITE')
 
         if self.options.replay_error and\
-           not self._tool.can_replay():
+           not tool.can_replay():
            dbg('Replay required but the tool does not support it')
 
         has_error = res and\
                     (res.startswith('false') or\
                     (res.startswith('done') and self.options.property.errorcall()))
         if has_error and self.options.replay_error and\
-           not self.options.noslice and self._tool.can_replay():
+           not self.options.noslice and tool.can_replay():
             print_stdout("Trying to confirm the error path")
             newres = self.replay_nonsliced(cc)
 
@@ -134,15 +135,15 @@ class Symbiotic(object):
                     res = 'cex not-confirmed'
                     has_error = False
 
-        if has_error and hasattr(self._tool, "describe_error"):
-            self._tool.describe_error(cc.curfile)
+        if has_error and hasattr(tool, "describe_error"):
+            tool.describe_error(cc.curfile)
 
         if has_error and self.options.executable_witness and\
-           hasattr(self._tool, "generate_exec_witness"):
-            self._tool.generate_exec_witness(cc.curfile, self.sources)
+           hasattr(tool, "generate_exec_witness"):
+            tool.generate_exec_witness(cc.curfile, self.sources)
 
-        if not self.options.nowitness and hasattr(self._tool, "generate_witness"):
-            self._tool.generate_witness(cc.curfile, self.sources, has_error)
+        if not self.options.nowitness and hasattr(tool, "generate_witness"):
+            tool.generate_witness(cc.curfile, self.sources, has_error)
 
         return res
 

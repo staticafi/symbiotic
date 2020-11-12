@@ -47,14 +47,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         self._has_threads = False
 
     def verifiers(self):
-        return (KleeTool(self._options),
-                SlowbeastTool(self._options))
+        return ((SlowbeastTool(self._options), 10),
+                (KleeTool(self._options), 100),
+                (SlowbeastTool(self._options), None))
 
     def name(self):
         return 'svcomp'
-
-    def can_replay(self):
-        return self.tool.can_replay()
 
     def executable(self):
         return self.tool.executable()
