@@ -41,6 +41,16 @@ class SymbioticBaseTool(object):
         """ Return true if the tool can do error replay """
         return False
 
+    def verifiers(self):
+        """
+        Return an iterable of tool modules to run on the generated file.
+        By default, it is this tool, but it can be several other tools
+        (in which this Tool module serves to merge them together
+        and describes how to generate the bitcode such that it can
+        be run by all the tools)
+        """
+        return (self,)
+
    # we run these passes for every tool
    #def passes_after_compilation(self):
    #    """

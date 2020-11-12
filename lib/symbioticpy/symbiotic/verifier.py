@@ -53,7 +53,7 @@ class SymbioticVerifier(object):
         self._linked_functions = []
 
         # tool to use
-        self._tools = [tool]
+        self._tool = tool
 
     def command(self, cmd):
         return runcmd(cmd, DbgWatch('all'),
@@ -87,8 +87,8 @@ class SymbioticVerifier(object):
     def run_verification(self):
         print_stdout('INFO: Starting verification', color='WHITE')
         restart_counting_time()
-        for tool in self._tools:
-            res = self._run_verifier(tool)
+        for verifiertool in self._tool.verifiers():
+            res = self._run_verifier(verifiertool)
             sw = res.lower().startswith
             # we got an answer, we can finish
             if sw('true') or sw('false'):
