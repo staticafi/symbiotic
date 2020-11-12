@@ -31,7 +31,7 @@ class ProcessRunner(object):
         # we executed another process while the previous one is still running
         assert ProcessRunner.current_process is None
 
-        dbg('|> {0}'.format(' '.join(cmd)), prefix='', color='CYAN')
+        dbg('|> {0}'.format(' '.join(map(str, cmd))), prefix='', color='CYAN')
 
         # run the command and store the handle into the class attribute
         # current_process, so that we can easily kill this process

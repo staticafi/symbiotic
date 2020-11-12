@@ -49,7 +49,8 @@ class SymbioticBaseTool(object):
         and describes how to generate the bitcode such that it can
         be run by all the tools)
         """
-        return (self,)
+        # pairs (tool, timeout)
+        return ((self, None),)
 
    # we run these passes for every tool
    #def passes_after_compilation(self):

@@ -59,9 +59,12 @@ class SymbioticVerifier(object):
         return runcmd(cmd, DbgWatch('all'),
                       "Failed running command: {0}".format(" ".join(cmd)))
 
-    def _run_tool(self, tool, prp, params):
-        cmd = tool.cmdline(tool.executable(), params,
-                           [self.curfile], prp, [])
+    def _run_tool(self, tool, prp, params, timeout):
+        cmd = []
+        if timeout:
+            cmd = ['timeout', str(int(timeout))]
+        cmd += tool.cmdline(tool.executable(), params,
+                            [self.curfile], prp, [])
         watch = ToolWatch(tool)
         process = ProcessRunner()
 
@@ -79,22 +82,23 @@ class SymbioticVerifier(object):
                              color='RED', print_nl=False)
         return res
 
-    def _run_verifier(self, tool):
+    def _run_verifier(self, tool, timeout):
         params = self.override_params or self.options.tool_params
         prp = self.options.property.getPrpFile()
-        return self._run_tool(tool, prp, params)
+        return self._run_tool(tool, prp, params, timeout)
 
     def run_verification(self):
         print_stdout('INFO: Starting verification', color='WHITE')
         restart_counting_time()
-        for verifiertool in self._tool.verifiers():
-            res = self._run_verifier(verifiertool)
+        for verifiertool, verifiertimeout in self._tool.verifiers():
+            res = self._run_verifier(verifiertool, verifiertimeout)
             sw = res.lower().startswith
             # we got an answer, we can finish
             if sw('true') or sw('false'):
-                return res
+                return res, verifiertool
+            print(f"{verifiertool.name()} answered {res}")
         print_elapsed_time("INFO: Verification time", color='WHITE')
-        return res
+        return res, None
 
     def run(self):
         try:
@@ -103,5 +107,5 @@ class SymbioticVerifier(object):
             raise SymbioticException('interrupted')
         except SymbioticExceptionalResult as res:
             # we got result from some exceptional case
-            return str(res)
+            return str(res), None
 
