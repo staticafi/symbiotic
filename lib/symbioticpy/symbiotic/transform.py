@@ -850,7 +850,7 @@ class SymbioticCC(object):
         # run reg2mem before breaking to loops, because breaking the loops can
         # not handle PHI nodes well.
         if not self.options.noslice and 'before-O3' in self.options.optlevel:
-            passes += ['-reg2mem', '-break-infinite-loops',
+            passes += ['-reg2mem',# '-break-infinite-loops',
                        '-remove-infinite-loops',
                        '-mem2reg', '-break-crit-loops', '-lowerswitch']
         self.optimize(passes, load_sbt=True)
