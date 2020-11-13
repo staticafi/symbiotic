@@ -3,7 +3,8 @@
 static void (*AtExit[MAX_ATEXIT])(void);
 static unsigned NumAtExit;
 
-void klee_report_error(const char *, int, const char *, const char *);
+void abort(void) __attribute__((noreturn));
+
 static void RunAtExit(void) __attribute__((destructor));
 static void RunAtExit(void) {
     unsigned i;
@@ -15,8 +16,7 @@ static void RunAtExit(void) {
 
 int atexit(void (*fn)(void)) {
     if (NumAtExit == MAX_ATEXIT) {
-        klee_report_error(__FILE__, __LINE__, "atexit: no room in array!",
-                          "exec");
+        abort();
     }
 
     AtExit[NumAtExit] = fn;
