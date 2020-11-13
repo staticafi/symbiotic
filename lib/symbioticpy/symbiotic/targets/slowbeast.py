@@ -76,7 +76,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             passes.append("-ainline-noinline")
             # FIXME: get rid of the __VERIFIER_assert hack
             passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert")
-        return passes + ["-O3", "-reg2mem"]
+        return passes + ["-O3", "-remove-constant-exprs", "-reg2mem"]
 
     def actions_before_verification(self, symbiotic):
         symbiotic.optimize(['-O3'])

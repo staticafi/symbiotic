@@ -117,7 +117,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             passes.append('-instrument-nontermination')
             passes.append('-instrument-nontermination-mark-header')
 
-        return passes
+        passes.append("-remove-constant-exprs") # slowbeast needs that
+        return passes 
 
     def actions_before_verification(self, symbiotic):
         symbiotic.optimize(['-O3'])
