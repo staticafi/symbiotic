@@ -8,7 +8,9 @@ static void RunAtExit(void) __attribute__((destructor));
 static void RunAtExit(void) {
     unsigned i;
 
-    for (i = NumAtExit - 1; i < MAX_ATEXIT; --i) AtExit[i]();
+    for (i = NumAtExit; i > 0; --i) {
+        AtExit[i-1]();
+    }
 }
 
 int atexit(void (*fn)(void)) {
