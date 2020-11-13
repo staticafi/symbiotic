@@ -1,4 +1,5 @@
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/InstIterator.h>
 #include <llvm/Support/Casting.h>
 
 #include <algorithm>
@@ -142,19 +143,23 @@ class ExplicitConsdes : public ModulePass {
 
         // and finally search for calls to exit in whole program
         for (auto &func : mod.functions()) {
-            for (auto &block : func) {
-                for (auto &inst : block) {
-                    if (auto *call = dyn_cast<CallInst>(&inst)) {
-                        if (call->isIndirectCall()) continue;
-                        Function *called = call->getCalledFunction();
-                        if (!called) continue;
-                        auto *ty = called->getType()->getPointerElementType();
-                        if (called->hasName() && called->getName() == "exit" &&
-                            ty->getFunctionNumParams() == 1 &&
-                            ty->getFunctionParamType(0)->isIntegerTy()) {
-                            dtorsBefore.push_back(call);
-                        }
-                    }
+            for (auto &inst : instructions(func)) {
+                auto *call = dyn_cast<CallInst>(&inst);
+                if (!call)
+                    continue;
+
+                if (call->isIndirectCall())
+                    continue;
+
+                Function *called = call->getCalledFunction();
+                if (!called)
+                    continue;
+
+                auto *ty = called->getType()->getPointerElementType();
+                if (called->hasName() && called->getName() == "exit" &&
+                    ty->getFunctionNumParams() == 1 &&
+                    ty->getFunctionParamType(0)->isIntegerTy()) {
+                    dtorsBefore.push_back(call);
                 }
             }
         }
