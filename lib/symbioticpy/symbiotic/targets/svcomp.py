@@ -47,9 +47,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         self._has_threads = False
 
     def verifiers(self):
-        return ((SlowbeastTool(self._options), 10),
-                (KleeTool(self._options), 100),
-                (SlowbeastTool(self._options), None))
+        prp = self._options.property
+        if prp.unreachcall():
+            return ((KleeTool(self._options), 10),
+                    (SlowbeastTool(self._options), None))
+        return ((KleeTool(self._options), None),)
 
     def name(self):
         return 'svcomp'
