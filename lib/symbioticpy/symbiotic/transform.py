@@ -868,6 +868,10 @@ class SymbioticCC(object):
             if passes:
                 self.run_opt(passes)
 
+        # link definition of atexit and get rid of llvm.global_dtors
+        self.link_undefined(['atexit'])
+        self.run_opt(['-explicit-consdes'])
+
         if not self.options.noslice:
             self.perform_slicing()
 
