@@ -721,6 +721,8 @@ class SymbioticCC(object):
         if ver_major == 3 and ver_minor <= 6:
             disabled += [ '-tti', '-bdce', '-elim-avail-extern',
                           '-float2int', '-loop-accesses']
+        if ver_major >= 11:
+            disabled += ['-basicaa']
 
         if disabled:
             dbg('Disabled these optimizations: {0}'.format(str(disabled)))
