@@ -486,7 +486,7 @@ if [ $FROM -le 6 ]; then
 	(build && make install) || exit 1
 
 	# precompile bitcode files
-	scripts/precompile_bitcode_files.sh
+	#scripts/precompile_bitcode_files.sh
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
