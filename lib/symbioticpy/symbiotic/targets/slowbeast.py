@@ -78,9 +78,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert")
         return passes + ["-O3", "-remove-constant-exprs", "-reg2mem"]
 
-    def actions_before_verification(self, symbiotic):
-        symbiotic.optimize(['-O3'])
-
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         if isTimeout:
             return ''
