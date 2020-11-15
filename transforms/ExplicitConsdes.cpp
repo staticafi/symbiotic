@@ -70,6 +70,13 @@ class ExplicitConsdes : public ModulePass {
         }
     }
 
+    void markUnused(GlobalVariable *gv) {
+        if (!gv)
+            return;
+
+        gv->setName(gv->getName() + "_unused");
+    }
+
     void insertCalls(std::vector<FunctionEntry> &entries, Instruction *before) {
         Instruction *after = nullptr;
 
@@ -202,12 +209,8 @@ class ExplicitConsdes : public ModulePass {
             insertCalls(dtors, before);
         }
 
-        if (ctorsVar) {
-            ctorsVar->eraseFromParent();
-        }
-        if (dtorsVar) {
-            dtorsVar->eraseFromParent();
-        }
+        markUnused(ctorsVar);
+        markUnused(dtorsVar);
 
         return true;
     }
