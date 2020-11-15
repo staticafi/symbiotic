@@ -78,7 +78,9 @@ class ExplicitConsdes : public ModulePass {
                 dyn_cast<FunctionType>(
                     entry.function->getType()->getPointerElementType()),
                 entry.function, "");
-            call->setDebugLoc(DebugLoc::get(0,0, before->getDebugLoc().getScope()));
+
+            call->setDebugLoc(before->getDebugLoc());
+
             if (after) {
                 call->insertAfter(after);
             } else {
