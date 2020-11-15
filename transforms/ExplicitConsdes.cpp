@@ -90,6 +90,39 @@ class ExplicitConsdes : public ModulePass {
         }
     }
 
+    bool isExit(const Function *f) {
+        const Type *ty = f->getType();
+        if (ty->isPointerTy())
+            ty = ty->getPointerElementType();
+
+        return f->hasName() && f->getName() == "exit" &&
+                    ty->getFunctionNumParams() == 1 &&
+                    ty->getFunctionParamType(0)->isIntegerTy();
+    }
+
+    void warnIfExitIsUsed(const Instruction& inst) {
+        // inst -> [operands] -> [only function pointers] -> [only exit] -> is_empty
+        for (const auto& op : inst.operands()) {
+            const auto *val = op.get();
+            if (!val)
+                continue;
+
+            const auto *ty = val->getType();
+
+            if (!ty->isPointerTy())
+                continue;
+
+            if (!ty->getPointerElementType()->isFunctionTy())
+                continue;
+
+            const auto *f = dyn_cast<Function>(val);
+            if (!f || !isExit(f))
+                continue;
+
+            errs() << "explicit-consdes: warning: indirect call of exit is possible in the program\n";
+        }
+    }
+
    public:
     static char ID;
 
@@ -147,8 +180,10 @@ class ExplicitConsdes : public ModulePass {
         for (auto &func : mod.functions()) {
             for (auto &inst : instructions(func)) {
                 auto *call = dyn_cast<CallInst>(&inst);
-                if (!call)
+                if (!call) {
+                    warnIfExitIsUsed(inst);
                     continue;
+                }
 
                 if (call->isIndirectCall())
                     continue;
@@ -157,10 +192,7 @@ class ExplicitConsdes : public ModulePass {
                 if (!called)
                     continue;
 
-                auto *ty = called->getType()->getPointerElementType();
-                if (called->hasName() && called->getName() == "exit" &&
-                    ty->getFunctionNumParams() == 1 &&
-                    ty->getFunctionParamType(0)->isIntegerTy()) {
+                if (isExit(called)) {
                     dtorsBefore.push_back(call);
                 }
             }
