@@ -78,40 +78,41 @@ class Symbiotic(object):
         return res
 
     def _run_symbiotic(self):
-        cc = SymbioticCC(self.sources, self._tool, self.options, self.env)
+        options = self.options
+        cc = SymbioticCC(self.sources, self._tool, options, self.env)
         bitcode = cc.run()
 
-        if self.options.no_verification:
+        if options.no_verification:
             return 'No verification'
 
         verifier = SymbioticVerifier(bitcode, self.sources,
-                                     self._tool, self.options, self.env)
+                                     self._tool, options, self.env)
         # result and the tool that decided this result
         res, tool = verifier.run()
 
         # if we crashed on the sliced file, try running on the unsliced file
         # (do this optional, as well as for slicer and instrumentation)
-        if not self.options.noslice and \
-           (self.options.sv_comp or self.options.test_comp) and \
+        if not options.noslice and \
+           (options.sv_comp or options.test_comp) and \
             res.lower().startswith('error') or res.lower().startswith('unknown'):
             print_stdout("INFO: Failed on the sliced code, trying on the unsliced code",
                          color="WHITE")
             bitcode = cc.prepare_unsliced_file()
             verifier = SymbioticVerifier(bitcode, self.sources,
-                                         self._tool, self.options, self.env)
+                                         self._tool, options, self.env)
             res, tool = verifier.run()
-            self.options.replay_error = False # now we do not need to replay the error
+            options.replay_error = False # now we do not need to replay the error
             print_elapsed_time('INFO: Running on unsliced code time', color='WHITE')
 
-        if self.options.replay_error and\
+        if tool and options.replay_error and\
            not tool.can_replay():
            dbg('Replay required but the tool does not support it')
 
         has_error = res and\
                     (res.startswith('false') or\
-                    (res.startswith('done') and self.options.property.errorcall()))
-        if has_error and self.options.replay_error and\
-           not self.options.noslice and tool.can_replay():
+                    (res.startswith('done') and options.property.errorcall()))
+        if has_error and options.replay_error and\
+           not options.noslice and tool.can_replay():
             print_stdout("Trying to confirm the error path")
             newres = self.replay_nonsliced(cc)
 
@@ -121,11 +122,11 @@ class Symbiotic(object):
             if res != newres:
                 # if we did not replay the original error, but we found a different error
                 # on this path, report it, since it should be real
-                if self.options.sv_comp or self.options.test_comp:
+                if options.sv_comp or options.test_comp:
                     has_error = newres and\
                                 (newres.startswith('false') or\
                                 (newres.startswith('done') and\
-                                 self.options.property.errorcall()))
+                                 options.property.errorcall()))
                     if has_error:
                         res = newres
                     else:
@@ -138,11 +139,11 @@ class Symbiotic(object):
         if has_error and hasattr(tool, "describe_error"):
             tool.describe_error(cc.curfile)
 
-        if has_error and self.options.executable_witness and\
+        if has_error and options.executable_witness and\
            hasattr(tool, "generate_exec_witness"):
             tool.generate_exec_witness(cc.curfile, self.sources)
 
-        if not self.options.nowitness and hasattr(tool, "generate_witness"):
+        if not options.nowitness and hasattr(tool, "generate_witness"):
             tool.generate_witness(cc.curfile, self.sources, has_error)
 
         return res
