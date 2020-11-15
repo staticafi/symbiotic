@@ -61,8 +61,12 @@ bool mayAlias(Value *v1, Value *v2) {
   return true;
 }
 
+bool hasMultiplePredecessors(Instruction *I) {
+  auto *blk = I->getParent();
+  return &blk->front() == I && !blk->getUniquePredecessor();
+}
+
 bool mayModify(Instruction *I, AllocaInst *var) {
-  // TODO: use alias analysis here
   if (!I->mayWriteToMemory())
     return false;
 
@@ -104,7 +108,7 @@ void queueSuccessors(Queue& queue, Visited& visited, Instruction *curI) {
     auto *blk = curI->getParent();
 
     for (auto *succ : successors(blk)) {
-      auto firstI = succ->getFirstNonPHIOrDbg();
+      auto firstI = &succ->front();
       if (visited.insert(firstI).second) {
         queue.insert(firstI);
       }
@@ -127,6 +131,11 @@ bool propagate(Instruction& Loc, AllocaInst *var, Constant *C) {
     auto it = queue.begin();
     auto *curI = *it;
     queue.erase(it);
+
+    /// we cannot continue here as the values from different predecessors
+    // may be different
+    if (hasMultiplePredecessors(curI))
+      continue;
 
     // replace(V, C, l)
     changed |= replace(var, C, curI);
