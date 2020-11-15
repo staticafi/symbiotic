@@ -81,6 +81,15 @@ bool AgressiveInliner::runOnFunction(Function &F) {
             continue;
 
         InlineFunctionInfo IFI;
+#if LLVM_VERSION_MAJOR > 10
+        auto result = InlineFunction(*CI, IFI);
+        if (!result.isSuccess()) {
+          //llvm::errs() << "Failed inlining: " << *CI << "\n";
+          //llvm::errs() << "  " << static_cast<const char *>(result) << "\n";
+        } else {
+            changed = true;
+        }
+#else
         auto result = InlineFunction(CI, IFI);
         if (!result) {
           //llvm::errs() << "Failed inlining: " << *CI << "\n";
@@ -88,6 +97,7 @@ bool AgressiveInliner::runOnFunction(Function &F) {
         } else {
             changed = true;
         }
+#endif
     }
 
     return changed;
