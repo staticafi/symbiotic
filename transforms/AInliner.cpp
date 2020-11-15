@@ -67,7 +67,11 @@ bool AgressiveInliner::runOnFunction(Function &F) {
     // FIXME: this is really stupid naive way to inline...
     for (auto *CI : calls) {
         //llvm::errs() << "Inlining: " <<*CI << "\n";
+#if LLVM_VERSION_MAJOR >= 8
+        auto *CV = CI->getCalledOperand()->stripPointerCasts();
+#else
         auto *CV = CI->getCalledValue()->stripPointerCasts();
+#endif
         auto *fun = llvm::dyn_cast<llvm::Function>(CV);
         if (!fun)
             continue; // funptr
