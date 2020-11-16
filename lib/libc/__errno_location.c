@@ -1,5 +1,5 @@
 static int __symbiotic_errno = 0;
-int * __attribute__((weak)) __errno_location(void)
+int *__errno_location(void)
 {
 	/* we don't support multi-threaded programs,
 	 * so we can have just this one errno */
