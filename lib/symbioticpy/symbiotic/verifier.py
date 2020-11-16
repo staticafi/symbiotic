@@ -73,8 +73,7 @@ class SymbioticVerifier(object):
             dbg('The verifier return non-0 return status')
 
         res = tool.determine_result(returncode, 0,
-                                    map(lambda x: x.decode('utf-8'),
-                                        watch.getLines()),
+                                    map(str, watch.getLines()),
                                     False)
         if res.lower().startswith('error'):
             for line in watch.getLines():

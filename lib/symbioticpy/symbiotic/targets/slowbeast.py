@@ -37,7 +37,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def cmdline(self, executable, options, tasks, propertyfile, rlimits):
         assert len(tasks) == 1
         prp = self._options.property
-        assert prp.unreachcall() or prp.termination()
 
         exe = abspath(self.executable())
         arch = '-pointer-bitwidth={0}'.format(32 if self._options.is32bit else 64)
@@ -72,9 +71,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
         passes += ["-lowerswitch", "-simplifycfg", "-reg2mem",
                    "-simplifycfg", "-ainline"]
+        passes.append("-ainline-noinline")
+        # FIXME: get rid of the __VERIFIER_assert hack
         if prp.unreachcall():
-            passes.append("-ainline-noinline")
-            # FIXME: get rid of the __VERIFIER_assert hack
             passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert")
         return passes + ["-O3", "-remove-constant-exprs", "-reg2mem"]
 
