@@ -29,7 +29,7 @@ class ToolWatch(ProcessWatch):
             sys.stderr.write(str(line.strip()))
             sys.stderr.write('\n')
         else:
-            dbg(line.decode('utf-8'), 'all', print_nl=False,
+            dbg(str(line), 'all', print_nl=False,
                 prefix='', color=None)
 
 class SymbioticVerifier(object):
@@ -82,16 +82,18 @@ class SymbioticVerifier(object):
                              color='RED', print_nl=False)
         return res
 
-    def _run_verifier(self, tool, timeout):
+    def _run_verifier(self, tool, addparams, timeout):
         params = self.override_params or self.options.tool_params
+        if addparams:
+            params += addparams
         prp = self.options.property.getPrpFile()
         return self._run_tool(tool, prp, params, timeout)
 
     def run_verification(self):
         print_stdout('INFO: Starting verification', color='WHITE')
         restart_counting_time()
-        for verifiertool, verifiertimeout in self._tool.verifiers():
-            res = self._run_verifier(verifiertool, verifiertimeout)
+        for verifiertool, addparams, verifiertimeout in self._tool.verifiers():
+            res = self._run_verifier(verifiertool, addparams, verifiertimeout)
             sw = res.lower().startswith
             # we got an answer, we can finish
             if sw('true') or sw('false'):
