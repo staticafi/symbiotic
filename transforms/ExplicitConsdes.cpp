@@ -144,24 +144,18 @@ class ExplicitConsdes : public ModulePass {
 
         vector<FunctionEntry> ctors, dtors;
 
-        GlobalVariable *dtorsVar = nullptr;
-        GlobalVariable *ctorsVar = nullptr;
+        GlobalVariable *dtorsVar = mod.getNamedGlobal("llvm.global_dtors");
+        GlobalVariable *ctorsVar = mod.getNamedGlobal("llvm.global_ctors");
 
-        for (auto &glob : mod.globals()) {
-            if (glob.hasName() && glob.getName() == "llvm.global_dtors") {
-                fillFromInitializer(dtors, glob.getInitializer());
-                dtorsVar = &glob;
-            }
+        if (!ctorsVar && !dtorsVar)
+            return false;
 
-            if (glob.hasName() && glob.getName() == "llvm.global_ctors" &&
-                glob.hasInitializer()) {
-                fillFromInitializer(ctors, glob.getInitializer());
-                ctorsVar = &glob;
-            }
+        if (dtorsVar) {
+            fillFromInitializer(dtors, dtorsVar->getInitializer());
         }
 
-        if (ctors.empty() && dtors.empty()) {
-            return false;
+        if (ctorsVar) {
+            fillFromInitializer(ctors, ctorsVar->getInitializer());
         }
 
         // sort them to call order
