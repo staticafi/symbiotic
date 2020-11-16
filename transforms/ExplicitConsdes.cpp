@@ -248,10 +248,12 @@ static RegisterPass<ExplicitConsdes> X(
     "Insert explicit calls of module constructors and destructors",
     false /* Only looks at CFG */, false /* Analysis Pass */);
 
+/*
 static RegisterStandardPasses Y(PassManagerBuilder::EP_EarlyAsPossible,
                                 [](const PassManagerBuilder &Builder,
                                    legacy::PassManagerBase &PM) {
                                     PM.add(new ExplicitConsdes());
                                 });
+*/
 }  // namespace
 
