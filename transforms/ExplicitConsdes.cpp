@@ -204,12 +204,29 @@ class ExplicitConsdes : public ModulePass {
                 if (!called)
                     continue;
 
-                if (isMarkExit(called)) {
-                    dtorsBefore.push_back(call);
-                }
+                if (!isExit(called))
+                    continue;
 
-                if (isExit(called) && !hasMarkExit) {
+                if (!hasMarkExit) {
                     dtorsBefore.push_back(call);
+                } else {
+                    // look for __INSTR_mark_exit before this call
+                    auto *prev = inst.getPrevNonDebugInstruction();
+                    auto *markCall = dyn_cast<CallInst>(prev);
+                    if (!markCall)
+                        continue;
+
+                    if (markCall->isIndirectCall())
+                        continue;
+
+                    Function *markCalled = markCall->getCalledFunction();
+                    if (!markCalled)
+                        continue;
+
+                    if (!isMarkExit(markCalled))
+                        continue;
+
+                    dtorsBefore.push_back(markCall);
                 }
             }
         }
