@@ -107,6 +107,14 @@ class ExplicitConsdes : public ModulePass {
                     ty->getFunctionParamType(0)->isIntegerTy();
     }
 
+    bool isMarkExit(const Function *f) {
+        const Type *ty = f->getType();
+        if (ty->isPointerTy())
+            ty = ty->getPointerElementType();
+        return f->hasName() && f->getName() == "__INSTR_mark_exit" &&
+                    ty->getFunctionNumParams() == 0;
+    }
+
     void warnIfExitIsUsed(const Instruction& inst) {
         // inst -> [operands] -> [only function pointers] -> [only exit] -> is_empty
         for (const auto& op : inst.operands()) {
@@ -177,6 +185,9 @@ class ExplicitConsdes : public ModulePass {
             }
         }
 
+        // if program has __INSTR_mark_exit, we can't insert instruction between it and exit
+        bool hasMarkExit = (mod.getFunction("__INSTR_mark_exit") != nullptr);
+
         // and finally search for calls to exit in whole program
         for (auto &func : mod.functions()) {
             for (auto &inst : instructions(func)) {
@@ -193,7 +204,11 @@ class ExplicitConsdes : public ModulePass {
                 if (!called)
                     continue;
 
-                if (isExit(called)) {
+                if (isMarkExit(called)) {
+                    dtorsBefore.push_back(call);
+                }
+
+                if (isExit(called) && !hasMarkExit) {
                     dtorsBefore.push_back(call);
                 }
             }
