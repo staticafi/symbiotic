@@ -51,7 +51,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if prp.unreachcall():
             return ((KleeTool(self._options), None, 30),
                     (SlowbeastTool(self._options), ['-kind'], None),
-                    # if slowbeast crashes, run KLEE w/o timeout 
+                    # if slowbeast crashes, run KLEE w/o timeout
                     (KleeTool(self._options), None, None),
                     )
         return ((KleeTool(self._options), None, None),)
