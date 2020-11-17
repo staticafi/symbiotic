@@ -84,7 +84,7 @@ class SymbioticVerifier(object):
     def _run_verifier(self, tool, addparams, timeout):
         params = self.override_params or self.options.tool_params
         if addparams:
-            params += addparams
+            params = params + addparams
         prp = self.options.property.getPrpFile()
         return self._run_tool(tool, prp, params, timeout)
 
