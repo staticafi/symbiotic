@@ -29,7 +29,7 @@ class ToolWatch(ProcessWatch):
             sys.stderr.write(str(line.strip()))
             sys.stderr.write('\n')
         else:
-            dbg(line.decode('utf-8'), 'all', print_nl=False,
+            dbg(line.decode('utf-8', errors='ignore'), 'all', print_nl=False,
                 prefix='', color=None)
 
 class SymbioticVerifier(object):
