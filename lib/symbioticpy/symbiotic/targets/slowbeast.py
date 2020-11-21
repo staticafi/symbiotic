@@ -16,7 +16,7 @@ try:
     from symbiotic.versions import llvm_version
 except ImportError:
     # the default version
-    llvm_version='8.0.1'
+    llvm_version='10.0.1'
 
 class SymbioticTool(BaseTool, SymbioticBaseTool):
 
@@ -40,19 +40,21 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
         exe = abspath(self.executable())
         arch = '-pointer-bitwidth={0}'.format(32 if self._options.is32bit else 64)
-        cmd = ['python3', exe, '-se-exit-on-error', arch]
+        cmd = [exe, '-se-exit-on-error', arch]
+        # cmd = ['python3', exe, '-se-exit-on-error', arch]
         #cmd = ['python3', '-O', exe, '-se-exit-on-error', arch]
         if prp.unreachcall():
             funs = ','.join(prp.getcalls())
             cmd.append(f'-error-fn={funs}')
         return cmd + options + tasks
 
-    def set_environment(self, symbiotic_dir, opts):
-        """
-        Set environment for the tool
-        """
+    def set_environment(self, env, opts):
+        """ Set environment for the tool """
+
         # do not link any functions
         opts.linkundef = []
+        env.prepend('LD_LIBRARY_PATH', '{0}/slowbeast/'.\
+                        format(env.symbiotic_dir))
 
     def passes_before_slicing(self):
         if self._options.property.termination():

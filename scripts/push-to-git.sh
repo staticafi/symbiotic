@@ -157,7 +157,6 @@ git add \
 	lib/verifier/ikos/*.c \
 	lib/svcomp/divine/*.c \
 	lib/svcomp/nidhugg/*.c \
-	lib/svcomp/klee/*.c \
 	properties/* \
 	$(find lib/symbioticpy/symbiotic -name '*.py')\
 	LICENSE.txt README.md
