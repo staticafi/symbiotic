@@ -140,6 +140,11 @@ class Environment:
 
         environ[env] = newenv
 
+    def reset(self, what, to):
+        """ Set 'what' to environment variable to'"""
+        environ[what] = to
+
+
     def set(self, tool, opts):
         _set_symbiotic_environ(tool, self, opts)
         _parse_environ_vars(opts)
