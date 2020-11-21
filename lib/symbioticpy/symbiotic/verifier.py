@@ -25,12 +25,12 @@ class ToolWatch(ProcessWatch):
     def parse(self, line):
         if b'ERROR' in line or b'WARN' in line or b'Assertion' in line\
            or b'error' in line or b'warn' in line:
-            # XXX: this seems horrible, but the line may contain non-ascii characters
-            sys.stderr.write(str(line.strip()))
-            sys.stderr.write('\n')
+            line = line.decode('utf-8', 'replace')
+            sys.stderr.write(line)
         else:
-            dbg(str(line), 'all', print_nl=False,
-                prefix='', color=None)
+            # characters on which decode fails
+            msg = line.decode('utf-8', 'replace')
+            dbg(msg, 'all', print_nl=msg[-1] != '\n', prefix='', color=None)
 
 class SymbioticVerifier(object):
     """
@@ -77,7 +77,7 @@ class SymbioticVerifier(object):
                                     False)
         if res.lower().startswith('error'):
             for line in watch.getLines():
-                print_stderr(line.decode('utf-8'),
+                print_stderr(line.decode('utf-8', 'replace'),
                              color='RED', print_nl=False)
         return res
 
