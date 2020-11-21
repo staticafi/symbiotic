@@ -41,8 +41,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         exe = abspath(self.executable())
         arch = '-pointer-bitwidth={0}'.format(32 if self._options.is32bit else 64)
         cmd = [exe, '-se-exit-on-error', arch]
-        # cmd = ['python3', exe, '-se-exit-on-error', arch]
-        #cmd = ['python3', '-O', exe, '-se-exit-on-error', arch]
         if prp.unreachcall():
             funs = ','.join(prp.getcalls())
             cmd.append(f'-error-fn={funs}')
@@ -55,6 +53,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         opts.linkundef = []
         env.prepend('LD_LIBRARY_PATH', '{0}/slowbeast/'.\
                         format(env.symbiotic_dir))
+        env.reset('PYTHONOPTIMIZE', '1')
 
     def passes_before_slicing(self):
         if self._options.property.termination():
