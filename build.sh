@@ -789,11 +789,11 @@ if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 
 	pushd predator-${LLVM_VERSION}
 
-	if [ ! -d CMakeFiles ]; then
+	if [ ! -f cl_build/CMakeCache.txt ]; then
 	        CXX=clang++ ./switch-host-llvm.sh ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/${LLVM_CMAKE_CONFIG_DIR}
 	fi
 
-       	build || exit 1
+    build || exit 1
 	mkdir -p $LLVM_PREFIX/predator/lib
 	cp sl_build/*.so $LLVM_PREFIX/predator/lib
 	cp sl_build/slllvm* $LLVM_PREFIX/bin/
