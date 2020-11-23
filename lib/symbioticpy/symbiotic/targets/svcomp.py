@@ -49,7 +49,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def verifiers(self):
         prp = self._options.property
         if prp.unreachcall():
-            return ((KleeTool(self._options), None, 30),
+            return ((KleeTool(self._options), None, 111),
                     (SlowbeastTool(self._options), ['-kind'], None),
                     # if slowbeast crashes, run KLEE w/o timeout
                     (KleeTool(self._options), None, None),
