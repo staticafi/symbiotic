@@ -201,7 +201,7 @@ def parse_command_line():
 
     try:
         opts, args = getopt.getopt(argv[1:], '',
-                                   ['no-slice', '32', 'prp=', 'no-optimize',
+                                   ['no-slice', '32', '64', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=','slicer-timeout=',
                                     'instrumentation-timeout=', 'version', 'help',
                                     'no-verification', 'output=', 'witness=', 'bc',
@@ -420,6 +420,7 @@ where OPTS can be following:
 
     --bc                      Given files are LLVM bitcode (force this assumption)
     --32                      Use 32-bit environment
+    --64                      Use 64-bit environment (the default)
     --timeout=t               Set timeout to t seconds
     --slicer-timeout=t        Set timeout for slicer (if slicer fails/timeouts,
                               the original bitcode is used)
