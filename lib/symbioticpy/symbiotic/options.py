@@ -288,6 +288,9 @@ def parse_command_line():
         elif opt == '--32':
             dbg('Will use 32-bit environment')
             options.is32bit = True
+        elif opt == '--64':
+            dbg('Will use 64-bit environment')
+            options.is32bit = False
         elif opt == '--no-optimize':
             dbg('Will not optimize the code')
             options.no_optimize = True
