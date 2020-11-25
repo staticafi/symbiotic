@@ -136,6 +136,16 @@ class Symbiotic(object):
                     res = 'cex not-confirmed'
                     has_error = False
 
+        if res == 'cex not-confirmed':
+            # if we failed confirming CEX, rerun on unsliced file
+            bitcode = cc.prepare_unsliced_file()
+            verifier = SymbioticVerifier(bitcode, self.sources,
+                                         self._tool, options, self.env)
+            res, tool = verifier.run()
+            has_error = res and\
+                        (res.startswith('false') or\
+                        (res.startswith('done') and options.property.errorcall()))
+ 
         if has_error and hasattr(tool, "describe_error"):
             tool.describe_error(cc.curfile)
 
