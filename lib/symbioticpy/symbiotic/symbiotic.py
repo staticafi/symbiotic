@@ -59,17 +59,17 @@ class Symbiotic(object):
 
             print('Killed the child process')
 
-    def replay_nonsliced(self, cc):
+    def replay_nonsliced(self, tool, cc):
         bitcode = cc.prepare_unsliced_file()
         params = []
-        if hasattr(self._tool, "replay_error_params"):
-            params = self._tool.replay_error_params(cc.curfile)
+        if hasattr(tool, "replay_error_params"):
+            params = tool.replay_error_params(cc.curfile)
 
         print_stdout('INFO: Replaying error path', color='WHITE')
         restart_counting_time()
 
         verifier = SymbioticVerifier(bitcode, self.sources,
-                                     self._tool, self.options,
+                                     tool, self.options,
                                      self.env, params)
         res, _ = verifier.run()
 
@@ -114,7 +114,7 @@ class Symbiotic(object):
         if has_error and options.replay_error and\
            not options.noslice and tool.can_replay():
             print_stdout("Trying to confirm the error path")
-            newres = self.replay_nonsliced(cc)
+            newres = self.replay_nonsliced(tool, cc)
 
             dbg("Original result: '{0}'".format(res))
             dbg("Replayed result: '{0}'".format(newres))
