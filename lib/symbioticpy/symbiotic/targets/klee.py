@@ -72,6 +72,7 @@ class KleeToolFullInstrumentation(KleeBase):
             ('EFREE', re.compile('.*memory error: invalid pointer: free.*')),
             ('EGLOBLFREE', re.compile('.*ERROR:.*free of global.*')),
             ('EUNREACH', re.compile('.*reached "unreachable" instruction.*')),
+            ('ECMP', re.compile('.*Comparison other than (in)equality is not implemented.*')),
             ('ERESOLV', re.compile('.*Failed resolving.*segment.*')),
             ('ERESOLV', re.compile('.*ERROR:.*Could not resolve.*'))
         ]
@@ -234,6 +235,7 @@ class SymbioticTool(KleeBase):
             ('EROREALLOC', re.compile('.*memory error:.*realloc on global object.*')),
             ('ERESOLVMEMCLN', re.compile('.*Failed resolving segment in memcleanup check.*')),
             ('ERESOLVMEMCLN2', re.compile('.*Cannot resolve non-constant segment in memcleanup check.*')),
+            ('ECMP', re.compile('.*Comparison other than (in)equality is not implemented.*')),
             ('ERESOLV', re.compile('.*Failed resolving.*segment.*')),
             ('ERESOLV', re.compile('.*ERROR:.*Could not resolve.*'))
         ]
