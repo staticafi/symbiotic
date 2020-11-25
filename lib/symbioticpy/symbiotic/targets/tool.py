@@ -172,7 +172,7 @@ class SymbioticBaseTool(object):
         if prop.unreachcall():
             return (prop.getcalls(), [])
 
-        if prop.signedoverflow():
+        if prop.signedoverflow() or prop.undefinedness():
             # default config file is 'config.json'
             # slice wrt asserts checking for the overflow
             return (['__VERIFIER_error'],[])
