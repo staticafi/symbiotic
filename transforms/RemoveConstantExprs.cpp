@@ -71,6 +71,13 @@ bool RemoveConstantExprs::runOnFunction(Function &F) {
     auto *CE = cur->second;
     instsWithCE.erase(cur);
 
+    // FIXME: HACK for slowbeast
+    // if this CE is a cast of the function in function call, skip it
+    // FIXME: make this configurable
+    if (auto *Call = dyn_cast<CallInst>(I)) {
+      if (Call->getCalledValue() == CE)
+	continue;
+    }
     auto *newI = CE->getAsInstruction();
     newI->insertBefore(I);
     I->replaceUsesOfWith(CE, newI);
