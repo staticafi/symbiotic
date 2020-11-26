@@ -97,11 +97,12 @@ class Symbiotic(object):
             res.lower().startswith('error') or res.lower().startswith('unknown'):
             print_stdout("INFO: Failed on the sliced code, trying on the unsliced code",
                          color="WHITE")
+            options.replay_error = False # now we do not need to replay the error
+            options.noslice = True # now we behave like without slicing
             bitcode = cc.prepare_unsliced_file()
             verifier = SymbioticVerifier(bitcode, self.sources,
                                          self._tool, options, self.env)
             res, tool = verifier.run()
-            options.replay_error = False # now we do not need to replay the error
             print_elapsed_time('INFO: Running on unsliced code time', color='WHITE')
 
         if tool and options.replay_error and\
@@ -112,7 +113,9 @@ class Symbiotic(object):
                     (res.startswith('false') or\
                     (res.startswith('done') and options.property.errorcall()))
         if has_error and options.replay_error and\
-           not options.noslice and tool.can_replay():
+           not options.noslice and (tool.can_replay() or options.sv_comp):
+            # On SV-COMP, force replay (even if that would mean to re-run
+            # entirely on unsliced code)
             print_stdout("Trying to confirm the error path")
             newres = self.replay_nonsliced(tool, cc)
 
