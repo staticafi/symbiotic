@@ -107,8 +107,22 @@ bool InternalizeGlobals::initializeExternalGlobals(Module& M) {
     } else {
         // we need to set some initializer, otherwise the global
         // won't be marked as non-external. This initializer will
-        // be overwritten at the beginning of main
-        GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
+        // be overwritten at the beginning of main for most of the globals
+        if (GV->hasName() && GV->getName().equals("optind")) {
+            GV->setInitializer(
+                ConstantInt::get(Type::getInt32Ty(M.getContext()), 1)
+            );
+        } else {
+            GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
+        }
+    }
+
+    if (GV->hasName()) {
+      const auto& name = GV->getName();
+      if (name.equals("optind") || name.equals("optarg")) {
+        // keep the optind and optarg variables initialized to 1 and null
+        continue;
+      }
     }
 
     Function *vms = get_verifier_make_nondet(&M);
