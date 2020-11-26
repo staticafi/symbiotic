@@ -53,6 +53,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                     (SlowbeastTool(self._options), ['-kind'], None),
                     # if slowbeast crashes, run KLEE w/o timeout
                     (KleeTool(self._options), None, None),
+                    # slowbeast  got better support for floats, so if KLEE
+                    # fails, try slowbeast once more
+                    (SlowbeastTool(self._options), None),
                     )
         return ((KleeTool(self._options), None, None),)
 
