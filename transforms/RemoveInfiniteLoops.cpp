@@ -32,7 +32,7 @@ class RemoveInfiniteLoops : public FunctionPass {
      visited.insert(block);
      auto *cur = block;
      do {
-       for (auto& I : *block) {
+       for (auto& I : *cur) {
            if (I.mayWriteToMemory())
                return false;
            if (isa<CallInst>(&I))
