@@ -55,7 +55,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                     (KleeTool(self._options), None, None),
                     # slowbeast  got better support for floats, so if KLEE
                     # fails, try slowbeast once more
-                    (SlowbeastTool(self._options), None, None),
+                    (SlowbeastTool(self._options), ['-se-replay-errors'], None),
                     )
         return ((KleeTool(self._options), None, None),)
 
