@@ -64,7 +64,7 @@ bool InternalizeGlobals::initializeExternalGlobals(Module& M) {
     // GV is a pointer to some memory, we want the size of the memory
     Type *Ty = GV->getType()->getContainedType(0);
     if (!Ty->isSized()) {
-      GV->dump();
+      llvm::errs() << *GV << "\n";
       llvm::errs() << "ERROR: failed making global variable symbolic "
                       "(type is unsized)\n";
       continue;
@@ -86,7 +86,7 @@ bool InternalizeGlobals::initializeExternalGlobals(Module& M) {
     // point to and set it to symbolic at the beggining of main
     if (Ty->isPointerTy()) {
         if (!Ty->getContainedType(0)->isSized()) {
-            GV->dump();
+            llvm::errs() << *GV << "\n";
             llvm::errs() << "ERROR: failed making global variable symbolic "
                             "(referenced type is unsized)\n";
             continue;
