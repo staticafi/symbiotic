@@ -391,6 +391,8 @@ def get_property(symbiotic_dir, prp):
     for p in properties:
         if p.getPrpFile() is None:
             _assign_default_prpfile(p, symbiotic_dir)
+        if not p._ltl:
+            p._ltl, _ = _parse_prp(p.getPrpFile())
 
     # FOR NOW squeeze all memsafety properties into one
     properties = _merge_memsafety_prop(set(properties))
