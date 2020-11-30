@@ -65,7 +65,6 @@ class KleeToolFullInstrumentation(KleeBase):
             ('ESTACKOVFLW', re.compile('.*WARNING: Maximum stack size reached.*')),
             ('EMEMERROR', re.compile('.*memory error: out of bound pointer.*')),
             ('EFUNMODEL', re.compile('.*: unsupported function model.*')),
-            ('EFUNMODEL', re.compile('.*: overapproximating function model.*')),
             ('EMAKESYMBOLIC', re.compile(
                 '.*memory error: invalid pointer: make_symbolic.*')),
             ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
@@ -227,7 +226,6 @@ class SymbioticTool(KleeBase):
             ('ESTACKOVFLW', re.compile('.*WARNING: Maximum stack size reached.*')),
             ('EROSYMB', re.compile('.*cannot make readonly object symbolic.*')),
             ('EFUNMODEL', re.compile('.*: unsupported function model.*')),
-            ('EFUNMODEL', re.compile('.*: overapproximating function model.*')),
             ('EMEMLEAK', re.compile('.*memory error: memory leak detected.*')),
             ('EMEMCLEANUP', re.compile('.*memory error: memory not cleaned up.*')),
             ('EFREEALLOCA', re.compile('.*ERROR:.*free of alloca.*')),
