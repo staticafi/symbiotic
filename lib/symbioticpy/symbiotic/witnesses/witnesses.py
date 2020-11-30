@@ -5,12 +5,11 @@ from hashlib import sha256 as hashfunc
 import datetime
 import re
 
-# no_lxml = False
-# try:
-#     from lxml import etree as ET
-# except ImportError:
-#     no_lxml = True
-no_lxml = True
+no_lxml = False
+try:
+    from lxml import etree as ET
+except ImportError:
+    no_lxml = True
 if no_lxml:
     # if this fails, then we're screwed, so let the script die
     from xml.etree import ElementTree as ET
@@ -24,6 +23,24 @@ def get_hash(source):
     f.close()
     return hsh.hexdigest()
 
+def _add_edge_key(root, name):
+    e = ET.SubElement(root, 'key', id=name)
+    e.set('for', 'edge')
+    e.set('attr.type', 'string')
+    e.set('attr.name', name)
+
+def _add_node_key(root, name):
+    e = ET.SubElement(root, 'key', id=name)
+    e.set('for', 'node')
+    e.set('attr.type', 'string')
+    e.set('attr.name', name)
+
+def _add_graph_key(root, name):
+    e = ET.SubElement(root, 'key', id=name)
+    e.set('for', 'graph')
+    e.set('attr.type', 'string')
+    e.set('attr.name', name)
+
 class GraphMLWriter(object):
     def __init__(self, source, prps, is32bit, is_correctness_wit):
         self._source = source
@@ -35,7 +52,24 @@ class GraphMLWriter(object):
         self._graph = None
 
         # this prevents adding ns0 prefix to all tags
-        ET.register_namespace("", "http://graphml.graphdrawing.org/xmlns")
+        ET.register_namespace("xsi",
+                              "http://www.w3.org/2001/XMLSchema-instance")
+
+    def _addKeys(self):
+        root = self._root
+        _add_graph_key(root, "witness-type")
+        _add_graph_key(root, "specification")
+        _add_graph_key(root, "programfile")
+        _add_graph_key(root, "sourcecodelang")
+        _add_graph_key(root, "producer")
+        _add_graph_key(root, "creationtime")
+        _add_graph_key(root, "architecture")
+        _add_graph_key(root, "programhash")
+        _add_node_key(root, "entry")
+        _add_node_key(root, "violation")
+        _add_edge_key(root, "assumption")
+        _add_edge_key(root, "assumption.resultfunction")
+        _add_edge_key(root, "startline")
 
     def _addCInfo(self):
         assert self._root is not None
@@ -61,14 +95,17 @@ class GraphMLWriter(object):
                       key='programhash').text = get_hash(self._source)
         ET.SubElement(self._graph, 'data', key='architecture').text = arch
         ET.SubElement(self._graph, 'data', key='creationtime').text =\
-            '{date:%Y-%m-%d %T}'.format(date=datetime.datetime.utcnow())
+            '{date:%Y-%m-%dT%T}'.format(date=datetime.datetime.utcnow())
+
+        self._addKeys()
 
     def createTrivialWitness(self):
         if no_lxml:
             self._root = ET.Element('graphml')
         else:
-            #ns = {"": 'http://graphml.graphdrawing.org/xmlns'}
-            self._root = ET.Element('graphml')
+            ns = {None: 'http://graphml.graphdrawing.org/xmlns',
+                  "xsi": "http://www.w3.org/2001/XMLSchema-instance"}
+            self._root = ET.Element('graphml', nsmap=ns)
 
         self._graphml = ET.ElementTree(self._root)
         self._graph = ET.SubElement(self._root, 'graph', edgedefault="directed")
