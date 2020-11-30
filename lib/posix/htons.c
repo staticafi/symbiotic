@@ -1,4 +1,4 @@
-#include <netinet/in.h>
+#include <stdint.h>
 #include <byteswap.h>
 
 uint16_t htons(uint16_t n)

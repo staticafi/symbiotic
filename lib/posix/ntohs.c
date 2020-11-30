@@ -1,4 +1,4 @@
-#include <netinet/in.h>
+#include <stdint.h>
 #include <byteswap.h>
 
 uint16_t ntohs(uint16_t n)
