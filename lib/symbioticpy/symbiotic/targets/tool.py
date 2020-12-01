@@ -162,7 +162,7 @@ class SymbioticBaseTool(object):
             # to be sliced away from __INSTR_fail
             return (['__INSTR_fail','__assert_fail',
                      '__VERIFIER_silent_exit', '__INSTR_check_assume'],
-                    ['-cd-alg=ntscd'])
+                    ['-cd-alg=ntscd-legacy'])
 
         if prop.nullderef():
             # default config file is 'config.json'
