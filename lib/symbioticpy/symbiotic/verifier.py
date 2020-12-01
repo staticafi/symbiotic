@@ -59,6 +59,15 @@ class SymbioticVerifier(object):
         return runcmd(cmd, DbgWatch('all'),
                       "Failed running command: {0}".format(" ".join(cmd)))
 
+    #FIXME: copied from opt, do not duplicate the code
+    def _run_opt(self, passes):
+        output = '{0}-pr.bc'.format(self.curfile[:self.curfile.rfind('.')])
+        cmd = ['opt', '-load', 'LLVMsbt.so',
+               self.curfile, '-o', output] + passes
+
+        runcmd(cmd, DbgWatch('all'), 'Running opt failed')
+        self.curfile = output
+
     def _run_tool(self, tool, prp, params, timeout):
         cmd = []
         if timeout:
@@ -82,6 +91,10 @@ class SymbioticVerifier(object):
         return res
 
     def _run_verifier(self, tool, addparams, timeout):
+        # prepare the bitcode
+        if hasattr(tool, 'passes_before_verification'):
+            self._run_opt(tool.passes_before_verification())
+
         params = self.override_params or self.options.tool_params
         if addparams:
             params = params + addparams
@@ -91,13 +104,16 @@ class SymbioticVerifier(object):
     def run_verification(self):
         print_stdout('INFO: Starting verification', color='WHITE')
         restart_counting_time()
+        orig_bitcode = self.curfile
         for verifiertool, addparams, verifiertimeout in self._tool.verifiers():
+            self.curfile = orig_bitcode
             res = self._run_verifier(verifiertool, addparams, verifiertimeout)
             sw = res.lower().startswith
             # we got an answer, we can finish
             if sw('true') or sw('false'):
                 return res, verifiertool
             print(f"{verifiertool.name()} answered {res}")
+        self.curfile = orig_bitcode # restore the original bitcode
         print_elapsed_time("INFO: Verification time", color='WHITE')
         return res, None
 

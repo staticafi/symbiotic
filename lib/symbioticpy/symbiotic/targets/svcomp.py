@@ -106,16 +106,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         \return a list of LLVM passes that should be run on the code
         """
         passes = []
-        # instrument our malloc -- either the version that can fail,
-        # or the version that can not fail.
-        # KLEE and Nidhugg already assumes that
-        #if self._options.malloc_never_fails:
-        #    passes.append('-instrument-alloc-nf')
-        #else:
-        #    passes.append('-instrument-alloc')
-
-        passes.append('-internalize-globals')
-
         # for the memsafety property, make functions behave like they have
         # side-effects, because LLVM optimizations could remove them otherwise,
         # even though they contain calls to assert
