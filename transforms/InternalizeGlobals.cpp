@@ -154,6 +154,8 @@ bool InternalizeGlobals::initializeExternalGlobals(Module& M) {
     modified = true;
 
     GV->setExternallyInitialized(false);
+    // make it writable as we're going to inicialize it in main
+    GV->setConstant(false);
     errs() << "Made global variable '" << GV->getName() << "' non-extern\n";
   }
 
