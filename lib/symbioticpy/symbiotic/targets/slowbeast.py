@@ -62,7 +62,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def passes_before_verification(self):
         """
-        Passes that should run before CPAchecker
+        Passes that should run before slowbeast
         """
         prp = self._options.property
         passes = []

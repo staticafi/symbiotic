@@ -244,7 +244,7 @@ class SymbioticCC(object):
         cmd = ['opt', '-load', 'LLVMsbt.so',
                self.curfile, '-o', output] + passes
 
-        runcmd(cmd, PrepareWatch(), 'Prepare phase failed')
+        runcmd(cmd, PrepareWatch(), 'Running opt failed')
         self.curfile = output
         self._save_ll()
 
