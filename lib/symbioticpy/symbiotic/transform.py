@@ -847,13 +847,14 @@ class SymbioticCC(object):
         # run optimizations if desired
         passes = get_optlist_before(self.options.optlevel)
         # Special optimizations for slicing.
-        # Break the infinite loops just before slicing so that the
-        # optimizations won't make them syntactically infinite again. We must
-        # run reg2mem before breaking to loops, because breaking the loops can
-        # not handle PHI nodes well.
         if not self.options.noslice and 'before-O3' in self.options.optlevel:
-            passes += ['-reg2mem',# '-break-infinite-loops',
-                       '-remove-infinite-loops',
+            # Break the infinite loops just before slicing so that the
+            # optimizations won't make them syntactically infinite again. We must
+            # run reg2mem before breaking to loops, because breaking the loops can
+            # not handle PHI nodes well.
+            if self.options.property.termination():
+                passes += ['-reg2mem', '-break-infinite-loops',]
+            passes += ['-remove-infinite-loops',
                        '-mem2reg', '-break-crit-loops', '-lowerswitch']
         self.optimize(passes, load_sbt=True)
 
