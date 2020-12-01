@@ -433,11 +433,14 @@ class SymbioticTool(KleeBase):
             FALSE_MEMTRACK = result.RESULT_FALSE_MEMTRACK
             FALSE_MEMCLEANUP = result.RESULT_FALSE_MEMCLEANUP
             FALSE_TERMINATION = result.RESULT_FALSE_TERMINATION
+            FALSE_UNDEF = 'false(def-behavior)'
 
             for f in found:
                 # we found error that we sought for?
                 if f == FALSE_REACH and prop.unreachcall():
                     return f
+                elif f == FALSE_REACH and prop.undefinedness():
+                    return FALSE_UNDEF
                 elif f == FALSE_OVERFLOW and prop.signedoverflow():
                     return f
                 elif f in (FALSE_FREE, FALSE_DEREF, FALSE_MEMTRACK)\
