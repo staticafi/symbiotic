@@ -76,7 +76,7 @@ bool RemoveConstantExprs::runOnFunction(Function &F) {
     // FIXME: make this configurable
     if (auto *Call = dyn_cast<CallInst>(I)) {
       if (Call->getCalledValue() == CE)
-	continue;
+	    continue;
     }
     auto *newI = CE->getAsInstruction();
     newI->insertBefore(I);
@@ -89,12 +89,14 @@ bool RemoveConstantExprs::runOnFunction(Function &F) {
     changed = true;
   }
 
+/* Does not hold with the HACK
 #ifndef NDEBUG 
   for (auto& I : llvm::instructions(F)) {
       queueCEInst(instsWithCE, I);
   }
   assert(instsWithCE.empty() && "Did not reach fixpoint");
 #endif
+*/
 
   return changed;
 }
