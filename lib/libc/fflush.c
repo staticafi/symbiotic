@@ -2,7 +2,7 @@
 #include <errno.h>
 
 extern _Bool __VERIFIER_nondet__Bool(void);
-extern klee_warning_once(const char *msg);
+extern void klee_warning_once(const char *msg);
 
 int fflush(FILE *stream) {
     klee_warning_once("overapproximating function model");
