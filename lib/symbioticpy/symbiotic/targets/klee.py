@@ -323,7 +323,7 @@ class SymbioticTool(KleeBase):
                 assert len(calls) == 1, "Multiple error functions unsupported yet"
                 cmd.append('-error-fn={0}'.format(calls[0]))
             # FIXME: append to all properties?
-            #cmd.append('-malloc-symbolic-contents')
+            cmd.append('-malloc-symbolic-contents')
         elif prop.signedoverflow():
             # we instrument with __VERIFIER_error
             cmd.append('-error-fn=__VERIFIER_error')
