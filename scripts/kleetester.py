@@ -15,13 +15,19 @@ def runcmd(cmd):
 
     return p
 
-def gentest(bitcode, outdir, suffix=None, params=None):
+def gentest(bitcode, outdir, prp, suffix=None, params=None):
     options = ['-use-forked-solver=0', '--use-call-paths=0',
                '--output-stats=0', '-istats-write-interval=60s',
                '-timer-interval=10', '-external-calls=pure',
                '-write-testcases', '-malloc-symbolic-contents',
-               '-max-memory=8000', '-only-output-states-covering-new=1',
-               '-max-time=840', '-output-source=false']
+               '-max-memory=8000', '-output-source=false']
+    if prp == 'error':
+        options.append('-exit-on-error-type=Assert')
+        options.append('-dump-states-on-halt=0')
+    else:
+        options.append('-only-output-states-covering-new=1')
+        options.append('-max-time=840')
+
     if params:
         options.extend(params)
 
@@ -85,17 +91,27 @@ def optimize(bitcode):
     ret = p.wait()
     return newbitcode
 
+def check_error(outs, errs):
+    for line in outs.splitlines():
+        if b'ASSERTION FAIL: verifier assertion failed' in line:
+            print('Found ERROR!', file=stderr)
+            return True
+    return False
+
 def main(argv):
-    if len(argv) != 3:
+    if len(argv) != 4:
         exit(1)
-    outdir = argv[1]
-    bitcode = argv[2]
+    prp = argv[1]
+    outdir = argv[2]
+    bitcode = argv[3]
 
     generators = []
 
     # run KLEE on the original bitcode
     print("\n--- Running the main KLEE --- ", file=stderr)
-    maingen = gentest(bitcode, outdir)
+    maingen = gentest(bitcode, outdir, prp)
+    if maingen:
+        generators.append(maingen)
 
     bitcodewithcrits, crits = find_criterions(bitcode)
     if bitcodewithcrits:
@@ -105,7 +121,7 @@ def main(argv):
         crits.reverse()
         for n, crit in enumerate(crits):
             print(f"\n--- Targeting at {crit} target --- ", file=stderr)
-            if maingen and maingen.poll() is not None:
+            if prp == 'coverage' and maingen and maingen.poll() is not None:
                 break # the main process finished, we can finish too
 
             # slice bitcode
@@ -131,47 +147,74 @@ def main(argv):
                 continue
 
             # generate tests
-            if maingen and maingen.poll() is not None:
+            if prp == 'coverage' and maingen and maingen.poll() is not None:
                 break # the main process finished, we can finish too
-            p = gentest(slicedcode, outdir, suffix=str(n),
+            p = gentest(slicedcode, outdir, prp, suffix=str(n),
                         params=['--search=dfs', '--use-batching-search'])
             if p is None:
                 continue
             generators.append(p)
 
-            # FIXME: run atmost 8 at once
-            while len(generators) >= 7:
-                if maingen and maingen.poll() is not None:
+            newgens = []
+            for p in generators:
+                if p.poll() is not None:
+                    if prp == 'error':
+                        if check_error(*p.communicate()):
+                            for gen in generators:
+                                if gen.poll() is not None:
+                                    gen.kill()
+                            exit(0)
+                else:
+                    newgens.append(p)
+            generators = newgens
+
+            # run atmost 8 at once
+            while len(generators) >= 8:
+                if prp == 'coverage' and maingen and maingen.poll() is not None:
                     break # the main process finished, we can finish too
+
                 print("Got enough test generators, waiting for some to finish...",
                       file=stderr)
                 sleep(2) # sleep 2 seconds
-                newgens = [p for p in generators if p.poll() is None]
+                for p in generators:
+                    if p.poll() is not None:
+                        if prp == 'error':
+                            if check_error(*p.communicate()):
+                                for gen in generators:
+                                    if gen.poll() is not None:
+                                        gen.kill()
+                                exit(0)
+                    else:
+                        newgens.append(p)
                 # some processes finished
-                if len(newgens) != len(generators):
-                    generators = newgens
-
+                generators = newgens
 
     print(f"\n--- All targets running --- ", file=stderr)
     stderr.flush()
 
-    # wait until the main test generator finishes
-    main_finished = False
-    if maingen:
-        maingen.wait()
-        print(f"\n--- Main KLEE finished --- ", file=stderr)
-        main_finished = True
-    # kill side generators (or wait for them if there is no main)
-    for p in generators:
-        if maingen:
+    while generators:
+        print(f"Have {len(generators)} test generators running", file=stderr)
+        stderr.flush()
+        newgens = []
+        for p in generators:
             if p.poll() is not None:
-                p.kill()
-        else:
-            p.wait()
+                if prp == 'error':
+                    if check_error(*p.communicate()):
+                        for gen in generators:
+                            if gen.poll() is not None:
+                                gen.kill()
+                        exit(0)
+            else:
+                newgens.append(p)
+        generators = newgens
+        if generators:
+            sleep(2) # sleep 2 seconds
+
     print(f"\n--- All KLEE finished --- ", file=stderr)
 
-    if main_finished:
-        # if main KLEE finished, remove the files from side KLEE's -- those
+    if prp == 'coverage':
+        # if all finished, then also the main KLEE finished,
+        # and we can remove the files from side KLEE's -- those
         # are superfluous
         runcmd(['rm', '-f', f"{outdir}/test*.*.xml"])
 

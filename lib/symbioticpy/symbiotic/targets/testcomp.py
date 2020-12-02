@@ -25,10 +25,12 @@ from symbiotic.exceptions import SymbioticException
 
 try:
     import benchexec.util as util
+    import benchexec.result as result
     from benchexec.tools.template import BaseTool
 except ImportError:
     # fall-back solution (at least for now)
     import symbiotic.benchexec.util as util
+    import symbiotic.benchexec.result as result
     from symbiotic.benchexec.tools.template import BaseTool
 
 
@@ -66,5 +68,10 @@ class SymbioticTool(KleeTool):
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         assert len(tasks) == 1
-        return [executable, self._options.testsuite_output] + tasks
+        return [executable, 'error' if self._options.property.errorcall() else
+                'coverage', self._options.testsuite_output] + tasks
+
+
+    def determine_result(self, returncode, returnsignal, output, isTimeout):
+        return result.RESULT_DONE
 
