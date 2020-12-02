@@ -148,15 +148,7 @@ git add \
 	bin/gen-c \
 	include/symbiotic.h \
 	include/symbiotic-size_t.h \
-	lib/kernel/*.c\
-	lib/libc/*.c\
-	lib/posix/*.c \
-	lib/svcomp/*.c \
-	lib/verifier/*.c \
-	lib/verifier/klee/*.c \
-	lib/verifier/ikos/*.c \
-	lib/svcomp/divine/*.c \
-	lib/svcomp/nidhugg/*.c \
+    $(find lib -name '*.c')\
 	properties/* \
 	$(find lib/symbioticpy/symbiotic -name '*.py')\
 	LICENSE.txt README.md
