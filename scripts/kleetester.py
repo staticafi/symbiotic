@@ -49,6 +49,19 @@ def find_criterions(bitcode):
         return newbitcode, (crit.decode('utf-8', 'ignore') for crit in out.splitlines())
     return None, None
 
+def optimize(bitcode):
+    newbitcode = f"{bitcode}.opt.bc"
+    cmd = ['opt', '-load', 'LLVMsbt.so', '-O3', '-remove-infinite-loops',
+           '-O2', '-o', newbitcode, bitcode]
+    p = runcmd(cmd)
+    ret = p.wait()
+    if ret != 0:
+        out, errs = p.communicate()
+        print(out, file=stderr)
+        print(errs, file=stderr)
+        return None
+    return newbitcode
+
 def main(argv):
     if len(argv) != 3:
         exit(1)
@@ -86,6 +99,11 @@ def main(argv):
                 continue
             print(f'Slicing w.r.t {crit} done', file=stderr)
 
+            slicedcode = optimize(slicedcode)
+            if slicedcode is None:
+                print("Optimizing failed", file=stderr)
+                continue
+
             # generate tests
             if maingen and maingen.poll() is not None:
                 break # the main process finished, we can finish too
@@ -94,6 +112,9 @@ def main(argv):
             if p is None:
                 continue
             generators.append(p)
+
+            if n > 15: # Do not run more of these processes
+                break
 
     print(f"\n--- All targets running --- ", file=stderr)
     stderr.flush()
