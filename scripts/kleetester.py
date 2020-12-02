@@ -21,13 +21,15 @@ def sliceprocess(bitcode, crit):
 
     return runcmd(cmd), slbitcode
 
-def gentest(bitcode, outdir, suffix=None):
+def gentest(bitcode, outdir, suffix=None, params=None):
     options = ['-use-forked-solver=0', '--use-call-paths=0',
                '--output-stats=0', '-istats-write-interval=60s',
                '-timer-interval=10', '-external-calls=pure',
                '-write-testcases', '-malloc-symbolic-contents',
                '-max-memory=8000', '-only-output-states-covering-new=1',
                '-max-time=840', '-output-source=false']
+    if params:
+        options.extend(params)
 
     cmd = ['klee', f'-output-dir={outdir}']
     if suffix:
@@ -108,7 +110,8 @@ def main(argv):
             if maingen and maingen.poll() is not None:
                 break # the main process finished, we can finish too
             n += 1
-            p = gentest(slicedcode, outdir, suffix=str(n))
+            p = gentest(slicedcode, outdir, suffix=str(n),
+                        params=['--search=dfs', '--use-batching-search'])
             if p is None:
                 continue
             generators.append(p)
