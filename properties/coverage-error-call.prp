@@ -1,2 +1,2 @@
-COVER( init(main()), FQL(COVER EDGES(@CALL(__VERIFIER_error))) )
+COVER( init(main()), FQL(COVER EDGES(@CALL(reach_error))) )
 
