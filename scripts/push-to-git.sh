@@ -145,6 +145,7 @@ git add \
 	$DEPENDENCIES \
 	$INSTR\
 	bin/symbiotic \
+	bin/kleetester.py \
 	bin/gen-c \
 	include/symbiotic.h \
 	include/symbiotic-size_t.h \
