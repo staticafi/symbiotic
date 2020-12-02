@@ -13,6 +13,7 @@
 #include "llvm/IR/CFG.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_os_ostream.h"
+#include "llvm/Support/CommandLine.h"
 
 using namespace llvm;
 
@@ -93,5 +94,116 @@ bool GetTestTargets::runOnModule(Module& M) {
 
   return changed;
 }
+
+
+class ConstraintToTarget : public ModulePass {
+public:
+  static char ID;
+
+  ConstraintToTarget() : ModulePass(ID) {}
+
+  bool runOnModule(Module& M) override;
+};
+
+
+static cl::opt<std::string> TheTarget("ctt-target",
+        llvm::cl::desc("Constraint the program to the target\n"));
+
+static RegisterPass<ConstraintToTarget> CTT("constraint-to-target",
+                                       "Find targets for tests generation");
+
+char ConstraintToTarget::ID;
+
+bool ConstraintToTarget::runOnModule(Module& M) {
+    bool changed = false;
+    std::set<BasicBlock*> relevant;
+    std::set<BasicBlock*> visited;
+    std::stack<BasicBlock*> queue; // not efficient...
+    auto& Ctx = M.getContext();
+    unsigned n = 0;
+
+    auto *mf = M.getFunction(TheTarget);
+    if (!mf) {
+        llvm::errs() << "ERROR: did not find the target" << TheTarget << "\n";
+        return false;
+    }
+
+    for (auto use_it = mf->use_begin(), use_end = mf->use_end();
+         use_it != use_end; ++use_it) {
+#if ((LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR < 5))
+      CallInst *CI = dyn_cast<CallInst>(*use_it);
+#else
+      CallInst *CI = dyn_cast<CallInst>(use_it->getUser());
+#endif
+      if (CI) {
+        if (visited.insert(CI->getParent()).second)
+          queue.push(CI->getParent());
+      }
+    }
+
+    while (!queue.empty()) {
+        auto *cur = queue.top();
+        queue.pop();
+
+        // paths from this block go to the target
+        relevant.insert(cur);
+
+        if ((pred_begin(cur) == pred_end(cur))) {
+          // pop-up from call
+          auto *fun = cur->getParent();
+          for (auto use_it = fun->use_begin(), use_end = fun->use_end();
+               use_it != use_end; ++use_it) {
+#if ((LLVM_VERSION_MAJOR == 3) && (LLVM_VERSION_MINOR < 5))
+            CallInst *CI = dyn_cast<CallInst>(*use_it);
+#else
+            CallInst *CI = dyn_cast<CallInst>(use_it->getUser());
+#endif
+            if (CI) {
+              if (visited.insert(CI->getParent()).second)
+                queue.push(CI->getParent());
+            }
+          }
+        } else {
+          for (auto *pred : predecessors(cur)) {
+            if (visited.insert(pred).second)
+              queue.push(pred);
+          }
+        }
+    }
+
+    if (relevant.empty()) {
+      llvm::errs() << "Found no relevant blocks\n";
+      return false;
+    }
+
+    Type *argTy = Type::getInt32Ty(Ctx);
+    auto exitC = M.getOrInsertFunction("__VERIFIER_silent_exit",
+                                       Type::getVoidTy(Ctx), argTy
+#if LLVM_VERSION_MAJOR < 5
+                                   , nullptr
+#endif
+                                   );
+#if LLVM_VERSION_MAJOR >= 9
+    auto exitF = cast<Function>(exitC.getCallee());
+#else
+    auto exitF = cast<Function>(exitC);
+#endif
+    exitF->addFnAttr(Attribute::NoReturn);
+
+    for (auto& F : M) {
+      for (auto& B : F) {
+        if (relevant.count(&B) == 0) {
+          auto new_CI = CallInst::Create(exitF, {ConstantInt::get(argTy, 0)});
+          auto *point = B.getFirstNonPHI();
+          CloneMetadata(point, new_CI);
+          new_CI->insertBefore(point);
+          changed = true;
+        }
+      }
+    }
+
+  return changed;
+}
+
 
 

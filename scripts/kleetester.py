@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 from subprocess import Popen, PIPE, STDOUT
+from time import sleep
 from sys import stderr
 
 def runcmd(cmd):
@@ -13,13 +14,6 @@ def runcmd(cmd):
         return None
 
     return p
-
-def sliceprocess(bitcode, crit):
-    slbitcode = f"{bitcode}-{crit}.bc"
-    cmd = ['timeout', '120', 'llvm-slicer', '-c', crit,
-           '-o', slbitcode, bitcode]
-
-    return runcmd(cmd), slbitcode
 
 def gentest(bitcode, outdir, suffix=None, params=None):
     options = ['-use-forked-solver=0', '--use-call-paths=0',
@@ -41,6 +35,9 @@ def gentest(bitcode, outdir, suffix=None, params=None):
 
 def find_criterions(bitcode):
     newbitcode = f"{bitcode}.tpr.bc"
+    # FIXME: generate it directly from slicer (multiple slices)
+    # FIXME: modify the code also such that any path that avoids the criterion
+    # is aborted
     cmd = ['opt', '-load', 'LLVMsbt.so', '-get-test-targets',
            '-o', newbitcode, bitcode]
     p = runcmd(cmd)
@@ -51,17 +48,37 @@ def find_criterions(bitcode):
         return newbitcode, (crit.decode('utf-8', 'ignore') for crit in out.splitlines())
     return None, None
 
-def optimize(bitcode):
+def constrain_to_target(bitcode, target):
     newbitcode = f"{bitcode}.opt.bc"
-    cmd = ['opt', '-load', 'LLVMsbt.so', '-O3', '-remove-infinite-loops',
-           '-O2', '-o', newbitcode, bitcode]
+    cmd = ['opt', '-load', 'LLVMsbt.so', '-constraint-to-target',
+           f'-ctt-target={target}', '-O3', '-o', newbitcode, bitcode]
     p = runcmd(cmd)
+    if p is None:
+        return None
     ret = p.wait()
     if ret != 0:
         out, errs = p.communicate()
         print(out, file=stderr)
         print(errs, file=stderr)
         return None
+    return newbitcode
+
+def sliceprocess(bitcode, crit):
+    bitcode = constrain_to_target(bitcode, crit)
+    if bitcode is None:
+        return None, None
+        
+    slbitcode = f"{bitcode}-{crit}.bc"
+    cmd = ['timeout', '120', 'llvm-slicer', '-c', crit,
+           '-o', slbitcode, bitcode]
+    return runcmd(cmd), slbitcode
+
+def optimize(bitcode):
+    newbitcode = f"{bitcode}.opt.bc"
+    cmd = ['opt', '-load', 'LLVMsbt.so', '-O3', '-remove-infinite-loops',
+           '-O2', '-o', newbitcode, bitcode]
+    p = runcmd(cmd)
+    ret = p.wait()
     return newbitcode
 
 def main(argv):
@@ -78,8 +95,11 @@ def main(argv):
 
     bitcodewithcrits, crits = find_criterions(bitcode)
     if bitcodewithcrits:
-        n = 0
-        for crit in crits:
+        # The later crits are likely deeper in the code.
+        # Since run use only part of them, use those.
+        crits = list(crits)
+        crits.reverse()
+        for n, crit in enumerate(crits):
             print(f"\n--- Targeting at {crit} target --- ", file=stderr)
             if maingen and maingen.poll() is not None:
                 break # the main process finished, we can finish too
@@ -109,23 +129,34 @@ def main(argv):
             # generate tests
             if maingen and maingen.poll() is not None:
                 break # the main process finished, we can finish too
-            n += 1
             p = gentest(slicedcode, outdir, suffix=str(n),
                         params=['--search=dfs', '--use-batching-search'])
             if p is None:
                 continue
             generators.append(p)
 
-            if n > 15: # Do not run more of these processes
-                break
+            # FIXME: run atmost 8 at once
+            while len(generators) >= 7:
+                if maingen and maingen.poll() is not None:
+                    break # the main process finished, we can finish too
+                print("Got enough test generators, waiting for some to finish...",
+                      file=stderr)
+                sleep(2) # sleep 2 seconds
+                newgens = [p for p in generators if p.poll() is None]
+                # some processes finished
+                if len(newgens) != len(generators):
+                    generators = newgens
+
 
     print(f"\n--- All targets running --- ", file=stderr)
     stderr.flush()
 
     # wait until the main test generator finishes
+    main_finished = False
     if maingen:
         maingen.wait()
         print(f"\n--- Main KLEE finished --- ", file=stderr)
+        main_finished = True
     # kill side generators (or wait for them if there is no main)
     for p in generators:
         if maingen:
@@ -135,6 +166,10 @@ def main(argv):
             p.wait()
     print(f"\n--- All KLEE finished --- ", file=stderr)
 
+    if main_finished:
+        # if main KLEE finished, remove the files from side KLEE's -- those
+        # are superfluous
+        runcmd(['rm', '-f', f"{outdir}/test*.*.xml"])
 
 if __name__ == "__main__":
     from sys import argv
