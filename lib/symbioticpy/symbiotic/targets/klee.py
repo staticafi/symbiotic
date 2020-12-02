@@ -257,13 +257,15 @@ class SymbioticTool(KleeBase):
 
         opts = self._options
 
-        cmd = [executable, '--optimize=false',
+        cmd = [executable,
                '-use-forked-solver=0',
                '--use-call-paths=0', '--output-stats=0',
                '-istats-write-interval=60s',
+               '-timer-interval=10',
                #'--output-istats=0',
                '-output-dir={0}'.format(opts.testsuite_output),
                '-write-testcases',
+               '-malloc-symbolic-contents',
                '-max-memory=8000']
 
         if opts.property.errorcall():
@@ -271,7 +273,8 @@ class SymbioticTool(KleeBase):
             cmd.append('-dump-states-on-halt=0')
         else:
             cmd.append('-only-output-states-covering-new=1')
-            cmd.append('-write-ktests=false')
+            # XXX: investigate: for some reason, this changes the number of searched paths
+            #cmd.append('-write-ktests=false')
             cmd.append('-max-time=840')
 
         if not opts.nowitness:
