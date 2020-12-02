@@ -142,8 +142,9 @@ def set_testcomp(opts):
     opts.CFLAGS.append("-fbracket-depth=-1")
     opts.replay_error = True
     opts.tool_name='testcomp'
-    opts.slicer_timeout = 300
-    opts.instrumentation_timeout = 400
+    # keep the timeout small, we slice at the end again
+    opts.slicer_timeout = 60
+    opts.instrumentation_timeout = 60
     opts.exit_on_error = True # do we want that?
     opts.report_type.append('sv-comp')
 
