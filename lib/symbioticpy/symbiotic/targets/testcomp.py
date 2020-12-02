@@ -23,6 +23,14 @@ from symbiotic.utils.utils import process_grep
 from symbiotic.utils import dbg
 from symbiotic.exceptions import SymbioticException
 
+try:
+    import benchexec.util as util
+    from benchexec.tools.template import BaseTool
+except ImportError:
+    # fall-back solution (at least for now)
+    import symbiotic.benchexec.util as util
+    from symbiotic.benchexec.tools.template import BaseTool
+
 
 from . tool import SymbioticBaseTool
 
@@ -33,61 +41,30 @@ except ImportError:
     from symbiotic.benchexec.tools.template import BaseTool
 
 from . klee import SymbioticTool as KleeTool
-from . slowbeast import SymbioticTool as SlowbeastTool
 
-class SymbioticTool(BaseTool, SymbioticBaseTool):
+class SymbioticTool(KleeTool):
     """
     Symbiotic tool info object
     """
 
     def __init__(self, opts):
-        self.tool = KleeTool(opts)
-        self._options = opts
-        self._env = None
-        self._has_threads = False
-
-    def verifiers(self):
-        return ((KleeTool(self._options), None, None),)
+        super().__init__(opts)
 
     def name(self):
         return 'svcomp' # if renamed, adjust models in lib\ folder
 
     def executable(self):
-        return self.tool.executable()
+        """
+        Find the path to the executable file that will get executed.
+        This method always needs to be overridden,
+        and most implementations will look similar to this one.
+        The path returned should be relative to the current directory.
+        """
+        return util.find_executable('kleetester.py', 'bin/kleetester.py',
+                                    'scripts/kleetester.py')
 
-    def llvm_version(self):
-        # we suppose that all tools
-        return self.tool.llvm_version()
-
-    def set_environment(self, env, opts):
-        self._env = env
-        self.tool.set_environment(env, self._options)
-
-    def actions_before_slicing(self, symbiotic):
-        if hasattr(self.tool, 'actions_before_slicing'):
-            self.tool.actions_before_slicing(symbiotic)
-
-    def actions_after_slicing(self, symbiotic):
-        if hasattr(self.tool, 'actions_after_slicing'):
-            self.tool.actions_after_slicing(symbiotic)
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
-        """
-        Compose the command line to execute from the name of the executable
-        """
-        return self.tool.cmdline(executable, options, tasks, propertyfile, rlimits)
+        assert len(tasks) == 1
+        return [executable, self._options.testsuite_output] + tasks
 
-    def determine_result(self, returncode, returnsignal, output, isTimeout):
-        return self.tool.determine_result(returncode, returnsignal, output, isTimeout)
-
-    def describe_error(self, llvmfile):
-        if hasattr(self.tool, 'describe_error'):
-            self.tool.describe_error(llvmfile)
-
-    def generate_witness(self, llvmfile, sources, has_error):
-        if hasattr(self.tool, "generate_witness"):
-            self.tool.generate_witness(llvmfile, sources, has_error)
-
-    def generate_exec_witness(self, llvmfile, sources):
-        if hasattr(self.tool, "generate_exec_witness"):
-            self.tool.generate_exec_witness(llvmfile, sources)

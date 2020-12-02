@@ -262,6 +262,7 @@ class SymbioticTool(KleeBase):
                '--use-call-paths=0', '--output-stats=0',
                '-istats-write-interval=60s',
                '-timer-interval=10',
+               '-external-calls=pure',
                #'--output-istats=0',
                '-output-dir={0}'.format(opts.testsuite_output),
                '-write-testcases',
