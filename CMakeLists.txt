@@ -5,7 +5,7 @@ set(INSTALL_DATA_DIR ${CMAKE_INSTALL_PREFIX} CACHE PATH "Installation directory 
 add_subdirectory(lib)
 add_subdirectory(include)
 
-install(PROGRAMS scripts/symbiotic scripts/gen-c
+install(PROGRAMS scripts/symbiotic scripts/gen-c scripts/kleetester.py
 	DESTINATION bin)
 
 install(DIRECTORY properties
