@@ -21,7 +21,8 @@ def gentest(bitcode, outdir, prp, suffix=None, params=None):
                '-timer-interval=10', '-external-calls=pure',
                '-write-testcases', '-malloc-symbolic-contents',
                '-max-memory=8000', '-output-source=false']
-    if prp == 'error':
+    if prp != 'coverage':
+        options.append(f'-error-fn={prp}')
         options.append('-exit-on-error-type=Assert')
         options.append('-dump-states-on-halt=0')
     else:
@@ -93,7 +94,7 @@ def optimize(bitcode):
 
 def check_error(outs, errs):
     for line in outs.splitlines():
-        if b'ASSERTION FAIL: verifier assertion failed' in line:
+        if b'ASSERTION FAIL: ' in line:
             print('Found ERROR!', file=stderr)
             return True
     return False
@@ -158,7 +159,7 @@ def main(argv):
             newgens = []
             for p in generators:
                 if p.poll() is not None:
-                    if prp == 'error':
+                    if prp != 'coverage':
                         if check_error(*p.communicate()):
                             for gen in generators:
                                 if gen.poll() is not None:
@@ -178,7 +179,7 @@ def main(argv):
                 sleep(2) # sleep 2 seconds
                 for p in generators:
                     if p.poll() is not None:
-                        if prp == 'error':
+                        if prp != 'coverage':
                             if check_error(*p.communicate()):
                                 for gen in generators:
                                     if gen.poll() is not None:
@@ -198,7 +199,7 @@ def main(argv):
         newgens = []
         for p in generators:
             if p.poll() is not None:
-                if prp == 'error':
+                if prp != 'coverage':
                     if check_error(*p.communicate()):
                         for gen in generators:
                             if gen.poll() is not None:

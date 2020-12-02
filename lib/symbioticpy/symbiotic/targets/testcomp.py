@@ -68,8 +68,16 @@ class SymbioticTool(KleeTool):
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         assert len(tasks) == 1
-        return [executable, 'error' if self._options.property.errorcall() else
-                'coverage', self._options.testsuite_output] + tasks
+        prp = 'coverage'
+        prop = self._options.property
+        iserr = prop.errorcall()
+        if iserr:
+            calls = [x for x in prop.getcalls() if x not in ['__VERIFIER_error', '__assert_fail']]
+            if len(calls) == 1:
+                prp = calls[0]
+ 
+
+        return [executable, prp, self._options.testsuite_output] + tasks
 
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
