@@ -195,14 +195,18 @@ class PropertyCoverStmts(PropertyCoverage):
 
 # FIXME: remove this in favor of UnreachCall
 class PropertyErrorCall(PropertyCoverage):
-    def __init__(self, prpfile = None):
+    def __init__(self, calls=None, prpfile = None):
         Property.__init__(self, prpfile)
+        self.calls = calls or ['reach_error'] # the default value
+
+    def getCalls(self):
+        return self.calls
 
     def errorcall(self):
         return True
 
     def help(self):
-        return "generating tests that cover calls of __VERIFIER_error"
+        return f"generating tests that cover calls of {' '.join(self.calls)}"
 
 supported_ltl_properties = {
     'CHECK( init(main()), LTL(G ! call(__VERIFIER_error())) )'         : PropertyUnreachCall,
@@ -319,6 +323,13 @@ def _get_parametrized_property(prps, prpfile):
             P = PropertyUnreachCall(prpfile)
             P.calls = [fun]
             retval.append(P)
+        elif p.startswith('COVER( init(main()), FQL(COVER EDGES(@CALL('):
+            suff = p[43:]
+            fun = suff[:suff.find(')')]
+            P = PropertyErrorCall(prpfile)
+            P.calls = [fun]
+            retval.append(P)
+     
         else:
             unresolved.append(p)
 

@@ -395,7 +395,7 @@ class SymbioticTool(KleeBase):
             if prop.errorcall():
                 found = []
                 for line in output:
-                    fnd = self._parse_klee_output_line(line.decode('ascii'))
+                    fnd = self._parse_klee_output_line(str(line))
                     if fnd == result.RESULT_FALSE_REACH:
                         return result.RESULT_DONE
 
