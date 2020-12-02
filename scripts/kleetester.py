@@ -44,6 +44,10 @@ def find_criterions(bitcode):
     if p is None:
         return None, None
     out, errs = p.communicate()
+    if p.poll() != 0:
+        print(errs)
+        print(out)
+        return None, None
     if out and out != '':
         return newbitcode, (crit.decode('utf-8', 'ignore') for crit in out.splitlines())
     return None, None
