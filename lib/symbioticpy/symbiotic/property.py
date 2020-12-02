@@ -199,7 +199,7 @@ class PropertyErrorCall(PropertyCoverage):
         Property.__init__(self, prpfile)
         self.calls = calls or ['reach_error'] # the default value
 
-    def getCalls(self):
+    def getcalls(self):
         return self.calls
 
     def errorcall(self):
