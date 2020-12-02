@@ -150,7 +150,8 @@ git add \
 	bin/gen-c \
 	include/symbiotic.h \
 	include/symbiotic-size_t.h \
-    $(find lib -name '*.c')\
+	$(find lib -name '*.c')\
+	$(find . -name '*.bc')\
 	properties/* \
 	$(find lib/symbioticpy/symbiotic -name '*.py')\
 	LICENSE.txt README.md
