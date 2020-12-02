@@ -141,7 +141,7 @@ def set_testcomp(opts):
     opts.linkundef.append('svcomp')
     opts.CFLAGS.append("-fbracket-depth=-1")
     opts.replay_error = True
-    opts.tool_name='svcomp'
+    opts.tool_name='testcomp'
     opts.slicer_timeout = 300
     opts.instrumentation_timeout = 400
     opts.exit_on_error = True # do we want that?

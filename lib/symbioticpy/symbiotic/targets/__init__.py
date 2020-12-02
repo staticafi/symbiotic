@@ -11,6 +11,7 @@ from . nidhugg import SymbioticTool as NidhuggTool
 from . divine import SymbioticTool as DivineTool
 from . ultimateautomizer import SymbioticTool as UltimateTool
 from . svcomp import SymbioticTool as SVCompTool
+from . testcomp import SymbioticTool as TestCompTool
 from . slowbeast import SymbioticTool as SlowbeastTool
 from . predatorhp import SymbioticTool as PredatorHPTool
 from . predator import SymbioticTool as PredatorTool
@@ -32,9 +33,10 @@ targets = {
     'ultimateautomizer':  UltimateTool,
     'ultimate':           UltimateTool,
     'svcomp':             SVCompTool,
+    'testcomp':           TestCompTool,
     'slowbeast':          SlowbeastTool,
     'predatorhp':         PredatorHPTool,
-    'predator':         PredatorTool,
+    'predator':           PredatorTool,
     'cc':                 CCTarget
 }
 
