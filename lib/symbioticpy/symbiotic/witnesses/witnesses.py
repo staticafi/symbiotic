@@ -71,6 +71,19 @@ class GraphMLWriter(object):
         _add_edge_key(root, "assumption.resultfunction")
         _add_edge_key(root, "startline")
 
+        e = ET.SubElement(root, 'key', id="cyclehead")
+        e.set('for', 'node')
+        e.set('attr.type', 'boolean')
+        e.set('attr.name', "cyclehead")
+        se = ET.SubElement(e, 'default').text = 'false'
+
+        e = ET.SubElement(root, 'key', id="enterLoopHead")
+        e.set('for', 'edge')
+        e.set('attr.type', 'boolean')
+        e.set('attr.name', "enterLoopHead")
+        se = ET.SubElement(e, 'default').text = 'false'
+
+
     def _addCInfo(self):
         assert self._root is not None
 
