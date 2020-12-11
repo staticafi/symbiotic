@@ -48,6 +48,7 @@ class SymbioticOptions(object):
         self.instrumentation_timeout = 0
         self.no_optimize = False
         self.no_verification = False
+        self.no_instrument = False
         self.final_output = None
         self.witness_output = '{0}/witness.graphml'.format(os.getcwd())
         self.testsuite_output = '{0}/test-suite'.format(os.getcwd())
@@ -207,7 +208,7 @@ def parse_command_line():
                                     'instrumentation-timeout=', 'version', 'help',
                                     'no-verification', 'output=', 'witness=', 'bc',
                                     'optimize=', 'malloc-never-fails',
-                                    'pta=', 'no-link=', 'argv=',
+                                    'pta=', 'no-link=', 'argv=', 'no-instrument',
                                     'cflags=', 'cppflags=', 'link=', 'executable-witness',
                                     'verifier=','target=', 'require-slicer',
                                     'no-link-undefined', 'repeat-slicing=',
@@ -296,6 +297,10 @@ def parse_command_line():
             dbg('Will not optimize the code')
             options.no_optimize = True
             options.optlevel = []
+        elif opt == '--no-instrument':
+            dbg('Will not instrument the code as --no-instrument is given. '
+                'Make sure you know what you are doing!')
+            options.no_instrument = True
         elif opt == '--optimize':
             dbg('Optimization levels: ' + arg)
             options.optlevel = arg.split(',')
@@ -444,6 +449,7 @@ where OPTS can be following:
                               You can also pass optimizations directly to LLVM's opt,
                               by providing a string when-opt-what, e.g. before-opt-iconstprop
     --no-optimize             Don't optimize the code (same as --optimize=none)
+    --no-instrument           Don't instrument the code, for debugging.
     --libc=klee               Link klee-libc.bc to the module
     --repeat-slicing=N        Repeat slicing N times
     --prp=property            Specify property that should hold. It is either LTL formula
