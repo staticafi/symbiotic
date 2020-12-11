@@ -815,7 +815,8 @@ class SymbioticCC(object):
         #  - now instrument the code according to the given property
         #################### #################### ###################
 
-        self.instrument()
+        if not self.options.no_instrument:
+            self.instrument()
 
 
         #################### #################### ###################
