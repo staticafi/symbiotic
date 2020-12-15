@@ -13,7 +13,7 @@ https://github.com/staticafi.
 
 Tarballs with Symbiotic distribution can be downloaded from
 https://github.com/staticafi/symbiotic/releases.
-Alternatively, you can download archives used in [SV-COMP 2021)(https://gitlab.com/sosy-lab/sv-comp/archives-2021/-/blob/master/2021/symbiotic.zip)
+Alternatively, you can download archives used in [SV-COMP 2021](https://gitlab.com/sosy-lab/sv-comp/archives-2021/-/blob/master/2021/symbiotic.zip)
 (compiled on Ubuntu 20), [SV-COMP 2020](https://gitlab.com/sosy-lab/sv-comp/archives-2020/-/blob/master/2020/symbiotic.zip) (compiled on Ubuntu 18)
 
 After unpacking, Symbiotic should be ready to go.
