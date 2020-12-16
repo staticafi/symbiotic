@@ -78,6 +78,17 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert")
         return passes + ["-O3", "-remove-constant-exprs", "-reg2mem"]
 
+    def generate_graphml(path, source, is_correctness_wit, opts, saveto):
+        """ Generate trivial correctness witness for now """
+        if saveto is None:
+            saveto = '{0}.graphml'.format(basename(path))
+            saveto = abspath(saveto)
+
+        if is_correctness_wit:
+            gen.createTrivialWitness()
+            assert path is None
+        gen.write(saveto)
+
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         if isTimeout:
             return ''
