@@ -1,0 +1,121 @@
+---
+name: Linux CI
+on: [push, pull_request]
+
+jobs:
+  build64:
+    name: Ubuntu 64-bit
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux with GCC
+          # - {os: ubuntu-16.04, llvm: '3.9', compiler: gcc}
+          # - {os: ubuntu-16.04, llvm: '4.0', compiler: gcc}
+          # - {os: ubuntu-18.04, llvm: '5.0', compiler: gcc}
+          # - {os: ubuntu-18.04, llvm: '6.0', compiler: gcc}
+          # - {os: ubuntu-18.04, llvm: 7, compiler: gcc}
+          # - {os: ubuntu-18.04, llvm: 8, compiler: gcc}
+          # - {os: ubuntu-18.04, llvm: 9, compiler: gcc}
+          # - {os: ubuntu-20.04, llvm: 10, compiler: gcc}
+          # - {os: ubuntu-20.04, llvm: 11, compiler: gcc}
+          # - {os: ubuntu-20.04, llvm: 12, compiler: gcc}
+          # - {os: ubuntu-20.04, llvm: 12, compiler: gcc, type: Debug}
+
+          # Linux with Clang
+          # - {os: ubuntu-16.04, llvm: '3.9', compiler: clang}
+          # - {os: ubuntu-16.04, llvm: '4.0', compiler: clang}
+          # - {os: ubuntu-18.04, llvm: '5.0', compiler: clang}
+          # - {os: ubuntu-18.04, llvm: '6.0', compiler: clang}
+          # - {os: ubuntu-18.04, llvm: 7, compiler: clang}
+          - {os: ubuntu-18.04, llvm: 8, compiler: clang}
+          - {os: ubuntu-18.04, llvm: 9, compiler: clang}
+          - {os: ubuntu-20.04, llvm: 10, compiler: clang}
+          # - {os: ubuntu-20.04, llvm: 11, compiler: clang}
+          # - {os: ubuntu-20.04, llvm: 12, compiler: clang}
+          # - {os: ubuntu-20.04, llvm: 12, compiler: clang, type: Debug}
+
+    runs-on: ${{matrix.os}}
+    steps:
+      - name: Checkout Symbiotic and submodules
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: '[Focal + LLVM 11] Add repositories'
+        if: matrix.os == 'ubuntu-20.04' && matrix.llvm == 11
+        run: |
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-11 main"
+
+      - name: '[Focal + LLVM 12] Add repositories'
+        if: matrix.os == 'ubuntu-20.04' && matrix.llvm == 12
+        run: |
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main"
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install ccache cmake clang-${{matrix.llvm}} \
+                           llvm-${{matrix.llvm}}-dev libc6-dev-i386 \
+                           libz3-dev
+
+      - name: Set environment
+        id: env
+        run: |
+          # Set buildtype
+          if [[ "${{matrix.type}}" != "" ]]; then
+            echo "BUILD_TYPE=${{matrix.type}}" >> $GITHUB_ENV
+          else
+            echo "BUILD_TYPE=RelWithDebInfo" >> $GITHUB_ENV
+          fi
+
+          # Select compiler and set compiler flags
+          if [[ "${{matrix.compiler}}" = "clang" ]]; then
+            echo "CC=clang-${{matrix.llvm}}" >> $GITHUB_ENV
+            echo "CXX=clang++-${{matrix.llvm}}" >> $GITHUB_ENV
+            # force coloured output
+            echo "CFLAGS=$CFLAGS -fcolor-diagnostics" >> $GITHUB_ENV
+            echo "CXXFLAGS=$CXXFLAGS -fcolor-diagnostics" >> $GITHUB_ENV
+          else
+            echo "CC=gcc" >> $GITHUB_ENV
+            echo "CXX=g++" >> $GITHUB_ENV
+            # force coloured output
+            echo "CFLAGS=$CFLAGS -fdiagnostics-color" >> $GITHUB_ENV
+            echo "CXXFLAGS=$CXXFLAGS -fdiagnostics-color" >> $GITHUB_ENV
+          fi
+
+          # set up ccache
+          sudo /usr/sbin/update-ccache-symlinks
+          echo "/usr/lib/ccache" >> $GITHUB_PATH
+
+          # Xenial and Bionic do not create symlinks to versioned clang
+          sudo ln -sfr /usr/bin/ccache /usr/lib/ccache/clang-${{matrix.llvm}}
+          sudo ln -sfr /usr/bin/ccache /usr/lib/ccache/clang++-${{matrix.llvm}}
+          echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+          echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> $GITHUB_ENV
+          echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
+          echo "CCACHE_COMPRESSLEVEL=6" >> $GITHUB_ENV
+          echo "CCACHE_MAXSIZE=400M" >> $GITHUB_ENV
+          echo "::set-output name=timestamp::$(date -u -Iseconds)"
+
+      - name: Set up ccache
+        uses: actions/cache@v2
+        with:
+          path: .ccache
+          key: ${{matrix.os}}-${{matrix.llvm}}-${{matrix.compiler}}-${{matrix.type}}-${{steps.env.outputs.timestamp}}
+          restore-keys: ${{matrix.os}}-${{matrix.llvm}}-${{matrix.compiler}}-${{matrix.type}}
+
+      - name: Build Symbiotic
+        run: |
+          ./system-build.sh llvm-config=$(which llvm-config-${{matrix.llvm}}) \
+                            build-type=${BUILD_TYPE} \
+                            -j$(nproc)
+
+      - name: Run tests
+        run: |
+          make -C tests
+
+      - name: ccache statistics
+        run: ccache -s
