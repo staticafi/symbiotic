@@ -75,8 +75,12 @@ bool RemoveConstantExprs::runOnFunction(Function &F) {
     // if this CE is a cast of the function in function call, skip it
     // FIXME: make this configurable
     if (auto *Call = dyn_cast<CallInst>(I)) {
+#if LLVM_VERSION_MAJOR >= 8
+      if (Call->getCalledOperand() == CE)
+#else
       if (Call->getCalledValue() == CE)
-	    continue;
+#endif
+        continue;
     }
     auto *newI = CE->getAsInstruction();
     newI->insertBefore(I);
