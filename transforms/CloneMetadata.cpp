@@ -53,7 +53,7 @@ bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2)
     } else {
       DebugLoc DL;
       if (auto SP = i1->getParent()->getParent()->getSubprogram()) {
-        DL = DebugLoc::get(SP->getScopeLine(), 0, SP);
+        DL = DILocation::get(SP->getContext(), SP->getScopeLine(), 0, SP);
       }
       i2->setDebugLoc(DL);
     }
