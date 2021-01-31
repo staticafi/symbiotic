@@ -131,7 +131,7 @@ HAVE_GTEST=$(if check_gtest; then echo "yes"; else echo "no"; fi)
 ENABLE_TCMALLOC=$(if check_tcmalloc; then echo "on"; else echo "off"; fi)
 
 if [ "$HAVE_32_BIT_LIBS" = "no" -a "$BUILD_KLEE" = "yes" ]; then
-	exitmsg "KLEE needs 32-bit headers to build 32-bit versions of runtime libraries. On Ubuntu, this is the package libc6-dev-i386 (or gcc-multilib)."
+	exitmsg "KLEE needs 32-bit libc headers to build 32-bit versions of runtime libraries. On Ubuntu, this is the package libc6-dev-i386 (or gcc-multilib), on Fedora-based systems it is glibc-devel.i686."
 fi
 
 # Try to get the previous build type if no is given

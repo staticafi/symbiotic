@@ -197,7 +197,7 @@ fi
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
 if [ "$HAVE_32_BIT_LIBS" = "no" -a "$BUILD_KLEE" = "yes" ]; then
-	exitmsg "KLEE needs 32-bit headers to build 32-bit versions of runtime libraries"
+	exitmsg "KLEE needs 32-bit libc headers to build 32-bit versions of runtime libraries. On Ubuntu, this is the package libc6-dev-i386 (or gcc-multilib), on Fedora-based systems it is glibc-devel.i686."
 fi
 
 if [ "$HAVE_Z3" = "no" -a "$BUILD_STP" = "no" ]; then
