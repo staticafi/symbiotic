@@ -8,6 +8,10 @@ trap '[ "$?" -ne 77 ] || exit 77' ERR
 
 exitmsg()
 {
+    if [ ! -z "$PHASE" ]; then
+	    echo "ERROR when $PHASE" >/dev/stderr
+    fi
+
 	echo "$1" >/dev/stderr
 	exit 77
 }
@@ -24,17 +28,17 @@ abspath() {
 
 download_tar()
 {
-	$GET "$1" || exit 1
+	$GET "$1" || exitmsg "Failed getting $1"
 	BASENAME="`basename $1`"
-	tar xf "$BASENAME" || exit 1
+	tar xf "$BASENAME" || exitmsg "Failed unpacking $1"
 	rm -f "BASENAME"
 }
 
 download_zip()
 {
-	$GET "$1" || exit 1
+	$GET "$1" || exitmsg "Faield getting $1"
 	BASENAME="`basename $1`"
-	unzip "$BASENAME" || exit 1
+	unzip "$BASENAME" || exitmsg "Failed unpacking $1"
 	rm -f "BASENAME"
 }
 
@@ -48,12 +52,12 @@ clean_and_exit()
 		rm -rf *
 	fi
 
-	exit $CODE
+	exitmsg "Exited with code $CODE"
 }
 
 build()
 {
-	make $OPTS CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $@ || exit 1
+	make $OPTS CFLAGS="$CFLAGS" CPPFLAGS="$CPPFLAGS" LDFLAGS="$LDFLAGS" $@ || exitmsg "Failed build"
 	return 0
 }
 

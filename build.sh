@@ -23,6 +23,8 @@
 
 set -e
 
+PHASE="doing initialization"
+
 source "$(dirname $0)/scripts/build-utils.sh"
 
 RUNDIR=`pwd`
@@ -195,6 +197,7 @@ if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
 fi
 
+PHASE="checking system"
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
 if [ "$HAVE_32_BIT_LIBS" = "no" -a "$BUILD_KLEE" = "yes" ]; then
@@ -337,6 +340,7 @@ check
 
 build_llvm()
 {
+    PHASE="building LLVM"
 	URL=http://llvm.org/releases/${LLVM_VERSION}/
 	CLANG_NAME="cfe"
 	# UFFF, for some stupid reason this only release has a different url, the rest (even newer use the previous one)
@@ -352,13 +356,13 @@ build_llvm()
 	RT_URL=${URL}/compiler-rt-${LLVM_VERSION}.src.tar.xz
 
 	if [ ! -d "llvm-${LLVM_VERSION}" ]; then
-		$GET $LLVM_URL || exit 1
-		$GET $CLANG_URL || exit 1
-		$GET $RT_URL || exit 1
+		$GET $LLVM_URL || exitmsg "Failed downloading LLVM"
+		$GET $CLANG_URL || exitmsg "Failed downloading Clang"
+		$GET $RT_URL || exitmsg "Failed downloading sanitizers"
 
-		tar -xf llvm-${LLVM_VERSION}.src.tar.xz || exit 1
-		tar -xf $CLANG_NAME-${LLVM_VERSION}.src.tar.xz || exit 1
-		tar -xf compiler-rt-${LLVM_VERSION}.src.tar.xz || exit 1
+		tar -xf llvm-${LLVM_VERSION}.src.tar.xz || exitmsg "Failed unpacking LLVM"
+		tar -xf $CLANG_NAME-${LLVM_VERSION}.src.tar.xz || exitmsg "Failed unpacking Clang"
+		tar -xf compiler-rt-${LLVM_VERSION}.src.tar.xz || exitmsg "Failed unpacking sanitizers"
 
                 # rename llvm folder
                 mv llvm-${LLVM_VERSION}.src llvm-${LLVM_VERSION}
@@ -369,14 +373,14 @@ build_llvm()
 		# apply our patches for LLVM/Clang
 		if [ "$LLVM_VERSION" = "4.0.1" ]; then
 			pushd llvm-${LLVM_VERSION}/tools/clang
-			patch -p0 --dry-run < $ABS_SRCDIR/patches/force_lifetime_markers.patch || exit 1
-			patch -p0 < $ABS_SRCDIR/patches/force_lifetime_markers.patch || exit 1
+			patch -p0 --dry-run < $ABS_SRCDIR/patches/force_lifetime_markers.patch || exitmsg "Patching LLVM"
+			patch -p0 < $ABS_SRCDIR/patches/force_lifetime_markers.patch || exitmsg "Patching LLVM"
 			popd
 		fi
 
-		rm -f llvm-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
-		rm -f $CLANG_NAME-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
-		rm -f compiler-rt-${LLVM_VERSION}.src.tar.xz &>/dev/null || exit 1
+		rm -f llvm-${LLVM_VERSION}.src.tar.xz &>/dev/null || exitmsg "Removing downloaded archive"
+		rm -f $CLANG_NAME-${LLVM_VERSION}.src.tar.xz &>/dev/null || exitmsg "Removing downloaded archive"
+		rm -f compiler-rt-${LLVM_VERSION}.src.tar.xz &>/dev/null || exitmsg "Removing downloaded archive"
 	fi
 	if [ $WITH_LLVMCBE = "yes" ]; then
 		pushd ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/projects || exitmsg "Invalid directory"
@@ -419,7 +423,7 @@ build_llvm()
 	ONLY_TOOLS="$LLVM_TOOLS" build
 	# copy the generated stddef.h due to compilation of instrumentation libraries
 	#mkdir -p "$LLVM_PREFIX/include"
-	#cp "lib/clang/${LLVM_VERSION}/include/stddef.h" "$LLVM_PREFIX/include" || exit 1
+	#cp "lib/clang/${LLVM_VERSION}/include/stddef.h" "$LLVM_PREFIX/include" || exitmsg "Copying stddef.h"
 
 	popd
 }
@@ -433,6 +437,7 @@ LLVM_MAJOR_VERSION="${LLVM_VERSION%%\.*}"
 LLVM_MINOR_VERSION=${LLVM_VERSION#*\.}
 LLVM_MINOR_VERSION="${LLVM_MINOR_VERSION%\.*}"
 
+PHASE="setting up LLVM"
 if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	if [ -z "$WITH_LLVM" ]; then
 		build_llvm
@@ -446,7 +451,7 @@ if [ $FROM -eq 0 -a $NO_LLVM -ne 1 ]; then
 	# to instalation prefix there
 	mkdir -p $LLVM_PREFIX/bin
 	for B in $LLVM_TOOLS; do
-		cp $LLVM_LOCATION/bin/${B} $LLVM_PREFIX/bin/${B} || exit 1
+		cp $LLVM_LOCATION/bin/${B} $LLVM_PREFIX/bin/${B} || exitmsg "Failed copying LLVM executables"
 	done
 fi
 
@@ -497,13 +502,14 @@ fi
 ######################################################################
 #   SVF
 ######################################################################
+PHASE="building SVF"
 if [ $FROM -le 1 -a $BUILD_SVF = "yes" ]; then
 	git_clone_or_pull https://github.com/SVF-tools/SVF
 
 	# download the dg library
 	pushd "$SRCDIR/SVF" || exitmsg "Cloning failed"
-	mkdir -p build-${LLVM_VERSION} || exit 1
-	pushd build-${LLVM_VERSION} || exit 1
+	mkdir -p build-${LLVM_VERSION} || exitmsg "error"
+	pushd build-${LLVM_VERSION} || exitmsg "error"
 
 	if [ ! -d CMakeFiles ]; then
 
@@ -516,7 +522,7 @@ if [ $FROM -le 1 -a $BUILD_SVF = "yes" ]; then
 			|| clean_and_exit 1 "git"
 	fi
 
-	(build && make install) || exit 1
+	(build && make install) || exitmsg "Building and installing SVF"
 	popd
 	popd
 fi # SVF
@@ -528,6 +534,7 @@ fi
 ######################################################################
 #   dg
 ######################################################################
+PHASE="building dg"
 if [ $FROM -le 1 ]; then
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/dg)" ]; then
 		git_submodule_init
@@ -539,8 +546,8 @@ if [ $FROM -le 1 ]; then
 
 	# download the dg library
 	pushd "$SRCDIR/dg" || exitmsg "Cloning failed"
-	mkdir -p build-${LLVM_VERSION} || exit 1
-	pushd build-${LLVM_VERSION} || exit 1
+	mkdir -p build-${LLVM_VERSION} || exitmsg "error"
+	pushd build-${LLVM_VERSION} || exitmsg "error"
 
 	if [ ! -d CMakeFiles ]; then
 		cmake .. \
@@ -556,18 +563,28 @@ if [ $FROM -le 1 ]; then
 			|| clean_and_exit 1 "git"
 	fi
 
-	(build && make install) || exit 1
+	(build && make install) || exitmsg "Building and installing DG"
 	popd
 	popd
+fi
 
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+######################################################################
+#   sbt-slicer
+######################################################################
+PHASE="building sbt-slicer"
+if [ $FROM -le 1 ]; then
 	# initialize instrumentation module if not done yet
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/sbt-slicer)" ]; then
 		git_submodule_init
 	fi
 
 	pushd "$SRCDIR/sbt-slicer" || exitmsg "Cloning failed"
-	mkdir -p build-${LLVM_VERSION} || exit 1
-	pushd build-${LLVM_VERSION} || exit 1
+	mkdir -p build-${LLVM_VERSION} || exitmsg "error"
+	pushd build-${LLVM_VERSION} || exitmsg "error"
 	if [ ! -d CMakeFiles ]; then
 		cmake .. \
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
@@ -583,7 +600,7 @@ if [ $FROM -le 1 ]; then
 			|| clean_and_exit 1 "git"
 	fi
 
-	(build && make install) || exit 1
+	(build && make install) || exitmsg  "Building and installing sbt-slicer"
 	popd
 	popd
 fi
@@ -595,19 +612,21 @@ fi
 ######################################################################
 #   zlib
 ######################################################################
+PHASE="building zlib"
 if [ $FROM -le 2 -a $WITH_ZLIB = "yes" ]; then
 	git_clone_or_pull https://github.com/madler/zlib
-	cd zlib || exit 1
+	cd zlib || exitmsg "error"
 
 	if [ ! -d CMakeFiles ]; then
 		cmake -DCMAKE_INSTALL_PREFIX=$PREFIX
 	fi
 
-	(make "$OPTS" && make install) || exit 1
+	(make "$OPTS" && make install) || exitmsg  "Building and installing ZLib"
 
 	cd -
 fi
 
+PHASE="building minisat and stp"
 if [ "$BUILD_STP" = "yes" ]; then
 	######################################################################
 	#   minisat
@@ -616,7 +635,7 @@ if [ "$BUILD_STP" = "yes" ]; then
 		git_clone_or_pull git://github.com/stp/minisat.git minisat
 		pushd minisat
 		mkdir -p build
-		cd build || exit 1
+		cd build || exitmsg "error"
 
 		# use our zlib, if we compiled it
 		ZLIB_FLAGS=
@@ -631,7 +650,7 @@ if [ "$BUILD_STP" = "yes" ]; then
 					 -DSTATICCOMPILE=ON $ZLIB_FLAGS
 		fi
 
-		(make "$OPTS" && make install) || exit 1
+		(make "$OPTS" && make install) || exitmsg  "Building and installing minisat"
 		popd
 	fi
 
@@ -652,7 +671,7 @@ if [ "$BUILD_STP" = "yes" ]; then
 				-DENABLE_PYTHON_INTERFACE:BOOL=OFF || clean_and_exit 1 "git"
 		fi
 
-		(build "OPTIMIZE=-O2 CFLAGS_M32=install" && make install) || exit 1
+		(build "OPTIMIZE=-O2 CFLAGS_M32=install" && make install) || exitmsg  "Building and installing STP"
 		cd -
 	fi
 fi # BUILD_STP
@@ -664,10 +683,11 @@ fi
 ######################################################################
 #   googletest
 ######################################################################
+PHASE="building googletest for KLEE"
 if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	if [ ! -d googletest ]; then
-		download_zip https://github.com/google/googletest/archive/release-1.7.0.zip || exit 1
-		mv googletest-release-1.7.0 googletest || exit 1
+		download_zip https://github.com/google/googletest/archive/release-1.7.0.zip || exitmsg "Downloading googletest"
+		mv googletest-release-1.7.0 googletest || exitmsg "error"
 		rm -f release-1.7.0.zip
 	fi
 
@@ -692,6 +712,7 @@ if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
 
+PHASE="building Z3 for KLEE"
 if [ "$BUILD_Z3" = "yes" ]; then
 	######################################################################
 	#   Z3
@@ -721,6 +742,7 @@ fi
 ######################################################################
 #   KLEE
 ######################################################################
+PHASE="building KLEE"
 if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	source scripts/build-klee.sh
 fi
@@ -732,6 +754,7 @@ fi
 ######################################################################
 #   nidhugg
 ######################################################################
+PHASE="building Nidhugg"
 if [ $FROM -le 4  -a "$BUILD_NIDHUGG" = "yes" ]; then
 	if [ ! -d nidhugg ]; then
 		git_clone_or_pull "https://github.com/nidhugg/nidhugg"
@@ -767,7 +790,7 @@ if [ $FROM -le 4  -a "$BUILD_NIDHUGG" = "yes" ]; then
 		  PATH="$OLD_PATH"
 	fi
 
-	(build && make install) || exit 1
+	(build && make install) || exitmsg  "Building and installing Nidhugg"
 	popd
 fi
 
@@ -778,6 +801,7 @@ fi
 ######################################################################
 #   llvm2c
 ######################################################################
+PHASE="building llvm2c"
 if [ $FROM -le 6 -a "$BUILD_LLVM2C" = "yes" ]; then
 	source scripts/build-llvm2c.sh
 fi
@@ -794,6 +818,7 @@ fi
 ######################################################################
 #   Predator
 ######################################################################
+PHASE="building Predator"
 if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 	if [ ! -d predator-${LLVM_VERSION} ]; then
                git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp21-v1 predator-${LLVM_VERSION}
@@ -805,7 +830,7 @@ if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 	        CXX=clang++ ./switch-host-llvm.sh ${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/${LLVM_CMAKE_CONFIG_DIR}
 	fi
 
-    build || exit 1
+    build || exitmsg  "Building Predator"
 	mkdir -p $LLVM_PREFIX/predator/lib
 	cp sl_build/*.so $LLVM_PREFIX/predator/lib
 	cp sl_build/slllvm* $LLVM_PREFIX/bin/
@@ -824,6 +849,7 @@ fi
 ######################################################################
 #   instrumentation
 ######################################################################
+PHASE="building sbt-instrumentation"
 if [ $FROM -le 6 ]; then
 	# initialize instrumentation module if not done yet
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/sbt-instrumentation)" ]; then
@@ -853,7 +879,7 @@ if [ $FROM -le 6 ]; then
 			|| clean_and_exit 1 "git"
 	fi
 
-	(build && make install) || exit 1
+	(build && make install) || exitmsg  "Building and installing sbt-instrumentation"
 
 	popd
 	popd
@@ -866,6 +892,7 @@ fi
 ######################################################################
 #   transforms (LLVMsbt.so)
 ######################################################################
+PHASE="building LLVMsbt.so"
 if [ $FROM -le 6 ]; then
 
 	mkdir -p transforms/build-${LLVM_VERSION}
@@ -894,20 +921,23 @@ fi
 ######################################################################
 #   copy lib and include files
 ######################################################################
+PHASE="installing files and function models"
 if [ $FROM -le 6 ]; then
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
 			-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
-			|| exit 1
+			|| exitmsg "Configuring files installation"
 	fi
 
-	(build && make install) || exit 1
+	(build && make install) || exitmsg "Installing files"
 
+PHASE="precompiling function models"
 #if [ "$ARCHIVE" = "yes" ]; then
 	# precompile bitcode files
-	CFLAGS="-I$LLVM_BUILD_PATH/lib/clang/$LLVM_VERSION/include/" CPPFLAGS="-I/usr/include $CPPFLAGS" scripts/precompile_bitcode_files.sh
+	CPPFLAGS="-I$LLVM_BUILD_PATH/lib/clang/$LLVM_VERSION/include/ -I/usr/include $CPPFLAGS" scripts/precompile_bitcode_files.sh\
+        || exitmsg "Failed compiling function models (Symbotic should work, though, so you can skip this step)"
 #fi
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
@@ -919,6 +949,9 @@ fi
 #  extract versions of components and create the distribution
 ######################################################################
 if [ $FROM -le 7 ]; then
+    PHASE="generating versions.py file"
 	source scripts/gen-version.sh
+
+    PHASE="creating distribution"
 	source scripts/push-to-git.sh
 fi
