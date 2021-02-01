@@ -22,6 +22,8 @@
 
 set -e
 
+PHASE="doing initialization"
+
 source "$(dirname $0)/scripts/build-utils.sh"
 
 RUNDIR=`pwd`
@@ -125,6 +127,8 @@ if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
 fi
 
+PHASE="checking system"
+
 HAVE_32_BIT_LIBS=$(if check_32_bit; then echo "yes"; else echo "no"; fi)
 HAVE_Z3=$(if check_z3; then echo "yes"; else echo "no"; fi)
 HAVE_GTEST=$(if check_gtest; then echo "yes"; else echo "no"; fi)
@@ -222,6 +226,7 @@ check
 #   LLVM
 #     Copy the LLVM libraries
 ######################################################################
+PHASE="setting up LLVM"
 
 test -z "$LLVM_CONFIG" && LLVM_CONFIG=$(which llvm-config || true)
 
@@ -307,6 +312,7 @@ ln -sf "$CLANG_LIB_DIR" "$LLVM_PREFIX/lib/"
 ######################################################################
 #   dg
 ######################################################################
+PHASE="building dg"
 if [ $FROM -le 1 ]; then
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/dg)" ]; then
 		git_submodule_init
@@ -314,8 +320,8 @@ if [ $FROM -le 1 ]; then
 
 	# download the dg library
 	pushd "$SRCDIR/dg" || exitmsg "Cloning failed"
-	mkdir -p build-${LLVM_VERSION} || exit 1
-	pushd build-${LLVM_VERSION} || exit 1
+	mkdir -p build-${LLVM_VERSION} || exitmsg "error"
+	pushd build-${LLVM_VERSION} || exitmsg "error"
 
 	if [ ! -d CMakeFiles ]; then
 		cmake .. \
@@ -328,9 +334,20 @@ if [ $FROM -le 1 ]; then
 			|| clean_and_exit 1 "git"
 	fi
 
-	(build && make install) || exit 1
+	(build && make install) || exitmsg "Failed building DG"
 	popd
 	popd
+fi
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+######################################################################
+#   sbt-slicer
+######################################################################
+PHASE="building sbt-slicer"
+if [ $FROM -le 1 ]; then
 
 	# initialize instrumentation module if not done yet
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/sbt-slicer)" ]; then
@@ -338,8 +355,8 @@ if [ $FROM -le 1 ]; then
 	fi
 
 	pushd "$SRCDIR/sbt-slicer" || exitmsg "Cloning failed"
-	mkdir -p build-${LLVM_VERSION} || exit 1
-	pushd build-${LLVM_VERSION} || exit 1
+	mkdir -p build-${LLVM_VERSION} || exitmsg "error"
+	pushd build-${LLVM_VERSION} || exitmsg "error"
 	if [ ! -d CMakeFiles ]; then
 		cmake .. \
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
@@ -353,7 +370,7 @@ if [ $FROM -le 1 ]; then
 			|| clean_and_exit 1 "git"
 	fi
 
-	(build && make install) || exit 1
+	(build && make install) || exitmsg "Failed building sbt-slicer"
 	popd
 	popd
 fi
@@ -365,6 +382,7 @@ fi
 ######################################################################
 #   KLEE
 ######################################################################
+PHASE="building KLEE"
 if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
 	source scripts/build-klee.sh
 fi
@@ -376,6 +394,7 @@ fi
 ######################################################################
 #   Predator
 ######################################################################
+PHASE="building Predator"
 if [  -d predator-${LLVM_VERSION} ]; then
 	# we already got a build of predator, so rebuild it
 	BUILD_PREDATOR="yes"
@@ -393,7 +412,7 @@ if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 			./switch-host-llvm.sh "$LLVM_DIR"
 	fi
 
-    build || exit 1
+    build || exitmsg "Failed building Predator"
 	mkdir -p $LLVM_PREFIX/predator/lib
 	cp sl_build/*.so $LLVM_PREFIX/predator/lib
 	cp sl_build/slllvm* $LLVM_PREFIX/bin/
@@ -412,6 +431,7 @@ fi
 ######################################################################
 #   instrumentation
 ######################################################################
+PHASE="building sbt-instrumentation"
 if [ $FROM -le 6 ]; then
 	# initialize instrumentation module if not done yet
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/sbt-instrumentation)" ]; then
@@ -439,7 +459,7 @@ if [ $FROM -le 6 ]; then
 			|| clean_and_exit 1 "git"
 	fi
 
-	(build && make install) || exit 1
+	(build && make install) || exitmsg "Building sbt-instrumentation failed"
 
 	popd
 	popd
@@ -452,6 +472,7 @@ fi
 ######################################################################
 #   llvm2c
 ######################################################################
+PHASE="building llvm2c"
 if [ $FROM -le 6 -a "$BUILD_LLVM2C" = "yes" ]; then
 	source scripts/build-llvm2c.sh
 fi
@@ -459,6 +480,7 @@ fi
 ######################################################################
 #   transforms (LLVMsbt.so)
 ######################################################################
+PHASE="building LLVMsbt.so"
 if [ $FROM -le 6 ]; then
 
 	mkdir -p transforms/build-${LLVM_VERSION}
@@ -485,18 +507,20 @@ fi
 ######################################################################
 #   copy lib and include files
 ######################################################################
+PHASE="installing files and function models"
 if [ $FROM -le 6 ]; then
 	if [ ! -d CMakeFiles ]; then
 		cmake . \
 			-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
 			-DCMAKE_INSTALL_PREFIX=$PREFIX \
 			-DCMAKE_INSTALL_LIBDIR:PATH=$LLVM_PREFIX/lib \
-			|| exit 1
+			|| exitmsg "Failed configuring files installation"
 	fi
 
-	(build && make install) || exit 1
+	(build && make install) || exitmsg "Failed installing files"
 
 	# precompile bitcode files
+    #PHASE="precompiling function models"
 	#scripts/precompile_bitcode_files.sh
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
@@ -508,7 +532,10 @@ fi
 #  extract versions of components and create the distribution
 ######################################################################
 if [ $FROM -le 7 ]; then
+    PHASE="generating versions.py file"
 	source scripts/gen-version.sh
+
+    PHASE="creating distribution"
 	source scripts/push-to-git.sh
 fi
 
