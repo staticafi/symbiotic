@@ -4,7 +4,7 @@
 # development if needed. This build script is meant to be more
 # of a guide how to build Symbiotic, it may not work in all cases.
 #
-#  (c) Marek Chalupa, 2016 - 2020
+#  (c) Marek Chalupa, 2016 - 2021
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -82,6 +82,7 @@ UPDATE=
 OPTS=
 LLVM_VERSION=`get_llvm_version`
 # LLVM tools that we need
+LLVM_DYLIB="on" # default link type of LLVM (used when first building LLVM)
 LLVM_TOOLS="opt clang llvm-link llvm-dis llvm-nm"
 WITH_LLVM=
 WITH_LLVM_SRC=
@@ -398,6 +399,9 @@ build_llvm()
 		else
 			EXTRA_FLAGS="$EXTRA_FLAGS -DLLVM_INCLUDE_TESTS=OFF"
 		fi
+        if [ "$LLVM_DYLIB" = "on" ]; then
+			EXTRA_FLAGS="$EXTRA_FLAGS -DLLVM_LINK_DYLIB=on"
+        fi
 		cmake .. \
 			-DCMAKE_BUILD_TYPE=${BUILD_TYPE}\
 			-DLLVM_INCLUDE_EXAMPLES=OFF \
@@ -483,6 +487,13 @@ fi
 
 LLVM_CONFIG=${ABS_SRCDIR}/llvm-${LLVM_VERSION}/build/bin/llvm-config
 
+# detect the link type of LLVM that we use
+if [ "$($LLVM_CONFIG --shared-mode --libs)" = "shared" ]; then
+    LLVM_DYLIB="on"
+else
+    LLVM_DYLIB="off"
+fi
+
 ######################################################################
 #   SVF
 ######################################################################
@@ -537,7 +548,7 @@ if [ $FROM -le 1 ]; then
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
-			-DLLVM_LINK_DYLIB="OFF" \
+			-DLLVM_LINK_DYLIB="$LLVM_DYLIB" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_INSTALL_RPATH="\$ORIGIN/../lib" \
@@ -565,6 +576,7 @@ if [ $FROM -le 1 ]; then
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
+			-DLLVM_LINK_DYLIB="$LLVM_DYLIB" \
 			-DDG_PATH=$ABS_SRCDIR/dg \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_INSTALL_RPATH="\$ORIGIN/../lib" \
@@ -835,6 +847,7 @@ if [ $FROM -le 6 ]; then
 			-DLLVM_SRC_PATH="$LLVM_SRC_PATH" \
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
+			-DLLVM_LINK_DYLIB="$LLVM_DYLIB" \
 			-DDG_PATH=$ABS_SRCDIR/dg \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			|| clean_and_exit 1 "git"

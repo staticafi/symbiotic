@@ -276,6 +276,13 @@ if [ -z "$LLVM_DIR" ]; then
 	fi
 fi
 
+# detect the link type of LLVM that we use
+if [ "$($LLVM_CONFIG --shared-mode --libs)" = "shared" ]; then
+    LLVM_DYLIB="on"
+else
+    LLVM_DYLIB="off"
+fi
+
 mkdir -p "$LLVM_PREFIX/bin"
 for T in $LLVM_TOOLS; do
 	check_llvm_tool "$LLVM_BIN_DIR/$T"
@@ -316,6 +323,7 @@ if [ $FROM -le 1 ]; then
 			-DCMAKE_INSTALL_LIBDIR:PATH=lib \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
+			-DLLVM_LINK_DYLIB="$LLVM_DYLIB" \
 			-DLLVM_DIR="$LLVM_DIR" \
 			|| clean_and_exit 1 "git"
 	fi
@@ -339,6 +347,7 @@ if [ $FROM -le 1 ]; then
 			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
 			-DLLVM_DIR="$LLVM_DIR" \
 			-DDG_PATH=$ABS_SRCDIR/dg \
+			-DLLVM_LINK_DYLIB="$LLVM_DYLIB" \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
 			|| clean_and_exit 1 "git"
@@ -425,6 +434,7 @@ if [ $FROM -le 6 ]; then
 			-DCMAKE_INSTALL_FULL_DATADIR:PATH=$LLVM_PREFIX/share \
 			-DDG_PATH=$ABS_SRCDIR/dg \
 			-DLLVM_DIR="$LLVM_DIR" \
+			-DLLVM_LINK_DYLIB="$LLVM_DYLIB" \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			|| clean_and_exit 1 "git"
 	fi
