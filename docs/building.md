@@ -12,22 +12,78 @@ git clone https://github.com/staticafi/symbiotic
 cd symbiotic
 ```
 
+Then you must make sure you have all the basic dependencies.
+We provide a script that is able to install most of the dependencies
+for the common operating systems: `scripts/install-system-dependencies.sh`.
+If you use this script , you must have the `sudo`
+and `which` executables (or hack the script and run it as root).
+
+```
+scripts/install-system-dependencies.sh
+```
+
+If the script does not work, follow one of the guides bellow.
+
+
 ## Building on Ubuntu
 
-TBD
+Tested on Ubuntu 20, but should work also for the most of other Ubuntu systems.
+
+Install system dependencies with `scripts/install-ubuntu.sh`
+(or `scripts/install-system-dependencies.sh):
+
+```
+sudo scripts/install-ubuntu.sh
+```
+
+If the script does not work, install the dependencies manually with the following command:
+
+```
+apt install curl wget rsync make cmake unzip gcc-multilib xz-utils python zlib1g-dev libz3-dev llvm libsqlite3-dev
+```
+
+Now we can run the `system-build.sh` script that will finish the compilation of
+Symbiotic:
+
+```
+./system-build.sh -j2
+```
+
 
 ## Building on Fedora
 
-TBD
+### Fedora 33
+
+Install system dependencies with `scripts/install-fedora.sh`
+(or `scripts/install-system-dependencies.sh):
+
+```
+sudo scripts/install-fedora.sh
+```
+
+If the script does not work, install the dependencies manually with the following command:
+
+```
+dnf install curl wget rsync make cmake unzip tar patch glibc-devel.i686 xz zlib python z3-devel llvm-devel libsq3-devel zlib-static which
+```
+If you wish Symbiotic to build components that link to LLVM statically,
+you must install `llvm-static` package. Maybe you will need to force
+the static compilation by overriding LLVM_DYLIB to "on" in the build script
+after LLVM is set up.
+
+Now we can run the `system-build.sh` script that will finish the compilation of
+Symbiotic:
+
+```
+./system-build.sh -j2
+```
 
 ## Building on CentOS
 
 ### CentOS 8
 
-If you use `scripts/install-system-dependencies.sh`, you must have the `sudo`
-and `which` executables (or hack the script and run it as root).
-
-If you want to install the dependencies manually, run the following command:
+If `scripts/install-system-dependencies.sh` does not work, install the
+dependencies manually with the following command:
 
 ```
 dnf which curl wget rsync make cmake unzip tar patch glibc-devel.i686 xz zlib llvm-devel clang python38
@@ -35,9 +91,9 @@ dnf which curl wget rsync make cmake unzip tar patch glibc-devel.i686 xz zlib ll
 
 Note: The package python38 may get obsolete. Use any package that installs Python 3.
 Also, if you wish Symbiotic to build components that link to LLVM statically,
-you must install `llvm-static` package. Probably you will need to force
-the static compilation with `-DLLVM_LINK_DYLIB=on` option added to every configuration
-of a component (dg, sbt-slicer, ...).
+you must install `llvm-static` package. Maybe you will need to force
+the static compilation by overriding LLVM_DYLIB to "on" in the build script
+after LLVM is set up.
 
 CentOS does not contain Z3 package in the official mirros, so one must compile
 it manually. In the very unlikely case that you installed Python for the first
