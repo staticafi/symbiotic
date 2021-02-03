@@ -9,13 +9,15 @@ navigation_weight: 2
 Tarball with Symbiotic distribution can be downloaded from <https://github.com/staticafi/symbiotic/releases>.
 After unpacking, Symbiotic is ready to go.
 
-### Building Symbiotic
+### Building Symbiotic from Sources
 
 First of all you must clone the repository:
 ```
 $ git clone https://github.com/staticafi/symbiotic
 ```
-Then you can run `build.sh` script.
+Then you can run `build.sh` or `system-build.sh` script. In the later case,
+you may want to check out also the [page with information about building
+via system-build.sh on different systems](building.md).
 
 ```
 $ cd symbiotic
@@ -28,7 +30,9 @@ command.
 
 If you need to specify paths to header files or libraries, you can do it
 by passing CFLAGS, CPPFLAGS, LDFLAGS environment variables either by exporting
-them beforehand, or by passing them as make options (e.g. CFLAGS='-g')
+them beforehand, or by passing them as make options (e.g. CFLAGS='-g').
+More detailed information on how to build Symbiotic is in the main [README](../README.md).
+
 
 ### Running Symbiotic
 
