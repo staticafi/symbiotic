@@ -101,7 +101,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         for line in output:
             if 'assertion failed!' in line:
                 asserterr = True
-            elif 'assertion failure:' in line:
+            elif 'assertion failure' in line:
                 asserterr = True
             elif 'None: __VERIFIER_error called!' in line:
                 asserterr = True
