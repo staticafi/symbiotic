@@ -48,8 +48,10 @@ class FlattenLoops : public LoopPass {
 
         // flag whether we are in the inner or outer loop
         // initialize "inner" to 0
+        auto& entrybb = fun->getEntryBlock();
         AllocaInst *flag = new AllocaInst(Type::getInt8Ty(Ctx), 0,
-                                          "inner", flaginit);
+                                          "inner");
+        flag->insertBefore(&*entrybb.getFirstInsertionPt());
         auto *SI = new StoreInst(ConstantInt::get(Type::getInt8Ty(Ctx), 0), flag);
         SI->insertAfter(flag);
         BranchInst::Create(newheaderbb, flaginit);
@@ -127,7 +129,6 @@ class FlattenLoops : public LoopPass {
         // that we transformed the code. FIXME: invalidate the analysis
         // and properly adjust LoopInfo to flatten all loops at once.
         llvm::errs() << "Flattened a loop\n";
-
 
         // update the LoopPass - add the new block and make it a header
         PL->addBlockEntry(newheaderbb);
