@@ -76,7 +76,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         # FIXME: get rid of the __VERIFIER_assert hack
         if prp.unreachcall():
             passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert")
-        return passes + ["-O3", "-remove-constant-exprs", "-reg2mem"]
+        return passes + ["-flatten-loops", "-O3", "-remove-constant-exprs", "-reg2mem"]
 
     def generate_graphml(path, source, is_correctness_wit, opts, saveto):
         """ Generate trivial correctness witness for now """
