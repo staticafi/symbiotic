@@ -93,7 +93,9 @@ add_library(LLVMsbt MODULE "BreakCritLoops.cpp"
                            "ReplaceLifetimeMarkers.cpp"
                            "ReplaceUBSan.cpp"
                            "ReplaceVerifierAtomic.cpp"
-                           "Unrolling.cpp")
+                           "Unrolling.cpp"
+                           "FlattenLoops.cpp"
+                           )
 
 # remove lib prefix for compatibility with older releases
 set_target_properties(LLVMsbt PROPERTIES PREFIX "")
