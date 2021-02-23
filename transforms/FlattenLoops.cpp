@@ -39,7 +39,8 @@ class FlattenLoops : public LoopPass {
         auto *parentheader = PL->getHeader();
         auto *innerheader = L->getHeader();
         auto *fun = parentheader->getParent();
-        auto& Ctx = fun->getParent()->getContext();
+        auto& M = *fun->getParent();
+        auto& Ctx = M.getContext();
         
         BasicBlock *flaginit = BasicBlock::Create(Ctx, "flatten.init",
                                                   fun, parentheader);
@@ -49,10 +50,23 @@ class FlattenLoops : public LoopPass {
         // flag whether we are in the inner or outer loop
         // initialize "inner" to 0
         auto& entrybb = fun->getEntryBlock();
-        AllocaInst *flag = new AllocaInst(Type::getInt8Ty(Ctx), 0,
+        auto *allocaTy = Type::getInt8Ty(Ctx);
+        AllocaInst *flag = new AllocaInst(allocaTy,
+#if (LLVM_VERSION_MAJOR >= 5)
+      0,
+#endif
+      nullptr,
+#if LLVM_VERSION_MAJOR >= 11
+      M.getDataLayout().getPrefTypeAlign(allocaTy),
+#endif
                                           "inner");
         flag->insertBefore(&*entrybb.getFirstInsertionPt());
-        auto *SI = new StoreInst(ConstantInt::get(Type::getInt8Ty(Ctx), 0), flag);
+        auto *SI = new StoreInst(ConstantInt::get(Type::getInt8Ty(Ctx), 0),
+                                 flag, /*isVolatile=*/false,
+#if LLVM_VERSION_MAJOR >= 11
+                flag->getAlign(),
+#endif
+                static_cast<Instruction*>(nullptr));
         SI->insertAfter(flag);
         BranchInst::Create(newheaderbb, flaginit);
 
