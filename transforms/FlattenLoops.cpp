@@ -46,7 +46,6 @@ class FlattenLoops : public LoopPass {
                                                   fun, parentheader);
         BasicBlock *newheaderbb = BasicBlock::Create(Ctx, "flatten.loop.header",
                                                      fun, parentheader);
-
         // flag whether we are in the inner or outer loop
         // initialize "inner" to 0
         auto& entrybb = fun->getEntryBlock();
@@ -139,15 +138,25 @@ class FlattenLoops : public LoopPass {
         Cmp->insertAfter(LI);
         auto *Br = BranchInst::Create(innerheader, parentheader, Cmp, newheaderbb);
 
-        // This is an ugly hack -- we use this message to find out
-        // that we transformed the code. FIXME: invalidate the analysis
-        // and properly adjust LoopInfo to flatten all loops at once.
-        llvm::errs() << "Flattened a loop\n";
-
         // update the LoopPass - add the new block and make it a header
-        PL->addBlockEntry(newheaderbb);
-        PL->moveToHeader(newheaderbb);
+        // FIXME: exit blocks
+
+        auto *LIWP = getAnalysisIfAvailable<LoopInfoWrapperPass>();
+        auto *loopinfo = LIWP ? &LIWP->getLoopInfo() : nullptr;
+
         PL->removeChildLoop(L);
+        if (loopinfo)
+            PL->addBasicBlockToLoop(newheaderbb, *loopinfo);
+        else {
+            auto *tmp = PL;
+            while (tmp) {
+                tmp->addBlockEntry(newheaderbb);
+                tmp = tmp->getParentLoop();
+            }
+        }
+        PL->moveToHeader(newheaderbb);
+
+        llvm::errs() << "Flattened a loop with flag " << *flag << "\n";
         return true;
     }
 
