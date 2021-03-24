@@ -105,12 +105,15 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 asserterr = True
             elif 'None: __VERIFIER_error called!' in line:
                 asserterr = True
+            elif 'Error found.' in line:
+                asserterr = True
             elif 'memory error - uninitialized read' in line:
                 memerr = True
             elif 'Killed paths: 0' in line:
                 no_path_killed = True
             elif 'Did not extend the path and reached entry of CFG' in line or\
-                 'a problem was met' in line:
+                 'a problem was met' in line or\
+                 line == 'Failed deciding the result.':
                  have_problem = True
             elif 'Found errors: 0' in line:
                 no_errors = True
