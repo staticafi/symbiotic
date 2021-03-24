@@ -113,7 +113,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 no_path_killed = True
             elif 'Did not extend the path and reached entry of CFG' in line or\
                  'a problem was met' in line or\
-                 line == 'Failed deciding the result.':
+                 'Failed deciding the result.' in line:
                  have_problem = True
             elif 'Found errors: 0' in line:
                 no_errors = True
