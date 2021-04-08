@@ -103,11 +103,13 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 asserterr = True
             elif 'assertion failure' in line:
                 asserterr = True
+            elif '[assertion error]' in line:
+                asserterr = True
             elif 'None: __VERIFIER_error called!' in line:
                 asserterr = True
             elif 'Error found.' in line:
-                asserterr = True
-            elif 'memory error - uninitialized read' in line:
+                no_errors = False
+            elif '[memory error]' in line:
                 memerr = True
             elif 'Killed paths: 0' in line:
                 no_path_killed = True
