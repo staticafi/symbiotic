@@ -2,22 +2,22 @@
 
 pushd transforms/build-${LLVM_VERSION} || exit 1
 SYMBIOTIC_VERSION=`git rev-parse HEAD`
-SYMBIOTIC_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+SYMBIOTIC_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE[:=]' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
 popd
 
 pushd dg/build-${LLVM_VERSION} || exit 1
 DG_VERSION=`git rev-parse HEAD`
-DG_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+DG_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE[:=]' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
 popd
 
 pushd sbt-slicer/build-${LLVM_VERSION} || exit 1
 SBT_SLICER_VERSION=`git rev-parse HEAD`
-SBT_SLICER_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+SBT_SLICER_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE[:=]' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
 popd
 
 pushd sbt-instrumentation/build-${LLVM_VERSION} || exit 1
 INSTRUMENTATION_VERSION=`git rev-parse HEAD`
-INSTRUMENTATION_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+INSTRUMENTATION_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE[:=]' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
 popd
 
 if [ "$BUILD_STP" = "yes" ]; then
@@ -32,14 +32,14 @@ fi
 if [ "$BUILD_Z3" = "yes" ]; then
 	pushd z3/build || exit 1
 	Z3_VERSION=`git rev-parse HEAD`
-	Z3_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+	Z3_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE[:=]' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
 	popd
 fi
 
 if [ "$BUILD_KLEE" = "yes" ]; then
 	pushd klee/build-${LLVM_VERSION} || exit 1
 	KLEE_VERSION=`git rev-parse HEAD`
-	KLEE_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
+	KLEE_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE[:=]' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
 	KLEE_RUNTIME_BUILD_TYPE=$(grep '^KLEE_RUNTIME_BUILD_TYPE[^-]' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
 	popd
 fi
