@@ -151,6 +151,9 @@ class SymbioticCC(object):
         # tool to use
         self._tool = tool
 
+        # optimization renames in used LLVM release
+        self._opt_renames = {}
+
     def _get_cc(self):
         if hasattr(self._tool, 'cc'):
             return self._tool.cc()
@@ -528,8 +531,10 @@ class SymbioticCC(object):
 
         disable += self.options.disabled_optimizations
         if disable:
-            ds = set(disable)
-            passes = filter(lambda x: not ds.__contains__(x), passes)
+            passes = filter(lambda x: x not in disable, passes)
+
+        if self._opt_renames:
+            passes = map(lambda x: self._opt_renames.get(x, x), passes)
 
         if not passes:
             dbg("No passes available for optimizations")
@@ -696,7 +701,7 @@ class SymbioticCC(object):
         return llvmfile
 
 
-    def _disable_some_optimizations(self, llvm_version):
+    def _disable_and_rename_optimizations(self, llvm_version):
         disabled = []
         # disable some oprimizations for termination property
         if self.options.property.termination():
@@ -704,12 +709,12 @@ class SymbioticCC(object):
 
         if self.options.property.signedoverflow():
             # FIXME: this is a hack, remove once we have better CD algorithm
-            self.options.disabled_optimizations = ['-instcombine']
+            disabled += ['-instcombine']
 
         if self.options.property.memsafety():
             # these optimizations mess up with scopes,
             # FIXME: find a better solution
-            self.options.disabled_optimizations = ['-licm','-gvn','-early-cse']
+            disabled += ['-licm','-gvn','-early-cse']
 
         # disable optimizations that are not in particular llvm versions
         ver_major, ver_minor, ver_micro = map(int, llvm_version.split('.'))
@@ -719,14 +724,24 @@ class SymbioticCC(object):
                         '-globals-aa', '-forceattrs',
                         '-inferattrs', '-rpo-functionattrs']
         if ver_major == 3 and ver_minor <= 6:
-            disabled += [ '-tti', '-bdce', '-elim-avail-extern',
-                          '-float2int', '-loop-accesses']
-        if ver_major >= 11:
-            disabled += ['-basicaa']
+            disabled += ['-tti', '-bdce', '-elim-avail-extern',
+                         '-float2int', '-loop-accesses']
 
         if disabled:
-            dbg('Disabled these optimizations: {0}'.format(str(disabled)))
+            dbg('Disabled these optimizations: %s' % disabled)
         self.options.disabled_optimizations = disabled
+
+        renames = {}
+        if ver_major >= 11:
+            renames.update({'-basicaa': '-basic-aa'})
+
+        if ver_major >= 12:
+            renames.update({'-functionattrs': '-function-attrs',
+                            '-rpo-functionattrs': '-rpo-function-attrs',
+                            '-scoped-noalias': '-scoped-noalias-aa'})
+        if renames:
+            dbg('Renamed these optimizations: %s' % renames)
+        self._opt_renames = renames
 
     def run(self):
         """
@@ -737,7 +752,7 @@ class SymbioticCC(object):
 
         dbg('Running symbiotic-cc for {0}'.format(self._tool.name()))
 
-        self._disable_some_optimizations(self._tool.llvm_version())
+        self._disable_and_rename_optimizations(self._tool.llvm_version())
 
         #################### #################### ###################
         # COMPILATION
