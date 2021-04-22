@@ -21,11 +21,18 @@
 #else
   #include "llvm/Support/InstIterator.h"
 #endif
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include <llvm/IR/DebugInfoMetadata.h>
 
 using namespace llvm;
+
+llvm::cl::opt<std::string> assert_fn("replace-asserts-fn",
+        llvm::cl::desc("Insert a function that marks the header of the loop"),
+        llvm::cl::init("__assert_fail"));
+
+
 
 bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2);
 
@@ -67,7 +74,7 @@ bool ReplaceAsserts::runOnFunction(Function &F)
 
       assert(callee->hasName());
       StringRef name = callee->getName();
-      if (!name.equals("__assert_fail"))
+      if (!name.equals(assert_fn))
         continue;
 
       if (!ver_err) {
