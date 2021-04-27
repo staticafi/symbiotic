@@ -75,7 +75,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         passes.append("-ainline-noinline")
         # FIXME: get rid of the __VERIFIER_assert hack
         if prp.unreachcall():
-            passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert")
+            passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert,__VERIFIER_assume,assume_abort_if_not")
         return passes + ["-flatten-loops", "-O3", "-remove-constant-exprs", "-reg2mem"]
 
     def generate_graphml(path, source, is_correctness_wit, opts, saveto):
