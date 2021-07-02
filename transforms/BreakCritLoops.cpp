@@ -35,8 +35,6 @@ bool CloneMetadata(const llvm::Instruction *, llvm::Instruction *);
 
 
 bool BreakCritLoops::runOnFunction(Function &F) {
-  Module *M = F.getParent();
-
   std::vector<BasicBlock *> to_process;
   for (BasicBlock& block : F) {
     // if this is a block that jumps on itself via a crit edge
@@ -60,7 +58,7 @@ bool BreakCritLoops::runOnFunction(Function &F) {
   }
 
   for (auto block : to_process) {
-    auto newBB = block->splitBasicBlock(--block->end(), "crit.blk.split");
+    block->splitBasicBlock(--block->end(), "crit.blk.split");
     if (!CloneMetadata(block->getTerminator(), block->getTerminator())) {
         llvm::errs() << "[BreakCritLoops] Failed assigning metadata to: "
                      << *block->getTerminator() << "\n";

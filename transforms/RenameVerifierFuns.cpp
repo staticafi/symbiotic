@@ -90,7 +90,7 @@ bool RenameVerifierFuns::runOnFunction(Function &F) {
   return changed;
 }
 
-void RenameVerifierFuns::handleCall(Function& F, CallInst *CI) {
+void RenameVerifierFuns::handleCall(Function& /*F*/, CallInst *CI) {
   const DebugLoc& Loc = CI->getDebugLoc();
   if (Loc) {
 	calls_to_replace.emplace_back(Loc.getLine(), CI);

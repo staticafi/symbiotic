@@ -86,7 +86,7 @@ class InstrumentNontermination : public LoopPass {
 
     InstrumentNontermination() : LoopPass(ID) {}
 
-    bool runOnLoop(Loop *L, LPPassManager &LPM) override {
+    bool runOnLoop(Loop *L, LPPassManager & /*LPM*/) override {
       // for now, we detect only nested loops
       if (L->getParentLoop()) {
           // run on non-nested loops for now
@@ -258,7 +258,6 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
     }
 
     if (insertHeader) {
-        auto h = getHeaderFun(header->getParent()->getParent());
         auto *CI = CallInst::Create(_header);
         // copy the location from terminator, so that we have
         // the right debug loc

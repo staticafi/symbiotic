@@ -148,8 +148,6 @@ class ExplicitConsdes : public ModulePass {
         using std::tuple;
         using std::vector;
 
-        bool change = false;
-
         vector<FunctionEntry> ctors, dtors;
 
         GlobalVariable *dtorsVar = mod.getNamedGlobal("llvm.global_dtors");

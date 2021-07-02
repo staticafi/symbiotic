@@ -59,7 +59,7 @@ class BreakInfiniteLoops : public LoopPass {
 
     BreakInfiniteLoops() : LoopPass(ID) {}
 
-    virtual bool runOnLoop(Loop *L, LPPassManager &LPM) override {
+    virtual bool runOnLoop(Loop *L, LPPassManager & /*LPM*/) override {
         SmallVector<llvm::BasicBlock *, 2> exits;
         L->getExitingBlocks(exits);
         if (!exits.empty())
