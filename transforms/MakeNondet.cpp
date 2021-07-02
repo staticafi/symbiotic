@@ -97,7 +97,7 @@ void MakeNondet::runOnFunction(Function &F) {
   }
 }
 
-void MakeNondet::handleCall(Function& F, CallInst *CI, bool ismalloc) {
+void MakeNondet::handleCall(Function& /*F*/, CallInst *CI, bool ismalloc) {
   const DebugLoc& Loc = CI->getDebugLoc();
   if (Loc) {
     if (ismalloc)

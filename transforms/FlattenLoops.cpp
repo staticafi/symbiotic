@@ -31,7 +31,7 @@ class FlattenLoops : public LoopPass {
     FlattenLoops() : LoopPass(ID) {}
 
     // FIXME: properly change the structure of LoopInfo
-    bool runOnLoop(Loop *L, LPPassManager &LPM) override {
+    bool runOnLoop(Loop *L, LPPassManager & /*LPM*/) override {
         auto *PL = L->getParentLoop();
         if (!PL)
             return false;
@@ -136,7 +136,7 @@ class FlattenLoops : public LoopPass {
                             ConstantInt::get(Type::getInt8Ty(Ctx), 1),
                             LI);
         Cmp->insertAfter(LI);
-        auto *Br = BranchInst::Create(innerheader, parentheader, Cmp, newheaderbb);
+        BranchInst::Create(innerheader, parentheader, Cmp, newheaderbb);
 
         // update the LoopPass - add the new block and make it a header
         // FIXME: exit blocks

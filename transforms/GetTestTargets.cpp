@@ -120,7 +120,6 @@ bool ConstraintToTarget::runOnModule(Module& M) {
     std::set<BasicBlock*> visited;
     std::stack<BasicBlock*> queue; // not efficient...
     auto& Ctx = M.getContext();
-    unsigned n = 0;
 
     auto *mf = M.getFunction(TheTarget);
     if (!mf) {

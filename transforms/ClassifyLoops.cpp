@@ -42,7 +42,7 @@ class ClassifyLoops : public LoopPass {
       AU.addRequired<LoopInfoWrapperPass>();
     }
 
-    bool runOnLoop(Loop *L, LPPassManager &LPM) override {
+    bool runOnLoop(Loop *L, LPPassManager & /*LPM*/) override {
       any = true;
 
       // for now, we detect only nested loops
