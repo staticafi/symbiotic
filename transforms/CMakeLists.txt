@@ -1,26 +1,39 @@
 cmake_minimum_required(VERSION 3.3)
-project(sbt-transforms)
+project(sbt-transforms CXX)
 
+# --------------------------------------------------
+# Build type
+# --------------------------------------------------
+if(NOT CMAKE_BUILD_TYPE)
+  message(STATUS "Build type not set. Setting default.")
+  set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "" FORCE)
+endif()
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "RelWithDebInfo"
+                                                     "MinSizeRel" "Release")
+
+# --------------------------------------------------
+# Compiler flags
+# --------------------------------------------------
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -Wall -Wextra -pedantic")
+
+# --------------------------------------------------
+# LLVM
+# --------------------------------------------------
 find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
+message(STATUS "LLVM definitions: ${LLVM_DEFINITIONS}")
+message(STATUS "LLVM include dir: ${LLVM_INCLUDE_DIRS}")
+message(STATUS "LLVM libraries dir: ${LLVM_LIBRARY_DIRS}")
 
 list(APPEND CMAKE_MODULE_PATH "${LLVM_DIR}")
-list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
-
-# This is probably unnecessary
-if (${LLVM_PACKAGE_VERSION} VERSION_LESS "3.8")
-  # needed for LLVM 3.7
-  set(LLVM_RUNTIME_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR})
-  set(LLVM_LIBRARY_OUTPUT_INTDIR ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR})
-  include(HandleLLVMOptions)
-endif()
-
 include(AddLLVM)
 
-# explicitly add -std=c++11 (c++14), some cmake versions
-# fail adding it even with CMAKE_CXX_STANDARD,
+# TODO: move this to the section above when we switch to C++14
 # LLVM 10 and newer require at least C++14 standard
 if (${LLVM_PACKAGE_VERSION} VERSION_GREATER "9.0")
   set(CMAKE_CXX_STANDARD 14)
@@ -31,41 +44,22 @@ else()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 endif()
 
-set(CMAKE_CXX_STANDARD_REQUIRED on)
-set(CMAKE_CXX_EXTENSIONS off)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wno-unused-parameter -Wno-unused-variable -fno-rtti")
-
-if (NOT ${LLVM_PACKAGE_VERSION} VERSION_GREATER "3.4")
-  llvm_replace_compiler_option(CMAKE_CXX_FLAGS "-frtti" "-fno-rtti")
-endif()
-
 add_definitions(${LLVM_DEFINITIONS})
 include_directories(${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 
-find_path(LLVM_SRC_PATH include/llvm/Module.h)
-find_path(LLVM_BUILD_PATH include/llvm/Intrinsics.gen)
-
-if (LLVM_SRC_PATH)
-  include_directories(${LLVM_SRC_PATH}/include)
-endif(LLVM_SRC_PATH)
-if (LLVM_BUILD_PATH)
-  include_directories(${LLVM_BUILD_PATH}/include)
-  link_directories(${LLVM_BUILD_PATH}/lib)
-endif(LLVM_BUILD_PATH)
-
+# --------------------------------------------------
+# Set correct install directories
+# --------------------------------------------------
 include(GNUInstallDirs)
 message(STATUS "CMAKE_INSTALL_LIBDIR: \"${CMAKE_INSTALL_LIBDIR}\"")
-message(STATUS "CMAKE_INSTALL_INCLUDEDIR: \"${CMAKE_INSTALL_INCLUDEDIR}\"")
 
-# We need all the symbols with dynamic libs. With static libs, we get errors.
-if (BUILD_SHARED_LIBS)
-  set(LLVM_LINK_COMPONENTS analysis core support)
-endif()
-
-add_library(LLVMsbt MODULE "BreakCritLoops.cpp"
+# --------------------------------------------------
+# LLVMsbt
+# --------------------------------------------------
+add_library(LLVMsbt MODULE "AInliner.cpp"
+                           "BreakCritLoops.cpp"
                            "BreakInfiniteLoops.cpp"
-                           "AInliner.cpp"
                            "CheckModule.cpp"
                            "ClassifyInstructions.cpp"
                            "ClassifyLoops.cpp"
@@ -75,6 +69,7 @@ add_library(LLVMsbt MODULE "BreakCritLoops.cpp"
                            "DummyMarker.cpp"
                            "ExplicitConsdes.cpp"
                            "FindExits.cpp"
+                           "FlattenLoops.cpp"
                            "InitializeUninitialized.cpp"
                            "InstrumentAlloc.cpp"
                            "InstrumentNontermination.cpp"
@@ -94,8 +89,7 @@ add_library(LLVMsbt MODULE "BreakCritLoops.cpp"
                            "ReplaceUBSan.cpp"
                            "ReplaceVerifierAtomic.cpp"
                            "Unrolling.cpp"
-                           "FlattenLoops.cpp"
-                           )
+)
 
 # remove lib prefix for compatibility with older releases
 set_target_properties(LLVMsbt PROPERTIES PREFIX "")
