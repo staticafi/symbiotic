@@ -39,10 +39,8 @@ struct PrepareOverflows : public FunctionPass {
   }
 
   void handleBinOp(Instruction::BinaryOps type, Instruction* I) {
-      BinaryOperator* binOp = BinaryOperator::CreateNSW(type, I->getOperand(0),
-                                                            I->getOperand(1));
+      BinaryOperator::CreateNSW(type, I->getOperand(0), I->getOperand(1));
       binOpsMap.emplace(I, type);
-
   }
 
   void handleCall(CallInst* CI) {

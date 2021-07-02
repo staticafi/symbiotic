@@ -115,10 +115,10 @@ static void replaceSuccessor(const std::vector<BasicBlock *>& Blocks,
 // redirect value uses and PHI nodes
 static void redirectValues(BasicBlock *newB,
                            ValueToValueMapTy& VMap,
-                           const std::map<BasicBlock *, BasicBlock *>& BlocksMap) {
+                           const std::map<BasicBlock *, BasicBlock *>& /*BlocksMap*/) {
 
   for (auto& I : *newB) {
-    if (auto PHI = dyn_cast<PHINode>(&I)) {
+    if (isa<PHINode>(&I)) {
       llvm::errs() << "PHI nodes are not supported yet\n";
       abort();
      //for (auto i = 0; i < PHI->getNumIncomingValues(); ++i) {
@@ -164,7 +164,7 @@ cloneLoopBody(Function *F, const std::vector<BasicBlock *> Blocks) {
 }
 
 
-bool LoopUnroll::runOnLoop(Loop *L, LPPassManager& LPM) {
+bool LoopUnroll::runOnLoop(Loop *L, LPPassManager& /*LPM*/) {
 
   if (UnrollCount <= 1)
     return false;
