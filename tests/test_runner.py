@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 
 from glob import glob
-from subprocess import Popen, PIPE, TimeoutExpired
+from subprocess import Popen, PIPE
 from os import path
 
 import argparse
 import re
 import sys
 
-GREEN='\u001b[32m'
-RED='\u001b[31m'
-YELLOW='\u001b[33m'
-BOLD_GRAY='\u001b[1m'
-RESET='\u001b[0m'
+GREEN = '\u001b[32m'
+RED = '\u001b[31m'
+YELLOW = '\u001b[33m'
+BOLD_GRAY = '\u001b[1m'
+RESET = '\u001b[0m'
 
 
-result_re = re.compile('(?<=^RESULT: ).*(?=\s)', re.MULTILINE)
+result_re = re.compile(r'(?<=^RESULT: ).*(?=\s)', re.MULTILINE)
 failure = False
 force_color = False
 
@@ -40,17 +40,22 @@ def get_expected_result(input_regex):
 
 
 def run_tests(test_files, prp, expected_result, args):
-    global failure, force_color
-    force_color = args.force_color
+    global failure
 
-    cmd = ['symbiotic', '--no-integrity-check', '--exit-on-error',
-           '--report=sv-comp', '--timeout=%d' % args.timeout]
+    cmd = ['symbiotic', '--exit-on-error', '--report=sv-comp',
+           '--timeout=%d' % args.timeout]
 
     if prp != 'reach':
         cmd.append('--prp=' + prp)
 
+    if args.debug:
+        cmd.append('--debug=all')
+
     if args.is32bit:
         cmd.append('--32')
+
+    if not args.with_integrity_check:
+        cmd.append('--no-integrity-check')
 
     for test in test_files:
         print(test, end=': ')
@@ -84,10 +89,20 @@ def run_tests(test_files, prp, expected_result, args):
 
 
 def main(args):
+    if not args.with_integrity_check:
+        print('WARNING', color=YELLOW, end='')
+        print(': Symbiotic will be executed with \'--no-integrity-check\'!')
+        print('WARNING', color=YELLOW, end='')
+        print(': If that is not intended, pass \'--with-integrity-check\' to '
+              'this script.')
+
+    global force_color
+    force_color = args.force_color
+
     for test in args.test_sets:
         basename = path.basename(test)
         prp = path.splitext(basename)[0]
-        print('Executing', basename, '(32-bit)' if args.is32bit else '(64-bit)',
+        print('Executing', basename, '(%d-bit)' % (32 if args.is32bit else 64),
               color=BOLD_GRAY)
 
         with open(test, 'r') as input_regexes:
@@ -101,12 +116,19 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--32', action='store_true', dest='is32bit', default=False,
-                        help='use 32-bit environment')
-    parser.add_argument('-c', '--color', action='store_true', dest='force_color',
-                        default=False, help='force colored output')
-    parser.add_argument('-t', '--timeout', action='store', type=int, default=20,
-                        help='single test timeout')
-    parser.add_argument('test_sets', nargs='+', type=str, help='test sets to be executed')
+    parser.add_argument('--32', action='store_true', dest='is32bit',
+                        default=False, help='use 32-bit environment')
+    parser.add_argument('-c', '--color', action='store_true',
+                        dest='force_color', default=False,
+                        help='force colored output')
+    parser.add_argument('-d', '--debug', action='store_true', default=False,
+                        help='execute Symbiotic in debug mode')
+    parser.add_argument('-i', '--with-integrity-check', action='store_true',
+                        default=False,
+                        help='enable Symbiotic\'s integrity check')
+    parser.add_argument('-t', '--timeout', action='store', type=int,
+                        default=20, help='single test timeout')
+    parser.add_argument('test_sets', nargs='+', type=str,
+                        help='test sets to be executed')
 
     main(parser.parse_args())
