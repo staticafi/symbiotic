@@ -3,3 +3,7 @@ check:
 
 clean:
 	rm -rf results/
+
+all: check
+
+.PHONY: all check clean

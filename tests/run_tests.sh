@@ -11,11 +11,19 @@ export PATH="$PWD/../install/llvm-$LLVM_VERSION/bin:$PATH"
 
 # sanitizer settings
 export ASAN_OPTIONS=detect_leaks=0
+export UBSAN_OPTIONS=print_stacktrace=1
 
-# GitHub Actions defines this variable
+# clear the environment
+# (We don't want to have ASAN & friends baked into the verified bitcode.)
+unset CFLAGS
+unset CXXFLAGS
+unset CPPFLAGS
+unset LDFLAGS
+
+# GitHub Actions define this variable
 if [ -n "$CI" ]; then
-  color='--color'
+  ci_args='--color --with-integrity-check'
 fi
 
-./test_runner.py $color ./*.set
-./test_runner.py $color --32 ./*.set
+./test_runner.py "$@" $ci_args ./*.set
+./test_runner.py "$@" $ci_args --32 ./*.set
