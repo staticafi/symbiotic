@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 #  -- Symbiotic tool --
-#      2015 - 2019
+#      2015 - 2021
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -125,17 +125,22 @@ if __name__ == "__main__":
 
     print_stdout("INFO: Looking for {0}".format(opts.property.help()), color="BLUE")
     symbiotic = None
+    ret = 0
+
     try:
         # let the show begin!
         try:
             symbiotic = Symbiotic(tool, sources, opts, environment)
             res = symbiotic.run()
+            if res.startswith('error') or res.startswith('ERROR'):
+                ret = 1
         except SymbioticException as e:
             sys.stdout.flush()
             sys.stderr.flush()
 
             print_stdout('RESULT: ERROR ({0})'.format(str(e)))
             err(' == FAILURE ==\n{0}'.format(str(e)))
+            ret = 1
 
         report_results(res or "no result",
                        opts.test_comp or opts.sv_comp or 'sv-comp' in opts.report_type)
@@ -159,4 +164,4 @@ if __name__ == "__main__":
     # print information about how long Symbiotic ran
     print_stdout('INFO: Total time elapsed: {0}'.format(time() - start_time),
                  color='WHITE')
-    sys.exit(0)
+    sys.exit(ret)
