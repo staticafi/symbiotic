@@ -168,21 +168,19 @@ class KleeToolFullInstrumentation(KleeBase):
 
         if not found:
             if returncode != 0:
-                return result.RESULT_ERROR
-            else:
-                # we haven't found anything
-                return result.RESULT_TRUE_PROP
-        elif len(found) == 1:
+                return f'{result.RESULT_ERROR} (KLEE exited with {returncode})'
+            # we haven't found anything
+            return result.RESULT_TRUE_PROP
+
+        if len(found) == 1:
             return found[0]
-        else:
-            if 'EINITVALS' not in found:
-                for f in found:
-                    if f.startswith('false'):
-                        return f
 
-            return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
+        if 'EINITVALS' not in found:
+            for f in found:
+                if f.startswith('false'):
+                    return f
 
-        return result.RESULT_ERROR
+        return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
 
 
 class SymbioticTool(KleeBase):
@@ -424,43 +422,39 @@ class SymbioticTool(KleeBase):
 
         if not found:
             if returncode != 0:
-                return result.RESULT_ERROR
-            else:
-                # we haven't found anything
-                return result.RESULT_TRUE_PROP
-        else:
-            if 'EINITVALS' in found: # EINITVALS would break the validity of the found error
-                return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
+                return f'{result.RESULT_ERROR} (KLEE exited with {returncode})'
+            # we haven't found anything
+            return result.RESULT_TRUE_PROP
 
-            FALSE_REACH = result.RESULT_FALSE_REACH
-            FALSE_OVERFLOW = result.RESULT_FALSE_OVERFLOW
-            FALSE_FREE = result.RESULT_FALSE_FREE
-            FALSE_DEREF = result.RESULT_FALSE_DEREF
-            FALSE_MEMTRACK = result.RESULT_FALSE_MEMTRACK
-            FALSE_MEMCLEANUP = result.RESULT_FALSE_MEMCLEANUP
-            FALSE_TERMINATION = result.RESULT_FALSE_TERMINATION
-            FALSE_UNDEF = 'false(def-behavior)'
+        if 'EINITVALS' in found: # EINITVALS would break the validity of the found error
+            return "{0}({1})".format(result.RESULT_UNKNOWN, " ".join(found))
 
-            for f in found:
-                # we found error that we sought for?
-                if f == FALSE_REACH and prop.unreachcall():
-                    return f
-                elif f == FALSE_REACH and prop.undefinedness():
-                    return FALSE_UNDEF
-                elif f == FALSE_OVERFLOW and prop.signedoverflow():
-                    return f
-                elif f in (FALSE_FREE, FALSE_DEREF, FALSE_MEMTRACK)\
-                    and prop.memsafety():
-                    return f
-                elif f == FALSE_MEMCLEANUP and\
-                    (prop.memcleanup() or prop.memsafety() and not opts.sv_comp):
-                    return f
-                elif f == FALSE_TERMINATION and prop.termination():
-                    return f
-                elif f == FALSE_DEREF and prop.nullderef():
-                    return f
+        FALSE_REACH = result.RESULT_FALSE_REACH
+        FALSE_OVERFLOW = result.RESULT_FALSE_OVERFLOW
+        FALSE_FREE = result.RESULT_FALSE_FREE
+        FALSE_DEREF = result.RESULT_FALSE_DEREF
+        FALSE_MEMTRACK = result.RESULT_FALSE_MEMTRACK
+        FALSE_MEMCLEANUP = result.RESULT_FALSE_MEMCLEANUP
+        FALSE_TERMINATION = result.RESULT_FALSE_TERMINATION
+        FALSE_UNDEF = 'false(def-behavior)'
 
-            return "{0} ({1})".format(result.RESULT_UNKNOWN, " ".join(found))
+        for f in found:
+            # we found error that we sought for?
+            if f == FALSE_REACH and prop.unreachcall():
+                return f
+            elif f == FALSE_REACH and prop.undefinedness():
+                return FALSE_UNDEF
+            elif f == FALSE_OVERFLOW and prop.signedoverflow():
+                return f
+            elif f in (FALSE_FREE, FALSE_DEREF, FALSE_MEMTRACK)\
+                and prop.memsafety():
+                return f
+            elif f == FALSE_MEMCLEANUP and\
+                (prop.memcleanup() or prop.memsafety() and not opts.sv_comp):
+                return f
+            elif f == FALSE_TERMINATION and prop.termination():
+                return f
+            elif f == FALSE_DEREF and prop.nullderef():
+                return f
 
-        return result.RESULT_ERROR
-
+        return "{0} ({1})".format(result.RESULT_UNKNOWN, " ".join(found))
