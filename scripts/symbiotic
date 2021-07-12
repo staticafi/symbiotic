@@ -87,6 +87,7 @@ if __name__ == "__main__":
     start_time = time()
 
     opts, sources = parse_command_line()
+    dbg("Argv: {0}".format(" ".join(sys.argv)))
 
     if opts.dump_env_only:
         setup = SetupSymbiotic(opts)
