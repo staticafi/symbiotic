@@ -131,11 +131,13 @@ if [ "$BUILD_Z3" = "yes" ]; then
 	LIBRARIES="$LIBRARIES $PREFIX/lib/libz3*.so*"
 fi
 
-#strip binaries, it will save us 500 MB!
-for B in $BINARIES $LIBRARIES; do
-	echo "Stripping $B"
-	test -w $B && strip $B
-done
+# strip binaries unless we are in a CI job, it will save us 500 MB
+if [ -z "$CI" ]; then
+	for B in $BINARIES $LIBRARIES; do
+		echo "Stripping $B"
+		test -w "$B" && strip "$B"
+	done
+fi
 
 git init
 git add \
