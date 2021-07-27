@@ -149,14 +149,12 @@ class SymbioticBaseTool(object):
 
         prop = self._options.property
         if prop.memsafety():
-            # default config file is 'config.json'
             # slice with respect to the memory handling operations
             return (['__INSTR_mark_pointer','__INSTR_mark_free',
                     '__INSTR_mark_allocation','__INSTR_mark_exit'],
                     ['-memsafety'])
 
         elif prop.memcleanup():
-            # default config file is 'config.json'
             # slice with respect to the memory handling operations
             # (exit causes leaks)
             return (['__INSTR_mark_free','__INSTR_mark_allocation','__INSTR_mark_exit'],
@@ -170,7 +168,6 @@ class SymbioticBaseTool(object):
                     ['-cd-alg=ntscd-legacy'])
 
         if prop.nullderef():
-            # default config file is 'config.json'
             # slice with respect to the memory handling operations
             return (['__INSTR_mark_pointer'], ['-criteria-are-next-instr'])
 
