@@ -94,12 +94,14 @@ class SymbioticBaseTool(object):
         if self._options.full_instrumentation:
             if self._options.property.memsafety():
                 # default config file is 'config.json'
-                return ('memsafety', self._options.memsafety_config_file,
+                return ('memsafety',
+                        self._options.memsafety_config_file or 'config.json',
                         'memsafety.c', True)
 
             if self._options.property.signedoverflow():
                 # default config file is 'config.json'
-                return ('int_overflows', self._options.overflow_config_file,
+                return ('int_overflows',
+                        self._options.overflow_config_file or 'config-no-assert.json',
                         'overflows-no-assert.c', True)
 
             if self._options.property.termination():
@@ -113,7 +115,9 @@ class SymbioticBaseTool(object):
             # NOTE: we do not want to link the functions with memsafety/cleanup
             # because then the optimizations could remove the calls to markers
             if self._options.property.memsafety():
-                return ('memsafety', 'config-marker.json', 'marker.c', False)
+                return ('memsafety',
+                        self._options.memsafety_config_file or 'config-marker.json',
+                        'marker.c', False)
 
             if self._options.property.memcleanup():
                 return ('memsafety', 'config-marker-memcleanup.json',
@@ -121,7 +125,8 @@ class SymbioticBaseTool(object):
 
             if self._options.property.signedoverflow():
                 # default config file is 'config.json'
-                return ('int_overflows', self._options.overflow_config_file,
+                return ('int_overflows',
+                        self._options.overflow_config_file or 'config-no-assert.json',
                         'overflows-no-assert.c', True)
 
             if self._options.property.termination():

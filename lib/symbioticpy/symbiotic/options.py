@@ -57,7 +57,7 @@ class SymbioticOptions(object):
         self.optlevel = ["before-O3", "after-O3"]
         self.slicer_pta = 'fi'
         self.memsafety_config_file = None
-        self.overflow_config_file = 'config-no-assert.json'
+        self.overflow_config_file = None
         self.repeat_slicing = 1
         self.exit_on_error = False
         # folders where to look for models of undefined functions
