@@ -120,16 +120,23 @@ class KleeToolFullInstrumentation(KleeBase):
         """
         Compose the command line to execute from the name of the executable
         """
-        cmd = [executable, '--max-memory=8000',
-               '-dump-states-on-halt=0', '-silent-klee-assume=1',
-               '-output-stats=0', '--optimize=false', '-only-output-states-covering-new=1',
-               '-max-time={0}'.format(self._options.timeout),
-               '-external-calls=pure']
+        opts = self._options
 
-        if self._options.exit_on_error:
+        cmd = [executable] + self._arguments
+
+        if opts.timeout is not None:
+               cmd.append('-max-time={0}'.format(opts.timeout))
+
+        if opts.exit_on_error:
             cmd.append('-exit-on-error-type=Assert')
 
-        return cmd + options + tasks + self._options.argv
+        if not opts.nowitness:
+            cmd.append('-write-witness')
+
+        if opts.executable_witness:
+            cmd.append('-write-harness')
+
+        return cmd + options + tasks + opts.argv
 
     def _parse_klee_output_line(self, line):
         for (key, pattern) in self._patterns:
@@ -255,17 +262,22 @@ class SymbioticTool(KleeBase):
 
         opts = self._options
 
-        cmd = [executable,
-               '-use-forked-solver=0',
-               '--use-call-paths=0', '--output-stats=0',
-               '-istats-write-interval=60s',
-               '-timer-interval=10',
-               '-external-calls=pure',
-               #'--output-istats=0',
-               '-output-dir={0}'.format(opts.testsuite_output),
+       #cmd = [executable,
+       #       '-use-forked-solver=0',
+       #       '--use-call-paths=0', '--output-stats=0',
+       #       '-istats-write-interval=60s',
+       #       '-timer-interval=10',
+       #       '-external-calls=pure',
+       #       #'--output-istats=0',
+       #       '-output-dir={0}'.format(opts.testsuite_output),
+       #       '-write-testcases',
+       #       '-malloc-symbolic-contents',
+       #       '-max-memory=8000']
+
+        cmd = [executable] + self._arguments +\
+              ['-output-dir={0}'.format(opts.testsuite_output),
                '-write-testcases',
-               '-malloc-symbolic-contents',
-               '-max-memory=8000']
+               '-malloc-symbolic-contents']
 
         if opts.property.errorcall():
             cmd.append('-exit-on-error-type=Assert')
@@ -300,16 +312,11 @@ class SymbioticTool(KleeBase):
         elif self.FullInstr:
             return self.FullInstr.cmdline(executable, options, tasks, propertyfile, rlimits)
 
-        cmd = [executable,
-               '-dump-states-on-halt=0',
-               '--output-stats=0', '--use-call-paths=0',
-               '--optimize=false', '-silent-klee-assume=1',
-               '-istats-write-interval=60s',
-               #'--output-istats=0',
-               '-only-output-states-covering-new=1',
-               '-use-forked-solver=0',
-               '-max-time={0}'.format(opts.timeout),
-               '-external-calls=pure', '-max-memory=8000']
+        cmd = [executable] + self._arguments
+
+        if opts.timeout is not None:
+               cmd.append('-max-time={0}'.format(opts.timeout))
+
         if prop.memsafety():
             if opts.sv_comp:
                 cmd.append('-check-leaks')
