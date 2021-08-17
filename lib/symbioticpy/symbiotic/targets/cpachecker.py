@@ -3,6 +3,7 @@ BenchExec is a framework for reliable benchmarking.
 This file is part of BenchExec.
 
 Copyright (C) 2007-2015  Dirk Beyer
+Copyright (C) 2019-2021  Marek Chalupa
 All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -68,37 +69,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             if 'use-llvm-backend' in opts.target_settings:
                 self._use_llvm_backend = True
 
-    REQUIRED_PATHS = [
-                  "lib/java/runtime",
-                  "lib/*.jar",
-                  "lib/native/x86_64-linux",
-                  "scripts",
-                  "cpachecker.jar",
-                  "config",
-                  ]
-
     def executable(self):
         executable = util.find_executable('cpa.sh', 'scripts/cpa.sh')
         executableDir = os.path.join(os.path.dirname(executable), os.path.pardir)
-        #if os.path.isdir(os.path.join(executableDir, 'src')):
-        #    self._buildCPAchecker(executableDir)
         if not os.path.isfile(os.path.join(executableDir, "cpachecker.jar")):
             logging.warning("Required JAR file for CPAchecker not found in {0}.".format(executableDir))
         return executable
-
-
-    def program_files(self, executable):
-        installDir = os.path.join(os.path.dirname(executable), os.path.pardir)
-        return util.flatten(util.expand_filename_pattern(path, installDir) for path in self.REQUIRED_PATHS)
-
-
-    def _buildCPAchecker(self, executableDir):
-        logging.debug('Building CPAchecker in directory {0}.'.format(executableDir))
-        ant = subprocess.Popen(['ant', '-lib', 'lib/java/build', '-q', 'jar'], cwd=executableDir, shell=util.is_windows())
-        ant.communicate()
-        if ant.returncode:
-            sys.exit('Failed to build CPAchecker, please fix the build first.')
-
 
     def version(self, executable):
         stdout = self._version_from_tool(executable, '-help')
@@ -130,19 +106,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
         return options + spec
 
-    def set_environment(self, symbiotic_dir, opts):
-        """
-        Set environment for the tool
-        """
-        # do not link any functions
-        opts.linkundef = []
-
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         additional_options = self._get_additional_options(options, propertyfile, rlimits)
         # use a default configuration if no other is specicied
         if not options:
             config_paths = os.path.join(os.path.dirname(executable), '..', 'config')
-            additional_options += ['-svcomp19', '-heap', '10000M', '-benchmark',
+            additional_options += ['-svcomp21', '-heap', '10000M', '-benchmark',
                                    '-timelimit', '900s']
         if self._use_llvm_backend:
             additional_options += ["-setprop", "language=LLVM"]
@@ -156,92 +125,98 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         @param output: the output of CPAchecker
         @return: status of CPAchecker after executing a run
         """
-
         def isOutOfNativeMemory(line):
-            return ('std::bad_alloc'             in line # C++ out of memory exception (MathSAT)
-                 or 'Cannot allocate memory'     in line
-                 or 'Native memory allocation (malloc) failed to allocate' in line # JNI
-                 or line.startswith('out of memory')     # CuDD
-                 )
+            return (
+                "std::bad_alloc" in line  # C++ out of memory exception (MathSAT)
+                or "Cannot allocate memory" in line
+                or "Native memory allocation (malloc) failed to allocate" in line  # JNI
+                or line.startswith("out of memory")  # CuDD
+            )
 
         status = None
 
         for line in output:
-            line = line.decode('ascii')
-            if 'java.lang.OutOfMemoryError' in line:
-                status = 'OUT OF JAVA MEMORY'
+            if "java.lang.OutOfMemoryError" in line:
+                status = "OUT OF JAVA MEMORY"
             elif isOutOfNativeMemory(line):
-                status = 'OUT OF NATIVE MEMORY'
-            elif 'There is insufficient memory for the Java Runtime Environment to continue.' in line \
-                    or 'cannot allocate memory for thread-local data: ABORT' in line:
-                status = 'OUT OF MEMORY'
-            elif 'SIGSEGV' in line:
-                status = 'SEGMENTATION FAULT'
-            elif (returncode == 0 or returncode == 1) and 'java.lang.AssertionError' in line:
-                status = 'ASSERTION'
-            elif ((returncode == 0 or returncode == 1)
-                    and ('Exception:' in line or line.startswith('Exception in thread'))
-                    and not line.startswith('cbmc')): # ignore "cbmc error output: ... Minisat::OutOfMemoryException"
-                status = 'EXCEPTION'
-            elif 'Could not reserve enough space for object heap' in line:
-                status = 'JAVA HEAP ERROR'
-            elif line.startswith('Error: ') and not status:
+                status = "OUT OF NATIVE MEMORY"
+            elif (
+                "There is insufficient memory for the Java Runtime Environment to continue."
+                in line
+                or "cannot allocate memory for thread-local data: ABORT" in line
+            ):
+                status = "OUT OF MEMORY"
+            elif "SIGSEGV" in line:
+                status = "SEGMENTATION FAULT"
+            elif "java.lang.AssertionError" in line:
+                status = "ASSERTION"
+            elif (
+                ("Exception:" in line or line.startswith("Exception in thread"))
+                # ignore "cbmc error output: ... Minisat::OutOfMemoryException"
+                and not line.startswith("cbmc")
+            ):
+                status = "EXCEPTION"
+            elif "Could not reserve enough space for object heap" in line:
+                status = "JAVA HEAP ERROR"
+            elif line.startswith("Error: ") and not status:
                 status = result.RESULT_ERROR
-                if 'Cannot parse witness' in line:
-                    status += ' (invalid witness file)'
-                elif 'Unsupported' in line:
-                    if 'recursion' in line:
-                        status += ' (recursion)'
-                    elif 'threads' in line:
-                        status += ' (threads)'
-                elif 'Parsing failed' in line:
-                    status += ' (parsing failed)'
-            elif line.startswith('Invalid configuration: ') and not status:
-                if 'Cannot parse witness' in line:
+                if "Cannot parse witness" in line:
+                    status += " (invalid witness file)"
+                elif "Unsupported" in line:
+                    if "recursion" in line:
+                        status += " (recursion)"
+                    elif "threads" in line:
+                        status += " (threads)"
+                elif "Parsing failed" in line:
+                    status += " (parsing failed)"
+                elif "Interpolation failed" in line:
+                    status += " (interpolation failed)"
+            elif line.startswith("Invalid configuration: ") and not status:
+                if "Cannot parse witness" in line:
                     status = result.RESULT_ERROR
-                    status += ' (invalid witness file)'
-            elif line.startswith('For your information: CPAchecker is currently hanging at') and not status and isTimeout:
-                status = 'TIMEOUT'
+                    status += " (invalid witness file)"
+            elif (
+                line.startswith(
+                    "For your information: CPAchecker is currently hanging at"
+                )
+                and not status
+                and isTimeout
+            ):
+                status = "TIMEOUT"
 
-            elif line.startswith('Verification result: '):
+            elif "Verification result: " in line:
                 line = line[21:].strip()
-                if line.startswith('TRUE'):
+                if "TRUE" in line:
                     newStatus = result.RESULT_TRUE_PROP
-                elif line.startswith('FALSE'):
-                    newStatus = result.RESULT_FALSE_REACH
-                    match = re.match('.* Property violation \(([^:]*)(:.*)?\) found by chosen configuration.*', line)
-                    if match and match.group(1) in ['valid-deref', 'valid-free', 'valid-memtrack', 'no-overflow', 'no-deadlock', 'termination']:
-                        newStatus = 'false(' + match.group(1) + ')'
+                elif "FALSE" in line:
+                    newStatus = result.RESULT_FALSE_PROP
+                    match = re.match(
+                        r".* Property violation \(([a-zA-Z0-9_-]+)(:.*)?\) found by chosen configuration.*",
+                        line,
+                    )
+                    if match:
+                        newStatus += f"({match.group(1)})"
                 else:
                     newStatus = result.RESULT_UNKNOWN
 
                 if not status:
                     status = newStatus
-                elif newStatus != result.RESULT_UNKNOWN:
-                    status = "{0} ({1})".format(status, newStatus)
+                elif newStatus != result.RESULT_UNKNOWN and status != newStatus:
+                    status = f"{status} ({newStatus})"
+            elif line == "Finished." and not status:
+                status = result.RESULT_DONE
 
-        if (not status or status == result.RESULT_UNKNOWN) and isTimeout and returncode in [15, 143]:
-            # The JVM sets such an returncode if it receives signal 15
-            # (143 is 15+128)
-            status = 'TIMEOUT'
+        if (
+            (not status or status == result.RESULT_UNKNOWN)
+            and isTimeout
+            and returncode in [15, 143]
+        ):
+            # The JVM sets such an returncode if it receives signal 15 (143 is 15+128)
+            status = "TIMEOUT"
 
         if not status:
             status = result.RESULT_ERROR
         return status
-
-
-    def get_value_from_output(self, lines, identifier):
-        # search for the text in output and get its value,
-        # stop after the first line, that contains the searched text
-        for line in lines:
-            if identifier in line:
-                startPosition = line.find(':') + 1
-                endPosition = line.find('(', startPosition) # bracket maybe not found -> (-1)
-                if (endPosition == -1):
-                    return line[startPosition:].strip()
-                else:
-                    return line[startPosition: endPosition].strip()
-        return None
 
     def llvm_version(self):
         """
@@ -251,6 +226,15 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             return '3.9.1'
         else:
             return llvm_version
+
+    def set_environment(self, symbiotic_dir, opts):
+        """
+        Set environment for the tool
+        """
+        # do not link any functions
+        opts.linkundef = []
+
+
 
     def passes_before_verification(self):
         """
