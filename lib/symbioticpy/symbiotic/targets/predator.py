@@ -3,6 +3,7 @@ BenchExec is a framework for reliable benchmarking.
 This file is part of BenchExec.
 
 Copyright (C) 2007-2015  Dirk Beyer
+Copyright (C) 2020-2021  Marek Chalupa
 All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -69,16 +70,13 @@ class SymbioticTool(SymbioticBaseTool):
         """
         Passes that should run before CPAchecker
         """
-        # llvm2c has a bug with PHI nodes
-        return ["-lowerswitch", "-simplifycfg"]
+        return super().passes_before_verification() +\
+                ["-delete-undefined", "-lowerswitch", "-simplifycfg"]
 
     def actions_before_verification(self, symbiotic):
         output = symbiotic.curfile + '.c'
         runcmd(['llvm2c', symbiotic.curfile, '--o', output], DbgWatch('all'))
         symbiotic.curfile = output
-
-    def passes_before_verification(self):
-        return ['-delete-undefined']
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         #cmd = PredatorTool.cmdline(self, executable, options,

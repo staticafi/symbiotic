@@ -63,7 +63,8 @@ class SymbioticTool(PredatorHPTool, SymbioticBaseTool):
         Passes that should run before CPAchecker
         """
         # llvm2c has a bug with PHI nodes
-        return ["-lowerswitch", "-simplifycfg", "-reg2mem", "-simplifycfg"]
+        return super().passes_before_verification() +\
+                ["-lowerswitch", "-simplifycfg", "-reg2mem", "-simplifycfg"]
 
     def actions_before_verification(self, symbiotic):
         output = symbiotic.curfile + '.c'
