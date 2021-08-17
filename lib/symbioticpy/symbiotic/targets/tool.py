@@ -184,3 +184,20 @@ class SymbioticBaseTool(object):
 
         return ([],[])
 
+    def passes_before_verification(self):
+        """ By default, remove all inserted markers and so on in memsafety
+             checking """
+
+        if self._options.full_instrumentation:
+            return []
+
+        prop = self._options.property
+        if prop.memsafety() or prop.memcleanup() or prop.nullderef():
+            # slice with respect to the memory handling operations
+            return (['-delete-calls',
+                     '-delete-call', '__INSTR_mark_pointer',
+                     '-delete-call', '__INSTR_mark_free',
+                     '-delete-call', '__INSTR_mark_exit',
+                     '-delete-call', '__symbiotic_keep_ptr']
+                    )
+

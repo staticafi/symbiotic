@@ -62,7 +62,8 @@ class SymbioticTool(SkinkTool):
 
     # skink needs inlined procedures
     def passes_before_verification(self):
-        return ['-strip-debug',
+        return super().passes_before_verification() +\
+                ['-strip-debug',
                 '-inline-threshold=150000', '-inline', '-always-inline']
 
     def set_environment(self, symbiotic_dir, opts):

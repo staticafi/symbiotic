@@ -366,7 +366,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         # make external globals non-deterministic
         passes.append('-internalize-globals')
 
-        return passes
+        return passes + super().passes_before_verification()
 
     def describe_error(self, llvmfile):
         if self._options.test_comp:

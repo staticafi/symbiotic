@@ -258,7 +258,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         """
         # LLVM backend in CPAchecker does not handle switches correctly yet
         # and llvm2c has a bug with PHI nodes (which are not handled by the LLVM backend either)
-        return ["-lowerswitch", "-simplifycfg", "-reg2mem", "-simplifycfg"]
+        return super().passes_before_verification() +\
+                ["-lowerswitch", "-simplifycfg", "-reg2mem", "-simplifycfg"]
 
     def actions_before_verification(self, symbiotic):
         if self._use_llvm_backend:
