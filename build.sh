@@ -108,6 +108,7 @@ ENABLE_TCMALLOC=$(if check_tcmalloc; then echo "on"; else echo "off"; fi)
 
 ARCHIVE="no"
 FULL_ARCHIVE="no"
+PRECOMPILE_BITCODE="yes"
 
 while [ $# -gt 0 ]; do
 	case $1 in
@@ -138,6 +139,9 @@ while [ $# -gt 0 ]; do
 		;;
 		'no-llvm2c')
 			BUILD_LLVM2C="no"
+		;;
+		'no-precompile-bitcode')
+			PRECOMPILE_BITCODE="no"
 		;;
 		'build-nidhugg')
 			BUILD_NIDHUGG="yes"
@@ -934,11 +938,11 @@ if [ $FROM -le 6 ]; then
 	(build && make install) || exitmsg "Installing files"
 
 PHASE="precompiling function models"
-#if [ "$ARCHIVE" = "yes" ]; then
+if [ "$PRECOMPILE_BITCODE" = "yes" ]; then
 	# precompile bitcode files
 	CPPFLAGS="-I$LLVM_BUILD_PATH/lib/clang/$LLVM_VERSION/include/ -I/usr/include $CPPFLAGS" scripts/precompile_bitcode_files.sh\
         || exitmsg "Failed compiling function models (Symbotic should work, though, so you can skip this step)"
-#fi
+fi
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
