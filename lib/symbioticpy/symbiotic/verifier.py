@@ -91,10 +91,6 @@ class SymbioticVerifier(object):
         return res
 
     def _run_verifier(self, tool, addparams, timeout):
-        # prepare the bitcode
-        if hasattr(tool, 'passes_before_verification'):
-            self._run_opt(tool.passes_before_verification())
-
         params = self.override_params or self.options.tool_params
         if addparams:
             params = params + addparams
