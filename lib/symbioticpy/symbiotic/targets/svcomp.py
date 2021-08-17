@@ -115,7 +115,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             passes.append('-instrument-nontermination')
             passes.append('-instrument-nontermination-mark-header')
 
-        return passes 
+        return passes + super().passes_before_verification()
 
     def replay_error_params(self, llvmfile):
         return self.tool.replay_error_params(llvmfile)

@@ -10,14 +10,68 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Support/CommandLine.h"
 
 using namespace llvm;
 
+static cl::list<std::string> calls("delete-call",
+                                   cl::desc("Specify which calls of functions to delete"));
+namespace {
+  class DeleteFuns : public FunctionPass {
+    public:
+      static char ID;
+
+      DeleteFuns() : FunctionPass(ID) {}
+
+      bool runOnFunction(Function &F) override;
+
+  };
+}
+
+static RegisterPass<DeleteFuns> PRP("delete-calls",
+                                    "Delete (direct) calls of the given function");
+char DeleteFuns::ID;
+
+bool DeleteFuns::runOnFunction(Function &F) {
+  bool changed = false;
+  std::set<std::string> callsset{calls.begin(), calls.end()};
+
+  for (auto &B : F) {
+    for (auto it = B.begin(), et = B.end(); it != et;) {
+      auto &I = *it++;
+      auto *CI = dyn_cast<CallInst>(&I);
+      if (!CI)
+          continue;
+
+#if LLVM_VERSION_MAJOR < 8
+      auto *op = CI->getCalledValue()->stripPointerCasts();
+#else
+      auto *op = CI->getCalledOperand()->stripPointerCasts();
+#endif
+
+      auto *fun = dyn_cast<Function>(op);
+      if (!fun)
+          continue;
+
+      if (callsset.find(fun->getName().str()) != callsset.end()) {
+          // remove the instruction
+          //llvm::errs() << "Deleting " << I << "\n";
+          I.replaceAllUsesWith(UndefValue::get(I.getType()));
+          I.eraseFromParent();
+          changed = true;
+      }
+    }
+  }
+
+  return changed;
+}
+
+
+/*
 namespace {
   class Prepare : public ModulePass {
     public:
@@ -98,7 +152,6 @@ bool Prepare::runOnModule(Module &M) {
   return changed;// | replace_ldv_calls(M);
 }
 
-/*
 bool Prepare::replace_ldv_calls(Module &M) {
   bool changed = false;
 
