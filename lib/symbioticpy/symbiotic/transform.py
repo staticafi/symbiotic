@@ -340,7 +340,8 @@ class SymbioticCC(object):
                              color='RED', print_nl=False)
             # on timeout, just proceed, but avoid slicing and such,
             # since it depends on instrumentation
-            if retval == 124 or self.options.sv_comp:
+            if not self.options.full_instrumentation and\
+                    (retval == 124 or self.options.sv_comp):
                 self.options.noslice = True
                 self.options.no_optimize = False
                 self.options.optlevel = []

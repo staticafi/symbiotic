@@ -284,6 +284,15 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def __init__(self, opts):
         SymbioticBaseTool.__init__(self, opts)
         self._options = opts
+        self._arguments = ['-dump-states-on-halt=0',
+                           '--output-stats=0', '--use-call-paths=0',
+                           '--optimize=false', '-silent-klee-assume=1',
+                           '-istats-write-interval=60s',
+                           '-timer-interval=10',
+                           #'--output-istats=0',
+                           '-only-output-states-covering-new=1',
+                           '-use-forked-solver=0',
+                           '-external-calls=pure', '-max-memory=8000']
 
     def can_replay(self):
         """ Return true if the tool can do error replay """
