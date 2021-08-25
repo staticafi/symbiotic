@@ -95,11 +95,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
    #def passes_after_compilation(self):
    #    return ['-prepare']
 
-    def passes_before_slicing(self):
-        if self._options.property.termination():
-            return ['-find-exits']
-        return []
-
     def passes_before_verification(self):
         """
         Prepare the bitcode for verification after slicing:
