@@ -362,7 +362,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                #self.tool = NidhuggTool(self._options)
                #self.tool.set_environment(self._env, self._options)
                #dbg("Found threads, will use Nidhugg")
-                raise SymbioticException('Found threads, giving up')
+               #raise SymbioticException('Found threads, giving up')
+
+                # We do not slice threads correctly right now
+                dbg("Found threads, will not slice (a temporary solution)")
+                self._options.noslice = True
         else:
             dbg('Checking the module failed!')
 
