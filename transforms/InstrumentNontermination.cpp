@@ -185,6 +185,7 @@ bool InstrumentNontermination::checkInstruction(Instruction& I,
 bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Value *>& variables) {
   auto *header = L->getHeader();
   assert(header);
+  auto *M = header->getModule();
 
   // mapping of old to new ones
   std::map<Value *, Value *> mapping;
@@ -231,8 +232,7 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
         "",
 #if LLVM_VERSION_MAJOR >= 11
         false,
-        header->getModule()->getDataLayout()
-            .getABITypeAlign(it.first->getType()),
+        M->getDataLayout().getABITypeAlign(it.first->getType()),
 #endif
         static_cast<Instruction*>(nullptr));
     auto *SI = new StoreInst(LI,
@@ -258,7 +258,7 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
     }
 
     if (insertHeader) {
-        auto *CI = CallInst::Create(_header);
+        auto *CI = CallInst::Create(getHeaderFun(M));
         // copy the location from terminator, so that we have
         // the right debug loc
         CloneMetadata(header->getTerminator(), CI);
