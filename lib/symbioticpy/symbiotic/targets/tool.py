@@ -200,4 +200,5 @@ class SymbioticBaseTool(object):
                      '-delete-call', '__INSTR_mark_exit',
                      '-delete-call', '__symbiotic_keep_ptr']
                     )
+        return []
 
