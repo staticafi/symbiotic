@@ -184,6 +184,12 @@ class SymbioticBaseTool(object):
 
         return ([],[])
 
+
+    def passes_before_slicing(self):
+        if self._options.property.termination():
+            return ['-find-exits']
+        return []
+
     def passes_before_verification(self):
         """ By default, remove all inserted markers and so on in memsafety
              checking """
