@@ -92,9 +92,10 @@ class Symbiotic(object):
 
         # if we crashed on the sliced file, try running on the unsliced file
         # (do this optional, as well as for slicer and instrumentation)
-        if not options.noslice and \
+        resstartswith = res.lower().startswith
+        if (not options.noslice) and \
            (options.sv_comp or options.test_comp) and \
-            res.lower().startswith('error') or res.lower().startswith('unknown'):
+           (resstartswith('error') or resstartswith('unknown')):
             print_stdout("INFO: Failed on the sliced code, trying on the unsliced code",
                          color="WHITE")
             options.replay_error = False # now we do not need to replay the error
