@@ -21,9 +21,10 @@ limitations under the License.
 from os.path import basename, dirname, abspath, isfile, join, realpath
 from os import listdir, rename
 from struct import unpack
-from symbiotic.utils.utils import print_stdout
+from symbiotic.utils.utils import print_stdout, process_grep
 from symbiotic.utils import dbg
 from symbiotic.utils.process import runcmd
+from symbiotic.exceptions import SymbioticException
 from symbiotic.witnesses.witnesses import GraphMLWriter
 
 from sys import version_info
@@ -347,6 +348,23 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             env.prepend('KLEE_RUNTIME_LIBRARY_PATH',
                         '{0}/llvm-{1}/lib/klee/runtime'.\
                         format(prefix, self.llvm_version()))
+
+
+    def actions_before_slicing(self, symbiotic):
+        # check whether there are threads in the program
+        cmd = ['opt', '-q', '-load', 'LLVMsbt.so', '-check-module',
+               '-detect-calls=pthread_create', '-o=/dev/null', symbiotic.curfile]
+        retval, lines =\
+        process_grep(cmd, 'Found call to function')
+        if retval == 0:
+            if lines:
+               #self._has_threads = True
+               #self.tool = NidhuggTool(self._options)
+               #self.tool.set_environment(self._env, self._options)
+               #dbg("Found threads, will use Nidhugg")
+                raise SymbioticException('Found threads, giving up')
+        else:
+            dbg('Checking the module failed!')
 
     def passes_before_verification(self):
         # for once, delete all undefined functions before the verification
