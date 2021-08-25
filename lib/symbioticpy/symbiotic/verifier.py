@@ -59,11 +59,18 @@ class SymbioticVerifier(object):
         return runcmd(cmd, DbgWatch('all'),
                       "Failed running command: {0}".format(" ".join(cmd)))
 
-    #FIXME: copied from opt, do not duplicate the code
+    # FIXME: copied from opt, do not duplicate the code
     def _run_opt(self, passes):
         output = '{0}-pr.bc'.format(self.curfile[:self.curfile.rfind('.')])
-        cmd = ['opt', '-load', 'LLVMsbt.so',
-               self.curfile, '-o', output] + passes
+        cmd = ['opt', '-load', 'LLVMsbt.so']
+
+        # disable new pass manager in LLVM 13+
+        # TODO: support natively
+        ver_major, *_ = self._tool.llvm_version().split('.')
+        if int(ver_major) >= 13:
+            cmd.append('-enable-new-pm=0')
+
+        cmd += [self.curfile, '-o', output] + passes
 
         runcmd(cmd, DbgWatch('all'), 'Running opt failed')
         self.curfile = output

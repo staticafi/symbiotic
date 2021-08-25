@@ -246,10 +246,18 @@ class SymbioticCC(object):
         output = '{0}-pr.bc'.format(self.curfile[:self.curfile.rfind('.')])
         cmd = ['opt', '-load', 'LLVMsbt.so',
                self.curfile, '-o', output] + passes
+        self._disable_new_pm(cmd)
 
         runcmd(cmd, PrepareWatch(), 'Running opt failed')
         self.curfile = output
         self._save_ll()
+
+    def _disable_new_pm(self, cmd):
+        # disable new pass manager in LLVM 13+
+        # TODO: support natively
+        ver_major, *_ = self._tool.llvm_version().split('.')
+        if int(ver_major) >= 13:
+            cmd.append('-enable-new-pm=0')
 
     def _get_stats(self, prefix=''):
         if not self.options.stats:
@@ -257,6 +265,8 @@ class SymbioticCC(object):
 
         cmd = ['opt', '-load', 'LLVMsbt.so', '-count-instr',
                '-o', '/dev/null', self.curfile]
+        self._disable_new_pm(cmd)
+
         try:
             runcmd(cmd, PrintWatch('INFO: ' + prefix), 'Failed running opt')
         except SymbioticException:
@@ -543,6 +553,7 @@ class SymbioticCC(object):
         cmd = ['opt']
         if load_sbt:
             cmd += ['-load', 'LLVMsbt.so']
+        self._disable_new_pm(cmd)
         cmd += ['-o', output, self.curfile]
         cmd += passes
 
