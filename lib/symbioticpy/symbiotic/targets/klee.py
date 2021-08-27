@@ -64,7 +64,8 @@ class KleeToolFullInstrumentation(KleeBase):
             ('EROSYMB', re.compile('.*cannot make readonly object symbolic.*')),
             ('ESTACKOVFLW', re.compile('.*WARNING: Maximum stack size reached.*')),
             ('EMEMERROR', re.compile('.*memory error: out of bound pointer.*')),
-            ('EPTHREAD', re.compile('.*ERROR:.*Call to pthread_create.*')),
+            ('EPTHREAD', re.compile('.*ERROR:.*Call to pthread_.*')),
+            ('EPTHREAD2', re.compile('.*ERROR:.*unsupported pthread API.*')),
             ('EFUNMODEL', re.compile('.*: unsupported function model.*')),
             ('EMAKESYMBOLIC', re.compile(
                 '.*memory error: invalid pointer: make_symbolic.*')),
@@ -221,7 +222,8 @@ class SymbioticTool(KleeBase):
             ('EMALLOC', re.compile('.*found huge malloc, returning 0.*')),
             ('ESKIPFORK', re.compile('.*skipping fork.*')),
             ('EKILLSTATE', re.compile('.*killing.*states \(over memory cap\).*')),
-            ('EPTHREAD', re.compile('.*ERROR:.*Call to pthread_create.*')),
+            ('EPTHREAD', re.compile('.*ERROR:.*Call to pthread_.*')),
+            ('EPTHREAD2', re.compile('.*ERROR:.*unsupported pthread API.*')),
             ('EMEMERROR', re.compile('.*memory error: out of bound pointer.*')),
             ('EMAKESYMBOLIC', re.compile(
                 '.*memory error: invalid pointer: make_symbolic.*')),
