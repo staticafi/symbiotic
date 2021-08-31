@@ -106,17 +106,14 @@ class Symbiotic(object):
             res, tool = verifier.run()
             print_elapsed_time('INFO: Running on unsliced code time', color='WHITE')
 
-        if tool and options.replay_error and\
-           not tool.can_replay():
+        if tool and options.replay_error and not tool.can_replay():
            dbg('Replay required but the tool does not support it')
 
         has_error = res and\
                     (res.startswith('false') or\
                     (res.startswith('done') and options.property.errorcall()))
         if has_error and options.replay_error and\
-           not options.noslice and (tool.can_replay() or options.sv_comp):
-            # On SV-COMP, force replay (even if that would mean to re-run
-            # entirely on unsliced code)
+           not options.noslice and tool.can_replay():
             print_stdout("Trying to confirm the error path")
             newres = self.replay_nonsliced(tool, cc)
 
@@ -126,16 +123,12 @@ class Symbiotic(object):
             if res != newres:
                 # if we did not replay the original error, but we found a different error
                 # on this path, report it, since it should be real
-                if options.sv_comp or options.test_comp:
-                    has_error = newres and\
-                                (newres.startswith('false') or\
-                                (newres.startswith('done') and\
-                                 options.property.errorcall()))
-                    if has_error:
-                        res = newres
-                    else:
-                        res = 'cex not-confirmed'
-                        has_error = False
+                has_error = newres and\
+                            (newres.startswith('false') or\
+                            (newres.startswith('done') and\
+                             options.property.errorcall()))
+                if has_error:
+                    res = newres
                 else:
                     res = 'cex not-confirmed'
                     has_error = False
