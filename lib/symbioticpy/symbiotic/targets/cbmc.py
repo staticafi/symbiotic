@@ -3,6 +3,7 @@ BenchExec is a framework for reliable benchmarking.
 This file is part of BenchExec.
 
 Copyright (C) 2007-2015  Dirk Beyer
+Copyright (C) 2019-2021  Marek Chalupa
 All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,7 +39,7 @@ try:
     from symbiotic.versions import llvm_version
 except ImportError:
     # the default version
-    llvm_version='8.0.1'
+    llvm_version='10.0.1'
 
 class SymbioticTool(BaseTool, SymbioticBaseTool):
     """
@@ -178,6 +179,13 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         Return required version of LLVM
         """
         return llvm_version
+
+    def set_environment(self, symbiotic_dir, opts):
+        """
+        Set environment for the tool
+        """
+        # do not link any functions
+        opts.linkundef = []
 
     def passes_before_verification(self):
         """
