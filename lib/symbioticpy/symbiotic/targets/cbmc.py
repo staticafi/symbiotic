@@ -49,9 +49,13 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     SV-COMP conditions is assumed.
     """
 
-    def __init__(self, opts):
+    def __init__(self, opts, only_results=None):
+        """ only_results = if not none, report only these results as real,
+            otherwise report 'unknown'. Used to implement incremental BMC.
+        """
         SymbioticBaseTool.__init__(self, opts)
         opts.explicit_symbolic = True
+        self._only_results = only_results
 
     def executable(self):
         return util.find_executable('cbmc')
@@ -62,14 +66,27 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def name(self):
         return 'CBMC'
 
+    def verifiers(self):
+        bounds = (2, 6, 12, 17, 21, 40, 200, 400, 1025, 2049, 268435456)
+        setups = []
+        for b in bounds:
+            setups.append((SymbioticTool(self._options, only_results=['false']),
+                           ['--unwind', str(b)],
+                           None))
+            setups.append((SymbioticTool(self._options, only_results=['true']),
+                           ['--unwind', str(b), '--unwinding-assertions'],
+                           None))
+        return setups
+
     def cmdline(self, executable, options, tasks, propertyfile, rlimits):
        #if propertyfile:
        #    options = options + ['--propertyfile', propertyfile]
        #elif ("--xml-ui" not in options):
        #    options = options + ["--xml-ui"]
 
-        # parameters copied from the SV-COMP wrapper script
-        options.extend(['--stop-on-fail', '--object-bits', '11'])
+        # parameters copied from the SV-COMP wrapper script,
+        options.extend(['--stop-on-fail',
+                        '--object-bits', '11'])
 
         prp = self._options.property
         if prp.memsafety() or prp.memcleanup():
@@ -89,7 +106,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             for line in output:
                 line = str(line.strip())
                 if "Unmodelled library functions have been called" in line:
-                    status = result.UNKNOWN
+                    status = result.RESULT_UNKNOWN
                 elif "__CPROVER_memory_leak" in line or\
                      "allocated memory never freed" in line:
                     status = result.RESULT_FALSE_MEMTRACK\
@@ -129,6 +146,15 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
         else:
             status = result.RESULT_ERROR
+
+        if self._only_results:
+            res = status.lower()
+            if res.startswith('false'):
+                res = 'false'
+            elif res.startswith('true'):
+                res = 'true'
+            if not res in self._only_results:
+                return result.RESULT_UNKNOWN
 
         return status
 
