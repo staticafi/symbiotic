@@ -76,7 +76,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
         return [executable] + options + tasks
 
-
     def parse_XML(self, output, returncode, isTimeout):
         #an empty tag cannot be parsed into a tree
         def sanitizeXML(s):
@@ -136,7 +135,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
-
+        output = list(output)
         if returnsignal == 0 and ((returncode == 0) or (returncode == 10)):
             status = result.RESULT_ERROR
             if ('--xml-ui' in self.options):
@@ -144,23 +143,22 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             elif len(output) > 0:
                 # SV-COMP mode
                 result_str = output[-1].strip()
-
-                if result_str == 'TRUE' or result_str == b'VERIFICATION SUCCESSFUL':
+                if result_str == b'TRUE' or result_str == b'VERIFICATION SUCCESSFUL':
                     status = result.RESULT_TRUE_PROP
                 elif b'FALSE' in result_str:
-                    if result_str == 'FALSE(valid-memtrack)':
+                    if result_str == b'FALSE(valid-memtrack)':
                         status = result.RESULT_FALSE_MEMTRACK
-                    elif result_str == 'FALSE(valid-deref)':
+                    elif result_str == b'FALSE(valid-deref)':
                         status = result.RESULT_FALSE_DEREF
-                    elif result_str == 'FALSE(valid-free)':
+                    elif result_str == b'FALSE(valid-free)':
                         status = result.RESULT_FALSE_FREE
-                    elif result_str == 'FALSE(no-overflow)':
+                    elif result_str == b'FALSE(no-overflow)':
                         status = result.RESULT_FALSE_OVERFLOW
-                    elif result_str == 'FALSE(valid-memcleanup)':
+                    elif result_str == b'FALSE(valid-memcleanup)':
                         status = result.RESULT_FALSE_MEMCLEANUP
                     else:
                         status = result.RESULT_FALSE_REACH
-                elif 'UNKNOWN' in output:
+                elif b'UNKNOWN' in output:
                     status = result.RESULT_UNKNOWN
 
         elif returncode == 64 and 'Usage error!\n' in output:
