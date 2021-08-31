@@ -15,6 +15,7 @@ class CCTarget(SymbioticBaseTool):
 
     def __init__(self, opts):
         SymbioticBaseTool.__init__(self, opts)
+        self.cwd = None
 
     def name(self):
         return 'cc'
@@ -22,16 +23,25 @@ class CCTarget(SymbioticBaseTool):
     def llvm_version(self):
         return llvm_version
 
+    def set_environment(self, env, opts):
+        self.cwd = env.cwd
+
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
         """
         Compose the command line to execute from the name of the executable
         """
         if self._options.generate_c:
             output = self._options.final_output or\
-                     join(self._options.env.symbiotic_dir, 'symbiotic-output.c')
+                     join(self.cwd, 'symbiotic-output.c')
             return ['gen-c', '-o', output] + options + tasks
 
-        output = self._options.final_output or\
-                 join(self._options.env.symbiotic_dir, 'symbiotic-output.ll')
-        return ['llvm-dis', '-o', output] + options + tasks
+        output = self._options.final_output
+        if output is None:
+            if self._options.generate_ll:
+                output = join(self.cwd, 'symbiotic-output.ll')
+            else:
+                output = join(self.cwd, 'symbiotic-output.bc')
+        if self._options.generate_ll:
+            return ['llvm-dis', '-o', output] + options + tasks
+        return ['llvm-link', '-o', output] + options + tasks
 

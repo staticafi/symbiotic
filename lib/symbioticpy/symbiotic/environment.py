@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from os import environ
+from os import environ, getcwd
 from os.path import isfile, isdir
 from . utils import err, dbg
 from . utils.utils import process_grep
@@ -24,6 +24,8 @@ def _check_clang_in_path(llvm_version):
     return False
 
 def _set_symbiotic_environ(tool, env, opts):
+    env.cwd = getcwd()
+
     if opts.search_include_paths:
         from . includepaths import IncludePathsSearcher
         additional_include_paths = IncludePathsSearcher().get()
@@ -119,8 +121,12 @@ class Environment:
     evnironment for tools
     """
     def __init__(self, symb_dir):
+        # the directory where is symbiotic
         self.symbiotic_dir = symb_dir
+        # working directory for symbiotic
         self.working_dir = None
+        # the current directory from where we call symbiotic
+        self.cwd = None
 
     def prepend(self, env, what):
         """ Prepend 'what' to environment variable 'env'"""
