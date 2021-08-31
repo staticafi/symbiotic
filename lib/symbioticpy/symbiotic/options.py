@@ -243,7 +243,6 @@ def parse_command_line():
         elif opt == '--cc':
             options.tool_name='cc'
             options.cc_mode = True
-            options.no_verification = True
         elif opt == '--verifier' or opt == '--target':
             options.tool_name = arg.lower()
         elif opt == '--version-short':
