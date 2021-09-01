@@ -139,8 +139,8 @@ class SymbioticBaseTool(object):
 
     def slicer_options(self):
         """
-        Returns tuple (c, opts) where c is the slicing
-        criterion and opts is a list of options
+        Returns tuple (c, opts) where c is a list with slicing
+        criteria and opts is a list of options
         """
 
         if self._options.full_instrumentation:

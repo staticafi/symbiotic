@@ -66,6 +66,14 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def name(self):
         return 'CBMC'
 
+    def slicer_options(self):
+        """ Override slicer options: do not slice bodies of funs
+            that are slicing criteria. CBMC uses the assertions inside,
+            not the calls themselves.
+        """
+        sc, opts = super().slicer_options()
+        return (sc, opts + ['--preserved-functions={0}'.format(','.join(sc))])
+
     def verifiers(self):
         bounds = (2, 6, 12, 17, 21, 40, 200, 400, 1025, 2049, 268435456)
         setups = []
