@@ -110,6 +110,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         if returnsignal == 0 and ((returncode == 0) or (returncode == 10)):
+            prp = self._options.property
             status = result.RESULT_ERROR
             for line in output:
                 line = str(line.strip())
