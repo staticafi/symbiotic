@@ -188,6 +188,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def actions_before_verification(self, symbiotic):
         output = symbiotic.curfile + '.c'
-        runcmd(['llvm2c', symbiotic.curfile, '--o', output],
+        runcmd(['llvm2c', symbiotic.curfile, '--add-includes', '--o', output],
                 DbgWatch('all'))
         symbiotic.curfile = output
