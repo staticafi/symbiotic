@@ -99,8 +99,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         #         heapsize = rlimits[MEMLIMIT]*0.8 # 20% overhead for non-java-memory
         #         options = options + ["-heap", str(int(heapsize))]
 
-        if ("-stats" not in existing_options):
-            options = options + ["-stats"]
+       #if ("-stats" not in existing_options):
+       #    options = options + ["-stats"]
 
         spec = ["-spec", propertyfile] if propertyfile is not None else []
 
