@@ -135,7 +135,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
         status = None
 
-        for line in output:
+        for line in map(str, output):
             if "java.lang.OutOfMemoryError" in line:
                 status = "OUT OF JAVA MEMORY"
             elif isOutOfNativeMemory(line):
