@@ -19,11 +19,15 @@ limitations under the License.
 """
 
 import functools
+import glob
 import logging
 import os
 import re
+import shutil
 import subprocess
-import sys
+from typing import List
+
+
 
 try:
     import benchexec.result as result
@@ -41,43 +45,23 @@ except ImportError:
     from symbiotic.exceptions import SymbioticException as BenchExecException
     MEMLIMIT = 10000
 
-_OPTION_NO_WRAPPER = '--force-no-wrapper'
+_OPTION_NO_WRAPPER = "--force-no-wrapper"
 _SVCOMP17_VERSIONS = {"f7c3ed31"}
 _SVCOMP17_FORBIDDEN_FLAGS = {"--full-output", "--architecture"}
-_ULTIMATE_VERSION_REGEX = re.compile('^Version is (.*)$', re.MULTILINE)
+_ULTIMATE_VERSION_REGEX = re.compile(r"^Version is (.*)$", re.MULTILINE)
 # .jar files that are used as launcher arguments with most recent .jar first
-_LAUNCHER_JARS = ["plugins/org.eclipse.equinox.launcher_1.3.100.v20150511-1540.jar"]
+_LAUNCHER_JARS = [
+    "plugins/org.eclipse.equinox.launcher_1.5.800.v20200727-1323.jar",
+    "plugins/org.eclipse.equinox.launcher_1.3.100.v20150511-1540.jar",
+]
+
+
 
 
 class UltimateTool(BaseTool):
     """
     Abstract tool info for Ultimate-based tools.
     """
-
-    REQUIRED_PATHS = [
-        "artifacts.xml",
-        "config",
-        "configuration",
-        "cvc4",
-        "cvc4nyu",
-        "cvc4-LICENSE",
-        "features",
-        "LICENSE",
-        "LICENSE.GPL",
-        "LICENSE.GPL.LESSER",
-        "mathsat",
-        "mathsat-LICENSE",
-        "p2",
-        "plugins",
-        "README",
-        "Ultimate",
-        "Ultimate.ini",
-        "Ultimate.py",
-        "z3",
-        "z3-LICENSE"
-    ]
-
-    REQUIRED_PATHS_SVCOMP17 = []
 
     def __init__(self):
         self._uses_propertyfile = False
@@ -89,57 +73,92 @@ class UltimateTool(BaseTool):
        #return exe
 
     def _ultimate_version(self, executable):
-        data_dir = os.path.join(os.path.dirname(executable), 'data')
+        data_dir = os.path.join(os.path.dirname(executable), "data")
         launcher_jar = self._get_current_launcher_jar(executable)
-
+        java_versions = self.get_java_installations()
         cmds = [
             # 2
-            ["java", "-Xss4m", "-jar", launcher_jar, "-data", "@noDefault", "-ultimatedata", data_dir, "--version"],
+            [
+                "-Xss4m",
+                "-jar",
+                launcher_jar,
+                "-data",
+                "@noDefault",
+                "-ultimatedata",
+                data_dir,
+                "--version",
+            ],
             # 1
-            ["java", "-Xss4m", "-jar", launcher_jar, "-data", data_dir, "--version"],
+            ["-Xss4m", "-jar", launcher_jar, "-data", data_dir, "--version"],
         ]
 
         self.api = len(cmds)
         for cmd in cmds:
-            version = self._query_ultimate_version(cmd, self.api)
-            if version != '':
-                return version
+            for java_version, java in java_versions.items():
+                version = self._query_ultimate_version([java] + cmd, self.api)
+                if version:
+                    logging.debug(
+                        "Using Java %s with version %s for API version %s of Ultimate %s",
+                        java,
+                        java_version,
+                        self.api,
+                        version,
+                    )
+                    self.java = java
+                    return version
             self.api = self.api - 1
-        raise BenchExecException("Could not determine Ultimate version")
+        raise ToolNotFoundException("Cannot determine Ultimate version")
 
     def _query_ultimate_version(self, cmd, api):
         try:
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            (stdout, stderr) = process.communicate()
+            process = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
         except OSError as e:
-            logging.warning('Cannot run Java to determine Ultimate version (API {0}): {1}'
-                            .format(api, e.strerror))
-            return ''
-        if stderr:
-            logging.warning('Cannot determine Ultimate version (API {0}). Error output: {1}'
-                            .format(api, util.decode_to_string(stderr)))
-            return ''
-        if process.returncode:
             logging.warning(
-                'Cannot determine Ultimate version (API {0}). Exit code : {1}\nCommand was {2}'
-                    .format(api, process.returncode, ' '.join(cmd)))
-            return ''
+                "Cannot run Java to determine Ultimate version (API %s): %s",
+                api,
+                e.strerror,
+            )
+            return ""
+        stdout = process.stdout.strip()
+        if process.stderr or process.returncode:
+            logging.warning("Cannot determine Ultimate version (API %s)", api)
+            logging.debug(
+                "Command was:     %s\n"
+                "Exit code:       %s\n"
+                "Error output:    %s\n"
+                "Standard output: %s",
+                " ".join(map(util.escape_string_shell, cmd)),
+                process.returncode,
+                process.stderr,
+                stdout,
+            )
+            return ""
 
-        version_ultimate_match = _ULTIMATE_VERSION_REGEX.search(util.decode_to_string(stdout))
+        version_ultimate_match = _ULTIMATE_VERSION_REGEX.search(stdout)
         if not version_ultimate_match:
             logging.warning(
-                'Cannot determine Ultimate version, output (API {0}): {1}'.format(api, util.decode_to_string(stdout)))
-            return ''
+                "Cannot determine Ultimate version (API %s), output was: %s",
+                api,
+                stdout,
+            )
+            return ""
         return version_ultimate_match.group(1)
 
+    @functools.lru_cache()
     def _get_current_launcher_jar(self, executable):
-        ultimatedir = os.path.dirname(executable)
+        ultimate_dir = os.path.dirname(executable)
         for jar in _LAUNCHER_JARS:
-            launcher_jar = os.path.join(ultimatedir, jar)
+            launcher_jar = os.path.join(ultimate_dir, jar)
             if os.path.isfile(launcher_jar):
                 return launcher_jar
-        raise FileNotFoundError('No suitable launcher jar found in {0}'.format(ultimatedir))
+        raise FileNotFoundError(f"No suitable launcher jar found in {ultimate_dir}")
 
+    @functools.lru_cache()
     def version(self, executable):
         wrapper_version = self._version_from_tool(executable)
         if wrapper_version in _SVCOMP17_VERSIONS:
@@ -147,11 +166,13 @@ class UltimateTool(BaseTool):
             return wrapper_version
 
         ultimate_version = self._ultimate_version(executable)
-        return ultimate_version + '-' + wrapper_version
+        return f"{ultimate_version}-{wrapper_version}"
 
+    @functools.lru_cache()
     def _is_svcomp17_version(self, executable):
         return self.version(executable) in _SVCOMP17_VERSIONS
 
+    @functools.lru_cache()
     def _requires_ultimate_data(self, executable):
         if self._is_svcomp17_version(executable):
             return False
@@ -187,7 +208,8 @@ class UltimateTool(BaseTool):
 
         if self._uses_propertyfile:
             # use the old wrapper script if a property file is given
-            cmdline = [executable, '--spec', propertyfile]
+            cmdline = [executable, '--spec', propertyfile, '--architecture']
+            cmdline.append('32bit' if self._options.is32bit else '64bit')
             if tasks:
                 cmdline += ['--file'] + tasks
             cmdline += options
@@ -338,7 +360,7 @@ class UltimateTool(BaseTool):
         return False
 
     def _determine_result_with_propertyfile(self, returncode, returnsignal, output, is_timeout):
-        for line in output:
+        for line in map(str, output):
             if line.startswith('FALSE(valid-free)'):
                 return result.RESULT_FALSE_FREE
             elif line.startswith('FALSE(valid-deref)'):
@@ -362,11 +384,63 @@ class UltimateTool(BaseTool):
                 return status
         return result.RESULT_UNKNOWN
 
-    def get_value_from_output(self, lines, identifier):
-        # search for the text in output and get its value,
-        # stop after the first line, that contains the searched text
-        for line in lines:
-            if identifier in line:
-                start_position = line.find('=') + 1
-                return line[start_position:].strip()
+    def get_value_from_output(self, output, identifier):
+        regex = re.compile(identifier)
+        for line in output:
+            match = regex.search(line)
+            if match and len(match.groups()) > 0:
+                return match.group(1)
+        logging.debug("Did not find a match with regex %s", identifier)
         return None
+
+
+
+    def get_java_installations(self):
+        candidates = [
+            "java",
+            "/usr/bin/java",
+            "/opt/oracle-jdk-bin-*/bin/java",
+            "/opt/openjdk-*/bin/java",
+            "/usr/lib/jvm/java-*-openjdk-amd64/bin/java",
+        ]
+
+        candidates = [c for entry in candidates for c in glob.glob(entry)]
+        pattern = r'"(\d+\.\d+).*"'
+
+        rtr = {}
+        for c in candidates:
+            candidate = shutil.which(c)
+            if not candidate:
+                continue
+            try:
+                process = subprocess.run(
+                    [candidate, "-version"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    universal_newlines=True,
+                )
+            except OSError:
+                continue
+
+            stdout = process.stdout.strip()
+            if not stdout:
+                continue
+            version = re.search(pattern, stdout).groups()[0]
+            if version not in rtr:
+                logging.debug(
+                    "Found Java installation %s with version %s", candidate, version
+                )
+                rtr[version] = candidate
+        if not rtr:
+            raise ToolNotFoundException("Could not find any Java version")
+        return rtr
+
+    @staticmethod
+    def _is_sublist_or_equal(small: List, big: List) -> bool:
+        for i in range(len(big) - len(small) + 1):
+            for j in range(len(small)):
+                if str(big[i + j]) != str(small[j]):
+                    break
+            else:
+                return True
+        return False
