@@ -20,19 +20,25 @@ limitations under the License.
 
 from . import ultimate
 
-try:
-    import benchexec.util as util
-    import benchexec.result as result
-    from benchexec.tools.ultimate import UltimateTool
-except ImportError:
-    # fall-back solution (at least for now)
-    import symbiotic.benchexec.util as util
-    import symbiotic.benchexec.result as result
-    from . ultimate import UltimateTool
+#  try:
+#      import benchexec.util as util
+#      import benchexec.result as result
+#      from benchexec.tools.ultimate import UltimateTool
+#  except ImportError:
+# fall-back solution (at least for now)
+import symbiotic.benchexec.util as util
+import symbiotic.benchexec.result as result
+from . ultimate import UltimateTool
 
 from symbiotic.utils.process import runcmd
 from symbiotic.utils.watch import DbgWatch
 from . tool import SymbioticBaseTool
+
+try:
+    from symbiotic.versions import llvm_version
+except ImportError:
+    # the default version
+    llvm_version='10.0.1'
 
 class SymbioticTool(UltimateTool, SymbioticBaseTool):
 
@@ -54,7 +60,7 @@ class SymbioticTool(UltimateTool, SymbioticBaseTool):
         """
         Return required version of LLVM
         """
-        return '7.0.1'
+        return llvm_version
 
     def passes_before_verification(self):
         """
