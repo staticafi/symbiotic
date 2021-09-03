@@ -895,6 +895,8 @@ class SymbioticCC(object):
 
         if not self.options.noslice:
             self.perform_slicing()
+        elif self.options.require_slicer:
+            raise SymbioticException("Slicing required but forbiden...")
 
         # start a new time era
         restart_counting_time()
