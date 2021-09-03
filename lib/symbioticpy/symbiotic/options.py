@@ -2,7 +2,6 @@
 
 import os, sys
 from . utils import err, dbg, enable_debug
-from . exceptions import SymbioticException
 
 def get_versions():
     """ Return a tuple (VERSION, versions, llvm_versions) """ 
@@ -412,6 +411,10 @@ def parse_command_line():
             options.full_instrumentation = True
         elif opt == '--test-suite':
             options.testsuite_output = os.path.abspath(arg)
+
+    # check conflicts
+    if options.require_slicer and options.noslice:
+        err("Slicing is forbidden but required at the same time")
 
     return options, args
 
