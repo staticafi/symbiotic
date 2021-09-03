@@ -17,7 +17,7 @@ class SymbioticTool(DivineTool, SymbioticBaseTool):
         self._memsafety = self._options.property.memsafety()
 
     def llvm_version(self):
-        return '6.0.1'
+        return '7.0.1'
 
     def set_environment(self, env, opts):
         """
