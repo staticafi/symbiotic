@@ -34,9 +34,12 @@ targets = {
     'divine':             DivineTool,
     'ultimateautomizer':  UltimateTool,
     'ultimate':           UltimateTool,
+    'uautomizer':         UltimateTool,
+    'ua':                 UltimateTool,
     'svcomp':             SVCompTool,
     'testcomp':           TestCompTool,
     'slowbeast':          SlowbeastTool,
+    'sb':                 SlowbeastTool,
     'predatorhp':         PredatorHPTool,
     'predator':           PredatorTool,
     'cc':                 CCTarget
