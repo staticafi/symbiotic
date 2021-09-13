@@ -188,6 +188,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         return super().passes_before_verification() + ["-reg2mem", "-lowerswitch", "-simplifycfg"]
 
     def actions_before_verification(self, symbiotic):
+        # link our specific funs
+        self._options.linkundef = ['verifier']
+        symbiotic.link_undefined(only_func=['__VERIFIER_silent_exit'])
+        self._options.linkundef = []
+        # translate to C
         output = symbiotic.curfile + '.c'
         runcmd(['llvm2c', symbiotic.curfile, '--add-includes', '--o', output],
                 DbgWatch('all'))
