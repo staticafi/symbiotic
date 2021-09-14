@@ -46,7 +46,7 @@ try:
     from symbiotic.versions import llvm_version
 except ImportError:
     # the default version
-    llvm_version='8.0.1'
+    llvm_version='10.0.1'
 
 SOFTTIMELIMIT = 'timelimit'
 
@@ -113,6 +113,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             config_paths = os.path.join(os.path.dirname(executable), '..', 'config')
             additional_options += ['-svcomp21', '-heap', '10000M', '-benchmark',
                                    '-timelimit', '900s']
+        if self._options.is32bit:
+            additional_options.append('-32')
+        else:
+            additional_options.append('-64')
+
         if self._use_llvm_backend:
             additional_options += ["-setprop", "language=LLVM"]
         return [executable] + options + additional_options + tasks
@@ -233,8 +238,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         """
         # do not link any functions
         opts.linkundef = []
-
-
 
     def passes_before_verification(self):
         """
