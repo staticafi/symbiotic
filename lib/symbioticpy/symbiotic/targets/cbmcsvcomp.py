@@ -136,3 +136,34 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         runcmd(['llvm2c', symbiotic.curfile, '--o', output],
                 DbgWatch('all'))
         symbiotic.curfile = output
+
+    def slicer_options(self):
+        """ Override slicer options: do not slice bodies of funs
+            that are slicing criteria. CBMC uses the assertions inside,
+            not the calls themselves.
+        """
+        if not self._options.full_instrumentation and\
+            self._options.property.signedoverflow():
+            return (['__symbiotic_check_overflow'], ['-criteria-are-next-instr'])
+
+        sc, opts = super().slicer_options()
+        return (sc, opts + ['--preserved-functions={0}'.format(','.join(sc))])
+
+    def instrumentation_options(self):
+        """
+        Returns a triple (d, c, l, x) where d is the directory
+        with configuration files, c is the configuration
+        file for instrumentation (or None if no instrumentation
+        should be performed), l is the
+        file with definitions of the instrumented functions
+        and x is True if the definitions should be linked after
+        instrumentation (and False otherwise)
+        """
+
+        if not self._options.full_instrumentation and\
+            self._options.property.signedoverflow():
+            return ('int_overflows',
+                    self._options.overflow_config_file or 'config-marker.json',
+                    'overflows-marker.c', False)
+        return super().instrumentation_options()
+
