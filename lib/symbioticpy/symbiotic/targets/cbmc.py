@@ -117,6 +117,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         # parameters copied from the SV-COMP wrapper script,
         options.extend(['--stop-on-fail',
                         '--object-bits', '11'])
+        if self._options.is32bit:
+            options.append('--32')
 
         prp = self._options.property
         if prp.memsafety() or prp.memcleanup():
