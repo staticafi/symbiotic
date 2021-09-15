@@ -4,6 +4,8 @@
 // License. See LICENSE.TXT for details.
 
 
+#include <set>
+
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"

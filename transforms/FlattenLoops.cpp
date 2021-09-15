@@ -4,6 +4,7 @@
 // License. See LICENSE.TXT for details.
 
 #include <vector>
+#include <set>
 
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/BasicBlock.h"
