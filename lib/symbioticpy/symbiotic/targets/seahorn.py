@@ -28,21 +28,28 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 '-disable-llvm-optzns', '-fgnu89-inline']
 
     def actions_before_verification(self, symbiotic):
-        assert self._options.property.assertions() or\
-               self._options.property.unreachcall()
+        prp = self._options.property
+        if not (prp.unreachcall() or prp.assertions()):
+            return
         for fun in self._options.property.getcalls():
             symbiotic.run_opt(['-replace-asserts',
                                f'-replace-asserts-fn={fun}'])
 
     def cmdline(self, executable, options, tasks, propertyfile, rlimits):
         assert len(tasks) == 1
-        assert self._options.property.assertions() or\
-               self._options.property.unreachcall()
+        prp = self._options.property
 
-        return ['sea', 'pf', '--track=mem', '--horn-stats',
+        cmd = ['sea']
+        if prp.unreachcall() or prp.assertions():
+            cmd.append('pf')
+        elif prp.memsafety():
+            cmd.append('smc')
+        elif prp.termination():
+            cmd.append('term')
+        cmd += ['--track=mem', '--horn-stats',
                 '-m32' if self._options.is32bit else '-m64',
                 '--step=large'] + options + tasks
-
+        return cmd
        #return ['sea', '--mem=-1', '-m32', 'pf', '--step=large', '-g',
        #        '--horn-global-constraints=true', '--track=mem',
        #        '--horn-stats', '--enable-nondet-init', '--strip-extern',
