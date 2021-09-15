@@ -208,6 +208,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                     status = newStatus
                 elif newStatus != result.RESULT_UNKNOWN and status != newStatus:
                     status = f"{status} ({newStatus})"
+                break # we got the result, ignore rest
             elif line == "Finished." and not status:
                 status = result.RESULT_DONE
 
