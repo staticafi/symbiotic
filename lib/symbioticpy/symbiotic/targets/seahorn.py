@@ -59,7 +59,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         opts.linkundef = []
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
-        output = '\n'.join(output)
+        output = '\n'.join(map(str, output))
         if "BRUNCH_STAT Result TRUE" in output:
             status = result.RESULT_TRUE_PROP
         elif "BRUNCH_STAT Result FALSE" in output:
