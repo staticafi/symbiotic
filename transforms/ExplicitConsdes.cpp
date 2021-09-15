@@ -81,10 +81,7 @@ class ExplicitConsdes : public ModulePass {
         Instruction *after = nullptr;
 
         for (auto &entry : entries) {
-            auto *call = CallInst::Create(
-                dyn_cast<FunctionType>(
-                    entry.function->getType()->getPointerElementType()),
-                entry.function, "");
+            auto *call = CallInst::Create(entry.function, "");
 
             call->setDebugLoc(before->getDebugLoc());
 
@@ -195,11 +192,8 @@ class ExplicitConsdes : public ModulePass {
                     continue;
                 }
 
-                if (call->isIndirectCall())
-                    continue;
-
                 Function *called = call->getCalledFunction();
-                if (!called)
+                if (!called) // indirect call
                     continue;
 
                 if (!isExit(called))
@@ -209,16 +203,17 @@ class ExplicitConsdes : public ModulePass {
                     dtorsBefore.push_back(call);
                 } else {
                     // look for __INSTR_mark_exit before this call
+#if LLVM_VERSION_MAJOR > 7
                     auto *prev = inst.getPrevNonDebugInstruction();
-                    auto *markCall = dyn_cast<CallInst>(prev);
+#else
+                    auto *prev = inst.getPrevNode();
+#endif
+                    auto *markCall = prev ? dyn_cast<CallInst>(prev) : nullptr;
                     if (!markCall)
                         continue;
 
-                    if (markCall->isIndirectCall())
-                        continue;
-
                     Function *markCalled = markCall->getCalledFunction();
-                    if (!markCalled)
+                    if (!markCalled) // indirect call
                         continue;
 
                     if (!isMarkExit(markCalled))
