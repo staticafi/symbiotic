@@ -9,6 +9,7 @@ from . skink import SymbioticTool as SkinkTool
 from . smack import SymbioticTool as SmackTool
 from . seahorn import SymbioticTool as SeahornTool
 from . nidhugg import SymbioticTool as NidhuggTool
+from . divine import SymbioticTool as DivineTool
 from . divinesvc import SymbioticTool as DivineSvcompTool
 from . ultimateautomizer import SymbioticTool as UltimateTool
 from . svcomp import SymbioticTool as SVCompTool
@@ -31,6 +32,7 @@ targets = {
     'smack':              SmackTool,
     'seahorn':            SeahornTool,
     'nidhugg':            NidhuggTool,
+    'divine':             DivineTool,
     'divine-svcomp':      DivineSvcompTool,
     'ultimateautomizer':  UltimateTool,
     'ultimate':           UltimateTool,
