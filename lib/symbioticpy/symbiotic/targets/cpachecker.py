@@ -240,6 +240,36 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         # do not link any functions
         opts.linkundef = []
 
+
+    def slicer_options(self):
+        """ Override slicer options: do not slice bodies of funs
+            that are slicing criteria. CBMC uses the assertions inside,
+            not the calls themselves.
+        """
+        if not self._options.full_instrumentation and\
+            self._options.property.signedoverflow():
+            return (['__symbiotic_check_overflow'], ['-criteria-are-next-instr'])
+
+        return super().slicer_options()
+
+    def instrumentation_options(self):
+        """
+        Returns a triple (d, c, l, x) where d is the directory
+        with configuration files, c is the configuration
+        file for instrumentation (or None if no instrumentation
+        should be performed), l is the
+        file with definitions of the instrumented functions
+        and x is True if the definitions should be linked after
+        instrumentation (and False otherwise)
+        """
+
+        if not self._options.full_instrumentation and\
+            self._options.property.signedoverflow():
+            return ('int_overflows',
+                    self._options.overflow_config_file or 'config-marker.json',
+                    'overflows-marker.c', False)
+        return super().instrumentation_options()
+
     def passes_before_verification(self):
         """
         Passes that should run before CPAchecker
