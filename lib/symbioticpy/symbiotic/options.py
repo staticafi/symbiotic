@@ -221,7 +221,7 @@ def parse_command_line():
                                     'statistics', 'working-dir-prefix=', 'sv-comp', 'test-comp',
                                     'overflow-with-clang', 'gen-ll', 'gen-c', 'test-suite=',
                                     'search-include-paths', 'replay-error', 'cc',
-                                    'report=',
+                                    'report=', 'no-replay-error',
                                     'unroll=', 'full-instrumentation', 'target-settings='])
                                    # add klee-params
     except getopt.GetoptError as e:
@@ -398,6 +398,8 @@ def parse_command_line():
             options.dump_env_only = True
         elif opt == '--replay-error':
             options.replay_error = True
+        elif opt == '--no-replay-error':
+            options.replay_error = False
         elif opt == '--dump-env-cmd':
             options.dump_env_only = True
             options.dump_env_cmd = True
@@ -511,6 +513,7 @@ where OPTS can be following:
     --statistics              Dump statistics about bitcode
     --working-dir-prefix      Where to create the temporary directory (defaults to /tmp)
     --replay-error            Try replaying a found error on non-sliced code
+    --no-replay-error         Do not replay a found error on non-sliced code (overrides --sv-comp)
     --search-include-paths    Try automatically finding paths with standard include directories
     --sv-comp                 Shortcut for SV-COMP settings (malloc-never-fails, etc.)
     --test-comp               Shortcut for TEST-COMP settings
