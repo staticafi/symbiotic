@@ -1,8 +1,7 @@
-try:
-    from benchexec.tools.smack import Tool as SmackTool
-except ImportError:
-    from .. benchexec.tools.smack import Tool as SmackTool
-
+#  try:
+#      from benchexec.tools.smack import Tool as SmackTool
+#  except ImportError:
+from .. benchexec.tools.smack import Tool as SmackTool
 from . tool import SymbioticBaseTool
 
 class SymbioticTool(SmackTool, SymbioticBaseTool):
@@ -17,7 +16,7 @@ class SymbioticTool(SmackTool, SymbioticBaseTool):
         self._memsafety = self._options.property.memsafety()
 
     def llvm_version(self):
-        return '3.9.1'
+        return '10.0.1'
 
     def set_environment(self, env, opts):
         """
