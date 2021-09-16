@@ -386,7 +386,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
        #    passes.append('-delete-undefined')
 
         # make external globals non-deterministic
-        passes.append('-internalize-globals')
+        if not self._options.sv_comp:
+            passes.append('-internalize-globals')
 
         return passes + super().passes_before_verification()
 
