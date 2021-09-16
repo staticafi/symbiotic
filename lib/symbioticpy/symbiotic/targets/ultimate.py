@@ -360,7 +360,7 @@ class UltimateTool(BaseTool):
         return False
 
     def _determine_result_with_propertyfile(self, returncode, returnsignal, output, is_timeout):
-        for line in map(str, output):
+        for line in map(lambda s: s.decode('utf-8', 'ignore'), output):
             if line.startswith('FALSE(valid-free)'):
                 return result.RESULT_FALSE_FREE
             elif line.startswith('FALSE(valid-deref)'):
