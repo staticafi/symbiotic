@@ -87,9 +87,9 @@ class KleeToolFullInstrumentation(KleeBase):
         # instrument our malloc -- either the version that can fail,
         # or the version that can not fail.
         passes = []
-        if self._options.malloc_never_fails:
-            passes.append('-instrument-alloc-nf')
-        else:
+        if not self._options.malloc_never_fails:
+       #    passes.append('-instrument-alloc-nf')
+       #else:
             passes.append('-instrument-alloc')
 
         # remove/replace the rest of undefined functions
