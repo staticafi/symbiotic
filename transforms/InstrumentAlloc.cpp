@@ -53,14 +53,13 @@ static RegisterPass<InstrumentAllocNeverFails> INSTALLOCNF("instrument-alloc-nf"
                                                            "allocation never fail");
 char InstrumentAllocNeverFails::ID;
 
-static unsigned allocsite_counter = 0;
 static void replace_malloc(Module *M, CallInst *CI, bool never_fails)
 {
   Value *C = nullptr;
 
   if (never_fails) {
-    auto X = M->getOrInsertFunction("__VERIFIER_malloc0", CI->getType(), CI->getOperand(0)->getType(),
-                                    Type::getInt32Ty(M->getContext()) // identifier
+    auto X = M->getOrInsertFunction("__VERIFIER_malloc0", CI->getType(),
+                                    CI->getOperand(0)->getType()
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
@@ -71,8 +70,7 @@ static void replace_malloc(Module *M, CallInst *CI, bool never_fails)
     C = X;
 #endif
   } else {
-    auto X = M->getOrInsertFunction("__VERIFIER_malloc", CI->getType(), CI->getOperand(0)->getType(),
-                                    Type::getInt32Ty(M->getContext()) // identifier
+    auto X = M->getOrInsertFunction("__VERIFIER_malloc", CI->getType(), CI->getOperand(0)->getType()
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
@@ -89,8 +87,6 @@ static void replace_malloc(Module *M, CallInst *CI, bool never_fails)
 
   std::vector<Value *> args;
   args.push_back(CI->getOperand(0));
-  // identifier
-  args.push_back(ConstantInt::get(Type::getInt32Ty(M->getContext()), ++allocsite_counter));
 
   CallInst *new_CI = CallInst::Create(Malloc, args);
 
@@ -111,8 +107,7 @@ static void replace_calloc(Module *M, CallInst *CI, bool never_fails)
 {
   Value *C = nullptr;
   if (never_fails) {
-    auto X = M->getOrInsertFunction("__VERIFIER_calloc0", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(),
-                                    Type::getInt32Ty(M->getContext()) // identifier
+    auto X = M->getOrInsertFunction("__VERIFIER_calloc0", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType()
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
@@ -123,8 +118,7 @@ static void replace_calloc(Module *M, CallInst *CI, bool never_fails)
     C = X;
 #endif
   } else {
-    auto X = M->getOrInsertFunction("__VERIFIER_calloc", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType(),
-                                    Type::getInt32Ty(M->getContext()) // identifier
+    auto X = M->getOrInsertFunction("__VERIFIER_calloc", CI->getType(), CI->getOperand(0)->getType(), CI->getOperand(1)->getType()
 #if LLVM_VERSION_MAJOR < 5
     , nullptr
 #endif
@@ -142,8 +136,6 @@ static void replace_calloc(Module *M, CallInst *CI, bool never_fails)
   std::vector<Value *> args;
   args.push_back(CI->getOperand(0));
   args.push_back(CI->getOperand(1));
-  // identifier
-  args.push_back(ConstantInt::get(Type::getInt32Ty(M->getContext()), ++allocsite_counter));
 
   CallInst *new_CI = CallInst::Create(Calloc, args);
 
