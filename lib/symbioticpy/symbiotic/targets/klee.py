@@ -170,7 +170,7 @@ class KleeToolFullInstrumentation(KleeBase):
             return 'ERROR (no output)'
 
         found = []
-        for line in output:
+        for line in map(str, output):
             fnd = self._parse_klee_output_line(line)
             if fnd:
                 found.append(fnd)
