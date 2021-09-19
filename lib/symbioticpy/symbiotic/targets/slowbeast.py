@@ -100,7 +100,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         no_errors = False
         memerr = False
         asserterr = False
-        for line in output:
+        for line in map(str, output):
             if 'assertion failed!' in line:
                 asserterr = True
             elif 'assertion failure' in line:
