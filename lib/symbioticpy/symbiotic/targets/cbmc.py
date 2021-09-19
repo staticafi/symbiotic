@@ -117,7 +117,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         # parameters copied from the SV-COMP wrapper script,
         options.extend(['--stop-on-fail',
                         '--object-bits', '11',
-                        '--stack-trace'])
+                        '--stack-trace',
+                        '--verbosity', '5'])
         if self._options.is32bit:
             options.append('--32')
 
