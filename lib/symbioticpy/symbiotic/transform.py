@@ -95,18 +95,11 @@ class UnsuppWatch(ProcessWatch):
         self._ok = not UnsuppWatch.unsupported_call.match(uline)
 
 def check_instrumentation_trivial_result(lines):
-#  Info: Number of inserted calls:
-#  Info:   0 of __INSTR_check_bounds (blocked 43)
-#  Info:   0 of __INSTR_check_leaks (blocked 1)
-#  Info:   0 of __INSTR_check_pointer (blocked 60)
-#  Info:   0 of __INSTR_fail (blocked 43)
-#  Info:   0 of __INSTR_remember (blocked 10)
     inscalls = False
     instrnum = 0
     for line in lines:
         if inscalls:
-            if line.startswith(b'Info:') and\
-                    b' of ' in line and b'blocked' in line:
+            if line.startswith(b'Info:') and b' of ' in line:
                 parts = line.split()
                 try:
                     num = int(parts[1])
