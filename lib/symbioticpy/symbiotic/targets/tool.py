@@ -112,6 +112,17 @@ class SymbioticBaseTool(object):
 
             return (None, None, None, None)
         else:
+            # NOTE: we do not want to link the functions with memsafety/cleanup
+            # because then the optimizations could remove the calls to markers
+            if self._options.property.memsafety():
+                return ('memsafety',
+                        self._options.memsafety_config_file or 'config-marker.json',
+                        'marker.c', False)
+
+            if self._options.property.memcleanup():
+                return ('memsafety', 'config-marker-memcleanup.json',
+                        'marker.c', False)
+
             if self._options.property.signedoverflow():
                 # default config file is 'config.json'
                 return ('int_overflows',
@@ -123,20 +134,6 @@ class SymbioticBaseTool(object):
 
             if self._options.property.nullderef():
                 return ('null_deref', 'config.json', 'null_deref.c', False)
-
-            if self._options.noslice:
-                # no point in marking instructions without slicing
-                return (None, None, None, None)
-            # NOTE: we do not want to link the functions with memsafety/cleanup
-            # because then the optimizations could remove the calls to markers
-            if self._options.property.memsafety():
-                return ('memsafety',
-                        self._options.memsafety_config_file or 'config-marker.json',
-                        'marker.c', False)
-
-            if self._options.property.memcleanup():
-                return ('memsafety', 'config-marker-memcleanup.json',
-                        'marker.c', False)
 
             return (None, None, None, None)
 
