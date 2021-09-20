@@ -94,33 +94,6 @@ class UnsuppWatch(ProcessWatch):
         dbg(uline, domain='prepare', print_nl=False)
         self._ok = not UnsuppWatch.unsupported_call.match(uline)
 
-def check_instrumentation_trivial_result(lines):
-#  Info: Number of inserted calls:
-#  Info:   0 of __INSTR_check_bounds (blocked 43)
-#  Info:   0 of __INSTR_check_leaks (blocked 1)
-#  Info:   0 of __INSTR_check_pointer (blocked 60)
-#  Info:   0 of __INSTR_fail (blocked 43)
-#  Info:   0 of __INSTR_remember (blocked 10)
-    inscalls = False
-    instrnum = 0
-    for line in lines:
-        if inscalls:
-            if line.startswith(b'Info:') and\
-                    b' of ' in line and b'blocked' in line:
-                parts = line.split()
-                try:
-                    num = int(parts[1])
-                except ValueError:
-                    return False
-                instrnum += num
-        else:
-            # check predator
-            if b'PredatorPlugin: Predator found no errors' in line:
-                return True
-            if b'Info: Number of inserted calls' in line:
-                inscalls = True
-    return inscalls and instrnum == 0
-
 def get_optlist_before(optlevel):
     from . optimizations import optimizations
     lst = []
@@ -340,6 +313,7 @@ class SymbioticCC(object):
         assert definitionsbc
 
         self._get_stats('Before instrumentation ')
+        print_stdout('INFO: Starting instrumentation', color='WHITE')
 
         output = '{0}-inst.bc'.format(self.curfile[:self.curfile.rfind('.')])
         if self.options.instrumentation_timeout > 0:
@@ -355,13 +329,11 @@ class SymbioticCC(object):
         watch = InstrumentationWatch()
 
         process = ProcessRunner()
-        print_stdout('INFO: Starting instrumentation', color='WHITE')
         retval = process.run(cmd, watch)
-        print_elapsed_time('INFO: Instrumentation time', color='WHITE')
-
         if retval != 0:
-            if check_instrumentation_trivial_result(watch.getLines()):
-                raise SymbioticExceptionalResult('true')
+            for line in watch.getLines():
+                if b'PredatorPlugin: Predator found no errors' in line:
+                    raise SymbioticExceptionalResult('true')
 
             for line in watch.getLines():
                 print_stderr(line.decode('utf-8'),
@@ -375,14 +347,9 @@ class SymbioticCC(object):
                 self.options.optlevel = []
             else:
                 raise SymbioticException('Instrumenting the code failed')
-            print_stderr('INFO: Instrumentation FAILED')
+            print_elapsed_time('INFO: Instrumentation [FAILED] time', color='WHITE')
         else:
-            # do not continue the analysis if instrumentation did nothing
-            # FIXME: what if it may do nothing?
-            if self.options.sv_comp and\
-                check_instrumentation_trivial_result(watch.getLines()):
-                dbg("Instrumentation inserted no checks, we're safe")
-                raise SymbioticExceptionalResult('true')
+            print_elapsed_time('INFO: Instrumentation time', color='WHITE')
             self.curfile = output
             self._save_ll()
 
