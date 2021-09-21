@@ -190,7 +190,7 @@ class SymbioticBaseTool(object):
 
     def passes_before_slicing(self):
         if self._options.property.termination():
-            return ['-find-exits']
+            return ['-find-exits', '-no-change-assumes']
         return []
 
     def passes_before_verification(self):

@@ -250,7 +250,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if not self._options.full_instrumentation and prp.signedoverflow():
             return (['__symbiotic_check_overflow'], ['-criteria-are-next-instr'])
         if prp.termination():
-            return (['__VERIFIER_silent_exit'], [])
+            return (['__VERIFIER_silent_exit'], ['-cda=ntscd-legacy'])
 
         return super().slicer_options()
 
