@@ -294,5 +294,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             return
 
         output = symbiotic.curfile + '.c'
-        runcmd(['llvm2c', symbiotic.curfile, '--o', output], DbgWatch('all'))
+        runcmd(['llvm2c', symbiotic.curfile,
+                '--no-function-call-casts', '--o', output], DbgWatch('all'))
         symbiotic.curfile = output
