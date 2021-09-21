@@ -131,6 +131,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         elif prp.signedoverflow():
             options.extend(['--signed-overflow-check',
                             '--no-assertions'])
+        elif prp.termination():
+            options.append('--no-self-loops-to-assumptions')
 
         return [executable] + options + tasks
 
