@@ -206,5 +206,7 @@ class SymbioticBaseTool(object):
                      '-delete-call', '__INSTR_mark_exit',
                      '-delete-call', '__symbiotic_keep_ptr']
                     )
+        elif prop.signedoverflow():
+            return ['-delete-call', '__symbiotic_check_overflow']
         return []
 
