@@ -25,8 +25,15 @@
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include <llvm/IR/DebugInfoMetadata.h>
+#include <llvm/Support/CommandLine.h>
 
 using namespace llvm;
+
+cl::opt<bool> no_change_assumes("no-change-assumes",
+        cl::desc("Do not replace __VERIFIER_assume with __INSTR_check_assume\n"),
+        cl::init(false));
+
+
 
 bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2);
 
@@ -80,7 +87,12 @@ bool FindExits::processBlock(BasicBlock& B) {
         auto new_CI = CallInst::Create(exitF, {ConstantInt::get(argTy, 0)});
         CloneMetadata(&BI, new_CI);
         new_CI->insertBefore(&BI);
+        modified = true;
     }
+  }
+
+  if (no_change_assumes) {
+    return modified;
   }
 
   // Change __VERIFIER_assume for __INSTR_check_assume,
