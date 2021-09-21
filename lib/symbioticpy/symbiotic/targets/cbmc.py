@@ -117,7 +117,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         # parameters copied from the SV-COMP wrapper script,
         options.extend(['--stop-on-fail',
                         '--object-bits', '11',
-                        '--stack-trace',
+                        '--compact-trace',
                         '--verbosity', '5'])
         if self._options.is32bit:
             options.append('--32')
@@ -166,10 +166,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                     else:
                         status = result.RESULT_TRUE_PROP
                 elif "VERIFICATION FAILED" in line:
-                    if self._options.property.termination():
+                    if prp.termination():
                         status = result.RESULT_FALSE_TERMINATION
-                    elif self._options.property.unreachcall():
+                    elif prp.unreachcall():
                         status = result.RESULT_FALSE_REACH
+                    elif prp.signedoverflow():
+                        status = result.RESULT_FALSE_OVERFLOW
                     # sanity check
                     sw = status.lower().startswith
                     if not (sw('false') or sw('unkown')):
