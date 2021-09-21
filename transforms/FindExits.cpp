@@ -33,7 +33,9 @@ cl::opt<bool> no_change_assumes("no-change-assumes",
         cl::desc("Do not replace __VERIFIER_assume with __INSTR_check_assume\n"),
         cl::init(false));
 
-
+cl::opt<bool> use_exit("use-exit",
+        cl::desc("Use calls to __VERIFIER_exit() instead of to __VERIFIER_silent_exit\n"),
+        cl::init(false));
 
 bool CloneMetadata(const llvm::Instruction *i1, llvm::Instruction *i2);
 
@@ -67,17 +69,32 @@ bool FindExits::processBlock(BasicBlock& B) {
   bool isMain = B.getParent()->getName().equals("main");
 
   Type *argTy = Type::getInt32Ty(Ctx);
-  auto exitC = M->getOrInsertFunction("__VERIFIER_silent_exit",
-                                       Type::getVoidTy(Ctx), argTy
+  Function *exitF = nullptr;
+  if (use_exit) {
+    auto exitC = M->getOrInsertFunction("__VERIFIER_exit",
+                                         Type::getVoidTy(Ctx), argTy
 #if LLVM_VERSION_MAJOR < 5
-                                       , nullptr
+                                         , nullptr
 #endif
                                        );
 #if LLVM_VERSION_MAJOR >= 9
-        auto exitF = cast<Function>(exitC.getCallee());
+    exitF = cast<Function>(exitC.getCallee());
 #else
-        auto exitF = cast<Function>(exitC);
+    exitF = cast<Function>(exitC);
 #endif
+  } else {
+    auto exitC = M->getOrInsertFunction("__VERIFIER_silent_exit",
+                                         Type::getVoidTy(Ctx), argTy
+#if LLVM_VERSION_MAJOR < 5
+                                         , nullptr
+#endif
+                                       );
+#if LLVM_VERSION_MAJOR >= 9
+    exitF = cast<Function>(exitC.getCallee());
+#else
+    exitF = cast<Function>(exitC);
+#endif
+  }
   exitF->addFnAttr(Attribute::NoReturn);
 
   if (succ_begin(&B) == succ_end(&B)) {
