@@ -280,6 +280,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 ["-lowerswitch", "-simplifycfg", "-reg2mem", "-simplifycfg"]
 
     def actions_before_verification(self, symbiotic):
+        # link our specific funs
+        self._options.linkundef = ['verifier']
+        symbiotic.link_undefined(only_func=['__VERIFIER_silent_exit','__VERIFIER_exit'])
+        self._options.linkundef = []
+
         if self._use_llvm_backend:
             return
 
