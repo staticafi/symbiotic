@@ -131,6 +131,13 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         # LLVM backend in CPAchecker does not handle switches correctly yet
         return super().passes_before_verification() + ["-reg2mem", "-lowerswitch", "-simplifycfg"]
 
+
+    def passes_before_slicing(self):
+        if self._options.property.termination():
+            return ['-find-exits']
+        return []
+
+
     def actions_before_verification(self, symbiotic):
         output = symbiotic.curfile + '.c'
         runcmd(['llvm2c', symbiotic.curfile, '--o', output],
