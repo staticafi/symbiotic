@@ -167,7 +167,8 @@ class SymbioticBaseTool(object):
             # have explicitly also __assert_fail, because otherwise it is going
             # to be sliced away from __INSTR_fail
             return (['__INSTR_fail','__assert_fail',
-                     '__VERIFIER_silent_exit', '__INSTR_check_assume'],
+                     '__VERIFIER_silent_exit', '__VERIFIER_exit',
+                     '__INSTR_check_assume'],
                     ['-cd-alg=ntscd-legacy'])
 
         if prop.nullderef():
@@ -187,10 +188,9 @@ class SymbioticBaseTool(object):
 
         return ([],[])
 
-
     def passes_before_slicing(self):
         if self._options.property.termination():
-            return ['-find-exits', '-no-change-assumes']
+            return ['-find-exits', '-use-exit', '-no-change-assumes']
         return []
 
     def passes_before_verification(self):

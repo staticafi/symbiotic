@@ -219,7 +219,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def passes_before_slicing(self):
         if self._options.property.termination():
-            return ['-find-exits']
+            return ['-find-exits', '-use-exit']
         return []
 
     def actions_before_verification(self, symbiotic):
