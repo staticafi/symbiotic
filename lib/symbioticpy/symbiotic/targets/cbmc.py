@@ -216,7 +216,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def actions_before_verification(self, symbiotic):
         # link our specific funs
         self._options.linkundef = ['verifier']
-        symbiotic.link_undefined(only_func=['__VERIFIER_silent_exit'])
+        symbiotic.link_undefined(only_func=['__VERIFIER_silent_exit','__VERIFIER_exit'])
         self._options.linkundef = []
         # translate to C
         output = symbiotic.curfile + '.c'
