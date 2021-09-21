@@ -371,6 +371,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     #      else:
     #          dbg('Checking the module failed!')
 
+    def passes_before_slicing(self):
+        if self._options.property.termination():
+            return ['-find-exits']
+        return []
+
     def passes_before_verification(self):
         passes = []
 
