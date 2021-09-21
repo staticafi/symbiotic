@@ -71,9 +71,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             that are slicing criteria. CBMC uses the assertions inside,
             not the calls themselves.
         """
-        if not self._options.full_instrumentation and\
-            self._options.property.signedoverflow():
+        prp = self._options.property
+        if not self._options.full_instrumentation and prp.signedoverflow():
             return (['__symbiotic_check_overflow'], ['-criteria-are-next-instr'])
+        if prp.termination():
+            return (['__VERIFIER_silent_exit'], [])
 
         sc, opts = super().slicer_options()
         return (sc, opts + ['--preserved-functions={0}'.format(','.join(sc))])
@@ -94,6 +96,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             return ('int_overflows',
                     self._options.overflow_config_file or 'config-marker.json',
                     'overflows-marker.c', False)
+        if prp.termination():
+            # we do not want any instrumentation here
+            return (None, None, None, None)
         return super().instrumentation_options()
 
     def verifiers(self):
