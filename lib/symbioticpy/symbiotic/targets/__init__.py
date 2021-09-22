@@ -17,6 +17,7 @@ from . testcomp import SymbioticTool as TestCompTool
 from . slowbeast import SymbioticTool as SlowbeastTool
 from . predatorhp import SymbioticTool as PredatorHPTool
 from . predator import SymbioticTool as PredatorTool
+from . twols import SymbioticTool as TwolsTool
 from . cc import CCTarget
 
 targets = {
@@ -44,6 +45,7 @@ targets = {
     'sb':                 SlowbeastTool,
     'predatorhp':         PredatorHPTool,
     'predator':           PredatorTool,
+    '2ls':                TwolsTool,
     'cc':                 CCTarget
 }
 
