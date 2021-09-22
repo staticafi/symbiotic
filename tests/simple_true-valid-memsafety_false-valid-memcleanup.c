@@ -1,3 +1,4 @@
+void __VERIFIER_error(void) __attribute__((noreturn));
 int main(void) {
 	int *x = malloc(4);
 	__VERIFIER_error();
