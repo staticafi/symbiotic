@@ -2,6 +2,7 @@ from . klee import SymbioticTool as KleeTool
 from . ceagle import SymbioticTool as CeagleTool
 from . cbmc import SymbioticTool as CbmcTool
 from . cbmcsvcomp import SymbioticTool as CbmcSVCOMPTool
+from . esbmc import SymbioticTool as EsbmcTool
 from . ikos import SymbioticTool as IkosTool
 from . map2check import SymbioticTool as Map2CheckTool
 from . cpachecker import SymbioticTool as CpaTool
@@ -26,6 +27,7 @@ targets = {
     'ikos':               IkosTool,
     'cbmc':               CbmcTool,
     'cbmc-svcomp':        CbmcSVCOMPTool,
+    'esbmc':              EsbmcTool,
     'map2check':          Map2CheckTool,
     'cpachecker':         CpaTool,
     'cpa':                CpaTool,
