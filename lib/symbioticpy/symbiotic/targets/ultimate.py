@@ -367,6 +367,8 @@ class UltimateTool(BaseTool):
                 return result.RESULT_FALSE_DEREF
             elif line.startswith('FALSE(valid-memtrack)'):
                 return result.RESULT_FALSE_MEMTRACK
+            elif line.startswith('FALSE(valid-memcleanup)'):
+                return result.RESULT_FALSE_MEMCLEANUP
             elif line.startswith('FALSE(TERM)'):
                 return result.RESULT_FALSE_TERMINATION
             elif line.startswith('FALSE(OVERFLOW)'):
