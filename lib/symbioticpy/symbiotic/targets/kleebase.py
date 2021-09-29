@@ -383,14 +383,20 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if not self._options.explicit_symbolic:
             passes.append('-initialize-uninitialized')
 
-       #if self._options.undef_retval_nosym:
-       #    passes.append('-delete-undefined-nosym')
-       #else:
-       #    passes.append('-delete-undefined')
-
         # make external globals non-deterministic
         if not self._options.sv_comp:
             passes.append('-internalize-globals')
+
+        # for the memsafety property, make functions behave like they have
+        # side-effects, because LLVM optimizations could remove them otherwise,
+        # even though they contain calls to assert
+        if self._options.property.memsafety():
+            passes.append('-remove-readonly-attr')
+        elif self._options.property.termination():
+            passes.append('-instrument-nontermination')
+            passes.append('-instrument-nontermination-mark-header')
+
+
 
         return passes + super().passes_before_verification()
 
