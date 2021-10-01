@@ -911,6 +911,8 @@ class SymbioticCC(object):
         #################### #################### ###################
         self.postprocessing()
 
+        self._get_stats('Before verification ')
+
         if not self.options.final_output is None:
             # copy the file to final_output
             try:
