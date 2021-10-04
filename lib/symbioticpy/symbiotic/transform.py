@@ -456,8 +456,7 @@ class SymbioticCC(object):
             # if we linked someting, try get undefined again,
             # because the functions may have added some new undefined
             # functions
-            if not only_func:
-                self._rec_link_undefined()
+            self._rec_link_undefined()
 
     def link_undefined(self, only_func=[]):
         if not self.options.linkundef:

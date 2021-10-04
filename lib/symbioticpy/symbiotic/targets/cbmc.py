@@ -215,7 +215,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         Passes that should run before CPAchecker
         """
         # LLVM backend in CPAchecker does not handle switches correctly yet
-        return super().passes_before_verification() + ["-reg2mem", "-lowerswitch", "-simplifycfg"]
+        passes = []
+        if self._options.property.termination():
+            passes.append('-instrument-nontermination')
+        passes.extend(["-reg2mem", "-lowerswitch", "-simplifycfg"])
+        return super().passes_before_verification() + passes
 
     def passes_before_slicing(self):
         if self._options.property.termination():
@@ -224,9 +228,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def actions_before_verification(self, symbiotic):
         # link our specific funs
+        old_undf = self._options.linkundef
         self._options.linkundef = ['verifier']
-        symbiotic.link_undefined(only_func=['__VERIFIER_silent_exit','__VERIFIER_exit'])
-        self._options.linkundef = []
+        funs = ['__VERIFIER_silent_exit', '__VERIFIER_exit',
+                '__INSTR_check_nontermination', '__INSTR_fail']
+        symbiotic.link_undefined(only_func=funs)
+        self._options.linkundef = old_undf
         # translate to C
         output = symbiotic.curfile + '.c'
         runcmd(['llvm2c', symbiotic.curfile, '--add-includes', '--o', output],
