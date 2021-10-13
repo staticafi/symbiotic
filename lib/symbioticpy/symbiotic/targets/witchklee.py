@@ -93,10 +93,15 @@ class SymbioticTool(KleeBase):
         if output is None:
             return 'ERROR (no output)'
 
+        parsing_failed = None
         for line in output:
+            if b'Parsing failed' in line:
+                parsing_failed = line.strip().split(b':')[-1].strip().decode('utf-8')
             if b'Valid violation witness' in line:
                 return result.RESULT_FALSE_REACH
         if returncode != 0:
+            if parsing_failed:
+                return f'{result.RESULT_ERROR} ({parsing_failed})'
             return f'{result.RESULT_ERROR} (exitcode {returncode})'
         if returnsignal != 0:
             return f'{result.RESULT_ERROR} (signal {returnsignal})'
