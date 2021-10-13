@@ -151,16 +151,10 @@ class SymbioticBaseTool(object):
             return (['__VERIFIER_error','__assert_fail'],[])
 
         prop = self._options.property
-        if prop.memsafety():
+        if prop.memsafety() or prop.memcleanup():
             # slice with respect to the memory handling operations
             return (['__INSTR_mark_pointer','__INSTR_mark_free',
                     '__INSTR_mark_allocation','__INSTR_mark_exit'],
-                    ['-memsafety'])
-
-        elif prop.memcleanup():
-            # slice with respect to the memory handling operations
-            # (exit causes leaks)
-            return (['__INSTR_mark_free','__INSTR_mark_allocation','__INSTR_mark_exit'],
                     ['-memsafety'])
 
         if prop.termination():
@@ -205,6 +199,7 @@ class SymbioticBaseTool(object):
             # slice with respect to the memory handling operations
             return (['-delete-calls',
                      '-delete-call', '__INSTR_mark_pointer',
+                     '-delete-call', '__INSTR_mark_allocation',
                      '-delete-call', '__INSTR_mark_free',
                      '-delete-call', '__INSTR_mark_exit',
                      '-delete-call', '__symbiotic_keep_ptr']
