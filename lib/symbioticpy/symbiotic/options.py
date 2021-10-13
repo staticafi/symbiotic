@@ -98,6 +98,8 @@ class SymbioticOptions(object):
 
         self.sv_comp = False
         self.test_comp = False
+        self.witness_check = False
+        self.witness_check_file = None
 
         # These were globals previously, move them into stand-alone argparse
         # parser once we switch to argparse
@@ -113,6 +115,24 @@ def _remove_linkundef(options, what):
         options.linkundef.remove(what)
     except ValueError:
         pass
+
+def set_witness_check(opts):
+    opts.witness_check = True
+    opts.sv_comp = True
+    opts.nowitness = True
+    opts.no_integrity_check = True
+    opts.malloc_never_fails = True
+    opts.explicit_symbolic = True
+    opts.search_include_paths = False
+    opts.linkundef.append('svcomp')
+    opts.CFLAGS.append("-fbracket-depth=-1")
+    opts.replay_error = False
+    opts.tool_name='witch-klee'
+    opts.exit_on_error = False
+    opts.noslice = True
+    opts.report_type.append('sv-comp')
+
+    enable_debug('all')
 
 def set_svcomp(opts):
     opts.sv_comp = True
@@ -222,7 +242,8 @@ def parse_command_line():
                                     'overflow-with-clang', 'gen-ll', 'gen-c', 'test-suite=',
                                     'search-include-paths', 'replay-error', 'cc',
                                     'report=', 'no-replay-error',
-                                    'unroll=', 'full-instrumentation', 'target-settings='])
+                                    'unroll=', 'full-instrumentation', 'target-settings=',
+                                    'witness-check='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -375,6 +396,9 @@ def parse_command_line():
             options.tool_params = arg.split()
         elif opt == '--target-settings':
             options.target_settings = arg.split()
+        elif opt == '--witness-check':
+            options.witness_check_file = arg
+            set_witness_check(options)
         elif opt == '--link':
             options.link_files += arg.split(',')
         elif opt == '--save-files':
