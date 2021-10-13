@@ -8,7 +8,7 @@ def get_versions():
 
     # the numbers must be separated by '-, otherwise it will
     # break the tool-module in benchexec
-    VERSION='8.0.0-pre'
+    VERSION='8.0.0'
     try:
         from . versions import versions, build_types
         from . versions import llvm_version as LLVM_VERSION
