@@ -322,10 +322,11 @@ class SymbioticTool(KleeBase):
                cmd.append('-max-time={0}'.format(opts.timeout))
 
         if prop.memsafety():
-            if opts.sv_comp:
-                cmd.append('-check-leaks')
-            else: # if not in SV-COMP, consider any unfreed memory as a leak
-                cmd.append('-check-memcleanup')
+            cmd.append('-check-leaks')
+           #if opts.sv_comp:
+           #    cmd.append('-check-leaks')
+           #else: # if not in SV-COMP, consider any unfreed memory as a leak
+           #    cmd.append('-check-memcleanup')
         elif prop.memcleanup():
             cmd.append('-check-memcleanup')
         elif prop.unreachcall():
