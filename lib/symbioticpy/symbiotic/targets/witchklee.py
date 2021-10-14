@@ -29,6 +29,7 @@ except ImportError:
     import symbiotic.benchexec.util as util
     import symbiotic.benchexec.result as result
 
+from symbiotic.exceptions import SymbioticException
 from . kleebase import SymbioticTool as KleeBase
 
 class SymbioticTool(KleeBase):
@@ -81,6 +82,8 @@ class SymbioticTool(KleeBase):
         if opts.exit_on_error:
             print("Witch-KLEE does not support -exit-on-error")
 
+        if self._options.witness_check_file is None:
+            raise SymbioticException("Witch-KLEE needs a witness (--witness-check=<witness>)")
         return cmd + options + tasks + self._options.argv + [self._options.witness_check_file]
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
@@ -107,4 +110,28 @@ class SymbioticTool(KleeBase):
             return f'{result.RESULT_ERROR} (signal {returnsignal})'
 
         return result.RESULT_UNKNOWN
+
+
+    def set_environment(self, env, opts):
+        """
+        Set environment for the tool
+        """
+        if opts.devel_mode:
+            env.prepend('PATH', '{0}/witch-klee/build-{1}/bin'.\
+                        format(env.symbiotic_dir, self.llvm_version()))
+            # XXX: we must take the runtime libraries from the install directory
+            # because we have them compiled for 32-bit and 64-bit separately
+            #(in build, there's only one of them)
+            prefix = '{0}/install'.format(env.symbiotic_dir)
+        else:
+            prefix = '{0}'.format(env.symbiotic_dir)
+
+        if opts.is32bit:
+            env.prepend('KLEE_RUNTIME_LIBRARY_PATH',
+                         '{0}/llvm-{1}/witch-klee/lib32/klee/runtime'.\
+                         format(prefix, self.llvm_version()))
+        else:
+            env.prepend('KLEE_RUNTIME_LIBRARY_PATH',
+                        '{0}/llvm-{1}/witch-klee/lib/klee/runtime'.\
+                        format(prefix, self.llvm_version()))
 
