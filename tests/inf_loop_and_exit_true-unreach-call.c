@@ -1,3 +1,4 @@
+extern _Bool __VERIFIER_nondet_bool(void);
 int main(void) {
 	if (__VERIFIER_nondet_bool()) {
 		while(1){};
