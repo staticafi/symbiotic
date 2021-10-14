@@ -10,21 +10,22 @@ jobs:
       matrix:
         include:
           # Linux with GCC
-          # - {os: ubuntu-16.04, llvm: '3.9', compiler: gcc}
-          # - {os: ubuntu-16.04, llvm: '4.0', compiler: gcc}
+          # - {os: ubuntu-18.04, llvm: '3.9', compiler: gcc}
+          # - {os: ubuntu-18.04, llvm: '4.0', compiler: gcc}
           # - {os: ubuntu-18.04, llvm: '5.0', compiler: gcc}
           # - {os: ubuntu-18.04, llvm: '6.0', compiler: gcc}
           # - {os: ubuntu-18.04, llvm: 7, compiler: gcc}
-          # - {os: ubuntu-18.04, llvm: 8, compiler: gcc}
-          # - {os: ubuntu-18.04, llvm: 9, compiler: gcc}
-          # - {os: ubuntu-20.04, llvm: 10, compiler: gcc}
+          - {os: ubuntu-18.04, llvm: 8, compiler: gcc}
+          - {os: ubuntu-18.04, llvm: 9, compiler: gcc}
+          - {os: ubuntu-20.04, llvm: 10, compiler: gcc}
           # - {os: ubuntu-20.04, llvm: 11, compiler: gcc}
           # - {os: ubuntu-20.04, llvm: 12, compiler: gcc}
-          # - {os: ubuntu-20.04, llvm: 12, compiler: gcc, type: Debug}
+          # - {os: ubuntu-20.04, llvm: 13, compiler: gcc}
+          # - {os: ubuntu-20.04, llvm: 13, compiler: gcc, type: Debug}
 
           # Linux with Clang
-          # - {os: ubuntu-16.04, llvm: '3.9', compiler: clang}
-          # - {os: ubuntu-16.04, llvm: '4.0', compiler: clang}
+          # - {os: ubuntu-18.04, llvm: '3.9', compiler: clang}
+          # - {os: ubuntu-18.04, llvm: '4.0', compiler: clang}
           # - {os: ubuntu-18.04, llvm: '5.0', compiler: clang}
           # - {os: ubuntu-18.04, llvm: '6.0', compiler: clang}
           # - {os: ubuntu-18.04, llvm: 7, compiler: clang}
@@ -33,7 +34,8 @@ jobs:
           - {os: ubuntu-20.04, llvm: 10, compiler: clang}
           # - {os: ubuntu-20.04, llvm: 11, compiler: clang}
           # - {os: ubuntu-20.04, llvm: 12, compiler: clang}
-          # - {os: ubuntu-20.04, llvm: 12, compiler: clang, type: Debug}
+          # - {os: ubuntu-20.04, llvm: 13, compiler: clang}
+          # - {os: ubuntu-20.04, llvm: 13, compiler: clang, type: Debug}
 
     runs-on: ${{matrix.os}}
     steps:
@@ -42,17 +44,11 @@ jobs:
         with:
           submodules: true
 
-      - name: '[Focal + LLVM 11] Add repositories'
-        if: matrix.os == 'ubuntu-20.04' && matrix.llvm == 11
+      - name: '[Focal + LLVM 13] Add repositories'
+        if: matrix.os == 'ubuntu-20.04' && matrix.llvm == 13
         run: |
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-11 main"
-
-      - name: '[Focal + LLVM 12] Add repositories'
-        if: matrix.os == 'ubuntu-20.04' && matrix.llvm == 12
-        run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main"
+          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main"
 
       - name: Install dependencies
         run: |
@@ -60,6 +56,12 @@ jobs:
           sudo apt install ccache cmake clang-${{matrix.llvm}} \
                            llvm-${{matrix.llvm}}-dev libc6-dev-i386 \
                            libz3-dev
+
+          # FIXME: Remove when https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=996551
+          # is resolved.
+          if [[ "${{matrix.llvm}}" = "13" ]]; then
+            sudo apt install libomp-13-dev
+          fi
 
       - name: Set environment
         id: env
@@ -71,32 +73,56 @@ jobs:
             echo "BUILD_TYPE=RelWithDebInfo" >> $GITHUB_ENV
           fi
 
+          # Build with sanitizers
+          CFLAGS="-fsanitize=address,undefined -g -fno-omit-frame-pointer"
+          CXXFLAGS="-fsanitize=address,undefined -g -fno-omit-frame-pointer"
+          LDFLAGS="-fsanitize=address,undefined"
+
+          # TODO: Fail on UBSAN
+          # CFLAGS="-fno-sanitize-recover=all $CFLAGS"
+          # CXXFLAGS="-fno-sanitize-recover=all $CXXFLAGS"
+
           # Select compiler and set compiler flags
           if [[ "${{matrix.compiler}}" = "clang" ]]; then
-            echo "CC=clang-${{matrix.llvm}}" >> $GITHUB_ENV
-            echo "CXX=clang++-${{matrix.llvm}}" >> $GITHUB_ENV
-            # force coloured output
-            echo "CFLAGS=$CFLAGS -fcolor-diagnostics" >> $GITHUB_ENV
-            echo "CXXFLAGS=$CXXFLAGS -fcolor-diagnostics" >> $GITHUB_ENV
+            # Clang
+            CC="clang-${{matrix.llvm}}"
+            CXX="clang++-${{matrix.llvm}}"
+
+            # Use shared libasan otherwise LLVMsbt.so would be underlinked.
+            CFLAGS="-shared-libasan $CFLAGS"
+            CXXFLAGS="-shared-libasan $CXXFLAGS"
+
+            # Force coloured output
+            CFLAGS="-fcolor-diagnostics $CFLAGS"
+            CXXFLAGS="-fcolor-diagnostics $CXXFLAGS"
           else
-            echo "CC=gcc" >> $GITHUB_ENV
-            echo "CXX=g++" >> $GITHUB_ENV
-            # force coloured output
-            echo "CFLAGS=$CFLAGS -fdiagnostics-color" >> $GITHUB_ENV
-            echo "CXXFLAGS=$CXXFLAGS -fdiagnostics-color" >> $GITHUB_ENV
+            # GCC
+            CC="gcc"
+            CXX="g++"
+
+            # Force coloured output
+            CFLAGS="-fdiagnostics-color $CFLAGS"
+            CXXFLAGS="-fdiagnostics-color $CXXFLAGS"
           fi
 
-          # set up ccache
+          # Save the environment
+          echo "CC=$CC" >> $GITHUB_ENV
+          echo "CXX=$CXX" >> $GITHUB_ENV
+          echo "CFLAGS=$CFLAGS" >> $GITHUB_ENV
+          echo "CXXFLAGS=$CXXFLAGS" >> $GITHUB_ENV
+          echo "LDFLAGS=$LDFLAGS" >> $GITHUB_ENV
+
+          # Set up ccache
           sudo /usr/sbin/update-ccache-symlinks
           echo "/usr/lib/ccache" >> $GITHUB_PATH
 
-          # Xenial and Bionic do not create symlinks to versioned clang
+          # Bionic does not create symlinks to versioned clang
           sudo ln -sfr /usr/bin/ccache /usr/lib/ccache/clang-${{matrix.llvm}}
           sudo ln -sfr /usr/bin/ccache /usr/lib/ccache/clang++-${{matrix.llvm}}
           echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-          echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> $GITHUB_ENV
           echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
           echo "CCACHE_COMPRESSLEVEL=6" >> $GITHUB_ENV
+          echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> $GITHUB_ENV
           echo "CCACHE_MAXSIZE=400M" >> $GITHUB_ENV
           echo "::set-output name=timestamp::$(date -u -Iseconds)"
 
@@ -109,13 +135,29 @@ jobs:
 
       - name: Build Symbiotic
         run: |
-          ./system-build.sh llvm-config=$(which llvm-config-${{matrix.llvm}}) \
+          ./system-build.sh -j$(nproc) \
                             build-type=${BUILD_TYPE} \
-                            -j$(nproc)
+                            llvm-config=$(which llvm-config-${{matrix.llvm}})
 
       - name: Run tests
         run: |
-          make -C tests
+          if [[ "${{matrix.compiler}}" = "clang" ]]; then
+            # * libclang_rt.asan-x86_64.so must be loaded as the first library
+            # * other compiler_rt libraries are not in /usr/lib
+            # See https://systemd.io/TESTING_WITH_SANITIZERS for details.
+            export LD_PRELOAD="$(clang-${{matrix.llvm}} -print-file-name=libclang_rt.asan-x86_64.so)"
+            export LD_LIBRARY_PATH="$(dirname $LD_PRELOAD)"
+
+            # ASAN and UBSAN expect unversioned llvm-symbolizer in PATH.
+            export PATH="$(llvm-config-${{matrix.llvm}} --bindir):$PATH"
+          else
+            export LD_PRELOAD="$(gcc -print-file-name=libasan.so)"
+          fi
+
+          # Due to LD_PRELOAD above, leak sanitizer was reporting leaks
+          # literally in everything that was executed, e.g. make, shell,
+          # python and other tools that are not under our control.
+          ASAN_OPTIONS=detect_leaks=0 make -C tests
 
       - name: ccache statistics
         run: ccache -s
