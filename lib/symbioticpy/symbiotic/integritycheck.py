@@ -18,9 +18,8 @@ class IntegrityChecker(object):
     def _get_output(self, cmd):
         watch = ProcessWatch(1)
         retval = self._process.run(cmd, watch)
-        assert retval == 0
         lines = watch.getLines()
-        assert(len(lines) == 1)
+        assert retval == 0 and len(lines) == 1, '%s %d' % (lines, retval)
         return lines
 
 
