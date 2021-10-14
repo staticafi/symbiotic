@@ -43,7 +43,8 @@ def run_tests(test_files, prp, expected_result, args):
     global failure, force_color
     force_color = args.force_color
 
-    cmd = ['symbiotic', '--report=sv-comp', '--timeout=%d' % args.timeout]
+    cmd = ['symbiotic', '--no-integrity-check', '--exit-on-error',
+           '--report=sv-comp', '--timeout=%d' % args.timeout]
 
     if prp != 'reach':
         cmd.append('--prp=' + prp)

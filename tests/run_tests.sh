@@ -10,5 +10,5 @@ if [ -n "$CI" ]; then
   color='--color'
 fi
 
-./test_runner.py "$color" ./*.set
-./test_runner.py "$color" --32 ./*.set
+./test_runner.py $color ./*.set
+./test_runner.py $color --32 ./*.set
