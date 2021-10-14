@@ -2,11 +2,12 @@
 
 int main(void)
 {
-    char *ptr = malloc(0);
-    //char *ptr = realloc(NULL, 0);
+    // should behave as malloc(0), which returns
+    // either NULL or an object that cannot be dereferenced
+    char *ptr = realloc(NULL, 0);
     if (ptr == NULL)
         return EXIT_SUCCESS;
 
-    (void) *ptr;
+    *ptr = (_Bool)1;
     free(ptr);
 }
