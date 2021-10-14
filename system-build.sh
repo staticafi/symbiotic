@@ -61,6 +61,7 @@ OPTS=
 ARCHIVE="no"
 FULL_ARCHIVE="no"
 BUILD_KLEE="yes"
+BUILD_WITCH_KLEE="no"
 BUILD_PREDATOR="no"
 BUILD_LLVM2C='yes'
 LLVM_CONFIG=
@@ -88,6 +89,9 @@ while [ $# -gt 0 ]; do
 		;;
 		'no-klee')
 			BUILD_KLEE=no
+		;;
+		'witch-klee')
+			BUILD_WITCH_KLEE=yes
 		;;
 		'no-llvm2c')
 			BUILD_LLVM2C="no"
@@ -127,6 +131,11 @@ if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
 fi
 
+if [ -d witch-klee ]; then
+	echo "Found a build of witch-klee, turning its build on"
+	BUILD_WITCH_KLEE="yes"
+fi
+
 PHASE="checking system"
 
 HAVE_32_BIT_LIBS=$(if check_32_bit; then echo "yes"; else echo "no"; fi)
@@ -137,6 +146,11 @@ ENABLE_TCMALLOC=$(if check_tcmalloc; then echo "on"; else echo "off"; fi)
 if [ "$HAVE_32_BIT_LIBS" = "no" -a "$BUILD_KLEE" = "yes" ]; then
 	exitmsg "KLEE needs 32-bit libc headers to build 32-bit versions of runtime libraries. On Ubuntu, this is the package libc6-dev-i386 (or gcc-multilib), on Fedora-based systems it is glibc-devel.i686."
 fi
+
+if [ "$HAVE_32_BIT_LIBS" = "no" -a "$BUILD_WITCH_KLEE" = "yes" ]; then
+	exitmsg "KLEE needs 32-bit libc headers to build 32-bit versions of runtime libraries. On Ubuntu, this is the package libc6-dev-i386 (or gcc-multilib), on Fedora-based systems it is glibc-devel.i686."
+fi
+
 
 # Try to get the previous build type if no is given
 if [ -z "$BUILD_TYPE" ]; then
@@ -176,7 +190,7 @@ check()
 		MISSING="which"
 	fi
 
-	if [ "$BUILD_KLEE" = "yes" ]; then
+	if [ "$BUILD_KLEE" = "yes" -o "$BUILD_WITCH_KLEE" = "yes" ]; then
 		if ! which unzip &>/dev/null; then
 			echo "Need 'unzip' utility"
 			MISSING="unzip $MISSING"
@@ -214,6 +228,10 @@ check()
 	fi
 
 	if [ "$BUILD_KLEE" = "yes" -a "$HAVE_Z3" = "no" ]; then
+		exitmsg "KLEE needs Z3"
+	fi
+
+	if [ "$BUILD_WITCH_KLEE" = "yes" -a "$HAVE_Z3" = "no" ]; then
 		exitmsg "KLEE needs Z3"
 	fi
 }
@@ -390,6 +408,19 @@ fi
 if [ "`pwd`" != $ABS_SRCDIR ]; then
 	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
 fi
+
+######################################################################
+#   Which-KLEE
+######################################################################
+PHASE="building Which-KLEE"
+if [ $FROM -le 4  -a "$BUILD_WITCH_KLEE" = "yes" ]; then
+	source scripts/build-witch-klee.sh
+fi
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
 
 ######################################################################
 #   Predator
