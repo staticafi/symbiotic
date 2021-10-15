@@ -7,8 +7,8 @@ apt-get update
 PACKAGES="curl wget rsync make cmake unzip gcc-multilib xz-utils python zlib1g-dev"
 
 # install clang if there is not suitable compiler
-if ! which g++ &>/dev/null; then
-	if ! which clang++ &>/dev/null; then
+if ! g++ --version &>/dev/null; then
+	if ! clang++ --version &>/dev/null; then
 		PACKAGES="$PACKAGES clang"
 	fi
 fi
