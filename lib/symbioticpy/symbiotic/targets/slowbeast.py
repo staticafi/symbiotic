@@ -140,3 +140,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if returnsignal:
             return f"{result.RESULT_ERROR}(signal {returnsignal})"
         return result.RESULT_UNKNOWN
+
+    def set_environment(self, env, opts):
+        env.prepend('PATH', '{0}/slowbeast'.format(env.symbiotic_dir, self.llvm_version()))
