@@ -125,6 +125,8 @@ class SymbioticTool(KleeBase):
             prefix = '{0}/install'.format(env.symbiotic_dir)
         else:
             prefix = '{0}'.format(env.symbiotic_dir)
+            env.prepend('PATH', '{0}/llvm-{1}/witch-klee/bin'.format(env.symbiotic_dir, self.llvm_version()))
+            env.prepend('LD_LIBRARY_PATH', '{0}/llvm-{1}/witch-klee/lib'.format(env.symbiotic_dir, self.llvm_version()))
 
         if opts.is32bit:
             env.prepend('KLEE_RUNTIME_LIBRARY_PATH',
