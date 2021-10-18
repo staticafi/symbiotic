@@ -50,7 +50,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         prp = self._options.property
         if prp.unreachcall():
             return ((KleeTool(self._options), None, 222),
-                    (SlowbeastTool(self._options), ['-kind'], None),
+                    (SlowbeastTool(self._options), ['-bself'], None),
                     # if slowbeast crashes, run KLEE w/o timeout
                     (KleeTool(self._options), None, None),
                     # slowbeast  got better support for floats, so if KLEE
