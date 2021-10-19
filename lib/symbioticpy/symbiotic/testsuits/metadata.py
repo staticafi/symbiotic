@@ -96,7 +96,7 @@ class MetadataWriter(object):
         ET.SubElement(self._metadata, 'architecture').text = arch
         ET.SubElement(self._metadata, 'entryfunction').text = 'main'
         ET.SubElement(self._metadata, 'creationtime').text =\
-            '{date:%Y-%m-%d %T}'.format(date=datetime.datetime.utcnow())
+            '{date:%Y-%m-%d %T}Z'.format(date=datetime.datetime.utcnow())
 
     def dump(self):
         if no_lxml:
