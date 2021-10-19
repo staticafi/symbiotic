@@ -60,6 +60,7 @@ OPTS=
 
 ARCHIVE="no"
 FULL_ARCHIVE="no"
+ARCHIVE_PREFIX="symbiotic/"
 BUILD_KLEE="yes"
 BUILD_WITCH_KLEE="no"
 BUILD_PREDATOR="no"
@@ -112,6 +113,9 @@ while [ $# -gt 0 ]; do
 		full-archive)
 			ARCHIVE="yes"
 			FULL_ARCHIVE="yes"
+		;;
+		archive-prefix=*)
+			ARCHIVE_PREFIX=${1##*=}
 		;;
 		build-type=*)
 			BUILD_TYPE=${1##*=}
