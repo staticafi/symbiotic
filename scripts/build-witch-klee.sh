@@ -5,7 +5,6 @@ if [ ! -d witch-klee ]; then
 	pushd witch-klee
 	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/klee)" ]; then
 		git_submodule_init
-		git_submodule_update
 	fi
 	popd
 fi
