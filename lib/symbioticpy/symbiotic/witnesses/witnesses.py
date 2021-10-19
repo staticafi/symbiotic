@@ -108,7 +108,7 @@ class GraphMLWriter(object):
                       key='programhash').text = get_hash(self._source)
         ET.SubElement(self._graph, 'data', key='architecture').text = arch
         ET.SubElement(self._graph, 'data', key='creationtime').text =\
-            '{date:%Y-%m-%dT%T}'.format(date=datetime.datetime.utcnow())
+            '{date:%Y-%m-%dT%T}Z'.format(date=datetime.datetime.utcnow())
 
         self._addKeys()
 
