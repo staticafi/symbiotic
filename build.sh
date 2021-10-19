@@ -109,6 +109,7 @@ ENABLE_TCMALLOC=$(if check_tcmalloc; then echo "on"; else echo "off"; fi)
 
 ARCHIVE="no"
 FULL_ARCHIVE="no"
+ARCHIVE_PREFIX="symbiotic/"
 PRECOMPILE_BITCODE="yes"
 
 while [ $# -gt 0 ]; do
@@ -172,6 +173,9 @@ while [ $# -gt 0 ]; do
 			ARCHIVE="yes"
 			FULL_ARCHIVE="yes"
 		;;
+        archive-prefix=*)
+            ARCHIVE_PREFIX=${1##*=}
+        ;;
 		with-llvm=*)
 			WITH_LLVM=${1##*=}
 		;;
