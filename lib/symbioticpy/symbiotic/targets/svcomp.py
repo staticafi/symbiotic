@@ -75,23 +75,23 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def actions_before_slicing(self, symbiotic):
         # check whether there are threads in the program
-        cmd = ['opt', '-q', '-load', 'LLVMsbt.so', '-check-module',
-               '-detect-calls=pthread_create', '-o=/dev/null', symbiotic.curfile]
-        retval, lines =\
-        process_grep(cmd, 'Found call to function')
-        if retval == 0:
-            if lines:
-               #self._has_threads = True
-               #self.tool = NidhuggTool(self._options)
-               #self.tool.set_environment(self._env, self._options)
-               #dbg("Found threads, will use Nidhugg")
-                #raise SymbioticException('Found threads, giving up')
+       #cmd = ['opt', '-q', '-load', 'LLVMsbt.so', '-check-module',
+       #       '-detect-calls=pthread_create', '-o=/dev/null', symbiotic.curfile]
+       #retval, lines =\
+       #process_grep(cmd, 'Found call to function')
+       #if retval == 0:
+       #    if lines:
+       #       #self._has_threads = True
+       #       #self.tool = NidhuggTool(self._options)
+       #       #self.tool.set_environment(self._env, self._options)
+       #       #dbg("Found threads, will use Nidhugg")
+       #        #raise SymbioticException('Found threads, giving up')
 
-                # We do not slice threads correctly right now
-                dbg("Found threads, will not slice (a temporary solution)")
-                self._options.noslice = True
-        else:
-            dbg('Checking the module failed!')
+       #        # We do not slice threads correctly right now
+       #        dbg("Found threads, will not slice (a temporary solution)")
+       #        self._options.noslice = True
+       #else:
+       #    dbg('Checking the module failed!')
 
         if hasattr(self.tool, 'actions_before_slicing'):
             self.tool.actions_before_slicing(symbiotic)
