@@ -298,8 +298,8 @@ for T in $LLVM_TOOLS; do
 		continue
 	fi
 
-	rm "$LLVM_PREFIX/bin/$T"
-	cp -L "$LLVM_BIN_DIR/$T" "$LLVM_PREFIX/bin"
+	rm -f "$LLVM_PREFIX/bin/$T"
+	cp -L -f "$LLVM_BIN_DIR/$T" "$LLVM_PREFIX/bin"
 done
 
 mkdir -p "$LLVM_PREFIX/lib"
