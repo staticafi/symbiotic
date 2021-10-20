@@ -63,9 +63,7 @@ class SymbioticTool(UltimateTool, SymbioticBaseTool):
         return llvm_version
 
     def passes_before_verification(self):
-        """
-        Passes that should run before CPAchecker
-        """
+        """ Passes that should run (always) before CPAchecker """
         # LLVM backend in CPAchecker does not handle switches correctly yet
         return super().passes_before_verification() + ["-reg2mem", "-lowerswitch", "-simplifycfg"]
 

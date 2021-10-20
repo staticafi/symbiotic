@@ -622,7 +622,10 @@ class SymbioticCC(object):
 
         self._get_stats('After slicing ')
 
-    def postprocessing(self):
+    def process_after_slicing(self):
+        if hasattr(self._tool, 'actions_after_slicing'):
+            self._tool.actions_after_slicing(self)
+
         passes = []
 
         # there may have been created new loops
@@ -639,29 +642,17 @@ class SymbioticCC(object):
             passes += self._tool.passes_after_slicing()
         self.run_opt(passes)
 
-        # delete-undefined may insert __VERIFIER_make_nondet
-        # and also other funs like __errno_location may be included
+        # link undefined functions at this point
         self.link_undefined()
 
         # optimize the code after slicing and linking and before verification
         opt = get_optlist_after(self.options.optlevel)
         self.optimize(passes=opt)
 
-        # XXX: we could optimize the code again here...
         print_elapsed_time('INFO: After-slicing optimizations and transformations time',
                            color='WHITE')
 
-        if hasattr(self._tool, 'passes_before_verification'):
-            self.run_opt(self._tool.passes_before_verification())
-
-        if hasattr(self._tool, 'actions_before_verification'):
-            self._tool.actions_before_verification(self)
-
-        # delete-undefined may insert __VERIFIER_make_nondet
-        # and also other funs like __errno_location may be included
-        self.link_undefined()
-
-    def prepare_unsliced_file(self):
+    def prepare_unsliced_file(self, tool):
         """
         Get the unsliced file and perform the same
         postprocessing steps as for the sliced file
@@ -670,9 +661,7 @@ class SymbioticCC(object):
         tmp = self.curfile
         self.curfile = llvmfile
 
-        if hasattr(self._tool, 'actions_after_slicing'):
-            self._tool.actions_after_slicing(self)
-        self.postprocessing()
+        self.process_after_slicing()
 
         llvmfile = self.curfile
         self.curfile = tmp
@@ -880,17 +869,9 @@ class SymbioticCC(object):
         # start a new time era
         restart_counting_time()
 
-        if hasattr(self._tool, 'actions_after_slicing'):
-            self._tool.actions_after_slicing(self)
+        self.process_after_slicing()
 
-        #################### #################### ###################
-        # POSTPROCESSING after slicing
-        #  - prepare the code to be passed to the verification tool
-        #    after all the transformations
-        #################### #################### ###################
-        self.postprocessing()
-
-        self._get_stats('Before verification ')
+        self._get_stats('After slicing and post-processing')
 
         if not self.options.final_output is None:
             # copy the file to final_output

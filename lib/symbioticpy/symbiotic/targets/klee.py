@@ -106,7 +106,7 @@ class KleeToolFullInstrumentation(KleeBase):
         if self._options.property.memsafety():
             passes.append('-remove-readonly-attr')
 
-        return passes
+        return passes + super().passes_after_slicing()
 
     def actions_after_compilation(self, symbiotic):
         # we want to link memsafety functions before instrumentation,
