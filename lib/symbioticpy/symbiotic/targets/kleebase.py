@@ -349,7 +349,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                         '{0}/llvm-{1}/lib/klee/runtime'.\
                         format(prefix, self.llvm_version()))
 
-
     #  def actions_before_slicing(self, symbiotic):
     #      # FIXME: use -abort-on-threads with slicer
     #      # check whether there are threads in the program
@@ -376,7 +375,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             return ['-find-exits']
         return []
 
-    def passes_before_verification(self):
+    def passes_after_slicing(self):
         passes = []
 
         # make the uninitialized variables symbolic (if desired)
@@ -396,9 +395,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             passes.append('-instrument-nontermination')
             passes.append('-instrument-nontermination-mark-header')
 
-
-
-        return passes + super().passes_before_verification()
+        return super().passes_after_slicing() + passes
 
     def describe_error(self, llvmfile):
         if self._options.test_comp:

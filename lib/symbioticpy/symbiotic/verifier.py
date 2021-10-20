@@ -98,10 +98,20 @@ class SymbioticVerifier(object):
         return res
 
     def _run_verifier(self, tool, addparams, timeout):
+        # do any additional transformations before verification
+        if hasattr(tool, 'passes_before_verification'):
+            self._run_opt(tool.passes_before_verification())
+
+        if hasattr(tool, 'actions_before_verification'):
+            tool.actions_before_verification(self)
+
+        # setup tool parameters
         params = self.override_params or self.options.tool_params
         if addparams:
             params = params + addparams
         prp = self.options.property.getPrpFile()
+
+        # do it!
         return self._run_tool(tool, prp, params, timeout)
 
     def run_verification(self):
