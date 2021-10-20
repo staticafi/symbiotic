@@ -41,10 +41,10 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     """
 
     def __init__(self, opts):
-        self.tool = KleeTool(opts)
+        self.klee = KleeTool(opts)
+        self.slowbeast = SlowbeastTool(opts)
         self._options = opts
         self._env = None
-        self._has_threads = False
 
     def verifiers(self):
         prp = self._options.property
@@ -63,98 +63,37 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         return 'svcomp'
 
     def executable(self):
-        return self.tool.executable()
+        raise NotImplementedError("This should be never called")
 
     def llvm_version(self):
         # we suppose that all tools
-        return self.tool.llvm_version()
+        assert self.klee.llvm_version() == self.slowbeast.llvm_version()
+        return self.klee.llvm_version()
 
     def set_environment(self, env, opts):
         self._env = env
-        self.tool.set_environment(env, self._options)
+        self.klee.set_environment(env, self._options)
+        self.slowbeast.set_environment(env, self._options)
 
     def actions_before_slicing(self, symbiotic):
-        # check whether there are threads in the program
-       #cmd = ['opt', '-q', '-load', 'LLVMsbt.so', '-check-module',
-       #       '-detect-calls=pthread_create', '-o=/dev/null', symbiotic.curfile]
-       #retval, lines =\
-       #process_grep(cmd, 'Found call to function')
-       #if retval == 0:
-       #    if lines:
-       #       #self._has_threads = True
-       #       #self.tool = NidhuggTool(self._options)
-       #       #self.tool.set_environment(self._env, self._options)
-       #       #dbg("Found threads, will use Nidhugg")
-       #        #raise SymbioticException('Found threads, giving up')
-
-       #        # We do not slice threads correctly right now
-       #        dbg("Found threads, will not slice (a temporary solution)")
-       #        self._options.noslice = True
-       #else:
-       #    dbg('Checking the module failed!')
-
-        if hasattr(self.tool, 'actions_before_slicing'):
-            self.tool.actions_before_slicing(symbiotic)
+        if hasattr(self.klee, 'actions_before_slicing'):
+            self.klee.actions_before_slicing(symbiotic)
 
     def passes_before_slicing(self):
         if self._options.property.termination():
             return ['-find-exits']
         return []
 
-   #def passes_after_compilation(self):
-   #    return ['-prepare']
-
-    def passes_before_verification(self):
-        """
-        Prepare the bitcode for verification after slicing:
-        \return a list of LLVM passes that should be run on the code
-        """
-        passes = []
-        # for the memsafety property, make functions behave like they have
-        # side-effects, because LLVM optimizations could remove them otherwise,
-        # even though they contain calls to assert
-        if self._options.property.memsafety():
-            passes.append('-remove-readonly-attr')
-        elif self._options.property.termination():
-            passes.append('-instrument-nontermination')
-            passes.append('-instrument-nontermination-mark-header')
-
-        return passes + super().passes_before_verification()
+    def actions_after_slicing(self, symbiotic):
+        if hasattr(self.klee, 'actions_after_slicing'):
+            self.klee.actions_after_slicing(symbiotic)
 
     def replay_error_params(self, llvmfile):
-        return self.tool.replay_error_params(llvmfile)
-
-
-    def slicing_params(self):
-        if self._has_threads:
-            return ['-threads', '-cd-alg=ntscd']
-        return []
-
-    def actions_after_slicing(self, symbiotic):
-        if hasattr(self.tool, 'actions_after_slicing'):
-            self.tool.actions_after_slicing(symbiotic)
+        raise NotImplementedError("This should be never called")
 
     def cmdline(self, executable, options, tasks, propertyfile=None, rlimits={}):
-        """
-        Compose the command line to execute from the name of the executable
-        """
-        return self.tool.cmdline(executable, options, tasks, propertyfile, rlimits)
+        raise NotImplementedError("This should be never called")
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
-        res = self.tool.determine_result(returncode, returnsignal, output, isTimeout)
-        dbg('Tool result: {0}'.format(res))
-        if res == 'true' and self.tool.name() == 'nidhugg':
-            res='unknown (bounded)'
-        return res
+        raise NotImplementedError("This should be never called")
 
-    def describe_error(self, llvmfile):
-        if hasattr(self.tool, 'describe_error'):
-            self.tool.describe_error(llvmfile)
-
-    def generate_witness(self, llvmfile, sources, has_error):
-        if hasattr(self.tool, "generate_witness"):
-            self.tool.generate_witness(llvmfile, sources, has_error)
-
-    def generate_exec_witness(self, llvmfile, sources):
-        if hasattr(self.tool, "generate_exec_witness"):
-            self.tool.generate_exec_witness(llvmfile, sources)
