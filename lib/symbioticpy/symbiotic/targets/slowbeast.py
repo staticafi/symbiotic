@@ -20,8 +20,6 @@ except ImportError:
 
 class SymbioticTool(BaseTool, SymbioticBaseTool):
 
-    REQUIRED_PATHS = ['sb', 'slowbeast']
-
     def __init__(self, opts):
         SymbioticBaseTool.__init__(self, opts)
 
@@ -55,6 +53,10 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                         format(env.symbiotic_dir))
         env.reset('PYTHONOPTIMIZE', '1')
 
+        if opts.devel_mode:
+            # look for slowbeast in the symbiotic's directory
+            env.prepend('PATH', '{0}/slowbeast'.format(env.symbiotic_dir))
+
     def passes_before_slicing(self):
         if self._options.property.termination():
             return ['-find-exits']
@@ -64,21 +66,15 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         """
         Passes that should run before slowbeast
         """
-        prp = self._options.property
-        passes = []
-        if prp.termination():
-            passes.append('-instrument-nontermination')
-            passes.append('-instrument-nontermination-mark-header')
-
-        passes += ["-lowerswitch", "-simplifycfg", "-reg2mem",
-                   "-simplifycfg", "-ainline"]
-        passes.append("-ainline-noinline")
+       # prp = self._options.property
+       #passes += ["-lowerswitch", "-simplifycfg", "-reg2mem", "-simplifycfg"]
+        #, "-ainline"]
+        # passes.append("-ainline-noinline")
         # FIXME: get rid of the __VERIFIER_assert hack
-        if prp.unreachcall():
-            passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert,__VERIFIER_assume,assume_abort_if_not")
-        return passes +\
-                ["-flatten-loops", "-O3", "-remove-constant-exprs", "-reg2mem"] +\
-                super().passes_before_verification()
+       #if prp.unreachcall():
+       #    passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert,__VERIFIER_assume,assume_abort_if_not")
+        return ["-lowerswitch", "-simplifycfg",
+                "-flatten-loops", "-O3", "-remove-constant-exprs", "-reg2mem"]
 
     def generate_graphml(path, source, is_correctness_wit, opts, saveto):
         """ Generate trivial correctness witness for now """
