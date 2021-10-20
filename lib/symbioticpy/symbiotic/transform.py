@@ -167,7 +167,10 @@ class SymbioticCC(object):
                 out[0].lstrip().decode('ascii').startswith('-fsanitize-address-use-after-scope')
 
     def cc_disable_optimizations(self):
-        return ['-O0', '-disable-llvm-passes']
+        # Use -O0 -disable-O0-optnone to get the code without optnone attribute
+        # so that it can get optimized later.
+        # XXX: does -disable-llvm-passes have an effect here?
+        return ['-O0', '-disable-O0-optnone', '-disable-llvm-passes']
 
     def _save_ll(self):
         """
