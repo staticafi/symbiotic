@@ -60,7 +60,7 @@ class Symbiotic(object):
             print('Killed the child process')
 
     def replay_nonsliced(self, tool, cc):
-        bitcode = cc.prepare_unsliced_file()
+        bitcode = cc.prepare_unsliced_file(tool)
         params = []
         if hasattr(tool, "replay_error_params"):
             params = tool.replay_error_params(cc.curfile)
