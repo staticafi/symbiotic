@@ -567,23 +567,6 @@ class SymbioticCC(object):
         self.curfile = output
         self._save_ll()
 
-    def postprocess_llvm(self):
-        """
-        Run a command that proprocesses the llvm code
-        for a particular tool
-        """
-        if not hasattr(self._tool, 'postprocess_llvm'):
-            return
-
-        cmd, output = self._tool.postprocess_llvm(self.curfile)
-        if not cmd:
-            return
-
-        runcmd(cmd, DbgWatch('compile'),
-                  'Failed preprocessing the llvm code')
-        self.curfile = output
-        self._save_ll()
-
     def _compile_sources(self, output='code.bc'):
         """
         Compile the given sources into LLVM bitcode and link them into one
@@ -681,10 +664,6 @@ class SymbioticCC(object):
 
         if hasattr(self._tool, 'passes_before_verification'):
             self.run_opt(self._tool.passes_before_verification())
-
-        # tool's specific preprocessing steps before verification
-        # FIXME: move this to actions_before_verification
-        self.postprocess_llvm()
 
         if hasattr(self._tool, 'actions_before_verification'):
             self._tool.actions_before_verification(self)
