@@ -702,9 +702,6 @@ class SymbioticCC(object):
         tmp = self.curfile
         self.curfile = llvmfile
 
-        if self.options.property.termination():
-            self.run_opt(['-find-exits']) # FIXME: make tool specific
-
         if hasattr(self._tool, 'actions_after_slicing'):
             self._tool.actions_after_slicing(self)
         self.postprocessing()
