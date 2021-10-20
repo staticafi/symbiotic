@@ -100,7 +100,7 @@ class Symbiotic(object):
                          color="WHITE")
             options.replay_error = False # now we do not need to replay the error
             options.noslice = True # now we behave like without slicing
-            bitcode = cc.prepare_unsliced_file()
+            bitcode = cc.prepare_unsliced_file(tool)
             verifier = SymbioticVerifier(bitcode, self.sources,
                                          self._tool, options, self.env)
             res, tool = verifier.run()
@@ -135,7 +135,7 @@ class Symbiotic(object):
 
         if res == 'cex not-confirmed':
             # if we failed confirming CEX, rerun on unsliced file
-            bitcode = cc.prepare_unsliced_file()
+            bitcode = cc.prepare_unsliced_file(tool)
             verifier = SymbioticVerifier(bitcode, self.sources,
                                          self._tool, options, self.env)
             res, tool = verifier.run()
