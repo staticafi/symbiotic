@@ -91,7 +91,7 @@ class Symbiotic(object):
         res, tool = verifier.run()
 
         # if we crashed on the sliced file, try running on the unsliced file
-        # (do this optional, as well as for slicer and instrumentation)
+        # (TODO: do this optional, as well as for slicer and instrumentation)
         resstartswith = res.lower().startswith
         if (not options.noslice) and \
            (options.sv_comp or options.test_comp) and \
