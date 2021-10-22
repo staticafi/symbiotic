@@ -61,6 +61,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if opts.devel_mode:
             # look for slowbeast in the symbiotic's directory
             env.prepend('PATH', '{0}/slowbeast'.format(env.symbiotic_dir))
+            env.prepend('PYTHONPATH', '{0}/slowbeast/llvmlite'.format(env.symbiotic_dir))
 
     def passes_before_slicing(self):
         if self._options.property.termination():
