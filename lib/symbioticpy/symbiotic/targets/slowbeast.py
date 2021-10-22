@@ -1,5 +1,7 @@
-from os.path import abspath
-from .. utils import dbg
+from os.path import abspath, dirname, join as pathjoin
+from os import listdir
+from shutil import copy as copyfile
+from symbiotic.utils.utils import dbg, print_stdout
 from . tool import SymbioticBaseTool
 
 try:
@@ -42,6 +44,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if prp.unreachcall():
             funs = ','.join(prp.getcalls())
             cmd.append(f'-error-fn={funs}')
+        if self._options.sv_comp:
+            cmd.append('-svcomp-witness')
         return cmd + options + tasks
 
     def set_environment(self, env, opts):
@@ -76,16 +80,20 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         return ["-lowerswitch", "-simplifycfg",
                 "-flatten-loops", "-O3", "-remove-constant-exprs", "-reg2mem"]
 
-    def generate_graphml(path, source, is_correctness_wit, opts, saveto):
-        """ Generate trivial correctness witness for now """
-        if saveto is None:
-            saveto = '{0}.graphml'.format(basename(path))
-            saveto = abspath(saveto)
+    def generate_witness(self, llvmfile, sources, has_error):
+        print_stdout('Generating {0} witness: {1}'\
+                .format('violation' if has_error else 'correctness',
+                        self._options.witness_output))
 
-        if is_correctness_wit:
-            gen.createTrivialWitness()
-            assert path is None
-        gen.write(saveto)
+        sbdir = pathjoin(dirname(llvmfile), 'sb-out')
+        witnesses = [abspath(pathjoin(sbdir, f)) for f in listdir(sbdir)
+                     if f.endswith('.graphml')]
+        if len(witnesses) != 1:
+            dbg("Do not have a unique witness in slowbeast output")
+            return
+        # FIXME: fill in metadata
+        copyfile(witnesses[0], self._options.witness_output)
+
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         if isTimeout:
