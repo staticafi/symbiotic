@@ -2,6 +2,7 @@ from os.path import abspath, dirname, join as pathjoin
 from os import listdir
 from shutil import copy as copyfile
 from symbiotic.utils.utils import dbg, print_stdout
+from symbiotic.witnesses.witnesses import GraphMLWriter
 from . tool import SymbioticBaseTool
 
 try:
@@ -91,9 +92,18 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if len(witnesses) != 1:
             dbg("Do not have a unique witness in slowbeast output")
             return
-        # FIXME: fill in metadata
-        copyfile(witnesses[0], self._options.witness_output)
 
+        assert len(sources) == 1
+        gen = GraphMLWriter(sources[0],
+                            self._options.property.ltl(),
+                            self._options.is32bit,
+                            not has_error)
+        if has_error:
+            gen.generate_violation_witness(witnesses[0],
+                                           self._options.property.termination())
+        else:
+            gen.createTrivialWitness()
+        gen.write(self._options.witness_output)
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         if isTimeout:
