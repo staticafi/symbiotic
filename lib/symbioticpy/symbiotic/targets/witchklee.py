@@ -68,16 +68,17 @@ class SymbioticTool(KleeBase):
         if opts.timeout is not None:
                cmd.append('-max-time={0}'.format(opts.timeout))
 
-        assert prop.unreachcall(), "Witch-KLEE can do unreach call only"
+        # assert prop.unreachcall(), "Witch-KLEE can do unreach call only"
 
         # filter out the non-standard error calls,
         # because we support only one such call atm.
-        calls = [x for x in prop.getcalls() if x not in ['__VERIFIER_error', '__assert_fail']]
-        if calls:
-            assert len(calls) == 1, "Multiple error functions unsupported yet"
-            cmd.append('-error-fn={0}'.format(calls[0]))
-        # FIXME: append to all properties?
-        cmd.append('-malloc-symbolic-contents')
+        if prop.unreachcall():
+            calls = [x for x in prop.getcalls() if x not in ['__VERIFIER_error', '__assert_fail']]
+            if calls:
+                assert len(calls) == 1, "Multiple error functions unsupported yet"
+                cmd.append('-error-fn={0}'.format(calls[0]))
+            # FIXME: append to all properties?
+            cmd.append('-malloc-symbolic-contents')
 
         if opts.exit_on_error:
             print("Witch-KLEE does not support -exit-on-error")
@@ -101,7 +102,18 @@ class SymbioticTool(KleeBase):
             if b'Parsing failed' in line:
                 parsing_failed = line.strip().split(b':')[-1].strip().decode('utf-8')
             if b'Valid violation witness' in line:
-                return result.RESULT_FALSE_REACH
+                if b'unreach-call' in line:
+                    return result.RESULT_FALSE_REACH
+                if b'valid-free' in line:
+                    return result.RESULT_FALSE_FREE
+                if b'valid-deref' in line:
+                    return result.RESULT_FALSE_DEREF
+                if b'valid-memtrack' in line:
+                    return result.RESULT_FALSE_MEMTRACK
+                if b'valid-memcleanup' in line:
+                    return result.RESULT_FALSE_MEMCLEANUP
+                if b'no-overflow' in line:
+                    return result.RESULT_FALSE_OVERFLOW
         if returncode != 0:
             if parsing_failed:
                 return f'{result.RESULT_ERROR} ({parsing_failed})'
