@@ -64,6 +64,7 @@ class KleeToolFullInstrumentation(KleeBase):
             ('EROSYMB', re.compile('.*cannot make readonly object symbolic.*')),
             ('ESTACKOVFLW', re.compile('.*WARNING: Maximum stack size reached.*')),
             ('EMEMERROR', re.compile('.*memory error: out of bound pointer.*')),
+            ('EMEMERROR', re.compile('.*memory error: calling nullptr.*')),
             ('EPTHREAD', re.compile('.*ERROR:.*Call to pthread_.*')),
             ('EPTHREAD2', re.compile('.*ERROR:.*unsupported pthread API.*')),
             ('EFUNMODEL', re.compile('.*: unsupported function model.*')),
@@ -225,6 +226,7 @@ class SymbioticTool(KleeBase):
             ('EPTHREAD', re.compile('.*ERROR:.*Call to pthread_.*')),
             ('EPTHREAD2', re.compile('.*ERROR:.*unsupported pthread API.*')),
             ('EMEMERROR', re.compile('.*memory error: out of bound pointer.*')),
+            ('EMEMERROR', re.compile('.*memory error: calling nullptr.*')),
             ('EMAKESYMBOLIC', re.compile(
                 '.*memory error: invalid pointer: make_symbolic.*')),
             ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
