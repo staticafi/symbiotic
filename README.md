@@ -55,7 +55,7 @@ continues to complain, you must install the dependencies manually.
 
 Possible options for the `build.sh` script include:
   - `build-type=TYPE` (TYPE one of `Release`, `Debug`)
-  - `llvm-version=VERSION` (the default `VERSION` is `4.0.1`,
+  - `llvm-version=VERSION` (the default `VERSION` is `10.0.1`,
      other versions are rather experimental)
   - `with-llvm=`, `with-llvm-src=`, `with-llvm-dir=`
      This set of options orders the script to use already built external LLVM
