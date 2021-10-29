@@ -1,5 +1,5 @@
 
-[![Build Status](https://travis-ci.com/staticafi/symbiotic.svg?branch=master)](https://travis-ci.com/staticafi/symbiotic)
+[![Build - Linux CI](https://github.com/staticafi/symbiotic/actions/workflows/linux.yml/badge.svg)](https://github.com/staticafi/symbiotic/actions/workflows/linux.yml)
 
 Symbiotic is an open-source framework for program analysis integrating
 instrumentation, static program slicing and various program analysis tools.
