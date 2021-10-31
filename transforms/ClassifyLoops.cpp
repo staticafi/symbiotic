@@ -59,11 +59,13 @@ class ClassifyLoops : public LoopPass {
       }
 
       if (!irreducible) {
+#if LLVM_VERSION_MAJOR > 6
         // XXX: hmm, not sure this is working...
         LoopInfo &LI = getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
         LoopBlocksRPO RPOT(L);
         RPOT.perform(&LI);
         irreducible = containsIrreducibleCFG<const BasicBlock *>(RPOT, LI);
+#endif
       }
 
       return false;
