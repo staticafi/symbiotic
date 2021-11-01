@@ -1,4 +1,5 @@
 #include <llvm/IR/Constants.h>
+#include <llvm/IR/Function.h>
 #include <llvm/IR/InstIterator.h>
 #include <llvm/Support/Casting.h>
 
@@ -23,7 +24,7 @@ class ExplicitConsdes : public ModulePass {
    private:
     struct FunctionEntry {
         uint32_t priority;
-        Value *function;
+        Function *function;
         Value *param;
     };
 
@@ -64,7 +65,7 @@ class ExplicitConsdes : public ModulePass {
             entry.priority =
                 dyn_cast<ConstantInt>(elem->getAggregateElement(0u))
                     ->getZExtValue();
-            entry.function = elem->getAggregateElement(1);
+            entry.function = dyn_cast<Function>(elem->getAggregateElement(1));
             entry.param = elem->getAggregateElement(2);
             target.push_back(std::move(entry));
         }
