@@ -21,12 +21,13 @@ limitations under the License.
 from os.path import dirname, abspath, isfile
 from symbiotic.utils.utils import print_stdout
 from symbiotic.utils.process import runcmd
+from symbiotic.utils.watch import DbgWatch
 
 try:
     from symbiotic.versions import llvm_version
 except ImportError:
     # the default version
-    llvm_version='4.0.1'
+    llvm_version='10.0.1'
 
 try:
     import benchexec.util as util
@@ -45,8 +46,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     Nidhugg tool info object
     """
 
-    def __init__(self, opts):
+    def __init__(self, opts, only_results=None, unroll=None):
         SymbioticBaseTool.__init__(self, opts)
+        self._options = opts
+        self._only_results = only_results
+        self._unroll = unroll
 
     def executable(self):
         """
@@ -75,6 +79,15 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         """
         return llvm_version
 
+    def verifiers(self):
+        prp = self._options.property
+        return (
+               #(SymbioticTool(self._options, only_results=['false'], unroll=2), None, 30),
+               #(SymbioticTool(self._options, only_results=['false'], unroll=5), None, 200),
+               #(SymbioticTool(self._options, only_results=['false'], unroll=10), None, 400),
+                (SymbioticTool(self._options), None, None),
+                )
+
     def set_environment(self, env, opts):
         """
         Set environment for the tool
@@ -82,6 +95,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if opts.devel_mode:
             env.prepend('PATH', '{0}/nidhugg/build-{1}/src'.\
                         format(env.symbiotic_dir, self.llvm_version()))
+        # thread all programs as 64-bit as we just cannot change the architecture
+        # in Nidhugg
+        opts.is32bit = False
 
     def actions_after_slicing(self, symbiotic):
         # unroll the loops and rename __VERIFIER_atomic_begin/end
@@ -104,6 +120,15 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         cmd = [executable, '-sc', '-rf', '-disable-mutex-init-requirement']
         return cmd + options + tasks
 
+    def actions_before_verification(self, symbiotic):
+        if not self._unroll:
+            return
+        output = symbiotic.curfile + f'unrl{self._unroll}.bc'
+        runcmd([self.executable(), symbiotic.curfile,
+                '--unroll', str(self._unroll), '--transform', output],
+                DbgWatch('all'))
+        symbiotic.curfile = output
+
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         if isTimeout:
             return 'timeout'
@@ -111,14 +136,25 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if output is None:
             return 'ERROR (no output)'
 
-        for line in output:
-            line = str(line.strip())
+        status = None
+        for line in map(lambda s: s.strip().decode('utf-8'), output):
             if line == 'No errors were detected.':
-                return result.RESULT_TRUE_PROP
-            elif line == 'Error detected:':
-                return result.RESULT_FALSE_REACH
+                status = result.RESULT_TRUE_PROP
+           #elif line == 'Error detected:':
+           #    status = result.RESULT_FALSE_REACH
             elif 'Error: Assertion violation at' in line:
-                return result.RESULT_FALSE_REACH
+                status = result.RESULT_FALSE_REACH
+
+        if status:
+            if self._only_results:
+                res = status.lower()
+                if res.startswith('false'):
+                    res = 'false'
+                elif res.startswith('true'):
+                    res = 'true'
+                if not res in self._only_results:
+                    return result.RESULT_UNKNOWN
+            return status
 
         if returncode != 0:
             return result.RESULT_ERROR
