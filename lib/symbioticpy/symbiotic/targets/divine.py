@@ -27,6 +27,7 @@ class SymbioticTool(DivineTool, SymbioticBaseTool):
         if opts.devel_mode:
             env.prepend('PATH', '{0}/divine'.\
                         format(env.symbiotic_dir))
+        opts.is32bit = False
 
     def cc(self):
         #return ['divine', 'cc']
