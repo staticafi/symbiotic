@@ -1,8 +1,4 @@
-try:
-    from benchexec.tools.divine4 import Tool as DivineTool
-except ImportError:
-    from .. benchexec.tools.divine4 import Tool as DivineTool
-
+from .. benchexec.tools.divine4 import Tool as DivineTool
 from . tool import SymbioticBaseTool
 
 class SymbioticTool(DivineTool, SymbioticBaseTool):
