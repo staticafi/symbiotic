@@ -116,8 +116,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         Compose the command line to execute from the name of the executable
         """
 
-        # for now use 5
-        cmd = [executable, '-sc', '-rf', '-disable-mutex-init-requirement']
+        # -rf is buggy now...
+        # cmd = [executable, '-sc', '-rf', '-disable-mutex-init-requirement']
+        cmd = [executable, '-sc', '-disable-mutex-init-requirement']
         return cmd + options + tasks
 
     def actions_before_verification(self, symbiotic):
