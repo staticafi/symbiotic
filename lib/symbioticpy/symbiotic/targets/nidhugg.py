@@ -156,8 +156,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                     return result.RESULT_UNKNOWN
             return status
 
+        if returnsignal != 0:
+            return f"{result.RESULT_ERROR}(signal {returnsignal})"
         if returncode != 0:
-            return result.RESULT_ERROR
-        else:
-            return result.RESULT_UNKNOWN
+            return f"{result.RESULT_ERROR}(returned {returncode})"
+        return result.RESULT_ERROR
 
