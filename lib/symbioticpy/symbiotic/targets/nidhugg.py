@@ -3,7 +3,7 @@ BenchExec is a framework for reliable benchmarking.
 This file is part of BenchExec.
 
 Copyright (C) 2007-2015  Dirk Beyer
-Copyright (C) 2008  Marek Chalupa
+Copyright (C) 2018-2021  Marek Chalupa
 All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
