@@ -95,7 +95,7 @@ class SymbioticVerifier(object):
             for line in watch.getLines():
                 print_stderr(line.decode('utf-8', 'replace'),
                              color='RED', print_nl=False)
-        return res
+        return res, watch
 
     def _run_verifier(self, tool, addparams, timeout):
         # do any additional transformations before verification
@@ -120,12 +120,14 @@ class SymbioticVerifier(object):
         orig_bitcode = self.curfile
         for verifiertool, addparams, verifiertimeout in self._tool.verifiers():
             self.curfile = orig_bitcode
-            res = self._run_verifier(verifiertool, addparams, verifiertimeout)
+            res, watch = self._run_verifier(verifiertool, addparams, verifiertimeout)
             sw = res.lower().startswith
             # we got an answer, we can finish
             if sw('true') or sw('false'):
                 return res, verifiertool
             print(f"{verifiertool.name()} answered {res}")
+            if hasattr(self._tool, "verifier_failed"):
+                self._tool.verifier_failed(verifiertool, res, watch)
         self.curfile = orig_bitcode # restore the original bitcode
         print_elapsed_time("INFO: Verification time", color='WHITE')
         return res, None

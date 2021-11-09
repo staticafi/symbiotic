@@ -45,19 +45,27 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         self.slowbeast = SlowbeastTool(opts)
         self._options = opts
         self._env = None
+        self._hit_threads = False
 
     def verifiers(self):
         prp = self._options.property
         if prp.unreachcall():
-            return ((KleeTool(self._options), None, 222),
-                    (SlowbeastTool(self._options), ['-bself'], None),
-                    # if slowbeast crashes, run KLEE w/o timeout
-                    (KleeTool(self._options), None, None),
-                    # slowbeast  got better support for floats, so if KLEE
-                    # fails, try slowbeast once more
-                    (SlowbeastTool(self._options), None, None),
-                    )
-        return ((KleeTool(self._options), None, None),)
+            yield (KleeTool(self._options), None, 333)
+            if self._hit_threads:
+                yield (SlowbeastTool(self._options), ['-threads'], None)
+            else:
+                yield (SlowbeastTool(self._options), ['-bself'], None)
+                # if slowbeast crashes, run KLEE w/o timeout
+                # yield (KleeTool(self._options), None, None)
+
+                # slowbeast  got better support for floats and threads,
+                # so if KLEE fails, try slowbeast once more
+                # TODO: use threads only if KLEE hits threads and for other
+                # cases use incremental solving
+                #(SlowbeastTool(self._options), ['-threads', '-se-incremental-solving'], None),
+                yield (SlowbeastTool(self._options), ['-se-incremental-solving'], None)
+        else:
+            yield (KleeTool(self._options), None, None)
 
     def name(self):
         return 'svcomp'
@@ -96,4 +104,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         raise NotImplementedError("This should be never called")
+
+    def verifier_failed(self, verifier, res, watch):
+        """
+        Register that a verifier failed (so that subsequent verifiers can
+        learn what happend
+        """
+        if 'EPTHREAD' in res:
+            self._hit_threads = True
 
