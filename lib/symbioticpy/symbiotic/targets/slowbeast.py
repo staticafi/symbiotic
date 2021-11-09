@@ -99,11 +99,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                             self._options.property.ltl(),
                             self._options.is32bit,
                             not has_error)
-        if has_error:
-            gen.generate_violation_witness(witnesses[0],
-                                           self._options.property.termination())
-        else:
-            gen.createTrivialWitness()
+        gen.generate_witness(witnesses[0],
+                             self._options.property.termination())
         gen.write(self._options.witness_output)
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
