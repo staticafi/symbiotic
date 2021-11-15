@@ -208,6 +208,11 @@ class SymbioticCC(object):
         # __inline attribute is buggy in clang, remove it using -D__inline
         cmd = self._get_cc() + ['-c', '-emit-llvm',
                                 #'-include', 'symbiotic.h',
+                                # otherwise clang can drop so inline functions
+                                # e.g. push() in this file:
+                                # https://github.com/sosy-lab/sv-benchmarks/blob/master/c/pthread-ext/36_stack_cas_p0_vs_concur.c
+                                # it works also to compile with -O1 or -Og
+                                '-fgnu89-inline',
                                 '-D__inline='] + opts
 
         if with_g:
