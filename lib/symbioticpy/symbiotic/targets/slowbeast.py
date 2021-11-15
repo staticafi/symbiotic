@@ -90,17 +90,19 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         sbdir = pathjoin(dirname(llvmfile), 'sb-out')
         witnesses = [abspath(pathjoin(sbdir, f)) for f in listdir(sbdir)
                      if f.endswith('.graphml')]
-        if len(witnesses) != 1:
-            dbg("Do not have a unique witness in slowbeast output")
-            return
 
         assert len(sources) == 1
         gen = GraphMLWriter(sources[0],
                             self._options.property.ltl(),
                             self._options.is32bit,
                             not has_error)
-        gen.generate_witness(witnesses[0],
-                             self._options.property.termination())
+
+        if len(witnesses) != 1:
+            dbg("Do not have a unique witness in slowbeast output")
+            gen.createTrivialWitness()
+        else:
+            gen.generate_witness(witnesses[0],
+                                 self._options.property.termination())
         gen.write(self._options.witness_output)
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
