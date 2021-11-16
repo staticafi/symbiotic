@@ -72,6 +72,9 @@ class GraphMLWriter(object):
         _add_edge_key(root, "assumption")
         _add_edge_key(root, "assumption.resultfunction")
         _add_edge_key(root, "startline")
+        _add_edge_key(root, "endline")
+        _add_edge_key(root, "threadId")
+        _add_edge_key(root, "createThread")
 
         e = ET.SubElement(root, 'key', id="cyclehead")
         e.set('for', 'node')
