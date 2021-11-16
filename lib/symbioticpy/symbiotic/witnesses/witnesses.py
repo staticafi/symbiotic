@@ -67,6 +67,8 @@ class GraphMLWriter(object):
         _add_graph_key(root, "programhash")
         _add_node_key(root, "entry")
         _add_node_key(root, "violation")
+        _add_node_key(root, "invariant")
+        _add_node_key(root, "invariant.scope")
         _add_edge_key(root, "assumption")
         _add_edge_key(root, "assumption.resultfunction")
         _add_edge_key(root, "startline")
