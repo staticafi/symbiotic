@@ -96,6 +96,21 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if hasattr(self.klee, 'actions_after_slicing'):
             self.klee.actions_after_slicing(symbiotic)
 
+
+    def passes_after_slicing(self):
+        passes = []
+
+        # for the memsafety property, make functions behave like they have
+        # side-effects, because LLVM optimizations could remove them otherwise,
+        # even though they contain calls to assert
+        if self._options.property.memsafety():
+            passes.append('-remove-readonly-attr')
+        elif self._options.property.termination():
+            passes.append('-instrument-nontermination')
+            passes.append('-instrument-nontermination-mark-header')
+
+        return super().passes_after_slicing() + passes
+
     def replay_error_params(self, llvmfile):
         raise NotImplementedError("This should be never called")
 
