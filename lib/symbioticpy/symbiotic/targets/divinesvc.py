@@ -23,10 +23,14 @@ class SymbioticTool(DivineTool, SymbioticBaseTool):
             env.prepend('PATH', '{0}/divine'.\
                         format(env.symbiotic_dir))
         opts.is32bit = False
+        opts.generate_ll = True
 
     def cc(self):
-        #return ['divine', 'cc']
-        return ['clang', '--target=x86_64-unknown-none-elf']
+        # use divine cc to use DiOS' headers
+        return ['divine', 'cc', '-C,-Os', '-C,-fgnu89-inline',
+                '-C,-Wno-unused-parameter', '-C,-Wno-unknown-attributes',
+                '-C,-Wno-unused-label', '-C,-Wno-unknown-pragmas',
+                '-C,-Wno-unused-command-line-argument', '-c']
 
     def actions_before_slicing(self, symbiotic):
         symbiotic.link_undefined(['__VERIFIER_atomic_begin',

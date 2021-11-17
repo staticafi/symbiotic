@@ -98,7 +98,7 @@ class Tool(BaseTool):
         prp = propertyfile or "-"
 
         # prefix command line with wrapper script
-        return [os.path.join(directory, self.BINS[1]), executable, prp] + options + tasks
+        return [os.path.join(directory, self.BINS[1]), executable, prp, '-d'] + options + tasks
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         """

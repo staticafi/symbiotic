@@ -178,7 +178,7 @@ class SymbioticCC(object):
         only when save_files is turned on (so that we do not
         generate .ll redundantly)
         """
-        if not self.options.save_files:
+        if not self.options.save_files and 'divine' not in self.options.tool_name:
             return
         return self._generate_ll()
 
@@ -229,6 +229,10 @@ class SymbioticCC(object):
         if self.options.generate_ll:
             # make the bitcode better readable if we generate the .ll files
             cmd.append("-fno-discard-value-names")
+
+        # FIXME: a really dirty hack to overcome DIVINE's cumbersomeness
+        if 'divine' in self.options.tool_name:
+            cmd = self._get_cc()
 
         cmd.append('-o')
         if output is None:
