@@ -4,7 +4,8 @@ from subprocess import Popen, PIPE, STDOUT
 from . utils import dbg, print_stderr
 from . watch import ProcessWatch
 from .. import SymbioticException
-from sys import stdout, stderr
+from signal import SIGKILL, SIGTERM
+from os import killpg, setpgid
 
 try:
     from benchexec.util import find_executable
@@ -38,7 +39,15 @@ class ProcessRunner(object):
         # on timeout or signal. This way we can run only one
         # process at the time, but we don't need more (yet?)
         try:
-            ProcessRunner.current_process = Popen(cmd, stdout=PIPE, stderr=STDOUT)
+            # create a new process group before performing exec so that we can
+            # kill every child this process will create as well
+            # (assuming that they won't create their own process groups)
+            def newpgrp():
+                # sets the subprocess pid as a pgid of the new process group
+                return setpgid(0, 0)
+            ProcessRunner.current_process = Popen(cmd, stdout=PIPE,
+                                                  stderr=STDOUT,
+                                                  preexec_fn=newpgrp)
         except OSError as e:
             msg = ' '.join(cmd) + '\n'
             raise SymbioticException(msg + str(e))
@@ -66,12 +75,12 @@ class ProcessRunner(object):
     def terminate(self):
         assert self.hasProcess()
         if self.exitStatus() is None:
-            ProcessRunner.current_process.terminate()
+            killpg(ProcessRunner.current_process.pid, SIGTERM)
 
     def kill(self):
         assert self.hasProcess()
         if self.exitStatus() is None:
-            ProcessRunner.current_process.kill()
+            killpg(ProcessRunner.current_process.pid, SIGKILL)
 
     def exitStatus(self):
         assert self.hasProcess()
