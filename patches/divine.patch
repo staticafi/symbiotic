@@ -1,0 +1,99 @@
+diff --git a/lib/symbioticpy/symbiotic/benchexec/tools/divine4.py b/lib/symbioticpy/symbiotic/benchexec/tools/divine4.py
+index 873b500..c510a0b 100644
+--- a/lib/symbioticpy/symbiotic/benchexec/tools/divine4.py
++++ b/lib/symbioticpy/symbiotic/benchexec/tools/divine4.py
+@@ -98,7 +98,7 @@ class Tool(BaseTool):
+         prp = propertyfile or "-"
+
+         # prefix command line with wrapper script
+-        return [os.path.join(directory, self.BINS[1]), executable, prp] + options + tasks
++        return [os.path.join(directory, self.BINS[1]), executable, prp, '-d'] + options + tasks
+
+     def determine_result(self, returncode, returnsignal, output, isTimeout):
+         """
+diff --git a/lib/symbioticpy/symbiotic/targets/divinesvc.py b/lib/symbioticpy/symbiotic/targets/divinesvc.py
+index 6848934..2765339 100644
+--- a/lib/symbioticpy/symbiotic/targets/divinesvc.py
++++ b/lib/symbioticpy/symbiotic/targets/divinesvc.py
+@@ -23,10 +23,14 @@ class SymbioticTool(DivineTool, SymbioticBaseTool):
+             env.prepend('PATH', '{0}/divine'.\
+                         format(env.symbiotic_dir))
+         opts.is32bit = False
++        opts.generate_ll = True
+
+     def cc(self):
+-        #return ['divine', 'cc']
+-        return ['clang', '--target=x86_64-unknown-none-elf']
++        # use divine cc to use DiOS' headers
++        return ['divine', 'cc', '-C,-Os', '-C,-fgnu89-inline',
++                '-C,-Wno-unused-parameter', '-C,-Wno-unknown-attributes',
++                '-C,-Wno-unused-label', '-C,-Wno-unknown-pragmas',
++                '-C,-Wno-unused-command-line-argument', '-c']
+
+     def actions_before_slicing(self, symbiotic):
+         symbiotic.link_undefined(['__VERIFIER_atomic_begin',
+diff --git a/lib/symbioticpy/symbiotic/transform.py b/lib/symbioticpy/symbiotic/transform.py
+index a4a4db7..8132c57 100644
+--- a/lib/symbioticpy/symbiotic/transform.py
++++ b/lib/symbioticpy/symbiotic/transform.py
+@@ -178,7 +178,7 @@ class SymbioticCC(object):
+         only when save_files is turned on (so that we do not
+         generate .ll redundantly)
+         """
+-        if not self.options.save_files:
++        if not self.options.save_files and 'divine' not in self.options.tool_name:
+             return
+         return self._generate_ll()
+
+@@ -230,6 +230,10 @@ class SymbioticCC(object):
+             # make the bitcode better readable if we generate the .ll files
+             cmd.append("-fno-discard-value-names")
+
++        # FIXME: a really dirty hack to overcome DIVINE's cumbersomeness
++        if 'divine' in self.options.tool_name:
++            cmd = self._get_cc()
++
+         cmd.append('-o')
+         if output is None:
+             basename = os.path.basename(source)
+diff -u a/divine/utils/runner.py b/divine/utils/runner.py
+--- a/divine/utils/runner.py      2020-12-02 13:23:30.000000000 +0000
++++ b/divine/utils/runner.py      2021-11-16 22:22:04.396313432 +0000
+@@ -83,7 +83,7 @@
+         self.config = config
+         # workdir paths
+         self.work_dir            = tempfile.mkdtemp()
+-        self.preprocesed   : str = self.work_dir + "/benchmark.c"
++        self.preprocesed   : str = self.work_dir + "/benchmark.ll"
+         self.config              = config
+         if config.opts.report:
+             self.report    : str = config.opts.report
+@@ -97,7 +97,7 @@
+
+     def preprocess(self):
+         with open(self.preprocesed, "w") as out:
+-            with open(self.config.benchmark, "r") as bench:
++            with open(self.config.benchmark[:-2] + 'll', "r") as bench:
+                 for line in bench:
+                     out.write(self.preprocess_line(line))
+
+@@ -120,7 +120,7 @@
+             return "pthread_" in line
+
+         def match_globals() -> bool:
+-            extern = re.compile("extern[^(]*;")
++            extern = re.compile(r'@[\w\d]+\s*=\sexternal.*global')
+             return extern.match(line) is not None
+
+         def match_libm() -> bool:
+@@ -140,8 +140,8 @@
+             self.config.lart.add_pass("svc-fixglobals")
+             self.config.opts.symbolic = True  # TODO why?
+
+-        line = line.replace("reach_error(){}", "__VERIFIER_error();")
+-        line = line.replace("reach_error", "__VERIFIER_error")
++        # line = line.replace("reach_error(){}", "__VERIFIER_error();")
++        # line = line.replace("reach_error", "__VERIFIER_error")
+         return line
+
+     def run(self):
