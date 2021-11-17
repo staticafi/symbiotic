@@ -83,9 +83,24 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         self.klee.set_environment(env, self._options)
         self.slowbeast.set_environment(env, self._options)
 
+    def passes_after_compilation(self):
+        """
+        LLVM passes that should be run on the code after the compilation.
+        """
+        return ['-replace-verifier-atomic']
+
     def actions_before_slicing(self, symbiotic):
         if hasattr(self.klee, 'actions_before_slicing'):
             self.klee.actions_before_slicing(symbiotic)
+
+        old_undf = self._options.linkundef
+        self._options.linkundef = ['svcomp']
+        funs = ['__symbiotic_global_lock',
+                '__symbiotic_atomic_begin',
+                '__symbiotic_atomic_end']
+        symbiotic.link_undefined(only_func=funs)
+        self._options.linkundef = old_undf
+
 
     def passes_before_slicing(self):
         if self._options.property.termination():
