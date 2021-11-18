@@ -50,6 +50,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             cmd.append('-svcomp-witness')
         cmd.extend(options)
         if '-bself' in cmd:
+            cmd.append('-forbid-floats')
             cmd.append('-unsupported-undefs=__VERIFIER_nondet_float,__VERIFIER_nondet_double')
         return cmd + tasks
 
