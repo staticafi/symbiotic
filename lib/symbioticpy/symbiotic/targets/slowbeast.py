@@ -48,7 +48,10 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             cmd.append(f'-error-fn={funs}')
         if self._options.sv_comp:
             cmd.append('-svcomp-witness')
-        return cmd + options + tasks
+        cmd.extend(options)
+        if '-bself' in cmd:
+            cmd.append('-unsupported-undefs=__VERIFIER_nondet_float,__VERIFIER_nondet_double')
+        return cmd + tasks
 
     def set_environment(self, env, opts):
         """ Set environment for the tool """
