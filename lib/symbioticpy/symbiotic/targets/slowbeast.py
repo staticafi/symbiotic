@@ -120,6 +120,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         memerr = False
         asserterr = False
         for line in map(str, output):
+            if '[assertion error]: unreachable' in line:
+                continue # ignore assertions from unreachable
             if 'assertion failed!' in line:
                 asserterr = True
             elif 'assertion failure' in line:
