@@ -54,7 +54,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             if self._hit_threads:
                 yield (SlowbeastTool(self._options), ['-threads'], None)
             else:
-                yield (SlowbeastTool(self._options), ['-bself'], None)
+                yield (SlowbeastTool(self._options, bself=True), ['-bself'], None)
                 # if slowbeast crashes, run KLEE w/o timeout
                 # yield (KleeTool(self._options), None, None)
 

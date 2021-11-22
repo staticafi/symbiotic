@@ -23,8 +23,9 @@ except ImportError:
 
 class SymbioticTool(BaseTool, SymbioticBaseTool):
 
-    def __init__(self, opts):
+    def __init__(self, opts, bself=False):
         SymbioticBaseTool.__init__(self, opts)
+        self._bself = bself
 
     def name(self):
         return 'slowbeast'
@@ -84,8 +85,10 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         # FIXME: get rid of the __VERIFIER_assert hack
        #if prp.unreachcall():
        #    passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert,__VERIFIER_assume,assume_abort_if_not")
-        return ["-lowerswitch", "-simplifycfg",
-                "-flatten-loops", "-O3", "-remove-constant-exprs", "-reg2mem"]
+        passes = ["-lowerswitch", "-simplifycfg"]
+        if self._bself:
+            passes.append("-flatten-loops")
+        return passes + ["-O3", "-remove-constant-exprs", "-reg2mem"]
 
     def generate_witness(self, llvmfile, sources, has_error):
         print_stdout('Generating {0} witness: {1}'\
