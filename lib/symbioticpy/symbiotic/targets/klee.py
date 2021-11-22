@@ -248,6 +248,7 @@ class SymbioticTool(KleeBase):
             ('ERESOLVMEMCLN2', re.compile('.*Cannot resolve non-constant segment in memcleanup check.*')),
             ('ECMP', re.compile('.*Comparison other than (in)equality is not implemented.*')),
             ('ERESOLV', re.compile('.*Failed resolving.*segment.*')),
+            ('EUNREACH', re.compile('.*reached "unreachable" instruction.*')),
             ('ERESOLV', re.compile('.*ERROR:.*Could not resolve.*'))
         ]
 
