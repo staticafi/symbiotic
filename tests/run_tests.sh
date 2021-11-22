@@ -1,13 +1,14 @@
 #!/bin/sh
 
+set -ex
+
 # run symbiotic from the scripts/ preferably, so that the tests use
 # the current (development) version
 PATH="$PWD/../scripts:$PWD/../install/bin/:$PATH"
 
-# use llvm tools linked to symbiotic's install directory
-# FIXME: this is a really ugly hack
-LLVM_VERSION="$(symbiotic --version | grep 'LLVM' | cut -d' ' -f3)"
-export PATH="$PWD/../install/llvm-$LLVM_VERSION/bin:$PATH"
+# use LLVM tools linked to symbiotic's install directory
+ENV_CMD="$(symbiotic --debug=all --dump-env-cmd)"
+eval "$ENV_CMD"
 
 # sanitizer settings
 export ASAN_OPTIONS=detect_leaks=0
