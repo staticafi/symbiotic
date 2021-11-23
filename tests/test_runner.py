@@ -22,6 +22,7 @@ force_color = False
 
 def print(*args, color='', end='\n'):
     import builtins
+    import sys
 
     if not sys.stdout.isatty() and not force_color:
         builtins.print(*args, end=end)
@@ -29,6 +30,8 @@ def print(*args, color='', end='\n'):
         builtins.print(color, end='')
         builtins.print(*args, end='')
         builtins.print(RESET, end=end)
+
+    sys.stdout.flush()
 
 
 def get_expected_result(input_regex):
