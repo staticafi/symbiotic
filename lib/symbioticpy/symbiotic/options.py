@@ -428,100 +428,103 @@ Usage: symbiotic OPTS sources
 
 where OPTS can be following:
 
-    --bc                      Given files are LLVM bitcode (force this assumption)
-    --32                      Use 32-bit environment
-    --64                      Use 64-bit environment (the default)
-    --timeout=t               Set timeout to t seconds
-    --slicer-timeout=t        Set timeout for slicer (if slicer fails/timeouts,
-                              the original bitcode is used)
-    --no-slice                Do not slice the code
-    --verifier=name           Use the tool 'name'. Default is KLEE, other tools that
-                              can be integrated are Ceagle, CPAchecker, Seahorn,
-                              Skink and SMACK.
-    --explicit-symbolic       Do not make all memory symbolic,
-                              but rely on calls to __VERIFIER_nondet_*
-    --undefined-retval-nosym  Do not make return value of undefined functions symbolic,
-                              but replace it with 0.
-    --malloc-never-fails      Suppose malloc and calloc never return NULL
-    --undefined-are-pure      Suppose that undefined functions have no side-effects
-    --no-verification         Do not run verification phase (handy for debugging)
-    --optimize=opt1,...       Run optimizations, every item in the optimizations list
-                              is a string of type when-level, where when is 'before'
-                              or 'after' (slicing) and level in 'conservative', 'klee',
-                              'O2, 'O3'. A special value is 'none', which
-                              disables optimizations (same as --no-optimize).
-                              You can also pass optimizations directly to LLVM's opt,
-                              by providing a string when-opt-what, e.g. before-opt-iconstprop
-    --no-optimize             Don't optimize the code (same as --optimize=none)
-    --no-instrument           Don't instrument the code, for debugging.
-    --libc=klee               Link klee-libc.bc to the module
-    --repeat-slicing=N        Repeat slicing N times
-    --prp=property            Specify property that should hold. It is either LTL formula
-                              as specivied by SV-COMP, or one of following shortcuts:
-                                null-deref         -- program is free of null-dereferences
-                                memsafety          -- program does not use invalid memory
-                                                      (e.g., no double-free,
-                                                       no invalid dereference, etc.)
-                                undefined-behavior -- check for undefined behaviour
-                                undef-behavior
-                                undefined
-                                signed-overflow -- check for signed integer overflow
-                                no-overflow
-                                termination     -- try checking whether the program
-                                                   always terminates
-                                coverage        -- generate tests with as high coverage
-                                                   as possible
-                              The string can be given on line or in a file.
-    --memsafety-config-file   Set the configuration file for memsafety. The files
-                              can be found in share/sbt-instrumentation/memsafety/
-    --overflow-config-file    Set the configuration file for overflows. The files
-                              can be found in share/sbt-instrumentation/int_overflows/
-    --overflow-with-clang     Do not instrument checks for signed integer overflows with
-                              sbt-instrumentation, use clang sanitizer instead.
-    --pta=[fs|fi|old]         Use flow-sensitive/flow-insensitive or old
-                              (flow-insensitive too) points-to analysis when slicing.
-                              Default is the old
-    --debug=what              Print debug messages, what can be comma separated list of:
-                              all, compile, slicer
-                              In that case you get verbose output. You can just use
-                              --debug= to print basic messages.
-    --report=STR              A comma-separated list of {normal, short, sv-comp}
-                              that affects how symbiotic-verify reports the results.
-    --gen-ll                  Generate also .ll files (for debugging)
-    --output=FILE             Store the final code (that is to be run by a tool) to FILE
-    --witness=FILE            Store witness into FILE (default is witness.graphml)
+    --bc                         Given files are LLVM bitcode (force this assumption)
+    --32                         Use 32-bit environment
+    --64                         Use 64-bit environment (the default)
+    --timeout=t                  Set timeout to t seconds
+    --instrumentation-timeout=t  Set timeout for instrumentation (if instrumentation
+                                 timeouts, the original bitcode is used and slicing
+                                 is skipped)
+    --slicer-timeout=t           Set timeout for slicer (if slicer fails/timeouts,
+                                 the original bitcode is used)
+    --no-slice                   Do not slice the code
+    --verifier=name              Use the tool 'name'. Default is KLEE, other tools that
+                                 can be integrated are Ceagle, CPAchecker, Seahorn,
+                                 Skink and SMACK.
+    --explicit-symbolic          Do not make all memory symbolic,
+                                 but rely on calls to __VERIFIER_nondet_*
+    --undefined-retval-nosym     Do not make return value of undefined functions symbolic,
+                                 but replace it with 0.
+    --malloc-never-fails         Suppose malloc and calloc never return NULL
+    --undefined-are-pure         Suppose that undefined functions have no side-effects
+    --no-verification            Do not run verification phase (handy for debugging)
+    --optimize=opt1,...          Run optimizations, every item in the optimizations list
+                                 is a string of type when-level, where when is 'before'
+                                 or 'after' (slicing) and level in 'conservative', 'klee',
+                                 'O2, 'O3'. A special value is 'none', which
+                                 disables optimizations (same as --no-optimize).
+                                 You can also pass optimizations directly to LLVM's opt,
+                                 by providing a string when-opt-what, e.g. before-opt-iconstprop
+    --no-optimize                Don't optimize the code (same as --optimize=none)
+    --no-instrument              Don't instrument the code, for debugging.
+    --libc=klee                  Link klee-libc.bc to the module
+    --repeat-slicing=N           Repeat slicing N times
+    --prp=property               Specify property that should hold. It is either LTL formula
+                                 as specivied by SV-COMP, or one of following shortcuts:
+                                   null-deref         -- program is free of null-dereferences
+                                   memsafety          -- program does not use invalid memory
+                                                         (e.g., no double-free,
+                                                          no invalid dereference, etc.)
+                                   undefined-behavior -- check for undefined behaviour
+                                   undef-behavior
+                                   undefined
+                                   signed-overflow -- check for signed integer overflow
+                                   no-overflow
+                                   termination     -- try checking whether the program
+                                                      always terminates
+                                   coverage        -- generate tests with as high coverage
+                                                      as possible
+                                 The string can be given on line or in a file.
+    --memsafety-config-file      Set the configuration file for memsafety. The files
+                                 can be found in share/sbt-instrumentation/memsafety/
+    --overflow-config-file       Set the configuration file for overflows. The files
+                                 can be found in share/sbt-instrumentation/int_overflows/
+    --overflow-with-clang        Do not instrument checks for signed integer overflows with
+                                 sbt-instrumentation, use clang sanitizer instead.
+    --pta=[fs|fi|old]            Use flow-sensitive/flow-insensitive or old
+                                 (flow-insensitive too) points-to analysis when slicing.
+                                 Default is the old
+    --debug=what                 Print debug messages, what can be comma separated list of:
+                                 all, compile, slicer
+                                 In that case you get verbose output. You can just use
+                                 --debug= to print basic messages.
+    --report=STR                 A comma-separated list of {normal, short, sv-comp}
+                                 that affects how symbiotic-verify reports the results.
+    --gen-ll                     Generate also .ll files (for debugging)
+    --output=FILE                Store the final code (that is to be run by a tool) to FILE
+    --witness=FILE               Store witness into FILE (default is witness.graphml)
     --cflags=flags
-    --cppflags=flags          Append extra CFLAGS and CPPFLAGS to use while compiling,
-                              the environment CFLAGS and CPPFLAGS are used too
-    --argv=args               A comma-separated list of arguments for the main function
-    --slicer-params=STR       Pass parameters directly to slicer
-    --slicer-cmd=STR          Command to run slicer, default: sbt-slicer
-    --verifier-params=STR     Pass parameters directly to the verifier
-    --save-files              Do not remove working files after running.
-                              The files will be stored in the symbiotic_files directory.
-    --no-link                 Do not link missing functions from the given category
-                              (libc, svcomp, verifier, posix, kernel). The argument
-                              is a comma-separated list of values.
-    --exit-on-error           Exit after the first error is found.
-                              but continue searching
-    --help                    Show help message
-    --version                 Return version
-    --version-short           Return version as one-line string
-    --no-integrity-check      Does not run integrity check. For development only.
-    --dump-env                Only dump environment variables (for debugging)
-    --dump-env-cmd            Dump environment variables for using them in command line
-    --statistics              Dump statistics about bitcode
-    --working-dir-prefix      Where to create the temporary directory (defaults to /tmp)
-    --replay-error            Try replaying a found error on non-sliced code
-    --no-replay-error         Do not replay a found error on non-sliced code (overrides --sv-comp)
-    --search-include-paths    Try automatically finding paths with standard include directories
-    --sv-comp                 Shortcut for SV-COMP settings (malloc-never-fails, etc.)
-    --test-comp               Shortcut for TEST-COMP settings
-    --test-suite              Output for tests if --test-comp options is on
-    --full-instrumentation    Tranform checking errors to reachability problem, i.e.
-                              instrument tracking of the state of the program directly
-                              into the program.
-    --require-slicer          Abort if slicing fails/timeouts
+    --cppflags=flags             Append extra CFLAGS and CPPFLAGS to use while compiling,
+                                 the environment CFLAGS and CPPFLAGS are used too
+    --argv=args                  A comma-separated list of arguments for the main function
+    --slicer-params=STR          Pass parameters directly to slicer
+    --slicer-cmd=STR             Command to run slicer, default: sbt-slicer
+    --verifier-params=STR        Pass parameters directly to the verifier
+    --save-files                 Do not remove working files after running.
+                                 The files will be stored in the symbiotic_files directory.
+    --no-link                    Do not link missing functions from the given category
+                                 (libc, svcomp, verifier, posix, kernel). The argument
+                                 is a comma-separated list of values.
+    --exit-on-error              Exit after the first error is found.
+                                 but continue searching
+    --help                       Show help message
+    --version                    Return version
+    --version-short              Return version as one-line string
+    --no-integrity-check         Does not run integrity check. For development only.
+    --dump-env                   Only dump environment variables (for debugging)
+    --dump-env-cmd               Dump environment variables for using them in command line
+    --statistics                 Dump statistics about bitcode
+    --working-dir-prefix         Where to create the temporary directory (defaults to /tmp)
+    --replay-error               Try replaying a found error on non-sliced code
+    --no-replay-error            Do not replay a found error on non-sliced code (overrides --sv-comp)
+    --search-include-paths       Try automatically finding paths with standard include directories
+    --sv-comp                    Shortcut for SV-COMP settings (malloc-never-fails, etc.)
+    --test-comp                  Shortcut for TEST-COMP settings
+    --test-suite                 Output for tests if --test-comp options is on
+    --full-instrumentation       Tranform checking errors to reachability problem, i.e.
+                                 instrument tracking of the state of the program directly
+                                 into the program.
+    --require-slicer             Abort if slicing fails/timeouts
 
     The sources can be LLVM bitcode, C code, or both mixed together.
     C files are compiled into LLVM bitcode and all the input files are linked
