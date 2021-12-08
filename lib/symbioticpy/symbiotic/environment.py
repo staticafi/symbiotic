@@ -10,18 +10,15 @@ def _vers_are_same(v1, v2):
     parts2 = v2.split('.')
 
     # compare major and minor versions, ignore micro version
-    for i in range(0,2):
-        if parts1[i] != parts2[i]:
-            return False
-    return True
+    return all(parts1[i] == parts2[i] for i in range(2))
 
 def _check_clang_in_path(llvm_version):
     versline = process_grep(['clang', '-v'], 'clang version')
-    if versline[0] == 0 and len(versline[1]) == 1:
-        parts = versline[1][0].split()
-        return _vers_are_same(parts[2].decode('utf-8'), llvm_version)
+    if versline[0] != 0 or len(versline[1]) != 1:
+        return False
 
-    return False
+    parts = versline[1][0].split()
+    return _vers_are_same(parts[2].decode('utf-8'), llvm_version)
 
 def _set_symbiotic_environ(tool, env, opts):
     env.cwd = getcwd()
@@ -33,10 +30,7 @@ def _set_symbiotic_environ(tool, env, opts):
             env.prepend('C_INCLUDE_DIR', p)
 
     # check whether we are in distribution directory or in the developement directory
-    if isfile('{0}/build.sh'.format(env.symbiotic_dir)):
-        opts.devel_mode = True
-    else:
-        opts.devel_mode = False
+    opts.devel_mode = isfile('{0}/build.sh'.format(env.symbiotic_dir))
 
     llvm_version = tool.llvm_version()
     llvm_prefix = '{0}/llvm-{1}'.format(env.symbiotic_dir, llvm_version)
