@@ -8,6 +8,7 @@ from . utils.process import runcmd, ProcessRunner
 from . utils.watch import ProcessWatch, DbgWatch
 from . utils.utils import print_stderr, print_stdout
 from . exceptions import SymbioticException, SymbioticExceptionalResult
+from . transform import SymbioticCC
 
 def initialize_verifier(opts):
     from . targets import targets
@@ -54,26 +55,23 @@ class SymbioticVerifier(object):
 
         # tool to use
         self._tool = tool
+        # create an instance of CC so that we can do auxiliary
+        # transformations before verification
+        self._cc = SymbioticCC(sources, tool, opts, env)
 
     def command(self, cmd):
         return runcmd(cmd, DbgWatch('all'),
                       "Failed running command: {0}".format(" ".join(cmd)))
 
-    # FIXME: copied from opt, do not duplicate the code
-    def _run_opt(self, passes):
-        output = '{0}-pr.bc'.format(self.curfile[:self.curfile.rfind('.')])
-        cmd = ['opt', '-load', 'LLVMsbt.so']
+    def run_opt(self, passes):
+        self._cc.curfile = self.curfile
+        self._cc.run_opt(passes)
+        self.curfile = self._cc.curfile
 
-        # disable new pass manager in LLVM 13+
-        # TODO: support natively
-        ver_major, *_ = self._tool.llvm_version().split('.')
-        if int(ver_major) >= 13:
-            cmd.append('-enable-new-pm=0')
-
-        cmd += [self.curfile, '-o', output] + passes
-
-        runcmd(cmd, DbgWatch('all'), 'Running opt failed')
-        self.curfile = output
+    def link_undefined(self, only_func=None):
+        self._cc.curfile = self.curfile
+        self._cc.link_undefined(only_func)
+        self.curfile = self._cc.curfile
 
     def _run_tool(self, tool, prp, params, timeout):
         cmd = []
@@ -100,7 +98,7 @@ class SymbioticVerifier(object):
     def _run_verifier(self, tool, addparams, timeout):
         # do any additional transformations before verification
         if hasattr(tool, 'passes_before_verification'):
-            self._run_opt(tool.passes_before_verification())
+            self.run_opt(tool.passes_before_verification())
 
         if hasattr(tool, 'actions_before_verification'):
             tool.actions_before_verification(self)
