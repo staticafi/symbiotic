@@ -448,7 +448,7 @@ class SymbioticCC(object):
 
         return self._link_undefined(self.options.link_files)
 
-    def _get_undefined(self, bitcode, only_func=[]):
+    def _get_undefined(self, bitcode, only_func=None):
         cmd = ['llvm-nm', '-undefined-only', '-just-symbol-name', bitcode]
         watch = ProcessWatch(None)
         runcmd(cmd, watch, 'Failed getting undefined symbols from bitcode')
@@ -457,7 +457,7 @@ class SymbioticCC(object):
             return [x for x in undefs if x in only_func]
         return undefs
 
-    def _rec_link_undefined(self, only_func=[]):
+    def _rec_link_undefined(self, only_func=None):
         # get undefined functions from the bitcode
         undefs = self._get_undefined(self.curfile, only_func)
         if self._link_undefined(undefs):
@@ -466,7 +466,7 @@ class SymbioticCC(object):
             # functions
             self._rec_link_undefined()
 
-    def link_undefined(self, only_func=[]):
+    def link_undefined(self, only_func=None):
         if not self.options.linkundef:
             return
 
