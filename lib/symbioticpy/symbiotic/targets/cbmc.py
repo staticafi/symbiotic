@@ -219,7 +219,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if self._options.property.termination():
             passes.append('-instrument-nontermination')
         passes.extend(["-reg2mem", "-lowerswitch", "-simplifycfg"])
-        return super().passes_before_verification() + passes
+        return passes
 
     def passes_before_slicing(self):
         if self._options.property.termination():
