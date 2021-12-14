@@ -1,13 +1,13 @@
 #include "symbiotic-size_t.h"
 
 extern void *malloc(size_t);
-extern _Bool __VERIFIER_nondet__Bool(void);
+extern _Bool __symbiotic_nondet__Bool(void);
 extern void __VERIFIER_assume(int);
 extern void *memset(void *s, int c, size_t n);
 
 void *__VERIFIER_calloc(size_t nmem, size_t size)
 {
-	_Bool fails = __VERIFIER_nondet__Bool();
+	_Bool fails = __symbiotic_nondet__Bool();
 	if (fails)
 		return ((void *) 0);
 

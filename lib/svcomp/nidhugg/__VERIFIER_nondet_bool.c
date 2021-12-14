@@ -1,5 +1,5 @@
-extern unsigned __VERIFIER_nondet_uint(void);
+extern unsigned __symbiotic_nondet_uint(void);
 
-_Bool __VERIFIER_nondet_bool() {
-	return (_Bool) __VERIFIER_nondet_bool();
+_Bool __symbiotic_nondet_bool() {
+	return (_Bool) __symbiotic_nondet_bool();
 }

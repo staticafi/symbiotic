@@ -1,4 +1,4 @@
-extern int __VERIFIER_nondet_int(void);
+extern int __symbiotic_nondet_int(void);
 extern void __VERIFIER_assume(int);
 
 typedef signed long int time_t;
@@ -27,16 +27,16 @@ struct tm *localtime (const time_t *timer)
 {
    (void) timer;
 
-   __localtime.tm_sec   = __VERIFIER_nondet_int();
-   __localtime.tm_min   = __VERIFIER_nondet_int();
-   __localtime.tm_hour  = __VERIFIER_nondet_int();
-   __localtime.tm_mday  = __VERIFIER_nondet_int();
-   __localtime.tm_mon   = __VERIFIER_nondet_int();
-   __localtime.tm_year  = __VERIFIER_nondet_int();
-   __localtime.tm_wday  = __VERIFIER_nondet_int();
-   __localtime.tm_yday  = __VERIFIER_nondet_int();
+   __localtime.tm_sec   = __symbiotic_nondet_int();
+   __localtime.tm_min   = __symbiotic_nondet_int();
+   __localtime.tm_hour  = __symbiotic_nondet_int();
+   __localtime.tm_mday  = __symbiotic_nondet_int();
+   __localtime.tm_mon   = __symbiotic_nondet_int();
+   __localtime.tm_year  = __symbiotic_nondet_int();
+   __localtime.tm_wday  = __symbiotic_nondet_int();
+   __localtime.tm_yday  = __symbiotic_nondet_int();
    /* Daylight saving time */
-   __localtime.tm_isdst = __VERIFIER_nondet_int();
+   __localtime.tm_isdst = __symbiotic_nondet_int();
 
    /* Seconds (0-60) */
    __VERIFIER_assume(__localtime.tm_sec >= 0 && __localtime.tm_sec <= 60);
