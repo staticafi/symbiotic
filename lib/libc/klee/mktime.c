@@ -114,7 +114,7 @@ time_t __tm_to_time(struct tm *tm)
 		- -946684800; /* the dawn of time :) */
 }
 
-extern _Bool __VERIFIER_nondet__Bool(void);
+extern _Bool __symbiotic_nondet__Bool(void);
 time_t mktime(struct tm *tm)
 {
 	int isdst = tm->tm_isdst;
@@ -124,7 +124,7 @@ time_t mktime(struct tm *tm)
 
 	t = __tm_to_time(tm);
 	__time_to_tm(t, tm); // mktime normalizes values in tm
-    if (__VERIFIER_nondet__Bool()) {
+    if (__symbiotic_nondet__Bool()) {
         tm->tm_isdst = 0;
     }
 	
