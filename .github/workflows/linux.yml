@@ -163,12 +163,17 @@ jobs:
             # See https://systemd.io/TESTING_WITH_SANITIZERS for details.
             export LD_PRELOAD="$(clang-${{matrix.llvm}} -print-file-name=libclang_rt.asan-x86_64.so)"
             export LD_LIBRARY_PATH="$(dirname $LD_PRELOAD)"
-
-            # ASAN and UBSAN expect unversioned llvm-symbolizer in PATH.
-            export PATH="$(llvm-config-${{matrix.llvm}} --bindir):$PATH"
           else
             export LD_PRELOAD="$(gcc -print-file-name=libasan.so)"
           fi
+
+          # Make symbiotic use correct clang & friends from PATH (e.g. no
+          # disguised ccache or problems with unversioned tools not being
+          # in PATH).
+          #
+          # Also, clang's ASAN and UBSAN expect unversioned llvm-symbolizer
+          # in PATH.
+          export PATH="$(llvm-config-${{matrix.llvm}} --bindir):$PATH"
 
           # Due to LD_PRELOAD above, leak sanitizer was reporting leaks
           # literally in everything that was executed, e.g. make, shell,
