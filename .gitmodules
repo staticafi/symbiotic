@@ -4,7 +4,7 @@
 	ignore = untracked
 [submodule "sbt-slicer"]
 	path = sbt-slicer
-	url = git://github.com/staticafi/sbt-slicer
+	url = https://github.com/staticafi/sbt-slicer
 	ignore = untracked
 [submodule "sbt-instrumentation"]
 	path = sbt-instrumentation
