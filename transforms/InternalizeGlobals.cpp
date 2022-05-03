@@ -113,7 +113,7 @@ bool InternalizeGlobals::initializeExternalGlobals(Module& M) {
                 ConstantInt::get(Type::getInt32Ty(M.getContext()), 1)
             );
         } else {
-            GV->setInitializer(Constant::getNullValue(GV->getType()->getElementType()));
+            GV->setInitializer(Constant::getNullValue(GV->getValueType()));
         }
     }
 
