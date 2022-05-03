@@ -4,6 +4,7 @@
 // License. See LICENSE.TXT for details.
 
 #include <cassert>
+#include <map>
 #include <vector>
 #include <set>
 #include <fstream>

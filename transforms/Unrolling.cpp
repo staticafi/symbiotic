@@ -13,6 +13,7 @@
 
 #include "llvm/Support/CommandLine.h"
 
+#include <map>
 
 using namespace llvm;
 
