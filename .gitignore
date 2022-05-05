@@ -21,3 +21,7 @@ CMakeCache.txt
 
 *.ninja
 .ninja*
+install_manifest.txt
+googletest
+llvm-*/
+lib/symbioticpy/symbiotic/versions.py
