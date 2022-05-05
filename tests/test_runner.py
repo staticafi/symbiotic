@@ -79,11 +79,11 @@ def run_tests(test_files, prp, expected_result, args):
         match = result_re.search(out)
         if match and 'ERROR' not in match[0] and symbiotic.returncode == 0:
             print('FAIL', color=RED)
-            print('\tExpected result:', expected_result)
-            print('\tActual result:', match[0])
-            continue
+        else:
+            print('FATAL ERROR', color=RED)
 
-        print('FATAL ERROR', color=RED)
+        print('\tExpected result:', expected_result)
+        print('\tActual result:', match[0] if match else 'N/A')
 
         print('\nstdout:')
         print(out)
