@@ -32,6 +32,21 @@ class ToolWatch(ProcessWatch):
             msg = line.decode('utf-8', 'replace')
             dbg(msg, 'all', print_nl=msg[-1] != '\n', prefix='', color=None)
 
+class CGWatch(ProcessWatch):
+    def __init__(self):
+        ProcessWatch.__init__(self, None)
+        #self.calls = {}
+        self.called = {}
+
+    def parse(self, line):
+        if b"->" in line:
+            parts = line.split(b"->")
+            assert len(parts) == 2, parts
+            caller = parts[0].strip()[1:-1].decode('utf-8')
+            called = parts[1].strip()[1:-1].decode('utf-8')
+            #self.calls.setdefault(caller, []).append(called)
+            self.called.setdefault(called, []).append(caller)
+
 class SymbioticVerifier(object):
     """
     Instance of symbiotic tool. Instruments, prepares, compiles and runs
@@ -104,8 +119,37 @@ class SymbioticVerifier(object):
             params = params + addparams
         prp = self.options.property.getPrpFile()
 
-        # do it!
-        return self._run_tool(tool, prp, params, timeout)
+        # get callgraph
+        watch = CGWatch()
+        process = ProcessRunner()
+        cmd = ['llvm-cg-dump', '--use-pta=false', self.curfile]
+        returncode = process.run(cmd, watch)
+        if returncode != 0:
+            dbg('Failed creating CG')
+
+        called = watch.called
+
+        callers = called.get('reach_error')
+        while callers:
+            for start in callers:
+                print_stdout(f'ICE: starting from {start}')
+                tmpparams = params + ['-lazy-init', '-ignore-lazy-oob', f'-entry-point={start}']
+                res, watch = self._run_tool(tool, prp, tmpparams, timeout)
+                sw = res.lower().startswith
+                # we got an answer, we can finish
+                if sw('true'):
+                    return res, tool
+                if sw('false') and start == 'main':
+                    return res, tool
+
+            newcallers = []
+            for c in callers:
+                 tmp = called.get(c)
+                 if tmp:
+                     newcallers.extend(tmp)
+            callers = newcallers
+
+        return 'error(no more callers)', watch
 
     def run_verification(self):
         print_stdout('INFO: Starting verification', color='WHITE')
