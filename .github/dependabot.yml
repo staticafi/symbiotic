@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: "gitsubmodule"
+    # Files stored in repository root
+    directory: "/"
+    schedule:
+      interval: "daily"
+    reviewers:
+      - "trtikm"
+
+  - package-ecosystem: "github-actions"
+    # Workflow files stored in the
+    # default location of `.github/workflows`
+    directory: "/"
+    schedule:
+      interval: "daily"
+    reviewers:
+      - "lzaoral"
