@@ -22,7 +22,7 @@ jobs:
           # FIXME: Edit when KLEE is rebased to latest upstream.
           - {os: ubuntu-20.04, llvm: 11, compiler: gcc, klee: 'no-klee'}
           - {os: ubuntu-20.04, llvm: 12, compiler: gcc, klee: 'no-klee'}
-          - {os: ubuntu-20.04, llvm: 13, compiler: gcc, klee: 'no-klee'}
+          - {os: ubuntu-22.04, llvm: 13, compiler: gcc, klee: 'no-klee'}
 
           # Linux with Clang
           # - {os: ubuntu-18.04, llvm: '3.9', compiler: clang}
@@ -37,7 +37,7 @@ jobs:
           # FIXME: Edit when KLEE is rebased to latest upstream.
           - {os: ubuntu-20.04, llvm: 11, compiler: clang, klee: 'no-klee'}
           - {os: ubuntu-20.04, llvm: 12, compiler: clang, klee: 'no-klee'}
-          - {os: ubuntu-20.04, llvm: 13, compiler: clang, klee: 'no-klee'}
+          - {os: ubuntu-22.04, llvm: 13, compiler: clang, klee: 'no-klee'}
 
     runs-on: ${{matrix.os}}
     steps:
@@ -58,24 +58,12 @@ jobs:
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           sudo apt-add-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-7 main"
 
-      - name: '[Focal + LLVM 13] Add repositories'
-        if: matrix.os == 'ubuntu-20.04' && matrix.llvm == 13
-        run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo apt-add-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main"
-
       - name: Install dependencies
         run: |
           sudo apt update
           sudo apt install ccache cmake clang-${{matrix.llvm}} \
                            llvm-${{matrix.llvm}}-dev libc6-dev-i386 \
                            libz3-dev
-
-          # FIXME: Remove when https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=996551
-          # is resolved.
-          if [[ "${{matrix.llvm}}" = "13" ]]; then
-            sudo apt install libomp-13-dev
-          fi
 
       - name: Set environment
         id: env
