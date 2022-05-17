@@ -146,21 +146,18 @@ class SymbioticVerifier(object):
                         return res, tool
                     true_results.append(start)
                 elif sw('false'):
-                    all_true = False
                     if start == 'main':
                         return res, tool
                     tmp = called.get(start)
                     if tmp:
+                        all_true = False
                         newcallers.extend(tmp)
-                    else:
-                        return 'unknown (no caller)', watch
+                    # no caller means fine (if CG is sound)
                 else:
-                    all_true = False
                     tmp = called.get(start)
                     if tmp:
+                        all_true = False
                         newcallers.extend(tmp)
-                    else:
-                        return 'unknown (no caller)', tool
             if all_true:
                 return 'true', tool
             callers = newcallers
