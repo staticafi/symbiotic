@@ -131,7 +131,7 @@ class KleeToolFullInstrumentation(KleeBase):
                cmd.append('-max-time={0}'.format(opts.timeout))
 
         if opts.exit_on_error:
-            cmd.append('-exit-on-error-type=Assert')
+            cmd.append('-exit-on-error')
 
         if not opts.nowitness:
             cmd.append('-write-witness')
@@ -287,7 +287,7 @@ class SymbioticTool(KleeBase):
                '-malloc-symbolic-contents']
 
         if opts.property.errorcall():
-            cmd.append('-exit-on-error-type=Assert')
+            cmd.append('-exit-on-error')
             cmd.append('-dump-states-on-halt=0')
         else:
             cmd.append('-only-output-states-covering-new=1')
@@ -346,17 +346,10 @@ class SymbioticTool(KleeBase):
             cmd.append('-error-fn=__VERIFIER_error')
 
         if opts.exit_on_error:
-            if prop.memsafety():
                 cmd.append('-exit-on-error-type=Ptr')
-                cmd.append('-exit-on-error-type=Leak')
                 cmd.append('-exit-on-error-type=ReadOnly')
                 cmd.append('-exit-on-error-type=Free')
                 cmd.append('-exit-on-error-type=BadVectorAccess')
-            elif prop.nullderef():
-                cmd.append('-exit-on-error-type=Ptr')
-            elif prop.memcleanup():
-                cmd.append('-exit-on-error-type=Leak')
-            else:
                 cmd.append('-exit-on-error-type=Assert')
 
         if not opts.nowitness:

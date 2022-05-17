@@ -129,8 +129,12 @@ class SymbioticVerifier(object):
 
         called = watch.called
 
+        true_results = []
+        unknown_results = []
         callers = called.get('reach_error')
         while callers:
+            newcallers = []
+            all_true = True
             for start in callers:
                 print_stdout(f'ICE: starting from {start}')
                 tmpparams = params + ['-lazy-init', '-ignore-lazy-oob', f'-entry-point={start}']
@@ -138,15 +142,27 @@ class SymbioticVerifier(object):
                 sw = res.lower().startswith
                 # we got an answer, we can finish
                 if sw('true'):
-                    return res, tool
-                if sw('false') and start == 'main':
-                    return res, tool
-
-            newcallers = []
-            for c in callers:
-                 tmp = called.get(c)
-                 if tmp:
-                     newcallers.extend(tmp)
+                    if start == 'main':
+                        return res, tool
+                    true_results.append(start)
+                elif sw('false'):
+                    all_true = False
+                    if start == 'main':
+                        return res, tool
+                    tmp = called.get(start)
+                    if tmp:
+                        newcallers.extend(tmp)
+                    else:
+                        return 'unknown (no caller)', watch
+                else:
+                    all_true = False
+                    tmp = called.get(start)
+                    if tmp:
+                        newcallers.extend(tmp)
+                    else:
+                        return 'unknown (no caller)', tool
+            if all_true:
+                return 'true', tool
             callers = newcallers
 
         return 'error(no more callers)', watch
