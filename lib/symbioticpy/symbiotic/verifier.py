@@ -158,6 +158,8 @@ class SymbioticVerifier(object):
                     if tmp:
                         all_true = False
                         newcallers.extend(tmp)
+                    elif start == 'main': # unknown in main
+                        return res, tool
             if all_true:
                 return 'true', tool
             callers = newcallers
