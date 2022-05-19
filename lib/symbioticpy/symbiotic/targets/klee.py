@@ -127,12 +127,6 @@ class KleeToolFullInstrumentation(KleeBase):
 
         cmd = [executable] + self._arguments
 
-        if opts.timeout is not None:
-               cmd.append('-max-time={0}'.format(opts.timeout))
-
-        if opts.exit_on_error:
-            cmd.append('-exit-on-error')
-
         if not opts.nowitness:
             cmd.append('-write-witness')
 
@@ -321,9 +315,6 @@ class SymbioticTool(KleeBase):
 
         cmd = [executable] + self._arguments
 
-        if opts.timeout is not None:
-               cmd.append('-max-time={0}'.format(opts.timeout))
-
         if prop.memsafety():
             cmd.append('-check-leaks')
            #if opts.sv_comp:
@@ -344,13 +335,6 @@ class SymbioticTool(KleeBase):
         elif prop.signedoverflow():
             # we instrument with __VERIFIER_error
             cmd.append('-error-fn=__VERIFIER_error')
-
-        if opts.exit_on_error:
-                cmd.append('-exit-on-error-type=Ptr')
-                cmd.append('-exit-on-error-type=ReadOnly')
-                cmd.append('-exit-on-error-type=Free')
-                cmd.append('-exit-on-error-type=BadVectorAccess')
-                cmd.append('-exit-on-error-type=Assert')
 
         if not opts.nowitness:
             cmd.append('-write-witness')

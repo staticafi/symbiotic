@@ -139,10 +139,18 @@ class SymbioticVerifier(object):
             newcallers = []
             all_true = True
             for start in callers:
-                if start in explored:
+                if start in explored_funs:
                     continue
                 print_stdout(f'ICE: starting from {start}')
                 tmpparams = params + ['-lazy-init', '-ignore-lazy-oob', f'-entry-point={start}']
+                if start != 'main':
+                    tmpparams.append('-max-time=30')
+                    tmpparams.append('-exit-on-error-type=Ptr')
+                    tmpparams.append('-exit-on-error-type=ReadOnly')
+                    tmpparams.append('-exit-on-error-type=Free')
+                    tmpparams.append('-exit-on-error-type=BadVectorAccess')
+                tmpparams.append('-exit-on-error-type=Assert')
+
                 explored_funs.add(start)
                 res, watch = self._run_tool(tool, prp, tmpparams, timeout)
                 sw = res.lower().startswith
@@ -165,6 +173,9 @@ class SymbioticVerifier(object):
                         all_true = False
                         newcallers.extend(tmp)
                     elif start == 'main': # unknown in main
+                        # we ignore memory errors as those are irrelevant for us
+                        if res == 'unknown (false(valid-deref))':
+                            return 'true', tool
                         return res, tool
             if all_true:
                 return 'true', tool
