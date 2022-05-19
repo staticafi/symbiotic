@@ -129,15 +129,21 @@ class SymbioticVerifier(object):
 
         called = watch.called
 
+        explored_funs = set()
         true_results = []
         unknown_results = []
         callers = called.get('reach_error')
+        if not callers:
+            'true', tool
         while callers:
             newcallers = []
             all_true = True
             for start in callers:
+                if start in explored:
+                    continue
                 print_stdout(f'ICE: starting from {start}')
                 tmpparams = params + ['-lazy-init', '-ignore-lazy-oob', f'-entry-point={start}']
+                explored_funs.add(start)
                 res, watch = self._run_tool(tool, prp, tmpparams, timeout)
                 sw = res.lower().startswith
                 # we got an answer, we can finish
