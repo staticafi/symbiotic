@@ -163,7 +163,9 @@ int main( ) {
 }
 ```
 
-Running `scripts/symbiotic test1.c` should produce an output similar to the following:
+Running `scripts/symbiotic --exit-on-error test1.c` should produce an output similar to the following.
+The `--exit-on-error` option ensures that we stop after the first error is found, otherwise the computation
+would run for much longer.
 
 ```
 7.0.0-dev-llvm-9.0.1-symbiotic:5a52b0ca-dg:e89761ff-sbt-slicer:fff6245c-sbt-instrumentation:2f9be629-klee:e643b135
