@@ -68,7 +68,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install ccache cmake clang-${{matrix.llvm}} \
-                           llvm-${{matrix.llvm}}-dev libc6-dev-i386 \
+                           llvm-${{matrix.llvm}}-dev gcc-multilib \
                            libz3-dev
 
       - name: Set environment
