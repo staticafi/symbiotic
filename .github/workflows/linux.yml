@@ -100,6 +100,10 @@ jobs:
             CFLAGS="-shared-libasan $CFLAGS"
             CXXFLAGS="-shared-libasan $CXXFLAGS"
 
+            # Dynamic compiler-rt libraries are not in /usr/lib
+            tmp="$(clang-${{matrix.llvm}} -print-file-name=libclang_rt.asan-x86_64.so)"
+            LD_LIBRARY_PATH="$(dirname "$tmp")"
+
             # Force coloured output
             CFLAGS="-fcolor-diagnostics $CFLAGS"
             CXXFLAGS="-fcolor-diagnostics $CXXFLAGS"
@@ -119,6 +123,7 @@ jobs:
           echo "CFLAGS=$CFLAGS" >> $GITHUB_ENV
           echo "CXXFLAGS=$CXXFLAGS" >> $GITHUB_ENV
           echo "LDFLAGS=$LDFLAGS" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
           # Set up ccache
           sudo /usr/sbin/update-ccache-symlinks
@@ -152,11 +157,9 @@ jobs:
         if: matrix.llvm < 11
         run: |
           if [[ "${{matrix.compiler}}" = "clang" ]]; then
-            # * libclang_rt.asan-x86_64.so must be loaded as the first library
-            # * other compiler_rt libraries are not in /usr/lib
+            # libclang_rt.asan-x86_64.so must be loaded as the first library
             # See https://systemd.io/TESTING_WITH_SANITIZERS for details.
             export LD_PRELOAD="$(clang-${{matrix.llvm}} -print-file-name=libclang_rt.asan-x86_64.so)"
-            export LD_LIBRARY_PATH="$(dirname $LD_PRELOAD)"
           else
             export LD_PRELOAD="$(gcc -print-file-name=libasan.so)"
           fi
