@@ -78,9 +78,18 @@ jobs:
             CC="clang-${{matrix.llvm}}"
             CXX="clang++-${{matrix.llvm}}"
 
-            # Use shared libasan otherwise LLVMsbt.so would be underlinked.
-            CFLAGS="-shared-libasan $CFLAGS"
-            CXXFLAGS="-shared-libasan $CXXFLAGS"
+            # ASAN, glibc 2.27+ and clang 6.0 == SIGSEGV
+            # https://github.com/google/sanitizers/issues/954
+            if [[ "${{matrix.llvm}}" == "6.0" ]]; then
+              # Disable ASAN
+              CFLAGS="-fsanitize=undefined -g -fno-omit-frame-pointer"
+              CXXFLAGS="-fsanitize=undefined -g -fno-omit-frame-pointer"
+              LDFLAGS="-fsanitize=undefined"
+            else
+              # Use shared libasan otherwise LLVMsbt.so would be underlinked.
+              CFLAGS="-shared-libasan $CFLAGS"
+              CXXFLAGS="-shared-libasan $CXXFLAGS"
+            fi
 
             # Dynamic compiler-rt libraries are not in /usr/lib
             tmp="$(clang-${{matrix.llvm}} -print-file-name=libclang_rt.asan-x86_64.so)"
