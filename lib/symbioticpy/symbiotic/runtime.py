@@ -126,7 +126,7 @@ class SetupSymbiotic:
         # set environment. That is set PATH and LD_LIBRARY_PATH and so on
         self.environment.set(tool, self.opts)
 
-        check_bins = [self.opts.slicer_cmd[0], tool.executable()]
+        check_bins = [self.opts.slicer_cmd[0]] + [v.executable() for (v, _, _) in tool.verifiers()]
         if self.opts.generate_c:
             check_bins.append('llvm2c')
             check_bins.append('gen-c')

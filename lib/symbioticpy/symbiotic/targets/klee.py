@@ -64,6 +64,7 @@ class KleeToolFullInstrumentation(KleeBase):
             ('EROSYMB', re.compile('.*cannot make readonly object symbolic.*')),
             ('ESTACKOVFLW', re.compile('.*WARNING: Maximum stack size reached.*')),
             ('EMEMERROR', re.compile('.*memory error: out of bound pointer.*')),
+            ('EMEMERROR', re.compile('.*memory error: calling nullptr.*')),
             ('EPTHREAD', re.compile('.*ERROR:.*Call to pthread_.*')),
             ('EPTHREAD2', re.compile('.*ERROR:.*unsupported pthread API.*')),
             ('EFUNMODEL', re.compile('.*: unsupported function model.*')),
@@ -106,7 +107,7 @@ class KleeToolFullInstrumentation(KleeBase):
         if self._options.property.memsafety():
             passes.append('-remove-readonly-attr')
 
-        return passes
+        return passes + super().passes_after_slicing()
 
     def actions_after_compilation(self, symbiotic):
         # we want to link memsafety functions before instrumentation,
@@ -225,6 +226,7 @@ class SymbioticTool(KleeBase):
             ('EPTHREAD', re.compile('.*ERROR:.*Call to pthread_.*')),
             ('EPTHREAD2', re.compile('.*ERROR:.*unsupported pthread API.*')),
             ('EMEMERROR', re.compile('.*memory error: out of bound pointer.*')),
+            ('EMEMERROR', re.compile('.*memory error: calling nullptr.*')),
             ('EMAKESYMBOLIC', re.compile(
                 '.*memory error: invalid pointer: make_symbolic.*')),
             ('EVECTORUNSUP', re.compile('.*XXX vector instructions unhandled.*')),
@@ -246,6 +248,7 @@ class SymbioticTool(KleeBase):
             ('ERESOLVMEMCLN2', re.compile('.*Cannot resolve non-constant segment in memcleanup check.*')),
             ('ECMP', re.compile('.*Comparison other than (in)equality is not implemented.*')),
             ('ERESOLV', re.compile('.*Failed resolving.*segment.*')),
+            ('EUNREACH', re.compile('.*reached "unreachable" instruction.*')),
             ('ERESOLV', re.compile('.*ERROR:.*Could not resolve.*'))
         ]
 

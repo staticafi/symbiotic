@@ -114,7 +114,7 @@ class Tool(BaseTool):
         if not output:
             return 'ERROR - no output'
 
-        last = output[-1]
+        last = output[-1].decode("utf-8")
 
         if isTimeout:
             return 'TIMEOUT'

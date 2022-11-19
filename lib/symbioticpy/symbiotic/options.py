@@ -1,14 +1,16 @@
 #!/usr/bin/python
 
-import os, sys
+import sys
+from os import getcwd
+from os.path import isfile, isdir, abspath, expanduser
 from . utils import err, dbg, enable_debug
 
 def get_versions():
-    """ Return a tuple (VERSION, versions, llvm_versions) """ 
+    """ Return a tuple (VERSION, versions, llvm_versions) """
 
     # the numbers must be separated by '-, otherwise it will
     # break the tool-module in benchexec
-    VERSION='8.0.0'
+    VERSION='9.0.0-dev'
     try:
         from . versions import versions, build_types
         from . versions import llvm_version as LLVM_VERSION
@@ -49,8 +51,8 @@ class SymbioticOptions(object):
         self.no_verification = False
         self.no_instrument = False
         self.final_output = None
-        self.witness_output = '{0}/witness.graphml'.format(os.getcwd())
-        self.testsuite_output = '{0}/test-suite'.format(os.getcwd())
+        self.witness_output = '{0}/witness.graphml'.format(getcwd())
+        self.testsuite_output = '{0}/test-suite'.format(getcwd())
         self.source_is_bc = False
         self.argv = []
         self.optlevel = ["before-O3", "after-O3"]
@@ -98,6 +100,8 @@ class SymbioticOptions(object):
 
         self.sv_comp = False
         self.test_comp = False
+        self.witness_check = False
+        self.witness_check_file = None
 
         # These were globals previously, move them into stand-alone argparse
         # parser once we switch to argparse
@@ -113,6 +117,24 @@ def _remove_linkundef(options, what):
         options.linkundef.remove(what)
     except ValueError:
         pass
+
+def set_witness_check(opts):
+    opts.witness_check = True
+    opts.sv_comp = True
+    opts.nowitness = True
+    opts.no_integrity_check = True
+    opts.malloc_never_fails = True
+    opts.explicit_symbolic = True
+    opts.search_include_paths = False
+    opts.linkundef.append('svcomp')
+    opts.CFLAGS.append("-fbracket-depth=-1")
+    opts.replay_error = False
+    opts.tool_name='witch-klee'
+    opts.exit_on_error = False
+    opts.noslice = True
+    opts.report_type.append('sv-comp')
+
+    enable_debug('all')
 
 def set_svcomp(opts):
     opts.sv_comp = True
@@ -187,10 +209,10 @@ def print_shortest_vers():
 
 def translate_flags(output, flags):
     for f in flags:
-        if os.path.isfile(f):
-            output.append(os.path.abspath(f))
+        if isfile(f):
+            output.append(abspath(f))
         elif f.startswith("-I"):
-            output.append("-I{0}".format(os.path.abspath(f[2:])))
+            output.append("-I{0}".format(abspath(f[2:])))
         else:
             output.append(f)
 
@@ -222,7 +244,8 @@ def parse_command_line():
                                     'overflow-with-clang', 'gen-ll', 'gen-c', 'test-suite=',
                                     'search-include-paths', 'replay-error', 'cc',
                                     'report=', 'no-replay-error',
-                                    'unroll=', 'full-instrumentation', 'target-settings='])
+                                    'unroll=', 'full-instrumentation', 'target-settings=',
+                                    'witness-check='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -348,12 +371,11 @@ def parse_command_line():
                 err('Invalid numerical argument for timeout: {0}'.format(arg))
             dbg('Timeout of instrumentation set to {0} sec'.format(arg))
         elif opt == '--output':
-            options.final_output = os.path.abspath(arg)
+            options.final_output = abspath(arg)
             dbg('Output will be stored to {0}'.format(arg))
         elif opt == '--witness':
             options.nowitness=False
-            options.witness_output = os.path.expanduser(arg)
-            options.witness_output = os.path.abspath(options.witness_output)
+            options.witness_output = abspath(expanduser(arg))
             dbg('Witness will be stored to {0}'.format(arg))
         elif opt == '--no-witness':
             # can override nowitness set by --sv-comp
@@ -375,14 +397,17 @@ def parse_command_line():
             options.tool_params = arg.split()
         elif opt == '--target-settings':
             options.target_settings = arg.split()
+        elif opt == '--witness-check':
+            options.witness_check_file = abspath(expanduser(arg))
+            set_witness_check(options)
         elif opt == '--link':
             options.link_files += arg.split(',')
         elif opt == '--save-files':
             options.save_files = True
             options.generate_ll = True
         elif opt == '--working-dir-prefix':
-            wdr = os.path.abspath(arg)
-            if not os.path.isdir(wdr):
+            wdr = abspath(arg)
+            if not isdir(wdr):
                 # we should check also for writebility
                 err("'{0}' is not valid prefix for working directory".format(arg))
             options.working_dir_prefix = wdr
@@ -412,7 +437,7 @@ def parse_command_line():
         elif opt == '--full-instrumentation':
             options.full_instrumentation = True
         elif opt == '--test-suite':
-            options.testsuite_output = os.path.abspath(arg)
+            options.testsuite_output = abspath(arg)
 
     # check conflicts
     if options.require_slicer and options.noslice:

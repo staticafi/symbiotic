@@ -45,6 +45,16 @@ if [ "$FULL_ARCHIVE" = "yes" ]; then
 			done
 		fi
 	fi
+	if [ "$BUILD_WITCH_KLEE" = "yes" ]; then
+		DEPS=`get_klee_dependencies $LLVM_PREFIX/witch-klee/bin/witch-klee`
+		if [ ! -z "$DEPS" ]; then
+			for D in $DEPS; do
+				DEST="$PREFIX/lib/$(basename $D)"
+				cmp "$D" "$DEST" || cp -u "$D" "$DEST"
+				DEPENDENCIES="$DEST $DEPENDENCIES"
+			done
+		fi
+	fi
 	if [ "$BUILD_NIDHUGG" = "yes" ]; then
 		DEPS=`get_nidhugg_dependencies $LLVM_PREFIX/bin/nidhugg`
 		if [ ! -z "$DEPS" ]; then
@@ -69,6 +79,10 @@ done
 
 if [ ${BUILD_KLEE} = "yes" ];  then
 	BINARIES="$BINARIES $LLVM_PREFIX/bin/klee"
+fi
+
+if [ ${BUILD_WITCH_KLEE} = "yes" ];  then
+	BINARIES="$BINARIES $LLVM_PREFIX/witch-klee/bin/witch-klee"
 fi
 
 SCRIPTS=
@@ -108,6 +122,13 @@ if [ "${BUILD_KLEE}" = "yes" ];  then
 		$LLVM_PREFIX/lib32/klee/runtime/*.bc* \
 		$LLVM_PREFIX/lib/*.bc* \
 		$LLVM_PREFIX/lib32/*.bc*"
+fi
+if [ "${BUILD_WITCH_KLEE}" = "yes" ];  then
+	BCFILES="${BCFILES} \
+		$LLVM_PREFIX/witch-klee/lib/klee/runtime/*.bc* \
+		$LLVM_PREFIX/witch-klee/lib32/klee/runtime/*.bc* \
+		$LLVM_PREFIX/witch-klee/lib/*.bc* \
+		$LLVM_PREFIX/witch-klee/lib32/*.bc*"
 fi
 if [ "${BUILD_NIDHUGG}" = "yes" ];  then
 	BINARIES="$BINARIES $LLVM_PREFIX/bin/nidhugg"
@@ -165,6 +186,6 @@ git commit -m "Create Symbiotic distribution `date`" || true
 # git clean -xdf
 
 if [ "x$ARCHIVE" = "xyes" ]; then
-	git archive --prefix "symbiotic/" -o symbiotic.zip -9 --format zip HEAD
+	git archive --prefix "$ARCHIVE_PREFIX" -o symbiotic.zip -9 --format zip HEAD
 	mv symbiotic.zip ..
 fi

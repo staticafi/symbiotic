@@ -11,8 +11,8 @@ for PKG in curl wget rsync make cmake unzip lib32-glibc xz python; do
 done
 
 # install clang if there is not suitable compiler
-if ! which g++ &>/dev/null; then
-	if ! which clang++ &>/dev/null; then
+if ! g++ --version &>/dev/null; then
+	if ! clang++ --version &>/dev/null; then
 		PACKAGES="$PACKAGES clang"
 	fi
 fi

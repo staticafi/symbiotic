@@ -187,7 +187,7 @@ class SymbioticBaseTool(object):
             return ['-find-exits', '-use-exit', '-no-change-assumes']
         return []
 
-    def passes_before_verification(self):
+    def passes_after_slicing(self):
         """ By default, remove all inserted markers and so on in memsafety
              checking """
 
@@ -207,4 +207,10 @@ class SymbioticBaseTool(object):
         elif prop.signedoverflow():
             return ['-delete-call', '__symbiotic_check_overflow']
         return []
+
+   #def passes_before_verification(self):
+   #def actions_before_verification(self, symbiotic):
+   # These callbacks are run 'always' before running a verification tool,
+    # so even multiple times. If you want to run something only once,
+    # put it into passes/actions_after_slicing
 
