@@ -82,6 +82,9 @@ class Symbiotic(object):
         cc = SymbioticCC(self.sources, self._tool, options, self.env)
         bitcode = cc.run()
 
+        if bitcode is None:
+            return "unknown"
+
         if options.no_verification:
             return 'No verification'
 
