@@ -20,7 +20,8 @@ def gentest(bitcode, outdir, prp, suffix=None, params=None):
                '--output-stats=0', '-istats-write-interval=60s',
                '-timer-interval=10', '-external-calls=pure',
                '-write-testcases', '-malloc-symbolic-contents',
-               '-max-memory=8000', '-output-source=false']
+               '-max-memory=8000', '-output-source=false',
+               '--lazy-init']
     if prp != 'coverage':
         options.append(f'-error-fn={prp}')
         options.append('-exit-on-error-type=Assert')

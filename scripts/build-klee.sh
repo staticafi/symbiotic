@@ -69,29 +69,13 @@ if [ "$UPDATE" = "1" ]; then
 fi
 
 # clean runtime libs, it may be 32-bit from last build
-make -C runtime -f Makefile.cmake.bitcode clean 2>/dev/null
+make -C runtime clean 2>/dev/null
 
 # build 64-bit libs and install them to prefix
 (build && make install) || exit 1
 
-mv $LLVM_PREFIX/lib64/klee $LLVM_PREFIX/lib/klee || true
-rmdir $LLVM_PREFIX/lib64 || true
-
-# clean 64-bit build and build 32-bit version of runtime library
-make -C runtime -f Makefile.cmake.bitcode clean \
-	|| exitmsg "Failed building klee 32-bit runtime library"
-
-# EXTRA_LLVMCC.Flags is obsolete and to be removed soon
-make -C runtime -f Makefile.cmake.bitcode \
-	LLVMCC.ExtraFlags=-m32 \
-	EXTRA_LLVMCC.Flags=-m32 \
-	|| exitmsg "Failed building 32-bit klee runtime library"
-
-# copy 32-bit library version to prefix
 mkdir -p $LLVM_PREFIX/lib32/klee/runtime
-cp ${BUILD_TYPE}/lib/*.bc* \
-	$LLVM_PREFIX/lib32/klee/runtime/ \
-	|| exitmsg "Did not build 32-bit klee runtime lib"
+mv $LLVM_PREFIX/lib/klee/runtime/*32_*.bca $LLVM_PREFIX/lib32/klee/runtime \
+	|| exitmsg "Cannot move 32-bit klee runtime lib files."
 
 popd
-

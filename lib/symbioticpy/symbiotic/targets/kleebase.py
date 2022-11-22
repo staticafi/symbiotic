@@ -291,7 +291,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                            #'--output-istats=0',
                            '-only-output-states-covering-new=1',
                            '-use-forked-solver=0',
-                           '-external-calls=pure', '-max-memory=8000']
+                           '-external-calls=pure', '-max-memory=8000',
+                           '--lazy-init']
 
     def can_replay(self):
         """ Return true if the tool can do error replay """
