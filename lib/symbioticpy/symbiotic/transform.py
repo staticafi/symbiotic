@@ -746,6 +746,21 @@ class SymbioticCC(object):
         # compile all given sources
         self._compile_sources()
 
+        try:
+            dbg("Searching for unsupported features in source file(s)...", color="BLUE")
+            features = self._get_undefined(self.curfile)
+            unsupported_features = [ "scanf", "abs", "fseek" ]
+            dbg("Tested features: [ " + ", ".join(features) + " ]")
+            dbg("Unsupported features: [ " + ", ".join(unsupported_features) + " ]")
+            for feature in features:
+                for unsupported in unsupported_features:
+                    if unsupported in feature:
+                        dbg("ERROR: Found '" + unsupported + "' in '" + feature + "'", color="RED")
+                        return None
+            dbg("No unsupported feature detected => proceeding to the analysis...", color="BLUE")
+        except Exception as e:
+            dbg("The search for unsupported features in source file(s) has FAILED: " + str(e), color="RED")
+
         # make the path absolute
         self.curfile = os.path.abspath(self.curfile)
         self._save_ll()
