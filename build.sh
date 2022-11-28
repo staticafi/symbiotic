@@ -554,11 +554,11 @@ if [ "`pwd`" != $ABS_SRCDIR ]; then
 fi
 
 ######################################################################
-#   dg
+#   sbt-dg
 ######################################################################
-PHASE="building dg"
+PHASE="building sbt-dg"
 if [ $FROM -le 1 ]; then
-	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/dg)" ]; then
+	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/sbt-dg)" ]; then
 		git_submodule_init
 	fi
 
@@ -567,7 +567,7 @@ if [ $FROM -le 1 ]; then
 	fi
 
 	# download the dg library
-	pushd "$SRCDIR/dg" || exitmsg "Cloning failed"
+	pushd "$SRCDIR/sbt-dg" || exitmsg "Cloning failed"
 	mkdir -p build-${LLVM_VERSION} || exitmsg "error"
 	pushd build-${LLVM_VERSION} || exitmsg "error"
 
@@ -585,7 +585,7 @@ if [ $FROM -le 1 ]; then
 			|| clean_and_exit 1 "git"
 	fi
 
-	(build && make install) || exitmsg "Building and installing DG"
+	(build && make install) || exitmsg "Building and installing sbt-dg"
 	popd
 	popd
 fi
@@ -616,7 +616,7 @@ if [ $FROM -le 1 ]; then
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DLLVM_LINK_DYLIB="$LLVM_DYLIB" \
-			-DDG_PATH=$ABS_SRCDIR/dg \
+			-DDG_PATH=$ABS_SRCDIR/sbt-dg \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			-DCMAKE_INSTALL_RPATH="\$ORIGIN/../lib" \
 			|| clean_and_exit 1 "git"
@@ -908,7 +908,7 @@ if [ $FROM -le 6 ]; then
 			-DLLVM_BUILD_PATH="$LLVM_BUILD_PATH" \
 			-DLLVM_DIR=$LLVM_DIR \
 			-DLLVM_LINK_DYLIB="$LLVM_DYLIB" \
-			-DDG_PATH=$ABS_SRCDIR/dg \
+			-DDG_PATH=$ABS_SRCDIR/sbt-dg \
 			-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
 			|| clean_and_exit 1 "git"
 	fi

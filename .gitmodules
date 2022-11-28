@@ -1,7 +1,3 @@
-[submodule "dg"]
-	path = dg
-	url = https://github.com/mchalupa/dg
-	ignore = untracked
 [submodule "sbt-slicer"]
 	path = sbt-slicer
 	url = https://github.com/staticafi/sbt-slicer
@@ -16,3 +12,12 @@
 [submodule "llvm2c"]
 	path = llvm2c
 	url = https://github.com/staticafi/llvm2c
+[submodule "sbt-llvmlite"]
+	path = sbt-llvmlite
+	url = https://github.com/staticafi/sbt-llvmlite
+[submodule "sbt-slowbeast"]
+	path = sbt-slowbeast
+	url = https://github.com/staticafi/sbt-slowbeast
+[submodule "sbt-dg"]
+	path = sbt-dg
+	url = https://github.com/staticafi/sbt-dg
