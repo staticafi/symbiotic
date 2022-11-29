@@ -18,6 +18,7 @@ tags
 Makefile
 CMakeFiles
 CMakeCache.txt
+z3/
 
 *.ninja
 .ninja*
