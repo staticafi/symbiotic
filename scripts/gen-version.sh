@@ -5,7 +5,7 @@ SYMBIOTIC_VERSION=`git rev-parse HEAD`
 SYMBIOTIC_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE[:=]' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
 popd
 
-pushd dg/build-${LLVM_VERSION} || exit 1
+pushd sbt-dg/build-${LLVM_VERSION} || exit 1
 DG_VERSION=`git rev-parse HEAD`
 DG_BUILD_TYPE=$(grep 'CMAKE_BUILD_TYPE[:=]' CMakeCache.txt | sed 's@.*=\(.*\)@\1@')
 popd
