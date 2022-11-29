@@ -20,6 +20,7 @@ CMakeFiles
 CMakeCache.txt
 z3/
 predator-*/
+symbiotic.zip
 
 *.ninja
 .ninja*
