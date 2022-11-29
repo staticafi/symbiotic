@@ -19,6 +19,7 @@ Makefile
 CMakeFiles
 CMakeCache.txt
 z3/
+predator-*/
 
 *.ninja
 .ninja*
