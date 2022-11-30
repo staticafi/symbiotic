@@ -1,0 +1,22 @@
+diff --git a/build-aux/cclib.sh b/build-aux/cclib.sh
+index 65586851..f2ecd856 100644
+--- a/build-aux/cclib.sh
++++ b/build-aux/cclib.sh
+@@ -26,7 +26,7 @@ find_clang_host() {
+     "$CLANG_HOST" --version >/dev/null 2>&1 \
+         && return 0
+ 
+-    CLANG_HOST="/usr/local/bin/clang"
++    CLANG_HOST=$(which clang)
+     "$CLANG_HOST" --version >/dev/null \
+         && return 0
+ 
+@@ -37,7 +37,7 @@ find_opt_host() {
+     "$OPT_HOST" --version >/dev/null 2>&1 \
+         && return 0
+ 
+-    OPT_HOST="/usr/local/bin/opt"
++    OPT_HOST=$(which opt)
+     "$OPT_HOST" --version >/dev/null \
+         && return 0
+
