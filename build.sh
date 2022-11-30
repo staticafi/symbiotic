@@ -91,10 +91,12 @@ WITH_LLVM_SRC=
 WITH_LLVM_DIR=
 WITH_LLVMCBE='no'
 BUILD_STP='no'
-BUILD_Z3='no'
+BUILD_Z3='yes'
 BUILD_SVF='no'
-BUILD_PREDATOR='no'
+BUILD_PREDATOR='yes'
 BUILD_LLVM2C='yes'
+BUILD_LLVMLITE='yes'
+BUILD_SLOWBEAST='yes'
 
 BUILD_KLEE="yes"
 BUILD_WITCH_KLEE="no"
@@ -107,8 +109,8 @@ HAVE_GTEST=$(if check_gtest; then echo "yes"; else echo "no"; fi)
 WITH_ZLIB=$(if check_zlib; then echo "no"; else echo "yes"; fi)
 ENABLE_TCMALLOC=$(if check_tcmalloc; then echo "on"; else echo "off"; fi)
 
-ARCHIVE="no"
-FULL_ARCHIVE="no"
+ARCHIVE="yes"
+FULL_ARCHIVE="yes"
 ARCHIVE_PREFIX="symbiotic/"
 PRECOMPILE_BITCODE="yes"
 
@@ -398,6 +400,9 @@ build_llvm()
 			patch -p0 --dry-run < $ABS_SRCDIR/patches/force_lifetime_markers.patch || exitmsg "Patching LLVM"
 			patch -p0 < $ABS_SRCDIR/patches/force_lifetime_markers.patch || exitmsg "Patching LLVM"
 			popd
+		fi
+		if [ "$LLVM_VERSION" = "10.0.1" ]; then
+			cp ./patches/benchmark_register.h.LLVM-10.0.1.patch llvm-${LLVM_VERSION}/utils/benchmark/src/benchmark_register.h
 		fi
 
 		rm -f llvm-${LLVM_VERSION}.src.tar.xz &>/dev/null || exitmsg "Removing downloaded archive"
@@ -856,6 +861,10 @@ PHASE="building Predator"
 if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 	if [ ! -d predator-${LLVM_VERSION} ]; then
                git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp21-v1 predator-${LLVM_VERSION}
+
+				pushd predator-${LLVM_VERSION}
+				git apply ../patches/cclib.sh.predator.patch
+				popd
 	fi
 
 	pushd predator-${LLVM_VERSION}
@@ -953,6 +962,61 @@ fi
 fi
 
 ######################################################################
+#   sbt-llvmlite
+######################################################################
+PHASE="building sbt-llvmlite"
+if [ $FROM -le 6 -a "$BUILD_LLVMLITE" = "yes" ]; then
+	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/sbt-llvmlite)" ]; then
+		git_submodule_init
+	fi
+
+	pushd "$SRCDIR/sbt-llvmlite" || exitmsg "sbt-llvmlite: pushd command has failed."
+
+	export LLVM_CONFIG=${LLVM_BUILD_PATH}/bin/llvm-config
+	if [ ! -e ${LLVM_CONFIG} ];then
+		echo "Error: Invalid path to Symbiotic's LLVM build:" ${LLVM_CONFIG} ;
+		echo "       Symbiotic's LLVM dir name:" ${LLVM_BUILD_PATH} ;
+		exit 1 ;
+	fi
+	python3 setup.py build
+
+	popd
+fi
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+######################################################################
+#   sbt-slowbeast
+######################################################################
+PHASE="building sbt-slowbeast"
+if [ $FROM -le 6 -a "$BUILD_SLOWBEAST" = "yes" ]; then
+	if [  "x$UPDATE" = "x1" -o -z "$(ls -A $SRCDIR/sbt-slowbeast)" ]; then
+		git_submodule_init
+
+		pip3 install z3-solver
+		pip3 install pyinstaller
+	fi
+
+	pushd "$SRCDIR/sbt-slowbeast" || exitmsg "sbt-slowbeast: pushd command has failed."
+
+	if [ -d ./dist ];then
+		rm -Rf ./dist
+	fi
+	pyinstaller -p ../sbt-llvmlite --collect-binaries z3 sb
+
+	mkdir -p ../install/slowbeast
+	cp -r ./dist/sb/* ../install/slowbeast
+
+	popd
+fi
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+######################################################################
 #   copy lib and include files
 ######################################################################
 PHASE="installing files and function models"
@@ -988,4 +1052,12 @@ if [ $FROM -le 7 ]; then
 
     PHASE="creating distribution"
 	source scripts/push-to-git.sh
+
+    PHASE="building distribution ZIP file"
+	cd $ABS_SRCDIR
+	mv ./install ./symbiotic
+	zip -r symbiotic.zip ./symbiotic
+	mv ./symbiotic ./install
 fi
+
+echo "Build finished successfully."

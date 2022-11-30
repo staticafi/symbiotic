@@ -27,6 +27,12 @@ get_nidhugg_dependencies()
 ######################################################################
 # copy license
 cp LICENSE.txt $PREFIX/
+cp klee.LICENSE.txt $PREFIX/
+cp predator.LICENSE.txt $PREFIX
+cp sbt-instrumentation.LICENSE.txt $PREFIX
+cp llvm.LICENSE.txt $PREFIX
+cp sbt-dg.LICENSE.txt $PREFIX
+cp sbt-slowbeast.LICENSE.txt $PREFIX
 cp README.md $PREFIX/
 
 # copy the symbiotic python module
@@ -158,34 +164,4 @@ if [ -z "$CI" ]; then
 		echo "Stripping $B"
 		test -w "$B" && strip "$B"
 	done
-fi
-
-git init
-git add \
-	$BINARIES \
-	$BCFILES \
-	$SCRIPTS \
-	$LIBRARIES \
-	$DEPENDENCIES \
-	$INSTR\
-	bin/symbiotic \
-	bin/kleetester.py \
-	bin/gen-c \
-	include/symbiotic.h \
-	include/symbiotic-size_t.h \
-	$(find lib -name '*.c')\
-	$(find . -name '*.bc')\
-	properties/* \
-	$(find lib/symbioticpy/symbiotic -name '*.py')\
-	LICENSE.txt README.md
-	#$LLVM_PREFIX/include/stddef.h \
-
-git commit -m "Create Symbiotic distribution `date`" || true
-
-# remove unnecessary files
-# git clean -xdf
-
-if [ "x$ARCHIVE" = "xyes" ]; then
-	git archive --prefix "$ARCHIVE_PREFIX" -o symbiotic.zip -9 --format zip HEAD
-	mv symbiotic.zip ..
 fi
