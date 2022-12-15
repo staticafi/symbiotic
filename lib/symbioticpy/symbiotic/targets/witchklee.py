@@ -29,6 +29,7 @@ except ImportError:
     import symbiotic.benchexec.util as util
     import symbiotic.benchexec.result as result
 
+from symbiotic.exceptions import SymbioticException
 from . kleebase import SymbioticTool as KleeBase
 
 class SymbioticTool(KleeBase):
@@ -82,6 +83,9 @@ class SymbioticTool(KleeBase):
         if opts.exit_on_error:
             print("Witch-KLEE does not support -exit-on-error")
 
+        if self._options.witness_check_file is None:
+            raise SymbioticException("Witch-KLEE needs a witness (--witness-check=<witness>)")
+
         return cmd + options + tasks + self._options.argv + [self._options.witness_check_file]
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
@@ -111,6 +115,8 @@ class SymbioticTool(KleeBase):
                     return result.RESULT_FALSE_MEMCLEANUP
                 if b'no-overflow' in line:
                     return result.RESULT_FALSE_OVERFLOW
+            if b'unconfirmed' in line:
+                return result.RESULT_TRUE_PROP
         if returncode != 0:
             if parsing_failed:
                 return f'{result.RESULT_ERROR} ({parsing_failed})'
