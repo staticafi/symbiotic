@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import os, sys
 from . utils import err, dbg, enable_debug

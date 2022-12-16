@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 from subprocess import Popen, PIPE, STDOUT
 from time import sleep
 from sys import stderr
