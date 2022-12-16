@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 from os.path import basename
 from hashlib import sha256 as hashfunc

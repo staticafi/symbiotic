@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 class SymbioticException(Exception):
     def __init__(self, msg):

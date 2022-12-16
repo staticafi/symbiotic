@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 from . exceptions import SymbioticException
 from os.path import abspath, join
