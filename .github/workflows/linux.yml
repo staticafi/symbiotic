@@ -117,6 +117,14 @@ jobs:
             CXXFLAGS="-fdiagnostics-color $CXXFLAGS"
           fi
 
+          # Due to LD_PRELOAD above, leak sanitizer was reporting leaks
+          # literally in everything that was executed, e.g. make, shell,
+          # python and other tools that are not under our control.
+          ASAN_OPTIONS=detect_leaks=0
+
+          # Make UBSAN print whole stack traces
+          UBSAN_OPTIONS="print_stacktrace=1"
+
           # Save the environment
           echo "CC=$CC" >> $GITHUB_ENV
           echo "CXX=$CXX" >> $GITHUB_ENV
@@ -124,6 +132,8 @@ jobs:
           echo "CXXFLAGS=$CXXFLAGS" >> $GITHUB_ENV
           echo "LDFLAGS=$LDFLAGS" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "ASAN_OPTIONS=$ASAN_OPTIONS" >> "$GITHUB_ENV"
+          echo "UBSAN_OPTIONS=$UBSAN_OPTIONS" >> "$GITHUB_ENV"
 
           # Set up ccache
           sudo /usr/sbin/update-ccache-symlinks
@@ -172,10 +182,7 @@ jobs:
           # in PATH.
           export PATH="$(llvm-config-${{matrix.llvm}} --bindir):$PATH"
 
-          # Due to LD_PRELOAD above, leak sanitizer was reporting leaks
-          # literally in everything that was executed, e.g. make, shell,
-          # python and other tools that are not under our control.
-          ASAN_OPTIONS=detect_leaks=0 make -C tests
+          make -C tests
 
       - name: ccache statistics
         run: ccache -s
