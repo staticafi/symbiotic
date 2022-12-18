@@ -166,11 +166,6 @@ mkdir -p $PREFIX/include
 check()
 {
 	MISSING=""
-	if ! curl --version &>/dev/null; then
-		echo "Need curl to download files"
-		MISSING="curl"
-	fi
-
 	if ! which true ; then
 		echo "Need 'which' command."
 		MISSING="which"
