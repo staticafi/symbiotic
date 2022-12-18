@@ -402,7 +402,19 @@ if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 	pushd predator-${LLVM_VERSION}
 
 	if [ ! -f cl_build/CMakeCache.txt ]; then
-		./switch-host-llvm.sh "$LLVM_DIR"
+		if [ -n "$CI" ]; then
+			# FIXME: This is an ugly hack that won't be, hopefully,
+			# needed when Predator implements a proper support for
+			# compilation with ASAN because the LD_PRELOAD hack
+			# does not work on Ubuntu 22.04. For an unknown reason,
+			# anything curl-related just freezes on this system.
+			CFLAGS="${CFLAGS//address,/}"             \
+				CXXFLAGS="${CXXFLAGS//address,/}" \
+				LDFLAGS="${LDFLAGS//address,/}"   \
+				./switch-host-llvm.sh "$LLVM_DIR"
+		else
+			./switch-host-llvm.sh "$LLVM_DIR"
+		fi
 	fi
 
     build || exitmsg "Failed building Predator"
