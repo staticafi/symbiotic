@@ -61,7 +61,7 @@ OPTS=
 ARCHIVE="no"
 FULL_ARCHIVE="no"
 BUILD_KLEE="yes"
-BUILD_PREDATOR="no"
+BUILD_PREDATOR="yes"
 BUILD_LLVM2C='yes'
 LLVM_CONFIG=
 
@@ -396,7 +396,7 @@ if [  -d predator-${LLVM_VERSION} ]; then
 fi
 if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 	if [ ! -d predator-${LLVM_VERSION} ]; then
-               git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp21-v1 predator-${LLVM_VERSION}
+               git_clone_or_pull "https://github.com/lzaoral/predator" -b upstream-rebase predator-${LLVM_VERSION}
 	fi
 
 	pushd predator-${LLVM_VERSION}
