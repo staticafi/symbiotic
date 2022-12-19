@@ -68,8 +68,8 @@ jobs:
         run: |
           sudo apt update
           sudo apt install ccache cmake clang-${{matrix.llvm}} \
-                           llvm-${{matrix.llvm}}-dev libc6-dev-i386 \
-                           libz3-dev
+                           gcc-multilib llvm-${{matrix.llvm}}-dev \
+                           libboost-dev libz3-dev
 
       - name: Set environment
         id: env
@@ -100,6 +100,10 @@ jobs:
             CFLAGS="-shared-libasan $CFLAGS"
             CXXFLAGS="-shared-libasan $CXXFLAGS"
 
+            # Dynamic compiler-rt libraries are not in /usr/lib
+            tmp="$(clang-${{matrix.llvm}} -print-file-name=libclang_rt.asan-x86_64.so)"
+            LD_LIBRARY_PATH="$(dirname "$tmp")"
+
             # Force coloured output
             CFLAGS="-fcolor-diagnostics $CFLAGS"
             CXXFLAGS="-fcolor-diagnostics $CXXFLAGS"
@@ -113,12 +117,23 @@ jobs:
             CXXFLAGS="-fdiagnostics-color $CXXFLAGS"
           fi
 
+          # Due to LD_PRELOAD above, leak sanitizer was reporting leaks
+          # literally in everything that was executed, e.g. make, shell,
+          # python and other tools that are not under our control.
+          ASAN_OPTIONS=detect_leaks=0
+
+          # Make UBSAN print whole stack traces
+          UBSAN_OPTIONS="print_stacktrace=1"
+
           # Save the environment
           echo "CC=$CC" >> $GITHUB_ENV
           echo "CXX=$CXX" >> $GITHUB_ENV
           echo "CFLAGS=$CFLAGS" >> $GITHUB_ENV
           echo "CXXFLAGS=$CXXFLAGS" >> $GITHUB_ENV
           echo "LDFLAGS=$LDFLAGS" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "ASAN_OPTIONS=$ASAN_OPTIONS" >> "$GITHUB_ENV"
+          echo "UBSAN_OPTIONS=$UBSAN_OPTIONS" >> "$GITHUB_ENV"
 
           # Set up ccache
           sudo /usr/sbin/update-ccache-symlinks
@@ -152,11 +167,9 @@ jobs:
         if: matrix.llvm < 11
         run: |
           if [[ "${{matrix.compiler}}" = "clang" ]]; then
-            # * libclang_rt.asan-x86_64.so must be loaded as the first library
-            # * other compiler_rt libraries are not in /usr/lib
+            # libclang_rt.asan-x86_64.so must be loaded as the first library
             # See https://systemd.io/TESTING_WITH_SANITIZERS for details.
             export LD_PRELOAD="$(clang-${{matrix.llvm}} -print-file-name=libclang_rt.asan-x86_64.so)"
-            export LD_LIBRARY_PATH="$(dirname $LD_PRELOAD)"
           else
             export LD_PRELOAD="$(gcc -print-file-name=libasan.so)"
           fi
@@ -169,10 +182,7 @@ jobs:
           # in PATH.
           export PATH="$(llvm-config-${{matrix.llvm}} --bindir):$PATH"
 
-          # Due to LD_PRELOAD above, leak sanitizer was reporting leaks
-          # literally in everything that was executed, e.g. make, shell,
-          # python and other tools that are not under our control.
-          ASAN_OPTIONS=detect_leaks=0 make -C tests
+          make -C tests
 
       - name: ccache statistics
         run: ccache -s

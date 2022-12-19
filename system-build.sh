@@ -61,7 +61,7 @@ OPTS=
 ARCHIVE="no"
 FULL_ARCHIVE="no"
 BUILD_KLEE="yes"
-BUILD_PREDATOR="no"
+BUILD_PREDATOR="yes"
 BUILD_LLVM2C='yes'
 LLVM_CONFIG=
 
@@ -166,11 +166,6 @@ mkdir -p $PREFIX/include
 check()
 {
 	MISSING=""
-	if ! curl --version &>/dev/null; then
-		echo "Need curl to download files"
-		MISSING="curl"
-	fi
-
 	if ! which true ; then
 		echo "Need 'which' command."
 		MISSING="which"
@@ -401,15 +396,25 @@ if [  -d predator-${LLVM_VERSION} ]; then
 fi
 if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 	if [ ! -d predator-${LLVM_VERSION} ]; then
-               git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp21-v1 predator-${LLVM_VERSION}
+               git_clone_or_pull "https://github.com/lzaoral/predator" -b upstream-rebase predator-${LLVM_VERSION}
 	fi
 
 	pushd predator-${LLVM_VERSION}
 
 	if [ ! -f cl_build/CMakeCache.txt ]; then
-		which "$LLVM_BIN_DIR/clang++" # plain clang has already been tested above
-		CC="$LLVM_BIN_DIR/clang" CXX="$LLVM_BIN_DIR/clang++" \
+		if [ -n "$CI" ]; then
+			# FIXME: This is an ugly hack that won't be, hopefully,
+			# needed when Predator implements a proper support for
+			# compilation with ASAN because the LD_PRELOAD hack
+			# does not work on Ubuntu 22.04. For an unknown reason,
+			# anything curl-related just freezes on this system.
+			CFLAGS="${CFLAGS//address,/}"             \
+				CXXFLAGS="${CXXFLAGS//address,/}" \
+				LDFLAGS="${LDFLAGS//address,/}"   \
+				./switch-host-llvm.sh "$LLVM_DIR"
+		else
 			./switch-host-llvm.sh "$LLVM_DIR"
+		fi
 	fi
 
     build || exitmsg "Failed building Predator"
