@@ -16,10 +16,10 @@ jobs:
       matrix:
         include:
           # Linux with GCC
-          - {os: ubuntu-18.04, llvm: '6.0', compiler: gcc}
-          - {os: ubuntu-18.04, llvm: 7, compiler: gcc}
-          - {os: ubuntu-18.04, llvm: 8, compiler: gcc}
-          - {os: ubuntu-18.04, llvm: 9, compiler: gcc}
+          - {os: ubuntu-20.04, llvm: '6.0', compiler: gcc}
+          - {os: ubuntu-20.04, llvm: 7, compiler: gcc}
+          - {os: ubuntu-20.04, llvm: 8, compiler: gcc}
+          - {os: ubuntu-20.04, llvm: 9, compiler: gcc}
           - {os: ubuntu-20.04, llvm: 10, compiler: gcc}
           - {os: ubuntu-20.04, llvm: 10, compiler: gcc, type: Debug}
           # FIXME: Edit when KLEE is rebased to latest upstream.
@@ -28,10 +28,10 @@ jobs:
           - {os: ubuntu-22.04, llvm: 13, compiler: gcc, klee: 'no-klee'}
 
           # Linux with Clang
-          - {os: ubuntu-18.04, llvm: '6.0', compiler: clang}
-          - {os: ubuntu-18.04, llvm: 7, compiler: clang}
-          - {os: ubuntu-18.04, llvm: 8, compiler: clang}
-          - {os: ubuntu-18.04, llvm: 9, compiler: clang}
+          - {os: ubuntu-20.04, llvm: '6.0', compiler: clang}
+          - {os: ubuntu-20.04, llvm: 7, compiler: clang}
+          - {os: ubuntu-20.04, llvm: 8, compiler: clang}
+          - {os: ubuntu-20.04, llvm: 9, compiler: clang}
           - {os: ubuntu-20.04, llvm: 10, compiler: clang}
           - {os: ubuntu-20.04, llvm: 10, compiler: clang, type: Debug}
           # FIXME: Edit when KLEE is rebased to latest upstream.
@@ -45,18 +45,6 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: true
-
-      # LLVM 7.0.x built by GCC is not ABI compatible with tools built by Clang
-      # and vice-versa.  Therefore, every instance of KLEE ended being killed
-      # by SIGSEGV.  LLVM 7.1 fixes this issue but it never made its way to
-      # Bionic's official repositories.  So let's use the LLVM repos instead.
-      #
-      # https://lists.llvm.org/pipermail/llvm-dev/2018-September/126564.html
-      - name: '[Bionic + LLVM 7.1] Add repositories'
-        if: matrix.os == 'ubuntu-18.04' && matrix.llvm == 7
-        run: |
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-          sudo apt-add-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-7 main"
 
       - name: Install dependencies
         run: |
@@ -123,9 +111,7 @@ jobs:
           sudo /usr/sbin/update-ccache-symlinks
           echo "/usr/lib/ccache" >> $GITHUB_PATH
 
-          # Bionic does not create symlinks to versioned clang
-          sudo ln -sfr /usr/bin/ccache /usr/lib/ccache/clang-${{matrix.llvm}}
-          sudo ln -sfr /usr/bin/ccache /usr/lib/ccache/clang++-${{matrix.llvm}}
+          # Store the environment
           echo "CCACHE_BASEDIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
           echo "CCACHE_COMPRESS=true" >> $GITHUB_ENV
           echo "CCACHE_COMPRESSLEVEL=6" >> $GITHUB_ENV
