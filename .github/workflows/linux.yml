@@ -131,7 +131,7 @@ jobs:
           echo "CCACHE_COMPRESSLEVEL=6" >> $GITHUB_ENV
           echo "CCACHE_DIR=$GITHUB_WORKSPACE/.ccache" >> $GITHUB_ENV
           echo "CCACHE_MAXSIZE=400M" >> $GITHUB_ENV
-          echo "::set-output name=timestamp::$(date -u -Iseconds)"
+          echo "timestamp=$(date -u -Iseconds)" >> $GITHUB_OUTPUT
 
       - name: Set up ccache
         uses: actions/cache@v3
