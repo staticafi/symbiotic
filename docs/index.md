@@ -3,7 +3,7 @@ Symbiotic is a framework for analysis of computer programs written in the progra
 
 ### Symbiotic Components
 
-Components of Symbiotic can be found at <https://github.com/staticafi> with the only exception of the slicer, that can be found at <https://github.com/mchalupa/dg> (it will be moved to _staticafi_ in the future though). All parts of Symbiotic are open-source projects and are licensed under various open-source licenses (GPL, MIT license, University of Illinois Open Source license)
+Components of Symbiotic can be found at <https://github.com/staticafi> with the only exception of the slicer, that can be found at <https://github.com/mchalupa/dg> (it will be moved to _staticafi_ in the future though). All parts of Symbiotic are open-source projects and are licensed under various open-source licenses (GPL, MIT license, University of Illinois Open Source license).
 
 ## Awards
 * Symbiotic 9.1 participating in [SV-COMP 2023](https://sv-comp.sosy-lab.org/2023/results/results-verified/)
