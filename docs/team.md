@@ -5,17 +5,17 @@ Symbiotic is developed by the _Statica_ team of the _Formela_ lab at Faculty of 
 ### Former and current developers (alhpabetical order, leading developers are in bold)
 
 * Paulína Ayaziová
-* __Marek Chalupa__
+* ___Marek Chalupa___
 * Tomáš Jašek
 * Martin Jonáš
 * Vincent Mihalkovič
 * Jakub Novák
 * Anna Řechtáčková
 * Jindřich Sedláček
-* __Jiří Slabý__
+* ___Jiří Slabý___
 * Michael Šimáček
 * Lukáš Tomovič
-* __Marek Trtík__
+* ___Marek Trtík___
 * Martina Velanová, née Vitovská
 * Lukáš Zaoral
 
