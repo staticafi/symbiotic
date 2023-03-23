@@ -397,7 +397,7 @@ def parse_command_line():
         elif opt == '--target-settings':
             options.target_settings = arg.split()
         elif opt == '--witness-check':
-            options.witness_check_file = arg
+            options.witness_check_file = os.path.abspath(os.path.expanduser(arg))
             set_witness_check(options)
         elif opt == '--link':
             options.link_files += arg.split(',')
