@@ -111,7 +111,7 @@ later stages. If you change the paths, you must fix them later when compiling
 KLEE inside `system-build.sh` script:
 
 ```
-git clone git://github.com/Z3Prover/z3 -b "z3-4.8.4" z3
+git clone https://github.com/Z3Prover/z3 -b "z3-4.8.4" z3
 mkdir -p "z3/build" && pushd "z3/build"
 cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j4

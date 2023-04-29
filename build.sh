@@ -636,7 +636,7 @@ if [ "$BUILD_STP" = "yes" ]; then
 	#   minisat
 	######################################################################
 	if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
-		git_clone_or_pull git://github.com/stp/minisat.git minisat
+		git_clone_or_pull https://github.com/stp/minisat.git minisat
 		pushd minisat
 		mkdir -p build
 		cd build || exitmsg "error"
@@ -662,7 +662,7 @@ if [ "$BUILD_STP" = "yes" ]; then
 	#   STP
 	######################################################################
 	if [ $FROM -le 4  -a "$BUILD_KLEE" = "yes" ]; then
-		git_clone_or_pull git://github.com/stp/stp.git stp
+		git_clone_or_pull https://github.com/stp/stp.git stp
 		cd stp || exitmsg "Cloning failed"
 		if [ ! -d CMakeFiles ]; then
 			cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX \
@@ -723,7 +723,7 @@ if [ "$BUILD_Z3" = "yes" ]; then
 	######################################################################
 	if [ $FROM -le 4 -a "$BUILD_KLEE" = "yes" ]; then
 		if [ ! -d "z3" ]; then
-			git_clone_or_pull git://github.com/Z3Prover/z3 -b "z3-4.8.4" z3
+			git_clone_or_pull https://github.com/Z3Prover/z3 -b "z3-4.8.4" z3
 		fi
 
 		mkdir -p "z3/build" && pushd "z3/build"
