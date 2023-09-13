@@ -289,6 +289,7 @@ class SymbioticTool(KleeBase):
         if opts.property.errorcall():
             cmd.append('-exit-on-error-type=Assert')
             cmd.append('-dump-states-on-halt=0')
+            cmd.append('-error-fn=reach_error')
         else:
             cmd.append('-only-output-states-covering-new=1')
             # XXX: investigate: for some reason, this changes the number of searched paths
