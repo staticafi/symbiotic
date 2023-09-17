@@ -45,7 +45,6 @@ def _add_graph_key(root, name):
 
 class YAMLWriter(object):
     def __init__(self, source, prps, is32bit, is_correctness_wit):
-        print(prps)
         self._source = source
         self._prps = prps
         self._is32bit = is32bit
@@ -73,7 +72,7 @@ class YAMLWriter(object):
                 { 'input_files' : self._source,
                   'input_file_hashes' : { self._source : get_hash(self._source)},
                   'specification' : ','.join(self._prps),
-                  'data_model' : "ILP32",
+                  'data_model' : "ILP32" if self._is32bit else "LP64",
                   'language' : "C"}
         }
         self.witness.append(witness)
@@ -88,7 +87,7 @@ class YAMLWriter(object):
         """
         # parse the graphml file from KLEE
         self.parse(path)
-        assert self.test, "Failed parsing a witness" + path 
+        assert self.errorLoc, "Failed parsing a witness" + path 
 
         self.add_metadata()
         self.create_content()
@@ -109,14 +108,15 @@ class YAMLWriter(object):
             yaml.safe_dump(self.witness, witness_file, default_style=None)
  
     def get_locations(self):
+        this_file = True
         shifterror = True
         call_map = dict()
-        ast = subprocess.run(['clang', '-Xclang', '-ast-dump', '-fsyntax-only', '-fno-color-diagnostics', self._source], stdout=subprocess.PIPE).stdout.decode('utf-8')
+        ast = subprocess.run(['clang', '-Xclang', '-ast-dump', '-fsyntax-only', '-fno-color-diagnostics', self._source], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL).stdout.decode('utf-8')
         
         for line in ast.splitlines():
             
             # check if we have a begin and end
-            loc = re.search("^[^-]*-[a-zA-Z]* 0x[0-9A-Fa-f]* <([^,]*), ([^,]*)>", line)
+            loc = re.search("^[^-]*-[a-zA-Z]* 0x[0-9A-Fa-f]* <([^>,]*), ([^,]*)>", line)
 
             if not loc:  # if not, we only care about the line
                 ln = re.search("^[^-]*-[a-zA-Z]* 0x[0-9A-Fa-f]* <line:([0-9]*)", line)
@@ -174,24 +174,26 @@ class YAMLWriter(object):
                 or "IfStmt" in line \
                 or "DoStmt" in line \
                 or "WhileStmt" in line \
-                or "ForStmt" in line:
+                or "ForStmt" in line \
+                or "LabelStmt" in line:
                 continue
 
             if int(start_ln) > int(self.errorLoc[1]) or int(end_ln) < int(self.errorLoc[1]):
                 continue
 
             if (int(start_ln) == int(self.errorLoc[1]) and int(start_col) > int(self.errorLoc[2])) or \
-                (int(end_ln) == int(self.errorLoc[1]) and int(start_col) < int(self.errorLoc[2])):
+                (int(end_ln) == int(self.errorLoc[1]) and int(end_col) < int(self.errorLoc[2])):
                 continue
 
-            print(self.errorLoc)
-            print(line)
-            self.errorLoc = (int(start_ln), int(start_col))
-            print(self.errorLoc)
+            
+            self.errorLoc[1] = int(start_ln)
+            self.errorLoc[2] = int(start_col)
             shifterror = False
 
         if shifterror:
             print("Something went wrong. Error location might not comply with the witness format.")
+            self.errorLoc[1] = int(self.errorLoc[1])
+            self.errorLoc[2] = int(self.errorLoc[2])
   
         return call_map
 
@@ -200,8 +202,6 @@ class YAMLWriter(object):
 
         call_map = self.get_locations()
 
-        print(call_map)
-
         for call in self.test:
             loc = "{line}:{col}".format(line=call[1], col=call[2])
             assert loc in call_map, "Failed creating witness"
@@ -209,7 +209,7 @@ class YAMLWriter(object):
             segment = []
             waypoint = { 'type' : 'function_return',
                           'action' : 'follow',
-                          'contraint' : {
+                          'constraint' : {
                             'format' : 'C',
                             'string' : '\\result == ' + call[3]
                           },
@@ -227,9 +227,9 @@ class YAMLWriter(object):
         target = { 'type' : 'target',
                    'action' : 'follow',
                    'location' : {
-                            'file_name' : self._source,
-                            'line' : self.errorLoc[0],
-                            'column' : self.errorLoc[1]
+                            'file_name' : self.errorLoc[0],
+                            'line' : self.errorLoc[1],
+                            'column' : self.errorLoc[2]
                           }
 
                  }
@@ -245,7 +245,7 @@ class YAMLWriter(object):
         with open(path, "r") as testfile:
             for line in testfile.readlines():
                 if line[0] == '@':
-                    self.errorLoc = line.strip('\n').split(':')
+                    self.errorLoc = line.strip('\n').split(':')[1:]
                     break
                 self.test.append(line.strip('\n').split(':'))
 

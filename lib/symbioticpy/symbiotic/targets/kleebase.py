@@ -27,6 +27,7 @@ from symbiotic.utils.process import runcmd
 from symbiotic.exceptions import SymbioticException
 from symbiotic.witnesses.witnesses import GraphMLWriter
 from symbiotic.witnesses.witnessesyaml import YAMLWriter
+from pathlib import Path
 
 from sys import version_info
 from sys import version_info
@@ -230,7 +231,7 @@ def generate_yaml(path, source, is_correctness_wit, opts, saveto):
                         opts.is32bit, is_correctness_wit)
     if not is_correctness_wit:
         gen.generate_violation_witness(path, opts.property.termination())
-    
+       
     gen.write(saveto)
 
 def get_testcase(bindir):
@@ -248,6 +249,10 @@ def get_harness_file(bindir):
 
 def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
+    if not is_correctness_wit:
+        splitpath = saveto.rsplit('.', 1)
+        if splitpath[1] == 'graphml':
+            saveto = splitpath[0] + '.yml'
     print('Generating {0} witness: {1}'.format('correctness' if is_correctness_wit else 'error', saveto))
     if is_correctness_wit:
         generate_graphml(None, sources[0], is_correctness_wit, opts, saveto)
