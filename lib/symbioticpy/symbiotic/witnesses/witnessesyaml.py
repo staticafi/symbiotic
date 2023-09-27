@@ -7,15 +7,6 @@ import datetime
 import re
 import yaml
 
-no_lxml = False
-try:
-    from lxml import etree as ET
-except ImportError:
-    no_lxml = True
-if no_lxml:
-    # if this fails, then we're screwed, so let the script die
-    from xml.etree import ElementTree as ET
-
 def get_hash(source):
     f = open(source, 'r', encoding='utf-8')
     hsh = hashfunc()
@@ -24,24 +15,6 @@ def get_hash(source):
 
     f.close()
     return hsh.hexdigest()
-
-def _add_edge_key(root, name):
-    e = ET.SubElement(root, 'key', id=name)
-    e.set('for', 'edge')
-    e.set('attr.type', 'string')
-    e.set('attr.name', name)
-
-def _add_node_key(root, name):
-    e = ET.SubElement(root, 'key', id=name)
-    e.set('for', 'node')
-    e.set('attr.type', 'string')
-    e.set('attr.name', name)
-
-def _add_graph_key(root, name):
-    e = ET.SubElement(root, 'key', id=name)
-    e.set('for', 'graph')
-    e.set('attr.type', 'string')
-    e.set('attr.name', name)
 
 class YAMLWriter(object):
     def __init__(self, source, prps, is32bit, is_correctness_wit):
@@ -54,13 +27,6 @@ class YAMLWriter(object):
         self.errorLoc = None
         self.witness = []
 
-        self._root = None
-        self._graph = None
-
-        # this prevents adding ns0 prefix to all tags
-        ET.register_namespace("xsi",
-                              "http://www.w3.org/2001/XMLSchema-instance")
-
     def add_metadata(self):
         witness = {}
         witness['entry_type'] = "violation_sequence" if not self._correctness_wit else "correctness_witness"
@@ -69,7 +35,7 @@ class YAMLWriter(object):
             'creation_time' :  '{date:%Y-%m-%dT%T}Z'.format(date=datetime.datetime.utcnow()),
             'producer' : {'name' : 'symbiotic'},
             'task' :
-                { 'input_files' : self._source,
+                { 'input_files' : [self._source],
                   'input_file_hashes' : { self._source : get_hash(self._source)},
                   'specification' : ','.join(self._prps),
                   'data_model' : "ILP32" if self._is32bit else "LP64",
@@ -93,15 +59,11 @@ class YAMLWriter(object):
         self.create_content()
 
 
-
     def generate_violation_witness(self, path, is_termination):
         self.generate_witness(path, is_termination)
 
     def dump(self):
-        if no_lxml:
-            print(ET.tostring(self._root).decode('utf-8'))
-        else:
-            print(ET.tostring(self._root, pretty_print=True).decode('utf-8'))
+        print(self.witness)
 
     def write(self, to):
         with open(to, "w") as witness_file:

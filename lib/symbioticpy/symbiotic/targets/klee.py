@@ -362,6 +362,7 @@ class SymbioticTool(KleeBase):
 
         if not opts.nowitness:
             cmd.append('-write-witness')
+            cmd.append('-write-witness-graphml')
 
         if opts.executable_witness:
             cmd.append('-write-harness')

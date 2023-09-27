@@ -249,16 +249,18 @@ def get_harness_file(bindir):
 
 def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
-    if not is_correctness_wit:
-        splitpath = saveto.rsplit('.', 1)
-        if splitpath[1] == 'graphml':
-            saveto = splitpath[0] + '.yml'
+
     print('Generating {0} witness: {1}'.format('correctness' if is_correctness_wit else 'error', saveto))
     if is_correctness_wit:
         generate_graphml(None, sources[0], is_correctness_wit, opts, saveto)
         return
 
     pth = get_ktest(join(bindir, 'klee-last'))
+    if saveto.rsplit('.', 1)[1] == 'graphml':
+        graphml = '{0}graphml'.format(pth[:pth.rfind('.')+1])
+        generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
+        return
+        
     test = '{0}test'.format(pth[:pth.rfind('.')+1])
     generate_yaml(test, sources[0], is_correctness_wit, opts, saveto)
 
