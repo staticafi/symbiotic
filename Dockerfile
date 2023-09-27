@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN set -e
 
@@ -12,11 +12,13 @@ RUN echo "$TZ" > /etc/timezone
 
 # Install packages
 RUN apt-get update
-RUN apt-get install -y git cmake make llvm zlib1g-dev clang g++ python3 python curl wget rsync make cmake unzip gcc-multilib xz-utils libz3-dev libsqlite3-dev
+RUN apt-get install -y git cmake make llvm zlib1g-dev clang g++ python3 curl wget rsync make cmake unzip gcc-multilib xz-utils libz3-dev libsqlite3-dev
 
 WORKDIR /opt
-RUN git clone https://github.com/staticafi/symbiotic
-WORKDIR /opt/symbiotic
+RUN mkdir symbiotic
+COPY . symbiotic
+WORKDIR symbiotic
+
 RUN git config --global user.email "hey@you.com"
 RUN git config --global user.name "Symbiotic User"
 RUN ./system-build.sh
