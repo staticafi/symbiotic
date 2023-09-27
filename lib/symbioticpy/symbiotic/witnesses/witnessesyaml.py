@@ -137,8 +137,10 @@ class YAMLWriter(object):
                 or "DoStmt" in line \
                 or "WhileStmt" in line \
                 or "ForStmt" in line \
+                or "LabelStmt" in line \
                 or "LabelStmt" in line:
                 continue
+            
 
             if int(start_ln) > int(self.errorLoc[1]) or int(end_ln) < int(self.errorLoc[1]):
                 continue
@@ -146,6 +148,10 @@ class YAMLWriter(object):
             if (int(start_ln) == int(self.errorLoc[1]) and int(start_col) > int(self.errorLoc[2])) or \
                 (int(end_ln) == int(self.errorLoc[1]) and int(end_col) < int(self.errorLoc[2])):
                 continue
+
+            if "ReturnStmt" in line and (int(start_ln) != int(self.errorLoc[1]) or \
+                                         int(start_col) != int(self.errorLoc[2]))
+                continue      
 
             
             self.errorLoc[1] = int(start_ln)
@@ -173,7 +179,7 @@ class YAMLWriter(object):
                           'action' : 'follow',
                           'constraint' : {
                             'format' : 'C',
-                            'string' : '\\result == ' + call[3]
+                            'value' : '\\result == ' + call[3]
                           },
                           'location' : {
                             'file_name' : self._source,
