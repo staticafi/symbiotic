@@ -2,7 +2,7 @@
 
 extern void klee_make_symbolic(void *, size_t, const char *);
 
-float __VERIFIER_nondet_float(void)
+float __symbiotic_nondet_float(void)
 {
 	_Bool nan_choice;
 	klee_make_symbolic(&nan_choice, sizeof(_Bool), "nondet_float_is_nan");

@@ -1,8 +1,4 @@
-try:
-    from benchexec.tools.divine4 import Tool as DivineTool
-except ImportError:
-    from .. benchexec.tools.divine4 import Tool as DivineTool
-
+from .. benchexec.tools.divine4 import Tool as DivineTool
 from . tool import SymbioticBaseTool
 
 class SymbioticTool(DivineTool, SymbioticBaseTool):
@@ -26,6 +22,7 @@ class SymbioticTool(DivineTool, SymbioticBaseTool):
         if opts.devel_mode:
             env.prepend('PATH', '{0}/divine'.\
                         format(env.symbiotic_dir))
+        opts.is32bit = False
 
     def cc(self):
         #return ['divine', 'cc']

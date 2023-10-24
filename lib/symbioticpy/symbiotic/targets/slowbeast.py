@@ -1,5 +1,8 @@
-from os.path import abspath
-from .. utils import dbg
+from os.path import abspath, dirname, join as pathjoin
+from os import listdir
+from shutil import copy as copyfile
+from symbiotic.utils.utils import dbg, print_stdout
+from symbiotic.witnesses.witnesses import GraphMLWriter
 from . tool import SymbioticBaseTool
 
 try:
@@ -20,10 +23,9 @@ except ImportError:
 
 class SymbioticTool(BaseTool, SymbioticBaseTool):
 
-    REQUIRED_PATHS = ['sb', 'slowbeast']
-
-    def __init__(self, opts):
+    def __init__(self, opts, bself=False):
         SymbioticBaseTool.__init__(self, opts)
+        self._bself = bself
 
     def name(self):
         return 'slowbeast'
@@ -40,11 +42,18 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
         exe = abspath(self.executable())
         arch = '-pointer-bitwidth={0}'.format(32 if self._options.is32bit else 64)
-        cmd = [exe, '-se-exit-on-error', '-se-replay-errors', arch]
+        cmd = [exe, '-se-exit-on-error', '-se-replay-errors',
+               '-only-tests=err', arch]
         if prp.unreachcall():
             funs = ','.join(prp.getcalls())
             cmd.append(f'-error-fn={funs}')
-        return cmd + options + tasks
+        if self._options.sv_comp:
+            cmd.append('-svcomp-witness')
+        cmd.extend(options)
+        if '-bself' in cmd:
+            cmd.append('-forbid-floats')
+            cmd.append('-unsupported-undefs=__VERIFIER_nondet_float,__VERIFIER_nondet_double')
+        return cmd + tasks
 
     def set_environment(self, env, opts):
         """ Set environment for the tool """
@@ -55,6 +64,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                         format(env.symbiotic_dir))
         env.reset('PYTHONOPTIMIZE', '1')
 
+        if opts.devel_mode:
+            # look for slowbeast in the symbiotic's directory
+            env.prepend('PATH', '{0}/slowbeast'.format(env.symbiotic_dir))
+            env.prepend('PYTHONPATH', '{0}/slowbeast/llvmlite'.format(env.symbiotic_dir))
+
     def passes_before_slicing(self):
         if self._options.property.termination():
             return ['-find-exits']
@@ -64,32 +78,40 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         """
         Passes that should run before slowbeast
         """
-        prp = self._options.property
-        passes = []
-        if prp.termination():
-            passes.append('-instrument-nontermination')
-            passes.append('-instrument-nontermination-mark-header')
-
-        passes += ["-lowerswitch", "-simplifycfg", "-reg2mem",
-                   "-simplifycfg", "-ainline"]
-        passes.append("-ainline-noinline")
+       # prp = self._options.property
+       #passes += ["-lowerswitch", "-simplifycfg", "-reg2mem", "-simplifycfg"]
+        #, "-ainline"]
+        # passes.append("-ainline-noinline")
         # FIXME: get rid of the __VERIFIER_assert hack
-        if prp.unreachcall():
-            passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert,__VERIFIER_assume,assume_abort_if_not")
-        return passes +\
-                ["-flatten-loops", "-O3", "-remove-constant-exprs", "-reg2mem"] +\
-                super().passes_before_verification()
+       #if prp.unreachcall():
+       #    passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert,__VERIFIER_assume,assume_abort_if_not")
+        passes = ["-lowerswitch", "-simplifycfg"]
+        if self._bself:
+            passes.append("-flatten-loops")
+        return passes + ["-O3", "-remove-constant-exprs", "-reg2mem"]
 
-    def generate_graphml(path, source, is_correctness_wit, opts, saveto):
-        """ Generate trivial correctness witness for now """
-        if saveto is None:
-            saveto = '{0}.graphml'.format(basename(path))
-            saveto = abspath(saveto)
+    def generate_witness(self, llvmfile, sources, has_error):
+        print_stdout('Generating {0} witness: {1}'\
+                .format('violation' if has_error else 'correctness',
+                        self._options.witness_output))
 
-        if is_correctness_wit:
+        sbdir = pathjoin(dirname(llvmfile), 'sb-out')
+        witnesses = [abspath(pathjoin(sbdir, f)) for f in listdir(sbdir)
+                     if f.endswith('.graphml')]
+
+        assert len(sources) == 1
+        gen = GraphMLWriter(sources[0],
+                            self._options.property.ltl(),
+                            self._options.is32bit,
+                            not has_error)
+
+        if len(witnesses) != 1:
+            dbg("Do not have a unique witness in slowbeast output")
             gen.createTrivialWitness()
-            assert path is None
-        gen.write(saveto)
+        else:
+            gen.generate_witness(witnesses[0],
+                                 self._options.property.termination())
+        gen.write(self._options.witness_output)
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         if isTimeout:
@@ -101,6 +123,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         memerr = False
         asserterr = False
         for line in map(str, output):
+            if '[assertion error]: unreachable' in line:
+                continue # ignore assertions from unreachable
             if 'assertion failed!' in line:
                 asserterr = True
             elif 'assertion failure' in line:
@@ -140,3 +164,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if returnsignal:
             return f"{result.RESULT_ERROR}(signal {returnsignal})"
         return result.RESULT_UNKNOWN
+
+    def set_environment(self, env, opts):
+        env.prepend('PATH', '{0}/slowbeast'.format(env.symbiotic_dir, self.llvm_version()))

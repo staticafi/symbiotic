@@ -23,9 +23,11 @@ class SymbioticTool(DivineTool, SymbioticBaseTool):
         """
         Set environment for the tool
         """
+        opts.linkundef = []
         if opts.devel_mode:
             env.prepend('PATH', '{0}/divine'.\
                         format(env.symbiotic_dir))
+        opts.is32bit = False
 
     def cc(self):
         #return ['divine', 'cc']

@@ -213,14 +213,11 @@ def dump_error(pth):
         dbg('Failed dumping the error: {0}'.format(str(e)))
 
 def generate_graphml(path, source, is_correctness_wit, opts, saveto):
-    if saveto is None:
-        saveto = '{0}.graphml'.format(basename(path))
-        saveto = abspath(saveto)
-
+    assert saveto is not None
     gen = GraphMLWriter(source, opts.property.ltl(),
                         opts.is32bit, is_correctness_wit)
     if not is_correctness_wit:
-        gen.parseError(path, opts.property.termination())
+        gen.generate_violation_witness(path, opts.property.termination())
     else:
         gen.createTrivialWitness()
         assert path is None
@@ -247,7 +244,8 @@ def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
         return
 
     pth = get_ktest(join(bindir, 'klee-last'))
-    generate_graphml(pth, sources[0], is_correctness_wit, opts, saveto)
+    graphml = '{0}graphml'.format(pth[:pth.rfind('.')+1])
+    generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
 
 def generate_exec_witness(bindir, sources, opts, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
@@ -349,7 +347,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                         '{0}/llvm-{1}/lib/klee/runtime'.\
                         format(prefix, self.llvm_version()))
 
-
     #  def actions_before_slicing(self, symbiotic):
     #      # FIXME: use -abort-on-threads with slicer
     #      # check whether there are threads in the program
@@ -376,7 +373,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             return ['-find-exits']
         return []
 
-    def passes_before_verification(self):
+    def passes_after_slicing(self):
         passes = []
 
         # make the uninitialized variables symbolic (if desired)
@@ -396,9 +393,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             passes.append('-instrument-nontermination')
             passes.append('-instrument-nontermination-mark-header')
 
-
-
-        return passes + super().passes_before_verification()
+        return super().passes_after_slicing() + passes
 
     def describe_error(self, llvmfile):
         if self._options.test_comp:

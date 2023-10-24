@@ -60,7 +60,7 @@ class Symbiotic(object):
             print('Killed the child process')
 
     def replay_nonsliced(self, tool, cc):
-        bitcode = cc.prepare_unsliced_file()
+        bitcode = cc.prepare_unsliced_file(tool)
         params = []
         if hasattr(tool, "replay_error_params"):
             params = tool.replay_error_params(cc.curfile)
@@ -91,7 +91,7 @@ class Symbiotic(object):
         res, tool = verifier.run()
 
         # if we crashed on the sliced file, try running on the unsliced file
-        # (do this optional, as well as for slicer and instrumentation)
+        # (TODO: do this optional, as well as for slicer and instrumentation)
         resstartswith = res.lower().startswith
         if (not options.noslice) and \
            (options.sv_comp or options.test_comp) and \
@@ -100,7 +100,7 @@ class Symbiotic(object):
                          color="WHITE")
             options.replay_error = False # now we do not need to replay the error
             options.noslice = True # now we behave like without slicing
-            bitcode = cc.prepare_unsliced_file()
+            bitcode = cc.prepare_unsliced_file(tool)
             verifier = SymbioticVerifier(bitcode, self.sources,
                                          self._tool, options, self.env)
             res, tool = verifier.run()
@@ -135,7 +135,7 @@ class Symbiotic(object):
 
         if res == 'cex not-confirmed':
             # if we failed confirming CEX, rerun on unsliced file
-            bitcode = cc.prepare_unsliced_file()
+            bitcode = cc.prepare_unsliced_file(tool)
             verifier = SymbioticVerifier(bitcode, self.sources,
                                          self._tool, options, self.env)
             res, tool = verifier.run()

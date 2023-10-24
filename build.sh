@@ -97,6 +97,7 @@ BUILD_PREDATOR='no'
 BUILD_LLVM2C='yes'
 
 BUILD_KLEE="yes"
+BUILD_WITCH_KLEE="no"
 BUILD_NIDHUGG="no"
 
 
@@ -108,6 +109,7 @@ ENABLE_TCMALLOC=$(if check_tcmalloc; then echo "on"; else echo "off"; fi)
 
 ARCHIVE="no"
 FULL_ARCHIVE="no"
+ARCHIVE_PREFIX="symbiotic/"
 PRECOMPILE_BITCODE="yes"
 
 while [ $# -gt 0 ]; do
@@ -136,6 +138,9 @@ while [ $# -gt 0 ]; do
 		;;
 		'no-klee')
 			BUILD_KLEE=no
+		;;
+		'witch-klee')
+			BUILD_WITCH_KLEE=yes
 		;;
 		'no-llvm2c')
 			BUILD_LLVM2C="no"
@@ -168,6 +173,9 @@ while [ $# -gt 0 ]; do
 			ARCHIVE="yes"
 			FULL_ARCHIVE="yes"
 		;;
+        archive-prefix=*)
+            ARCHIVE_PREFIX=${1##*=}
+        ;;
 		with-llvm=*)
 			WITH_LLVM=${1##*=}
 		;;
@@ -201,12 +209,22 @@ if [ "x$OPTS" = "x" ]; then
 	OPTS='-j1'
 fi
 
+if [ -d witch-klee ]; then
+	echo "Found a build of witch-klee, turning its build on"
+	BUILD_WITCH_KLEE="yes"
+fi
+
 PHASE="checking system"
 export LLVM_PREFIX="$PREFIX/llvm-$LLVM_VERSION"
 
 if [ "$HAVE_32_BIT_LIBS" = "no" -a "$BUILD_KLEE" = "yes" ]; then
 	exitmsg "KLEE needs 32-bit libc headers to build 32-bit versions of runtime libraries. On Ubuntu, this is the package libc6-dev-i386 (or gcc-multilib), on Fedora-based systems it is glibc-devel.i686."
 fi
+if [ "$HAVE_32_BIT_LIBS" = "no" -a "$BUILD_WITCH_KLEE" = "yes" ]; then
+	exitmsg "KLEE needs 32-bit libc headers to build 32-bit versions of runtime libraries. On Ubuntu, this is the package libc6-dev-i386 (or gcc-multilib), on Fedora-based systems it is glibc-devel.i686."
+fi
+
+
 
 if [ "$HAVE_Z3" = "no" -a "$BUILD_STP" = "no" ]; then
 	if [ ! -d "z3" ]; then
@@ -267,7 +285,7 @@ check()
 		MISSING="patch $MISSING"
 	fi
 
-	if [ "$BUILD_KLEE" = "yes" ]; then
+	if [ "$BUILD_KLEE" = "yes" -o "$BUILD_WITCH_KLEE" = "yes" ]; then
 		if ! which unzip &>/dev/null; then
 			echo "Need 'unzip' utility"
 			MISSING="unzip $MISSING"
@@ -756,13 +774,25 @@ if [ "`pwd`" != $ABS_SRCDIR ]; then
 fi
 
 ######################################################################
+#   Which-KLEE
+######################################################################
+PHASE="building Which-KLEE"
+if [ $FROM -le 4  -a "$BUILD_WITCH_KLEE" = "yes" ]; then
+	source scripts/build-witch-klee.sh
+fi
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+
+######################################################################
 #   nidhugg
 ######################################################################
 PHASE="building Nidhugg"
 if [ $FROM -le 4  -a "$BUILD_NIDHUGG" = "yes" ]; then
 	if [ ! -d nidhugg ]; then
 		git_clone_or_pull "https://github.com/nidhugg/nidhugg"
-
 	fi
 
 	mkdir -p nidhugg/build-${LLVM_VERSION}

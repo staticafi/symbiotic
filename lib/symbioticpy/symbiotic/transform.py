@@ -167,7 +167,10 @@ class SymbioticCC(object):
                 out[0].lstrip().decode('ascii').startswith('-fsanitize-address-use-after-scope')
 
     def cc_disable_optimizations(self):
-        return ['-O0', '-disable-llvm-passes']
+        # Use -O0 -disable-O0-optnone to get the code without optnone attribute
+        # so that it can get optimized later.
+        # XXX: does -disable-llvm-passes have an effect here?
+        return ['-O0', '-disable-O0-optnone', '-disable-llvm-passes']
 
     def _save_ll(self):
         """
@@ -205,6 +208,11 @@ class SymbioticCC(object):
         # __inline attribute is buggy in clang, remove it using -D__inline
         cmd = self._get_cc() + ['-c', '-emit-llvm',
                                 #'-include', 'symbiotic.h',
+                                # otherwise clang can drop so inline functions
+                                # e.g. push() in this file:
+                                # https://github.com/sosy-lab/sv-benchmarks/blob/master/c/pthread-ext/36_stack_cas_p0_vs_concur.c
+                                # it works also to compile with -O1 or -Og
+                                '-fgnu89-inline',
                                 '-D__inline='] + opts
 
         if with_g:
@@ -450,8 +458,8 @@ class SymbioticCC(object):
 
         return self._link_undefined(self.options.link_files)
 
-    def _get_undefined(self, bitcode, only_func=[]):
-        cmd = ['llvm-nm', '--undefined-only', '--just-symbol-name', bitcode]
+    def _get_undefined(self, bitcode, only_func=None):
+        cmd = ['llvm-nm', '-undefined-only', '-just-symbol-name', bitcode]
         watch = ProcessWatch(None)
         runcmd(cmd, watch, 'Failed getting undefined symbols from bitcode')
         undefs = list(map(lambda s: s.strip().decode('ascii'), watch.getLines()))
@@ -459,7 +467,7 @@ class SymbioticCC(object):
             return [x for x in undefs if x in only_func]
         return undefs
 
-    def _rec_link_undefined(self, only_func=[]):
+    def _rec_link_undefined(self, only_func=None):
         # get undefined functions from the bitcode
         undefs = self._get_undefined(self.curfile, only_func)
         if self._link_undefined(undefs):
@@ -468,7 +476,7 @@ class SymbioticCC(object):
             # functions
             self._rec_link_undefined()
 
-    def link_undefined(self, only_func=[]):
+    def link_undefined(self, only_func=None):
         if not self.options.linkundef:
             return
 
@@ -564,23 +572,6 @@ class SymbioticCC(object):
         self.curfile = output
         self._save_ll()
 
-    def postprocess_llvm(self):
-        """
-        Run a command that proprocesses the llvm code
-        for a particular tool
-        """
-        if not hasattr(self._tool, 'postprocess_llvm'):
-            return
-
-        cmd, output = self._tool.postprocess_llvm(self.curfile)
-        if not cmd:
-            return
-
-        runcmd(cmd, DbgWatch('compile'),
-                  'Failed preprocessing the llvm code')
-        self.curfile = output
-        self._save_ll()
-
     def _compile_sources(self, output='code.bc'):
         """
         Compile the given sources into LLVM bitcode and link them into one
@@ -647,7 +638,10 @@ class SymbioticCC(object):
 
         self._get_stats('After slicing ')
 
-    def postprocessing(self):
+    def process_after_slicing(self):
+        if hasattr(self._tool, 'actions_after_slicing'):
+            self._tool.actions_after_slicing(self)
+
         passes = []
 
         # there may have been created new loops
@@ -664,33 +658,17 @@ class SymbioticCC(object):
             passes += self._tool.passes_after_slicing()
         self.run_opt(passes)
 
-        # delete-undefined may insert __VERIFIER_make_nondet
-        # and also other funs like __errno_location may be included
+        # link undefined functions at this point
         self.link_undefined()
 
         # optimize the code after slicing and linking and before verification
         opt = get_optlist_after(self.options.optlevel)
         self.optimize(passes=opt)
 
-        # XXX: we could optimize the code again here...
         print_elapsed_time('INFO: After-slicing optimizations and transformations time',
                            color='WHITE')
 
-        if hasattr(self._tool, 'passes_before_verification'):
-            self.run_opt(self._tool.passes_before_verification())
-
-        # tool's specific preprocessing steps before verification
-        # FIXME: move this to actions_before_verification
-        self.postprocess_llvm()
-
-        if hasattr(self._tool, 'actions_before_verification'):
-            self._tool.actions_before_verification(self)
-
-        # delete-undefined may insert __VERIFIER_make_nondet
-        # and also other funs like __errno_location may be included
-        self.link_undefined()
-
-    def prepare_unsliced_file(self):
+    def prepare_unsliced_file(self, tool):
         """
         Get the unsliced file and perform the same
         postprocessing steps as for the sliced file
@@ -699,12 +677,7 @@ class SymbioticCC(object):
         tmp = self.curfile
         self.curfile = llvmfile
 
-        if self.options.property.termination():
-            self.run_opt(['-find-exits']) # FIXME: make tool specific
-
-        if hasattr(self._tool, 'actions_after_slicing'):
-            self._tool.actions_after_slicing(self)
-        self.postprocessing()
+        self.process_after_slicing()
 
         llvmfile = self.curfile
         self.curfile = tmp
@@ -899,8 +872,9 @@ class SymbioticCC(object):
             if passes:
                 self.run_opt(passes)
 
-        # link definition of atexit and get rid of llvm.global_dtors
-        self.link_undefined(['atexit'])
+        # link definition of atexit and get rid of llvm.global_dtors,
+        # link also qsort before slicing as it can call function pointers
+        self.link_undefined(['atexit', 'qsort'])
         self.run_opt(['-explicit-consdes'])
 
         if not self.options.noslice:
@@ -911,17 +885,9 @@ class SymbioticCC(object):
         # start a new time era
         restart_counting_time()
 
-        if hasattr(self._tool, 'actions_after_slicing'):
-            self._tool.actions_after_slicing(self)
+        self.process_after_slicing()
 
-        #################### #################### ###################
-        # POSTPROCESSING after slicing
-        #  - prepare the code to be passed to the verification tool
-        #    after all the transformations
-        #################### #################### ###################
-        self.postprocessing()
-
-        self._get_stats('Before verification ')
+        self._get_stats('After slicing and post-processing')
 
         if not self.options.final_output is None:
             # copy the file to final_output

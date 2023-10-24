@@ -2,7 +2,7 @@
 
 extern void klee_make_symbolic(void *, size_t, const char *);
 
-short __VERIFIER_nondet_short_named(const char *name)
+short __symbiotic_nondet_short_named(const char *name)
 {
 	short x;
 	klee_make_symbolic(&x, sizeof(x), name);

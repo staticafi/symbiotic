@@ -1,3 +1,6 @@
+from symbiotic.utils.process import runcmd
+from symbiotic.utils.watch import DbgWatch
+
 try:
     from benchexec.tools.skink import Tool as SkinkTool
 except ImportError:
@@ -16,15 +19,16 @@ class SymbioticTool(SkinkTool):
     def cmdline(self, executable, options, tasks, propertyfile, rlimits):
         return [self.executable(), '-f', 'LLVM'] + tasks
 
-    def postprocess_llvm(self, infile):
+    def actions_before_verification(self, symbiotic):
         """
         A tool's specific preprocessing steps for llvm file
         before verification itself. Returns a pair (cmd, outputfile),
         where cmd is the list suitable to pass to Popen and outputfile
         is the resulting file from the preprocessing
         """
-        output = infile + '.ll'
-        return (['llvm-dis', infile, '-o', output], output)
+        output = symbiotic.curfile + '.ll'
+        runcmd(['llvm-dis', symbiotic.curfile, '-o', output], DbgWatch('all'))
+        symbiotic.curfile = output
 
     def compilation_options(self):
         """

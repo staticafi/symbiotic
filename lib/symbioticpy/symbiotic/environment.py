@@ -84,8 +84,6 @@ def _set_symbiotic_environ(tool, env, opts):
         env.prepend('LD_LIBRARY_PATH', '{0}/lib'.format(llvm_prefix))
         env.prepend('LD_LIBRARY_PATH', '{0}/predator/lib'.format(llvm_prefix))
         opts.instrumentation_files_path = '{0}/share/sbt-instrumentation/'.format(llvm_prefix)
-    # FIXME: a hack, move to slowbeast directly
-    env.prepend('PATH', '{0}/slowbeast'.format(env.symbiotic_dir, llvm_version))
 
     # Get include paths again now when we have our clang in the path,
     # so that we have at least includes from our clang's instalation
