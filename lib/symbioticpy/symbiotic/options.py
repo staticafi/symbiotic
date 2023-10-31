@@ -127,7 +127,7 @@ def set_witness_check(opts):
     opts.explicit_symbolic = True
     opts.search_include_paths = False
     opts.linkundef.append('svcomp')
-    opts.CFLAGS.append("-fbracket-depth=-1")
+    opts.CFLAGS.append("-fbracket-depth=2048")
     opts.replay_error = False
     opts.tool_name='witch-klee'
     opts.exit_on_error = False
@@ -144,7 +144,7 @@ def set_svcomp(opts):
     opts.explicit_symbolic = True
     opts.search_include_paths = False
     opts.linkundef.append('svcomp')
-    opts.CFLAGS.append("-fbracket-depth=-1")
+    opts.CFLAGS.append("-fbracket-depth=2048")
     opts.replay_error = True
     opts.tool_name='svcomp'
     opts.slicer_timeout = 300
@@ -161,7 +161,7 @@ def set_testcomp(opts):
     opts.explicit_symbolic = True
     opts.search_include_paths = False
     opts.linkundef.append('svcomp')
-    opts.CFLAGS.append("-fbracket-depth=-1")
+    opts.CFLAGS.append("-fbracket-depth=2048")
     opts.replay_error = True
     opts.tool_name='testcomp'
     # keep the timeout small, we slice at the end again
@@ -557,4 +557,3 @@ where OPTS can be following:
     (no functions re-definitions, etc.). Also, exactly one of the input files
     must contain the 'main' function.
 """
-
