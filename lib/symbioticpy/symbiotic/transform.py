@@ -459,7 +459,7 @@ class SymbioticCC(object):
         return self._link_undefined(self.options.link_files)
 
     def _get_undefined(self, bitcode, only_func=None):
-        cmd = ['llvm-nm', '-undefined-only', '-just-symbol-name', bitcode]
+        cmd = ['llvm-nm', '--undefined-only', '-j', bitcode]
         watch = ProcessWatch(None)
         runcmd(cmd, watch, 'Failed getting undefined symbols from bitcode')
         undefs = list(map(lambda s: s.strip().decode('ascii'), watch.getLines()))
@@ -907,4 +907,3 @@ class SymbioticCC(object):
                 raise SymbioticException(msg)
 
         return self.curfile
-
