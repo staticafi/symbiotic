@@ -73,17 +73,19 @@ class YAMLWriter(object):
         this_file = True
         shifterror = True
         call_map = dict()
+        last_ln = "" 
         ast = subprocess.run(['clang', '-Xclang', '-ast-dump', '-fsyntax-only', '-fno-color-diagnostics', self._source], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL).stdout.decode('utf-8')
         
         for line in ast.splitlines():
-            
             # check if we have a begin and end
             loc = re.search("^[^-]*-[a-zA-Z]* 0x[0-9A-Fa-f]* <([^>,]*), ([^,]*)>", line)
 
             if not loc:  # if not, we only care about the line
-                ln = re.search("^[^-]*-[a-zA-Z]* 0x[0-9A-Fa-f]* <line:([0-9]*)", line)
-                if ln:
-                    last_ln = ln[1]
+                ln = re.search("^[^-]*-[a-zA-Z]* 0x[0-9A-Fa-f]* <([^:>]*):([0-9]*)", line)
+                if ln and ln[1] != "col":
+                    last_ln = ln[2]
+                    if ln[1] != "line":
+                        this_file = ln[1] == self._source
                 continue
 
             start = loc[1]
@@ -93,10 +95,12 @@ class YAMLWriter(object):
             if not location:
                 if not this_file:
                     continue
-
                 # if there's no line specified, use the previous one
+                name = None
                 start_ln = last_ln
                 start_col = re.search("col:([0-9]*)", start)[1]
+                if not start_col:
+                    continue
             else:
                 name = location[1]
                 start_ln = location[2]
@@ -126,7 +130,7 @@ class YAMLWriter(object):
             start_location = start_ln + ":" + start_col
             end_location = end_ln + ":" + end_col
 
-            # index callmap by end location
+            # index callmap by start location
             if "CallExpr" in line:
                 if start_location not in call_map:
                     call_map[start_location] = end_location
@@ -150,7 +154,7 @@ class YAMLWriter(object):
                 continue
 
             if "ReturnStmt" in line and (int(start_ln) != int(self.errorLoc[1]) or \
-                                         int(start_col) != int(self.errorLoc[2]))
+                                                          int(start_col) != int(self.errorLoc[2])):
                 continue      
 
             
@@ -162,7 +166,7 @@ class YAMLWriter(object):
             print("Something went wrong. Error location might not comply with the witness format.")
             self.errorLoc[1] = int(self.errorLoc[1])
             self.errorLoc[2] = int(self.errorLoc[2])
-  
+
         return call_map
 
     def create_content(self):
