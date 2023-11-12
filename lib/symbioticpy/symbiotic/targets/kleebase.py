@@ -26,8 +26,6 @@ from symbiotic.utils import dbg
 from symbiotic.utils.process import runcmd
 from symbiotic.exceptions import SymbioticException
 from symbiotic.witnesses.witnesses import GraphMLWriter
-from symbiotic.witnesses.witnessesyaml import YAMLWriter
-from pathlib import Path
 
 from sys import version_info
 from sys import version_info
@@ -225,15 +223,6 @@ def generate_graphml(path, source, is_correctness_wit, opts, saveto):
         assert path is None
     gen.write(saveto)
 
-def generate_yaml(path, source, is_correctness_wit, opts, saveto):
-    assert saveto is not None
-    gen = YAMLWriter(source, opts.property.ltl(),
-                        opts.is32bit, is_correctness_wit)
-    if not is_correctness_wit:
-        gen.generate_violation_witness(path, opts.property.termination())
-       
-    gen.write(saveto)
-
 def get_testcase(bindir):
     abd = abspath(bindir)
     for path in listdir(abd):
@@ -249,20 +238,14 @@ def get_harness_file(bindir):
 
 def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
-
     print('Generating {0} witness: {1}'.format('correctness' if is_correctness_wit else 'error', saveto))
     if is_correctness_wit:
         generate_graphml(None, sources[0], is_correctness_wit, opts, saveto)
         return
 
     pth = get_ktest(join(bindir, 'klee-last'))
-    if saveto.rsplit('.', 1)[1] == 'graphml':
-        graphml = '{0}graphml'.format(pth[:pth.rfind('.')+1])
-        generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
-        return
-        
-    test = '{0}test'.format(pth[:pth.rfind('.')+1])
-    generate_yaml(test, sources[0], is_correctness_wit, opts, saveto)
+    graphml = '{0}graphml'.format(pth[:pth.rfind('.')+1])
+    generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
 
 def generate_exec_witness(bindir, sources, opts, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
