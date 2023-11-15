@@ -258,8 +258,8 @@ def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
     graphml = '{0}graphml'.format(pth[:pth.rfind('.')+1])
     generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
 
-    if opts.property.signedoverflow() or opts.property.unreachcall(self) or opts.property.memsafety():
-        test = '{0}waypoint'.format(pth[:pth.rfind('.') + 1])
+    if opts.property.signedoverflow() or opts.property.unreachcall() or opts.property.memsafety():
+        test = '{0}waypoints'.format(pth[:pth.rfind('.') + 1])
         generate_yaml(test, sources[0], is_correctness_wit, opts, saveto)
 
 
