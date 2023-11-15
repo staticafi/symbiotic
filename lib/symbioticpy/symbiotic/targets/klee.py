@@ -135,7 +135,6 @@ class KleeToolFullInstrumentation(KleeBase):
 
         if not opts.nowitness:
             cmd.append('-write-witness')
-            cmd.append('-write-waypoints')
 
         if opts.executable_witness:
             cmd.append('-write-harness')
@@ -362,7 +361,10 @@ class SymbioticTool(KleeBase):
 
         if not opts.nowitness:
             cmd.append('-write-witness')
-            cmd.append('-write-waypoints')
+            if opts.property.memsafety() or \
+               opts.property.unreachcall() or \
+               opts.property.signedoverflow():
+                cmd.append('-write-waypoints')
 
         if opts.executable_witness:
             cmd.append('-write-harness')
