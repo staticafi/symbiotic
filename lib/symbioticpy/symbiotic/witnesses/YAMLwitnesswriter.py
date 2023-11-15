@@ -117,8 +117,8 @@ class YAMLWriter(object):
                 if name != self._source:
                     this_file = False
                     continue
-            else:
-                this_file = True
+                else:
+                    this_file = True
 
             # update last line
             last_ln = start_ln
@@ -129,9 +129,16 @@ class YAMLWriter(object):
                 end_ln, end_col = end_loc[1], end_loc[2]
             else:
                 end_ln = last_ln
-                end_col = re.search("col:([0-9]*)", end)[1]
+                end_col_match = re.search("col:([0-9]*)", end)
+                if not end_col_match:
+                    this_file = False
+                    continue
+                end_col = end_col_match[1]
 
             last_ln = end_ln
+
+            if not this_file:
+                continue
 
             start_location = start_ln + ":" + start_col
             end_location = end_ln + ":" + end_col
@@ -162,7 +169,6 @@ class YAMLWriter(object):
                                                           int(start_col) != int(self.errorLoc[2])):
                 continue      
 
-            
             self.errorLoc[1] = int(start_ln)
             self.errorLoc[2] = int(start_col)
             shifterror = False
