@@ -221,11 +221,8 @@ class YAMLWriter(object):
     def parse(self, path):
         with open(path, "r") as testfile:
             for line in testfile.readlines():
-                print(line)
                 if line[0] == '@':
-                    print(line)
                     self.errorLoc = line.strip('\n').split(':')[1:]
-                    print("Error loc:", self.errorLoc)
                     break
                 self.test.append(line.strip('\n').split(':'))
 
