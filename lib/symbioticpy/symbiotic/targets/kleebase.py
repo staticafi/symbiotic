@@ -259,8 +259,12 @@ def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
     generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
 
     if opts.property.signedoverflow() or opts.property.unreachcall() or opts.property.memsafety():
-        test = '{0}waypoints'.format(pth[:pth.rfind('.') + 1])
-        generate_yaml(test, sources[0], is_correctness_wit, opts, saveto)
+        try:
+            saveto = saveto.strip('graphml') + 'yml'
+            test = '{0}waypoints'.format(pth[:pth.rfind('.') + 1])
+            generate_yaml(test, sources[0], is_correctness_wit, opts, saveto)
+        except:
+            print("Failed generating YAML witness")
 
 
 def generate_exec_witness(bindir, sources, opts, saveto = None):
