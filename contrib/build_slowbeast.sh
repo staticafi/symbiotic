@@ -8,9 +8,6 @@ if [ ! -d ${LLVMLITE_DIR} ];then
 fi
 if [ ! -d ${SLOWBEAST_DIR} ];then
     git clone https://gitlab.com/mchalupa/slowbeast
-    pushd ${SLOWBEAST_DIR}
-    git checkout svcomp22
-    popd
 fi
 
 if [ -e ${LLVMLITE_DIR}/build ];then rm -r ${LLVMLITE_DIR}/build ; fi
