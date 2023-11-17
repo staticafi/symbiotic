@@ -431,7 +431,7 @@ if [  -d predator-${LLVM_VERSION} ]; then
 fi
 if [ $FROM -le 6 -a "$BUILD_PREDATOR" = "yes" ]; then
 	if [ ! -d predator-${LLVM_VERSION} ]; then
-               git_clone_or_pull "https://github.com/staticafi/predator" -b svcomp21-v1 predator-${LLVM_VERSION}
+               git_clone_or_pull "https://github.com/staticafi/predator" -b lukas-zaoral-rebase predator-${LLVM_VERSION}
 	fi
 
 	pushd predator-${LLVM_VERSION}
@@ -566,4 +566,3 @@ if [ $FROM -le 7 ]; then
     PHASE="creating distribution"
 	source scripts/push-to-git.sh
 fi
-
