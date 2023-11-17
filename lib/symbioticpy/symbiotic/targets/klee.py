@@ -361,6 +361,10 @@ class SymbioticTool(KleeBase):
 
         if not opts.nowitness:
             cmd.append('-write-witness')
+            if opts.property.memsafety() or \
+               opts.property.unreachcall() or \
+               opts.property.signedoverflow():
+                cmd.append('-write-waypoints')
 
         if opts.executable_witness:
             cmd.append('-write-harness')
