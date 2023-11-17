@@ -12,7 +12,7 @@
 	ignore = untracked
 [submodule "klee"]
 	path = klee
-	url = https://github.com/staticafi/klee
+	url = https://github.com/ayazip/symbiotic.git
 [submodule "llvm2c"]
 	path = llvm2c
 	url = https://github.com/staticafi/llvm2c
