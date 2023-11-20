@@ -66,6 +66,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 yield (SlowbeastTool(self._options), ['-se-incremental-solving'], None)
         else:
             yield (KleeTool(self._options), None, None)
+            if self._hit_threads:
+                yield (SlowbeastTool(self._options), ['-threads'], None)
 
     def name(self):
         return 'svcomp'
