@@ -6,6 +6,8 @@ import subprocess
 import datetime
 import re
 import yaml
+import uuid
+from ..options import get_versions
 
 def get_hash(source):
     f = open(source, 'r', encoding='utf-8')
@@ -31,9 +33,11 @@ class YAMLWriter(object):
         witness = {}
         witness['entry_type'] = "violation_sequence" if not self._correctness_wit else "correctness_witness"
         witness['metadata'] = {
-            'format_version' : "0.1",
+            'format_version' : "2.0",
             'creation_time' :  '{date:%Y-%m-%dT%T}Z'.format(date=datetime.datetime.utcnow()),
-            'producer' : {'name' : 'symbiotic'},
+            'producer' : {'name' : 'symbiotic',
+                          'version' : get_versions()[0] },
+            'uuid' : str(uuid.uuid4()),
             'task' :
                 { 'input_files' : [self._source],
                   'input_file_hashes' : { self._source : get_hash(self._source)},
@@ -196,11 +200,12 @@ class YAMLWriter(object):
             waypoint = { 'type' : 'function_return',
                           'action' : 'follow',
                           'constraint' : {
-                            'format' : 'C',
+                            'format' : 'c_expression',
                             'value' : '\\result == ' + call[3]
                           },
                           'location' : {
                             'file_name' : self._source,
+                            'file_hash' : get_hash(self._source),
                             'line' : call[1],
                             'column' : call[2]
                           }
@@ -214,6 +219,7 @@ class YAMLWriter(object):
                    'action' : 'follow',
                    'location' : {
                             'file_name' : self.errorLoc[0],
+                            'file_hash' : get_hash(self._source),
                             'line' : self.errorLoc[1],
                             'column' : self.errorLoc[2]
                           }
