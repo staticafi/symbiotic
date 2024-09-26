@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+      - svcomp24
 
 jobs:
   build64:
@@ -16,28 +17,19 @@ jobs:
       matrix:
         include:
           # Linux with GCC
-          - {os: ubuntu-20.04, llvm: '6.0', compiler: gcc}
-          - {os: ubuntu-20.04, llvm: 7, compiler: gcc}
-          - {os: ubuntu-20.04, llvm: 8, compiler: gcc}
-          - {os: ubuntu-20.04, llvm: 9, compiler: gcc}
-          - {os: ubuntu-20.04, llvm: 10, compiler: gcc}
-          - {os: ubuntu-20.04, llvm: 10, compiler: gcc, type: Debug}
-          # FIXME: Edit when KLEE is rebased to latest upstream.
-          - {os: ubuntu-20.04, llvm: 11, compiler: gcc, klee: 'no-klee'}
-          - {os: ubuntu-20.04, llvm: 12, compiler: gcc, klee: 'no-klee'}
-          - {os: ubuntu-22.04, llvm: 13, compiler: gcc, klee: 'no-klee'}
+          - {os: ubuntu-22.04, llvm: 11, compiler: gcc}
+          - {os: ubuntu-22.04, llvm: 12, compiler: gcc}
+          - {os: ubuntu-22.04, llvm: 13, compiler: gcc}
+          - {os: ubuntu-22.04, llvm: 14, compiler: gcc}
+          - {os: ubuntu-22.04, llvm: 14, compiler: gcc, type: Debug}
+
 
           # Linux with Clang
-          - {os: ubuntu-20.04, llvm: '6.0', compiler: clang}
-          - {os: ubuntu-20.04, llvm: 7, compiler: clang}
-          - {os: ubuntu-20.04, llvm: 8, compiler: clang}
-          - {os: ubuntu-20.04, llvm: 9, compiler: clang}
-          - {os: ubuntu-20.04, llvm: 10, compiler: clang}
-          - {os: ubuntu-20.04, llvm: 10, compiler: clang, type: Debug}
-          # FIXME: Edit when KLEE is rebased to latest upstream.
-          - {os: ubuntu-20.04, llvm: 11, compiler: clang, klee: 'no-klee'}
-          - {os: ubuntu-20.04, llvm: 12, compiler: clang, klee: 'no-klee'}
-          - {os: ubuntu-22.04, llvm: 13, compiler: clang, klee: 'no-klee'}
+          - {os: ubuntu-22.04, llvm: 11, compiler: clang}
+          - {os: ubuntu-22.04, llvm: 12, compiler: clang}
+          - {os: ubuntu-22.04, llvm: 13, compiler: clang}
+          - {os: ubuntu-22.04, llvm: 14, compiler: clang, type: Debug}
+
 
     runs-on: ${{matrix.os}}
     steps:
@@ -134,7 +126,7 @@ jobs:
 
       - name: Run tests
         # FIXME: Remove when KLEE is rebased to latest upstream.
-        if: matrix.llvm < 11
+        #if: matrix.llvm < 11
         run: |
           if [[ "${{matrix.compiler}}" = "clang" ]]; then
             # libclang_rt.asan-x86_64.so must be loaded as the first library
