@@ -123,7 +123,7 @@ class YAMLWriter(object):
             waypoint = { 'type' : 'function_return',
                           'action' : 'follow',
                           'constraint' : {
-                            'format' : 'C',
+                            'format' : 'c_expression',
                             'value' : '\\result == ' + call[2]
                           },
                           'location' : {
