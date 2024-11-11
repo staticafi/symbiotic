@@ -18,7 +18,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from os.path import basename, dirname, abspath, isfile, join, realpath
+from os.path import basename, dirname, abspath, isfile, join, realpath, exists, splitext
 from os import listdir, rename
 from struct import unpack
 from symbiotic.utils.utils import print_stdout, process_grep
@@ -231,7 +231,7 @@ def generate_yaml(path, source, is_correctness_wit, opts, saveto):
                         opts.is32bit, is_correctness_wit)
     if not is_correctness_wit:
         gen.generate_violation_witness(path, opts.property.termination())
-       
+
     gen.write(saveto)
 
 def get_testcase(bindir):
@@ -255,17 +255,26 @@ def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
         return
 
     pth = get_ktest(join(bindir, 'klee-last'))
-    graphml = '{0}graphml'.format(pth[:pth.rfind('.')+1])
-    generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
+    saveyml = saveto
+
+    if not saveto.endswith('yml'):
+        graphml = '{0}graphml'.format(pth[:pth.rfind('.')+1])
+        generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
+
+        # Attempt to also generate a YAML witness
+        saveyml = splitext(saveto)[0] + '.yml'
+        print('Generating YAML witness to: {0}'.format(saveyml))
+
+        if exists(saveyml):
+            print('Failed generating YAML witness: File {0} already exists'.format(saveyml))
+            return
 
     if opts.property.signedoverflow() or opts.property.unreachcall() or opts.property.memsafety():
         try:
-            saveto = saveto.strip('graphml') + 'yml'
             test = '{0}waypoints'.format(pth[:pth.rfind('.') + 1])
-            generate_yaml(test, sources[0], is_correctness_wit, opts, saveto)
+            generate_yaml(test, sources[0], is_correctness_wit, opts, saveyml)
         except:
             print("Failed generating YAML witness")
-
 
 def generate_exec_witness(bindir, sources, opts, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
