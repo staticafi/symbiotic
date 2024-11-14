@@ -9,10 +9,10 @@ class ProcessWatch(object):
     def __init__(self, lines_limit=0):
         """
         Initialize a watch. By default, do not store
-        any output of the process. If \param buffer_lines
+        any output of the process. If param buffer_lines
         is set to non-0 value, this watch will store
-        the lines of output maximally up to \param buffer_lines,
-        or will store everything when \param buffer_lines is None
+        the lines of output maximally up to param buffer_lines,
+        or will store everything when param buffer_lines is None
         """
         self._maxlines = lines_limit
 

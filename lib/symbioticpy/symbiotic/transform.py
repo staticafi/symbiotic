@@ -575,7 +575,7 @@ class SymbioticCC(object):
     def _compile_sources(self, output='code.bc'):
         """
         Compile the given sources into LLVM bitcode and link them into one
-        file named \param output. This output file is also set as the self.curfile.
+        file named param output. This output file is also set as the self.curfile.
         """
 
         opts = ['-Wno-unused-parameter', '-Wno-unknown-attributes',
