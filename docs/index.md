@@ -6,6 +6,9 @@ Symbiotic is a framework for analysis of computer programs written in the progra
 Components of Symbiotic can be found at <https://github.com/staticafi> with the only exception of the slicer, that can be found at <https://github.com/mchalupa/dg> (it will be moved to _staticafi_ in the future though). All parts of Symbiotic are open-source projects and are licensed under various open-source licenses (GPL, MIT license, University of Illinois Open Source license).
 
 ## Awards
+* Symbiotic 10 participating in [SV-COMP 2024](https://sv-comp.sosy-lab.org/2024/results/results-verified/), compiled version available at [Zenodo](https://zenodo.org/records/10202594)
+  * 2nd in MemSafety
+  * 2nd in FalsificationOverall
 * Symbiotic 9.1 participating in [SV-COMP 2023](https://sv-comp.sosy-lab.org/2023/results/results-verified/), compiled version available at [Zenodo](https://zenodo.org/record/7622656#.Y-P7YnbMKUk)
   * 1st in MemSafety 
   * 1st in SoftwareSystems
@@ -56,6 +59,8 @@ Components of Symbiotic can be found at <https://github.com/staticafi> with the 
 10. M. Chalupa, J. Novák, and J. Strejček: _Symbiotic 8: Parallel and Targeted Test Generation (Competition Contribution)_, in Proceedings of FASE 2021, volume 12649 of LNCS, pages 368-372. Springer, 2021. \[[link](https://link.springer.com/chapter/10.1007/978-3-030-71500-7_20)\]
 
 11. M. Chalupa, V. Mihalkovič, A. Řechtáčková, L. Zaoral, and J. Strejček: _Symbiotic 9: String Analysis and Backward Symbolic Execution with Loop Folding (Competition Contribution)_, in Proceedings of TACAS 2022, volume 13244 of LNCS, pages 462-467. Springer, 2022. \[[link](https://link.springer.com/chapter/10.1007/978-3-030-99527-0_32)\]
+
+12. M. Jonáš, K. Kumor, J. Novák, J. Sedláček, M. Trtík, L. Zaoral, P. Ayaziová, and J. Strejček: _Symbiotic 10: Lazy Memory Initialization and Compact Symbolic Execution (Competition Contribution)_, in Proceedings of TACAS 2024, volume 14572 of LNCS, pages 406-411. Springer, 2024. \[[link](https://link.springer.com/chapter/10.1007/978-3-031-57256-2_29)\]
 
 ## Contact
 
