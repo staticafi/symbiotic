@@ -6,6 +6,8 @@ import datetime
 import yaml
 import sys
 from .. utils.utils import print_stderr
+import uuid
+from ..options import get_versions
 
 def get_hash(source):
     f = open(source, 'r', encoding='utf-8')
@@ -35,7 +37,9 @@ class YAMLWriter(object):
         witness['metadata'] = {
             'format_version' : "2.0",
             'creation_time' :  '{date:%Y-%m-%dT%T}Z'.format(date=datetime.datetime.utcnow()),
-            'producer' : {'name' : 'symbiotic'},
+            'producer' : {'name' : 'symbiotic',
+                          'version' : get_versions()[0] },
+            'uuid' : str(uuid.uuid4()),
             'task' :
                 { 'input_files' : [self._source],
                   'input_file_hashes' : { self._source : get_hash(self._source)},
