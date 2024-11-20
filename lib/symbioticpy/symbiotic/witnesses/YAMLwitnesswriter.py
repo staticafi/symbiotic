@@ -82,7 +82,8 @@ class YAMLWriter(object):
         # Recurse for children of this node
 
         for child in node.get_children():
-            if child.location.file.name != self._source:
+
+            if not child.location.file or child.location.file.name != self._source:
                 continue
 
             start = child.extent.start
