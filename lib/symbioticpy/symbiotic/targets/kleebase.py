@@ -256,10 +256,15 @@ def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
 
     pth = get_ktest(join(bindir, 'klee-last'))
     saveyml = saveto
+    yaml_support =  opts.property.signedoverflow() or opts.property.unreachcall() or \
+                    opts.property.memsafety() or opts.property.assertions()
 
     if not saveto.endswith('yml'):
         graphml = '{0}graphml'.format(pth[:pth.rfind('.')+1])
         generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
+
+        if not yaml_support:
+            return
 
         # Attempt to also generate a YAML witness
         saveyml = splitext(saveto)[0] + '.yml'
@@ -269,7 +274,7 @@ def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
             print('Failed generating YAML witness: File {0} already exists'.format(saveyml))
             return
 
-    if opts.property.signedoverflow() or opts.property.unreachcall() or opts.property.memsafety():
+    if yaml_support:
         try:
             test = '{0}waypoints'.format(pth[:pth.rfind('.') + 1])
             generate_yaml(test, sources[0], is_correctness_wit, opts, saveyml)
