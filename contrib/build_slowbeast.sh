@@ -9,7 +9,7 @@ fi
 if [ ! -d ${SLOWBEAST_DIR} ];then
     # git clone https://gitlab.com/mchalupa/slowbeast
     # git clone https://gitlab.fi.muni.cz/xkumor/slowbeastcse.git slowbeast
-    git clone -b remove_numpy_float https://gitlab.com/jonasmartin/slowbeast
+    git clone -b kristian_kumor_cse https://gitlab.com/jonasmartin/slowbeast
 fi
 
 if [ -e ${LLVMLITE_DIR}/build ];then rm -r ${LLVMLITE_DIR}/build ; fi
