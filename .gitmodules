@@ -2,17 +2,24 @@
 	path = dg
 	url = https://github.com/mchalupa/dg
 	ignore = untracked
+	branch = master
 [submodule "sbt-slicer"]
 	path = sbt-slicer
 	url = https://github.com/staticafi/sbt-slicer
 	ignore = untracked
+	branch = master
 [submodule "sbt-instrumentation"]
 	path = sbt-instrumentation
 	url = https://github.com/staticafi/sbt-instrumentation
 	ignore = untracked
+	branch = master
 [submodule "klee"]
 	path = klee
 	url = https://github.com/staticafi/klee
+	ignore = untracked
+	branch = 9.0.0-dev
 [submodule "llvm2c"]
 	path = llvm2c
 	url = https://github.com/staticafi/llvm2c
+	ignore = untracked
+	branch = master
