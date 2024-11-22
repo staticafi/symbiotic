@@ -43,7 +43,7 @@ Run `build.sh` or `system-build.sh` script to compile Symbiotic:
 $ cd symbiotic
 $ ./build.sh -j2
 ```
-The difference betwee `build.sh` and `system-build.sh` is that
+The difference between `build.sh` and `system-build.sh` is that
 `system-build.sh` will try to build only the components of Symbiotic, using the
 system's packages.  `build.sh`, on the other hand, tries to build also the most
 of the missing dependencies, including LLVM, z3, etc.
