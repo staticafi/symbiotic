@@ -50,7 +50,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if self._options.sv_comp:
             cmd.append('-svcomp-witness')
         cmd.extend(options)
-        unsupported_undefs = ["_setjmp", "longjmp"]
+        unsupported_undefs = ["_setjmp", "longjmp", "setlocale"]
         if '-bself' in cmd:
             cmd.append('-forbid-floats')
             unsupported_undefs.extend(['__VERIFIER_nondet_float', '__VERIFIER_nondet_double'])
