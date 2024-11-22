@@ -30,4 +30,5 @@ RUN cp -r contrib/slowbeast/dist/sb/* install/slowbeast
 
 RUN git config --global user.email "hey@you.com"
 RUN git config --global user.name "Symbiotic User"
-RUN ./system-build.sh . full-archive -j8
+#RUN ./system-build.sh . full-archive -j8
+RUN ./build.sh llvm-version=14.0.0 -j8 full-archive
