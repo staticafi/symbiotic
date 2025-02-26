@@ -230,8 +230,10 @@ def generate_yaml(path, source, is_correctness_wit, opts, saveto):
     gen = YAMLWriter(source, opts.property.ltl(),
                         opts.is32bit, is_correctness_wit)
     if not is_correctness_wit:
-        gen.generate_violation_witness(path, opts.property.termination())
-
+        gen.generate_violation_witness(path)
+    else:
+        gen.generate_correctness_witness()
+        assert path is None
     gen.write(saveto)
 
 def get_testcase(bindir):
@@ -247,39 +249,34 @@ def get_ktest(bindir):
 def get_harness_file(bindir):
     return get_testcase(bindir) + '.harness.c';
 
-def generate_witness(bindir, sources, is_correctness_wit, opts, saveto = None):
+def generate_graphml_witness(bindir, sources, is_correctness_wit, opts, saveto):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
-    print('Generating {0} witness: {1}'.format('correctness' if is_correctness_wit else 'error', saveto))
+    print('Generating GraphML {0} witness: {1}'.format('correctness' if is_correctness_wit else 'error', saveto))
     if is_correctness_wit:
         generate_graphml(None, sources[0], is_correctness_wit, opts, saveto)
         return
 
     pth = get_ktest(join(bindir, 'klee-last'))
-    saveyml = saveto
+    graphml = '{0}graphml'.format(pth[:pth.rfind('.')+1])
+    generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
+
+def generate_yaml_witness(bindir, sources, is_correctness_wit, opts, saveto):
+    assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
+    print('Generating YAML {0} witness: {1}'.format('correctness' if is_correctness_wit else 'error', saveto))
+    if is_correctness_wit:
+        generate_yaml(None, sources[0], is_correctness_wit, opts, saveto)
+        return
+
     yaml_support =  opts.property.signedoverflow() or opts.property.unreachcall() or \
-                    opts.property.memsafety() or opts.property.assertions()
+                    opts.property.assertions()
 
-    if not saveto.endswith('yml'):
-        graphml = '{0}graphml'.format(pth[:pth.rfind('.')+1])
-        generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
+    if not yaml_support:
+        print('Failed generating YAML witness: Property not supported by format')
+        return
 
-        if not yaml_support:
-            return
-
-        # Attempt to also generate a YAML witness
-        saveyml = splitext(saveto)[0] + '.yml'
-        print('Generating YAML witness to: {0}'.format(saveyml))
-
-        if exists(saveyml):
-            print('Failed generating YAML witness: File {0} already exists'.format(saveyml))
-            return
-
-    if yaml_support:
-        try:
-            test = '{0}waypoints'.format(pth[:pth.rfind('.') + 1])
-            generate_yaml(test, sources[0], is_correctness_wit, opts, saveyml)
-        except:
-            print("Failed generating YAML witness")
+    pth = get_ktest(join(bindir, 'klee-last'))
+    test = '{0}waypoints'.format(pth[:pth.rfind('.') + 1])
+    generate_yaml(test, sources[0], is_correctness_wit, opts, saveto)
 
 def generate_exec_witness(bindir, sources, opts, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
@@ -456,8 +453,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         return params
 
     def generate_witness(self, llvmfile, sources, has_error):
-        generate_witness(dirname(llvmfile), sources, not has_error,
-                         self._options, self._options.witness_output)
+        if self._options.witness_output:
+            generate_yaml_witness(dirname(llvmfile), sources, not has_error,
+                                  self._options, self._options.witness_output)
+        if self._options.graphml_witness_output:
+            generate_graphml_witness(dirname(llvmfile), sources, not has_error,
+                                     self._options, self._options.graphml_witness_output)
 
     def generate_exec_witness(self, bitcode, sources):
         out = self._options.witness_output[:self._options.witness_output.rfind('.')+1]+'exe'

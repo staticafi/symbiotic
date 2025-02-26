@@ -93,9 +93,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         return passes + ["-O3", "-remove-constant-exprs", "-reg2mem"]
 
     def generate_witness(self, llvmfile, sources, has_error):
+        if not self._options.graphml_witness_output:
+            return
+
         print_stdout('Generating {0} witness: {1}'\
                 .format('violation' if has_error else 'correctness',
-                        self._options.witness_output))
+                        self._options.graphml_witness_output))
 
         sbdir = pathjoin(dirname(llvmfile), 'sb-out')
         witnesses = [abspath(pathjoin(sbdir, f)) for f in listdir(sbdir)
@@ -113,7 +116,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         else:
             gen.generate_witness(witnesses[0],
                                  self._options.property.termination())
-        gen.write(self._options.witness_output)
+        gen.write(self._options.graphml_witness_output)
 
     def determine_result(self, returncode, returnsignal, output, isTimeout):
         if isTimeout:

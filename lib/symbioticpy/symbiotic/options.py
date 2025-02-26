@@ -51,7 +51,8 @@ class SymbioticOptions(object):
         self.no_verification = False
         self.no_instrument = False
         self.final_output = None
-        self.witness_output = '{0}/witness.graphml'.format(getcwd())
+        self.witness_output = None
+        self.graphml_witness_output = None
         self.testsuite_output = '{0}/test-suite'.format(getcwd())
         self.source_is_bc = False
         self.argv = []
@@ -139,6 +140,10 @@ def set_witness_check(opts):
 def set_svcomp(opts):
     opts.sv_comp = True
     opts.nowitness = False
+    if not opts.witness_output:
+        opts.witness_output = '{0}/witness.yml'.format(getcwd())
+    if not opts.graphml_witness_output:
+        opts.graphml_witness_output = '{0}/witness.graphml'.format(getcwd())
     opts.no_integrity_check = True
     opts.malloc_never_fails = True
     opts.explicit_symbolic = True
@@ -245,7 +250,7 @@ def parse_command_line():
                                     'search-include-paths', 'replay-error', 'cc',
                                     'report=', 'no-replay-error',
                                     'unroll=', 'full-instrumentation', 'target-settings=',
-                                    'witness-check='])
+                                    'witness-check=', 'graphml-witness='])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -374,12 +379,16 @@ def parse_command_line():
             options.final_output = abspath(arg)
             dbg('Output will be stored to {0}'.format(arg))
         elif opt == '--witness':
-            options.nowitness=False
+            options.nowitness = False
             options.witness_output = abspath(expanduser(arg))
             dbg('Witness will be stored to {0}'.format(arg))
+        elif opt == '--graphml-witness':
+            options.nowitness = False
+            options.graphml_witness_output = abspath(expanduser(arg))
+            dbg('GraphML Witness will be stored to {0}'.format(arg))
         elif opt == '--no-witness':
             # can override nowitness set by --sv-comp
-            options.nowitness=True
+            options.nowitness = True
         elif opt == '--bc':
             options.source_is_bc = True
             dbg('Given code is bytecode')
@@ -517,7 +526,8 @@ where OPTS can be following:
                                  that affects how symbiotic-verify reports the results.
     --gen-ll                     Generate also .ll files (for debugging)
     --output=FILE                Store the final code (that is to be run by a tool) to FILE
-    --witness=FILE               Store witness into FILE (default is witness.graphml)
+    --witness=FILE               Store YAML witness into FILE (sv-comp default is witness.yml)
+    --graphml-witness=FILE       Store GraphML witness into FILE (sv-comp default is witness.graphml)
     --cflags=flags
     --cppflags=flags             Append extra CFLAGS and CPPFLAGS to use while compiling,
                                  the environment CFLAGS and CPPFLAGS are used too
