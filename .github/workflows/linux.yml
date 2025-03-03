@@ -64,13 +64,13 @@ jobs:
             CC="clang-${{matrix.llvm}}"
             CXX="clang++-${{matrix.llvm}}"
 
-            # ASAN, glibc 2.27+ and clang 6.0 == SIGSEGV
-            # https://github.com/google/sanitizers/issues/954
-            if [[ "${{matrix.llvm}}" == "6.0" ]]; then
-              # Disable ASAN
-              CFLAGS="-fsanitize=undefined -g -fno-omit-frame-pointer"
-              CXXFLAGS="-fsanitize=undefined -g -fno-omit-frame-pointer"
-              LDFLAGS="-fsanitize=undefined"
+            # SANITIZIERS, glibc 2.35+ and clang 11.0 == ERROR
+            # https://github.com/llvm/llvm-project/issues/55785
+            if [[ "${{matrix.llvm}}" == "11" ]]; then
+              # Disable ASAN, UBSAN
+              CFLAGS="-g -fno-omit-frame-pointer"
+              CXXFLAGS="-g -fno-omit-frame-pointer"
+              unset LDFLAGS
             else
               # Use shared libasan otherwise LLVMsbt.so would be underlinked.
               CFLAGS="-shared-libasan $CFLAGS"
@@ -128,6 +128,9 @@ jobs:
                             llvm-config=$(which llvm-config-${{matrix.llvm}})
 
       - name: Run tests
+        # SANITIZIERS, glibc 2.35+ and clang 11.0 == ERROR
+        # https://github.com/llvm/llvm-project/issues/55785
+        if: matrix.llvm > 11
         run: |
           if [[ "${{matrix.compiler}}" = "clang" ]]; then
             # libclang_rt.asan-x86_64.so must be loaded as the first library
