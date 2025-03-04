@@ -452,6 +452,9 @@ def parse_command_line():
     if options.require_slicer and options.noslice:
         err("Slicing is forbidden but required at the same time")
 
+    if not options.nowitness and not options.exit_on_error:
+        err("Witness generation is only supported with --exit-on-error")
+
     return options, args
 
 
