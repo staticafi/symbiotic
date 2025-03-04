@@ -257,7 +257,7 @@ def generate_graphml_witness(bindir, sources, is_correctness_wit, opts, saveto):
         return
 
     pth = get_ktest(join(bindir, 'klee-last'))
-    graphml = '{0}graphml'.format(pth[:pth.rfind('.')+1])
+    graphml = '{0}.graphml'.format(splitext(pth)[0])
     generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
 
 def generate_yaml_witness(bindir, sources, is_correctness_wit, opts, saveto):
@@ -275,7 +275,7 @@ def generate_yaml_witness(bindir, sources, is_correctness_wit, opts, saveto):
         return
 
     pth = get_ktest(join(bindir, 'klee-last'))
-    test = '{0}waypoints'.format(pth[:pth.rfind('.') + 1])
+    test = '{0}.waypoints'.format(splitext(pth)[0])
     generate_yaml(test, sources[0], is_correctness_wit, opts, saveto)
 
 def generate_exec_witness(bindir, sources, opts, saveto = None):
