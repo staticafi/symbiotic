@@ -30,7 +30,7 @@ jobs:
     runs-on: ${{matrix.os}}
     steps:
       - name: Checkout Symbiotic and submodules
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
 
@@ -117,7 +117,7 @@ jobs:
           echo "timestamp=$(date -u -Iseconds)" >> $GITHUB_OUTPUT
 
       - name: Set up ccache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .ccache
           key: ${{matrix.os}}-${{matrix.llvm}}-${{matrix.compiler}}-${{matrix.type}}-${{steps.env.outputs.timestamp}}
