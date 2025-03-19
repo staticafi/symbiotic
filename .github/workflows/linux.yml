@@ -22,10 +22,9 @@ jobs:
           - {os: ubuntu-20.04, llvm: 9, compiler: gcc}
           - {os: ubuntu-20.04, llvm: 10, compiler: gcc}
           - {os: ubuntu-20.04, llvm: 10, compiler: gcc, type: Debug}
-          # FIXME: Edit when KLEE is rebased to latest upstream.
-          - {os: ubuntu-20.04, llvm: 11, compiler: gcc, klee: 'no-klee'}
-          - {os: ubuntu-20.04, llvm: 12, compiler: gcc, klee: 'no-klee'}
-          - {os: ubuntu-22.04, llvm: 13, compiler: gcc, klee: 'no-klee'}
+          - {os: ubuntu-20.04, llvm: 11, compiler: gcc}
+          - {os: ubuntu-20.04, llvm: 12, compiler: gcc}
+          - {os: ubuntu-22.04, llvm: 13, compiler: gcc}
 
           # Linux with Clang
           - {os: ubuntu-20.04, llvm: '6.0', compiler: clang}
@@ -34,10 +33,9 @@ jobs:
           - {os: ubuntu-20.04, llvm: 9, compiler: clang}
           - {os: ubuntu-20.04, llvm: 10, compiler: clang}
           - {os: ubuntu-20.04, llvm: 10, compiler: clang, type: Debug}
-          # FIXME: Edit when KLEE is rebased to latest upstream.
-          - {os: ubuntu-20.04, llvm: 11, compiler: clang, klee: 'no-klee'}
-          - {os: ubuntu-20.04, llvm: 12, compiler: clang, klee: 'no-klee'}
-          - {os: ubuntu-22.04, llvm: 13, compiler: clang, klee: 'no-klee'}
+          - {os: ubuntu-20.04, llvm: 11, compiler: clang}
+          - {os: ubuntu-20.04, llvm: 12, compiler: clang}
+          - {os: ubuntu-22.04, llvm: 13, compiler: clang}
 
     runs-on: ${{matrix.os}}
     steps:
@@ -78,9 +76,18 @@ jobs:
             CC="clang-${{matrix.llvm}}"
             CXX="clang++-${{matrix.llvm}}"
 
-            # Use shared libasan otherwise LLVMsbt.so would be underlinked.
-            CFLAGS="-shared-libasan $CFLAGS"
-            CXXFLAGS="-shared-libasan $CXXFLAGS"
+            # ASAN, glibc 2.27+ and clang 6.0 == SIGSEGV
+            # https://github.com/google/sanitizers/issues/954
+            if [[ "${{matrix.llvm}}" == "6.0" ]]; then
+              # Disable ASAN
+              CFLAGS="-fsanitize=undefined -g -fno-omit-frame-pointer"
+              CXXFLAGS="-fsanitize=undefined -g -fno-omit-frame-pointer"
+              LDFLAGS="-fsanitize=undefined"
+            else
+              # Use shared libasan otherwise LLVMsbt.so would be underlinked.
+              CFLAGS="-shared-libasan $CFLAGS"
+              CXXFLAGS="-shared-libasan $CXXFLAGS"
+            fi
 
             # Dynamic compiler-rt libraries are not in /usr/lib
             tmp="$(clang-${{matrix.llvm}} -print-file-name=libclang_rt.asan-x86_64.so)"
@@ -133,8 +140,6 @@ jobs:
                             llvm-config=$(which llvm-config-${{matrix.llvm}})
 
       - name: Run tests
-        # FIXME: Remove when KLEE is rebased to latest upstream.
-        if: matrix.llvm < 11
         run: |
           if [[ "${{matrix.compiler}}" = "clang" ]]; then
             # libclang_rt.asan-x86_64.so must be loaded as the first library
