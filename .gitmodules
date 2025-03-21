@@ -1,6 +1,6 @@
 [submodule "dg"]
 	path = dg
-	url = https://github.com/mchalupa/dg
+	url = https://github.com/staticafi/dg
 	ignore = untracked
 [submodule "sbt-slicer"]
 	path = sbt-slicer
