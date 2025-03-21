@@ -6,9 +6,18 @@ Symbiotic is a framework for analysis of computer programs written in the progra
 Components of Symbiotic can be found at <https://github.com/staticafi> with the only exception of the slicer, that can be found at <https://github.com/mchalupa/dg> (it will be moved to _staticafi_ in the future though). All parts of Symbiotic are open-source projects and are licensed under various open-source licenses (GPL, MIT license, University of Illinois Open Source license).
 
 ## Awards
+* Symbiotic 10.1 participating in [SV-COMP 2025](https://sv-comp.sosy-lab.org/2025/results/results-verified/), compiled version available at [Zenodo](https://zenodo.org/records/14230101)
+  * 2nd in MemSafety
+  * 2nd in FalsificationOverall
+  * 3rd in SoftwareSystems
+  * **3rd in Overall**
+* Symbiotic 10.1 participating in [Test-Comp 2025](https://test-comp.sosy-lab.org/2025/results/results-verified/), compiled version available at [Zenodo](https://zenodo.org/records/14230101)
+  * 3rd in Cover-Error 
 * Symbiotic 10 participating in [SV-COMP 2024](https://sv-comp.sosy-lab.org/2024/results/results-verified/), compiled version available at [Zenodo](https://zenodo.org/records/10202594)
   * 2nd in MemSafety
   * 2nd in FalsificationOverall
+* Symbiotic 10 participating in [Test-Comp 2024](https://test-comp.sosy-lab.org/2024/results/results-verified/), compiled version available at [Zenodo](https://zenodo.org/records/10202594)
+  * 3rd in Cover-Error
 * Symbiotic 9.1 participating in [SV-COMP 2023](https://sv-comp.sosy-lab.org/2023/results/results-verified/), compiled version available at [Zenodo](https://zenodo.org/record/7622656#.Y-P7YnbMKUk)
   * 1st in MemSafety 
   * 1st in SoftwareSystems
