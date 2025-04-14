@@ -4,7 +4,7 @@ import os, sys
 from . utils import err, dbg, enable_debug
 
 def get_versions():
-    """ Return a tuple (VERSION, versions, llvm_versions) """ 
+    """ Return a tuple (VERSION, versions, llvm_versions) """
 
     # the numbers must be separated by '-, otherwise it will
     # break the tool-module in benchexec
@@ -199,6 +199,171 @@ def parse_command_line():
     import getopt
     from sys import argv
     options = SymbioticOptions()
+
+    import argparse
+    arg_parser = argparse.ArgumentParser()
+
+    arg_parser.add_argument('--debug', dest='debug_opts',
+                            help=('Print debug messages, what can be comma separated list of:\n'
+                                  '     all, compile, slicer \n'
+                                  'In that case you get verbose output. You can just use\n'
+                                  '--debug= to print basic messages.\n'))
+    arg_parser.add_argument('--report', dest='report_opts',
+                            help=('A comma-separated list of {normal, short, sv-comp}\n'
+                                  'that affects how symbiotic-verify reports the results.'))
+    arg_parser.add_argument('--slicer-timeout', type=int,
+                            help=('Set timeout for slicer (if slicer fails/timeouts,\n'
+                                  'the original bitcode is used'))
+    arg_parser.add_argument('--32', dest='use_32bit_env', action='store_true', default=False,
+                            help='Use 32-bit environment')
+    arg_parser.add_argument('--64', dest='use_64bit_env', action='store_true', default=True,
+                            help='Use 64-bit environment')
+    arg_parser.add_argument('--timeout', type=int, default=None, help='Set timeout to t seconds')
+    arg_parser.add_argument('--repeat-slicing', type=int, help='Repeat slicing N times')
+    arg_parser.add_argument('--instrumentation-timeout', type=int, metavar='N',
+                            help=('Set timeout for instrumentation (if instrumentation\n'
+                                  'timeouts, the original bitcode is used and slicing\n'
+                                  'is skipped)'))
+    arg_parser.add_argument('--executable-witness', action='store_true', default=False,
+                            help='Produce an executable witness')
+    arg_parser.add_argument('--explicit-symbolic', action='store_true', default=False,
+                            help='Do not make all memory symbolic, but rely on calls to __VERIFIER_nondet_*')
+    arg_parser.add_argument('--no-slice', action='store_true', default=False, help='Do not slice the code')
+    arg_parser.add_argument('--no-optimize', action='store_true', default=False,
+                            help='Don\'t optimize the code (same as --optimize=none)')
+    arg_parser.add_argument('--no-instrument', action='store_true', default=False,
+                            help='Don\'t instrument the code, for debugging.')
+    arg_parser.add_argument('--no-verification', action='store_true', default=False,
+                            help='Do not run verification phase (handy for debugging)')
+    arg_parser.add_argument('--no-replay-error', action='store_true', default=False,
+                            help='Do not replay a found error on non-sliced code (overrides --sv-comp)')
+    arg_parser.add_argument('--no-integrity-check', action='store_true', default=False,
+                            help='Does not run integrity check. For development only.')
+    arg_parser.add_argument('--no-link-undefined', action='store_true', default=False,
+                            help='Do not to find and link undefined functions.')
+    arg_parser.add_argument('--dump-env', action='store_true',
+                            default=False, help='Only dump environment variables (for debugging)')
+    arg_parser.add_argument('--dump-env-cmd', action='store_true',
+                            default=False, help='Dump environment variables for using them in command line')
+
+    # TODO(MichalHe): @review maybe it should be more robust to use choices here
+    arg_parser.add_argument('--no-link', metavar='CATEGORIES',
+                            help=('Do not link missing functions from the given category\n'
+                                  '(libc, svcomp, verifier, posix, kernel). The argument\n'
+                                  'is a comma-separated list of values.'))
+
+    # TODO(MichalHe): @review Docs filled in.
+    arg_parser.add_argument('--no-witness', action='store_true', default=False,
+                            help='Do not produce a witness. Can overwrite witness generation specified by --sv-comp.')
+
+    # TODO(MichalHe): @review Original docs contain a fragment `but continue searching` after the end of sentence.
+    #                 maybe a left over?
+    arg_parser.add_argument('--exit-on-error', action='store_true', default=False,
+                            help='Exit after the first error is found.')
+
+    arg_parser.add_argument('--require-slicer', action='store_true', default=False,
+                            help='Abort if slicing fails/timeouts')
+    arg_parser.add_argument('--full-instrumentation', action='store_true', default=False,
+                            help=('Transform checking errors to reachability problem, i.e.\n'
+                                  'instrument tracking of the state of the program directly\n'
+                                  'into the program.'))
+    arg_parser.add_argument('--bc', action='store_true', default=False,
+                            help='Given files are LLVM bitcode (force this assumption)')
+    arg_parser.add_argument('--undefined-are-pure', action='store_true', default=False,
+                            help='Suppose that undefined functions have no side-effects')
+    arg_parser.add_argument('--undefined-retval-nosym', action='store_true', default=False,
+                            help=('Do not make return value of undefined functions symbolic,\n'
+                                  'but replace it with 0.'))
+    arg_parser.add_argument('--malloc-never-fails', action='store_true', default=False,
+                            help='Suppose malloc and calloc never return NULL')
+    arg_parser.add_argument('--undefines-are-pure', action='store_true', default=False,
+                            help='Suppose that undefined functions have no side-effects')
+    arg_parser.add_argument('--statistics', action='store_true', default=False, help='Dump statistics about bitcode')
+    arg_parser.add_argument('--output', metavar='FILE',
+                            help='Store the final code (that is to be run by a tool) to FILE')
+    arg_parser.add_argument('--witness', metavar='FILE', default='witness.graphml',
+                            help='Store witness into FILE (default is witness.graphml)')
+    arg_parser.add_argument('--working-dir-prefix', default='/tmp',
+                            help='Where to create the temporary directory (defaults to /tmp)')
+    arg_parser.add_argument('--cflags',
+                            help=('Append extra CFLAGS to use while compiling,\n'
+                                  'the environment CFLAGS are used too'))
+    arg_parser.add_argument('--cppflags',
+                            help=('Append extra CPPFLAGS to use while compiling,\n'
+                                  'the environment CPPFLAGS are used too'))
+    arg_parser.add_argument('--argv', metavar='ARGS', help='A comma-separated list of arguments for the main function')
+
+    # # TODO(MichalHe): @review Missing docs.
+    arg_parser.add_argument('--cc', dest='run_in_cc_mode', default=False,
+                            help='')
+
+    # # TODO(MichalHe): @review Docs filled in.
+    arg_parser.add_argument('--link', default='', metavar='LINKFILES',
+                            help='A comma separated list of extra link files.')
+
+    arg_parser.add_argument('--slicer-params', help='A space separated list of params to pass directly to slicer')
+    arg_parser.add_argument('--slicer-cmd', default='sbt-slicer', help='Command to run slicer, default: sbt-slicer')
+    arg_parser.add_argument('--version', dest='print_version', action='store_true', help='Return version')
+    arg_parser.add_argument('--version-short',  dest='print_short_version', action='store_true',
+                            help='Return version as one-line string')
+    arg_parser.add_argument('--optimize', dest='optimization_opts',
+                            help=('Run optimizations, every item in the optimizations list\n'
+                                  'is a string of type when-level, where when is \'before\'\n'
+                                  'or \'after\' (slicing) and level in \'conservative\', \'klee\'\n'
+                                  '\'O2\', \'O3\'. A special value is \'none\', which\n'
+                                  'disables optimizations (same as --no-optimize).\n'
+                                  'You can also pass optimizations directly to LLVM\'s opt,\n'
+                                  'by providing a string when-opt-what, e.g. before-opt-iconstprop'))
+    arg_parser.add_argument('--prp', dest='verified_property',
+                            choices=['null-deref', 'memsafety', 'undefined-behavior',
+                                     'undef-behavior', 'undefined', 'signed-overflow',
+                                     'no-overflow', 'termination', 'coverage'],
+                            help=('Specify property that should hold. It is either LTL formula\n'
+                                  ' as specivied by SV-COMP, or one of following shortcuts:\n'
+                                  ' null-deref         -- program is free of null-dereferences\n'
+                                  ' memsafety          -- program does not use invalid memory\n'
+                                  '                       (e.g., no double-free,\n'
+                                  '                       no invalid dereference, etc.)\n'
+                                  ' undefined-behavior -- check for undefined behaviour\n'
+                                  ' undef-behavior\n'
+                                  ' undefined\n'
+                                  ' signed-overflow -- check for signed integer overflow\n'
+                                  ' no-overflow\n'
+                                  ' termination     -- try checking whether the program\n'
+                                  '                    always terminates\n'
+                                  ' coverage        -- generate tests with as high coverage\n'
+                                  '                   as possible'))
+
+    arg_parser.add_argument('--verifier', metavar='VERIFIER_TOOL',
+                            choices=['Ceagle', 'KLEE', 'CPAchecker', 'Seahorn', 'Skink', 'Smack'],
+                            help=('Use the tool \'name\'. Default is KLEE, other tools that\n'
+                                  'can be integrated are Ceagle, CPAchecker, Seahorn,\n'
+                                  'Skink and SMACK.'))
+
+    arg_parser.add_argument('--target', metavar='VERIFIER_TOOL',
+                            choices=['Ceagle', 'KLEE', 'CPAchecker', 'Seahorn', 'Skink', 'Smack'],
+                            help=('Use the tool \'name\'. Default is KLEE, other tools that\n'
+                                  'can be integrated are Ceagle, CPAchecker, Seahorn,\n'
+                                  'Skink and SMACK. Synonymous to --verifier.'))
+
+    # TODO(MichalHe): These options have not been ported to argparse yet options
+    #    'gen-c',
+    #    'gen-ll',
+    #    'memsafety-config-file=',
+    #    'overflow-config-file=',
+    #    'overflow-with-clang',
+    #    'pta=',
+    #    'replay-error',
+    #    'report=',
+    #    'save-files',
+    #    'search-include-paths',
+    #    'sv-comp',
+    #    'target-settings=',
+    #    'test-comp',
+    #    'test-suite=',
+    #    'unroll=',
+    #    'verifier-params=',
+    #    'witness-with-source-lines',
 
     try:
         opts, args = getopt.getopt(argv[1:], '',
