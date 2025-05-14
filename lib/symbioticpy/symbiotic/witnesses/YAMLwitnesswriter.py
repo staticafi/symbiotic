@@ -2,11 +2,12 @@
 
 import clang.cindex
 from hashlib import sha256 as hashfunc
+from os.path import relpath
 import datetime
 import yaml
 import sys
-from .. utils.utils import print_stderr
 import uuid
+from .. utils.utils import print_stderr
 from ..options import get_versions
 
 def get_hash(source):
@@ -19,8 +20,9 @@ def get_hash(source):
     return hsh.hexdigest()
 
 class YAMLWriter(object):
-    def __init__(self, source, prps, is32bit, is_correctness_wit):
+    def __init__(self, source, prps, is32bit, is_correctness_wit, saveto):
         self._source = source
+        self._relsource = relpath(source, saveto)
         self._prps = prps
         self._is32bit = is32bit
         self._correctness_wit = is_correctness_wit
@@ -41,8 +43,8 @@ class YAMLWriter(object):
                           'version' : get_versions()[0] },
             'uuid' : str(uuid.uuid4()),
             'task' :
-                { 'input_files' : [self._source],
-                  'input_file_hashes' : { self._source : get_hash(self._source)},
+                { 'input_files' : [self._relsource],
+                  'input_file_hashes' : { self._relsource : get_hash(self._source)},
                   'specification' : ','.join(self._prps),
                   'data_model' : "ILP32" if self._is32bit else "LP64",
                   'language' : "C"}
@@ -135,7 +137,7 @@ class YAMLWriter(object):
                             'value' : '\\result == ' + call[2]
                           },
                           'location' : {
-                            'file_name' : self._source,
+                            'file_name' : self._relsource,
                             'line' : new_location[0],
                             'column' : new_location[1]
                           }
@@ -148,7 +150,7 @@ class YAMLWriter(object):
         target = { 'type' : 'target',
                    'action' : 'follow',
                    'location' : {
-                            'file_name' : self._source,
+                            'file_name' : self._relsource,
                             'line' : self.errorExpr[0],
                             'column' : self.errorExpr[1]
                           }

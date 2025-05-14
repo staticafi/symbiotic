@@ -228,7 +228,7 @@ def generate_graphml(path, source, is_correctness_wit, opts, saveto):
 def generate_yaml(path, source, is_correctness_wit, opts, saveto):
     assert saveto is not None
     gen = YAMLWriter(source, opts.property.ltl(),
-                        opts.is32bit, is_correctness_wit)
+                        opts.is32bit, is_correctness_wit, saveto)
     if not is_correctness_wit:
         gen.generate_violation_witness(path)
     else:
