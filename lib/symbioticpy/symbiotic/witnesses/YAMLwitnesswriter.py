@@ -2,7 +2,7 @@
 
 import clang.cindex
 from hashlib import sha256 as hashfunc
-from os.path import relpath
+from os.path import relpath, dirname
 import datetime
 import yaml
 import sys
@@ -22,7 +22,7 @@ def get_hash(source):
 class YAMLWriter(object):
     def __init__(self, source, prps, is32bit, is_correctness_wit, saveto):
         self._source = source
-        self._relsource = relpath(source, saveto)
+        self._relsource = relpath(source, dirname(saveto))
         self._prps = prps
         self._is32bit = is32bit
         self._correctness_wit = is_correctness_wit
