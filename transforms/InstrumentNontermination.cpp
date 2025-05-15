@@ -263,7 +263,7 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
         // copy the location from terminator, so that we have
         // the right debug loc
         CloneMetadata(header->getTerminator(), CI);
-        CI->insertBefore(header->getTerminator());
+        CI->insertBefore(where);
     }
   }
 

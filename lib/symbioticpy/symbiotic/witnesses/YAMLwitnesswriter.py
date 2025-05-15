@@ -37,7 +37,7 @@ class YAMLWriter(object):
         witness = {}
         witness['entry_type'] = "violation_sequence" if not self._correctness_wit else "invariant_set"
         witness['metadata'] = {
-            'format_version' : "2.0",
+            'format_version' : "2.1" if self._prps.termination() else "2.0",
             'creation_time' :  '{date:%Y-%m-%dT%T}Z'.format(date=datetime.datetime.utcnow()),
             'producer' : {'name' : 'symbiotic',
                           'version' : get_versions()[0] },
@@ -45,7 +45,7 @@ class YAMLWriter(object):
             'task' :
                 { 'input_files' : [self._relsource],
                   'input_file_hashes' : { self._relsource : get_hash(self._source)},
-                  'specification' : ','.join(self._prps),
+                  'specification' : ','.join(self._prps.ltl()),
                   'data_model' : "ILP32" if self._is32bit else "LP64",
                   'language' : "C"}
         }
@@ -61,7 +61,7 @@ class YAMLWriter(object):
         """
 
         self.parse(path)
-        assert self.errorLoc, "Failed generating a YAML witness"
+        assert self.errorLoc or self._prps.termination(), "Failed generating a YAML witness"
 
         self.add_metadata()
         self.create_content()
@@ -84,7 +84,11 @@ class YAMLWriter(object):
 
     # Traverse the AST, find the right brackets of functions and the full expression of the target
     def traverse_AST(self, node):
-        # Recurse for children of this node
+
+        # get infinitely recurring location
+        # get infinitely recurring location
+        if self._prps.termination() and self.errorLoc and not self.errorExpr:
+            self.errorExpr = _get_recurring_location(node, self.errorLoc)
 
         for child in node.get_children():
 
@@ -97,7 +101,7 @@ class YAMLWriter(object):
             if child.kind == clang.cindex.CursorKind.CALL_EXPR and (start.line, start.column) in self.calls:
                 self.calls[(start.line, start.column)] = end.line, end.column - 1
 
-            if self.errorExpr or not child.kind.is_expression():
+            if self.errorExpr or not self.errorLoc or not child.kind.is_expression():
                 self.traverse_AST(child)
                 continue
 
@@ -120,7 +124,7 @@ class YAMLWriter(object):
         root = tu.cursor
         self.traverse_AST(root)
 
-        if not self.errorExpr:
+        if self.errorLoc and not self.errorExpr:
             print_stderr("Warning: Could not get target location for witness")
 
         content = []
@@ -131,7 +135,7 @@ class YAMLWriter(object):
 
             segment = []
             waypoint = { 'type' : 'function_return',
-                          'action' : 'follow',
+                          'action' : 'cycle' if call[3] else 'follow',
                           'constraint' : {
                             'format' : 'c_expression',
                             'value' : '\\result == ' + call[2]
@@ -146,25 +150,38 @@ class YAMLWriter(object):
             segment.append({'waypoint' : waypoint})
             content.append({'segment' : segment})
 
-        target_segment = []
-        target = { 'type' : 'target',
-                   'action' : 'follow',
-                   'location' : {
-                            'file_name' : self._relsource,
+        if self.errorLoc:
+            last_segment = []
+            location = { 'file_name' : self._relsource,
                             'line' : self.errorExpr[0],
                             'column' : self.errorExpr[1]
+                       }
+
+            if self._prps.termination():
+                last = { 'type'       : 'assumption',
+                         'action'     : 'cycle',
+                         'location'   : location,
+                         'constraint' : {
+                            'format' : 'c_expression',
+                            'value'  : '1'
                           }
+                       }
+            else:
+                last = { 'type'     : 'target',
+                         'action'   : 'follow',
+                         'location' : location
+                       }
 
-                 }
 
-        target_segment.append({'waypoint' : target})
-        content.append({'segment' : target_segment})
+            last_segment.append({'waypoint' : last})
+            content.append({'segment' : last_segment})
 
         self.witness[0]['content'] = content
 
 
     def parse(self, path):
         with open(path, "r") as testfile:
+            cycle = False
             for line in testfile.readlines():
                 if line[0] == '@':
                     self.errorLoc = list(map(int, line.strip('\n').split(':')[2:]))
@@ -173,8 +190,45 @@ class YAMLWriter(object):
                 line = int(call[1])
                 col = int(call[2])
                 value = call[3]
-                self.test.append((line, col, value))
+                cycle = (len(call) == 5) # is there the cycle flag?
+                self.test.append((line, col, value, cycle))
                 self.calls[(line, col)] = None
+
+        # No need for this if we have cycle waypoints
+        if cycle:
+            self.errorLoc = None
+
+
+def _get_recurring_location(node, error_loc):
+    n_start = node.extent.start
+    n_end = node.extent.end
+    children = list(node.get_children())
+
+    if (node.kind == clang.cindex.CursorKind.FOR_STMT or \
+        node.kind == clang.cindex.CursorKind.WHILE_STMT) and \
+        error_loc[0] == n_start.line and \
+        error_loc[1] == n_start.column:
+        return children[-1].extent.start.line, children[-1].extent.start.column
+
+    if node.kind == clang.cindex.CursorKind.DO_STMT and    \
+       error_loc[0] == children[0].extent.end.line and \
+       error_loc[1] == children[0].extent.end.column - 1:
+        return children[0].extent.start.line, children[0].extent.start.column
+
+    if node.kind == clang.cindex.CursorKind.IF_STMT and \
+       error_loc[0] == children[0].extent.start.line and \
+       error_loc[1] == children[0].extent.start.column:
+        return n_start.line, n_start.column
+
+    if node.kind == clang.cindex.CursorKind.SWITCH_STMT and \
+       error_loc[0] == n_start.line and \
+       error_loc[1] == n_start.column:
+        return n_start.line, n_start.column
+
+    if (node.kind.is_statement() or node.kind.is_declaration()) and \
+        error_loc[0] == n_start.line and \
+        error_loc[1] == n_start.column:
+         return n_start.line, n_start.column
 
 def location_in_range(line, col, startline, startcol, endline, endcol):
 
