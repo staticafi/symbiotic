@@ -95,6 +95,9 @@ class BreakInfiniteLoops : public LoopPass {
         BasicBlock *exitBB = getExitBB(header->getParent());
         BasicBlock *nb = BasicBlock::Create(Ctx, "break.inf.loop");
 
+        // insert the new block before header
+        nb->insertInto(header->getParent(), header);
+
         GlobalVariable * gv = getConstantTrueGV(*M);
         LoadInst *LI = new LoadInst(
             gv->getType()->getPointerElementType(),
@@ -112,9 +115,6 @@ class BreakInfiniteLoops : public LoopPass {
             llvm::errs() << "[BreakInfiniteLoops] Failed assigning metadata to: "
                          << *Br << "\n";
         }
-
-        // insert the new block before header
-        nb->insertInto(header->getParent(), header);
 
         // now change the jump instructions
         for (auto& pr : to_change) {
