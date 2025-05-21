@@ -86,7 +86,6 @@ class YAMLWriter(object):
     def traverse_AST(self, node):
 
         # get infinitely recurring location
-        # get infinitely recurring location
         if self._prps.termination() and self.errorLoc and not self.errorExpr:
             self.errorExpr = _get_recurring_location(node, self.errorLoc)
 
@@ -204,21 +203,34 @@ def _get_recurring_location(node, error_loc):
     n_end = node.extent.end
     children = list(node.get_children())
 
+    recurring_node = None
+
     if (node.kind == clang.cindex.CursorKind.FOR_STMT or \
-        node.kind == clang.cindex.CursorKind.WHILE_STMT) and \
-        error_loc[0] == n_start.line and \
-        error_loc[1] == n_start.column:
-        return children[-1].extent.start.line, children[-1].extent.start.column
+        node.kind == clang.cindex.CursorKind.WHILE_STMT):
 
-    if node.kind == clang.cindex.CursorKind.DO_STMT and    \
-       error_loc[0] == children[0].extent.end.line and \
-       error_loc[1] == children[0].extent.end.column - 1:
-        return children[0].extent.start.line, children[0].extent.start.column
+        if (error_loc[0] == n_start.line and error_loc[1] == n_start.column) or \
+            location_in_range(error_loc[0], error_loc[1],
+                              children[0].extent.start.line, children[0].extent.start.column,
+                              children[-2].extent.end.line, children[-2].extent.end.column):
+            return children[-1].extent.start.line, children[-1].extent.start.column
 
-    if node.kind == clang.cindex.CursorKind.IF_STMT and \
-       error_loc[0] == children[0].extent.start.line and \
-       error_loc[1] == children[0].extent.start.column:
-        return n_start.line, n_start.column
+    if node.kind == clang.cindex.CursorKind.DO_STMT:
+
+        if (error_loc[0] == children[0].extent.end.line and \
+           error_loc[1] == children[0].extent.end.column - 1) or \
+           location_in_range(error_loc[0], error_loc[1],
+                            children[1].extent.start.line, children[1].extent.start.column,
+                            children[1].extent.end.line, children[1].extent.end.column):
+            return children[0].extent.start.line, children[0].extent.start.column
+
+    if node.kind == clang.cindex.CursorKind.IF_STMT:
+
+        if (error_loc[0] == children[0].extent.start.line and \
+           error_loc[1] == children[0].extent.start.column) or \
+           location_in_range(error_loc[0], error_loc[1],
+                             children[0].extent.start.line, children[0].extent.start.column,
+                             children[0].extent.end.line, children[0].extent.end.column):
+            return n_start.line, n_start.column
 
     if node.kind == clang.cindex.CursorKind.SWITCH_STMT and \
        error_loc[0] == n_start.line and \
