@@ -125,6 +125,7 @@ class YAMLWriter(object):
 
         if self.errorLoc and not self.errorExpr:
             print_stderr("Warning: Could not get target location for witness")
+            self.errorExpr = self.errorLoc
 
         content = []
 
@@ -183,7 +184,7 @@ class YAMLWriter(object):
             cycle = False
             for line in testfile.readlines():
                 if line[0] == '@':
-                    self.errorLoc = list(map(int, line.strip('\n').split(':')[2:]))
+                    self.errorLoc = tuple(map(int, line.strip('\n').split(':')[2:]))
                     break
                 call = line.strip('\n').split(':')
                 line = int(call[1])
