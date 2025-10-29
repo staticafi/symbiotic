@@ -267,7 +267,11 @@ def generate_yaml_witness(bindir, sources, is_correctness_wit, opts, saveto):
         generate_yaml(None, sources[0], is_correctness_wit, opts, saveto)
         return
 
-    if opts.property.memcleanup():
+    if not opts.property.memsafety() and \
+       not opts.property.unreachcall() and \
+       not opts.property.assertions() and \
+       not opts.property.signedoverflow() and \
+       not opts.property.termination():
         print('Failed generating YAML witness: Property not supported by format')
         return
 
