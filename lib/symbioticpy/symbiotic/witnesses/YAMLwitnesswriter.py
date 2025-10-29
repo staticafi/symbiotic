@@ -37,7 +37,7 @@ class YAMLWriter(object):
         witness = {}
         witness['entry_type'] = "violation_sequence" if not self._correctness_wit else "invariant_set"
         witness['metadata'] = {
-            'format_version' : "2.1" if self._prps.termination() else "2.0",
+            'format_version' : "2.1",
             'creation_time' :  '{date:%Y-%m-%dT%T}Z'.format(date=datetime.datetime.utcnow()),
             'producer' : {'name' : 'symbiotic',
                           'version' : get_versions()[0] },
@@ -137,7 +137,7 @@ class YAMLWriter(object):
             waypoint = { 'type' : 'function_return',
                           'action' : 'cycle' if call[3] else 'follow',
                           'constraint' : {
-                            'format' : 'c_expression',
+                            'format' : 'ext_c_expression',
                             'value' : '\\result == ' + call[2]
                           },
                           'location' : {
