@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - main
+      - svcomp26
 
 jobs:
   build64:
