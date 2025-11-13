@@ -3,6 +3,7 @@ from os import listdir
 from shutil import copy as copyfile
 from symbiotic.utils.utils import dbg, print_stdout
 from symbiotic.witnesses.witnesses import GraphMLWriter
+from symbiotic.witnesses.YAMLwitnesswriter import YAMLWriter
 from . tool import SymbioticBaseTool
 
 try:
@@ -93,6 +94,19 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         return passes + ["-O3", "-remove-constant-exprs", "-reg2mem"]
 
     def generate_witness(self, llvmfile, sources, has_error):
+        assert len(sources) == 1
+
+        # Generate trivial YAML correctness witness
+        if self._options.witness_output and not has_error:
+            print_stdout('Generating trivial correctness witness: {0}'
+                         .format(self._options.witness_output))
+            gen = YAMLWriter(sources[0], self._options.property,
+                             self._options.is32bit, not has_error,
+                             self._options.witness_output)
+
+            gen.generate_correctness_witness()
+            gen.write(self._options.witness_output)
+
         if not self._options.graphml_witness_output:
             return
 
@@ -104,7 +118,6 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         witnesses = [abspath(pathjoin(sbdir, f)) for f in listdir(sbdir)
                      if f.endswith('.graphml')]
 
-        assert len(sources) == 1
         gen = GraphMLWriter(sources[0],
                             self._options.property.ltl(),
                             self._options.is32bit,
