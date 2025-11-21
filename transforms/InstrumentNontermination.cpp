@@ -63,6 +63,7 @@ class InstrumentNontermination : public LoopPass {
   Function *_assert{nullptr};
   Function *_fail{nullptr};
   Function *_header{nullptr};
+  Function *_nondet{nullptr};
 
   Function *getHeaderFun(Module *M) {
     if (!_header) {
@@ -80,6 +81,17 @@ class InstrumentNontermination : public LoopPass {
 #endif
     }
     return _header;
+  }
+
+  Function *getNondetStore(Module *M) {
+      if (!_nondet) {
+          auto& Ctx = M->getContext();
+          auto F = M->getOrInsertFunction("__INSTR_nondet_store",
+                                          Type::getInt1Ty(Ctx) // retval
+                                          );
+          _nondet = cast<Function>(F.getCallee()->stripPointerCasts());
+      }
+      return _nondet;
   }
 
   public:
@@ -205,9 +217,7 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
         // is going to be inserted at the beginning of the header
         newVal = new AllocaInst(
             G->getType()->getContainedType(0),
-#if (LLVM_VERSION_MAJOR >= 5)
             G->getType()->getAddressSpace(),
-#endif
             nullptr,
             "",
             // put the alloca on the beginning of the function
@@ -226,45 +236,61 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
   }
 
   // store the state of variables at the loop head
+
+  // nondeterministically choose whether to store
+  auto *nondetStore = CallInst::Create(getNondetStore(M));
+  auto where = header->getFirstNonPHIOrDbg();
+  assert(where);
+  CloneMetadata(header->getTerminator(), nondetStore);
+  if (where == header->getTerminator()) {
+    header->getInstList().push_front(nondetStore);
+  } else {
+    nondetStore->insertAfter(where);
+  }
+
   for (auto& it : mapping) {
     auto *LI = new LoadInst(
         it.first->getType()->getPointerElementType(),
         it.first,
         "",
-#if LLVM_VERSION_MAJOR >= 11
         false,
         M->getDataLayout().getABITypeAlign(it.first->getType()),
-#endif
         static_cast<Instruction*>(nullptr));
-    auto *SI = new StoreInst(LI,
+
+    auto *LIcopy = new LoadInst(
+        it.second->getType()->getPointerElementType(),
+        it.second,
+        "",
+        false,
+        M->getDataLayout().getABITypeAlign(it.second->getType()),
+        static_cast<Instruction*>(nullptr));
+
+    auto *Select = SelectInst::Create(nondetStore,
+                                      LI, LIcopy);
+
+    auto *SI = new StoreInst(Select,
         it.second,
         false,
-#if LLVM_VERSION_MAJOR >= 11
         LI->getAlign(),
-#endif
         static_cast<Instruction*>(nullptr));
 
     CloneMetadata(header->getTerminator(), LI);
+    CloneMetadata(header->getTerminator(), LIcopy);
+    CloneMetadata(header->getTerminator(), Select);
     CloneMetadata(header->getTerminator(), SI);
 
-    auto where = header->getFirstNonPHIOrDbg();
-    assert(where);
+    LI->insertAfter(nondetStore);
+    LIcopy->insertAfter(LI);
+    Select->insertAfter(LIcopy);
+    SI->insertAfter(Select);
+  }
 
-    if (where == header->getTerminator()) {
-      header->getInstList().push_front(SI);
-      header->getInstList().push_front(LI);
-    } else {
-      LI->insertAfter(where);
-      SI->insertAfter(LI);
-    }
-
-    if (insertHeader) {
-        auto *CI = CallInst::Create(getHeaderFun(M));
-        // copy the location from the instruction so that we have
-        // the right debug loc
-        CloneMetadata(where, CI);
-        CI->insertBefore(where);
-    }
+  if (insertHeader) {
+      auto *CI = CallInst::Create(getHeaderFun(M));
+      // copy the location from the instruction so that we have
+      // the right debug loc
+      CloneMetadata(header->getFirstNonPHIOrDbg(), CI);
+      CI->insertBefore(header->getFirstNonPHIOrDbg());
   }
 
   // compare the old and new values after the iteration of the loop
@@ -292,22 +318,25 @@ bool InstrumentNontermination::instrumentLoop(Loop *L, const std::set<llvm::Valu
           it.second,
           "",
           term);
-      auto *cmp = new ICmpInst(ICmpInst::ICMP_EQ, newVal, oldVal);
 
-#if LLVM_VERSION_MAJOR > 7
+      CmpInst *cmp;
+      bool fp = it.first->getType()->getPointerElementType()->isFloatingPointTy();
+      if (fp)
+          cmp = new FCmpInst(FCmpInst::FCMP_OEQ, newVal, oldVal);
+      else
+          cmp = new ICmpInst(FCmpInst::ICMP_EQ, newVal, oldVal);
+
       auto md = term->getPrevNonDebugInstruction();
       if (!md || !md->hasMetadata())
           md = term;
-#else
-      auto md = term;
-#endif
+
       CloneMetadata(md, newVal);
       CloneMetadata(md, oldVal);
       CloneMetadata(md, cmp);
       cmp->insertBefore(term);
 
       if (lastCond) {
-        assert(mapping.size() > 1); // we can get here only after 1 iteration
+        assert(mapping.size() > 1);
         auto *And = BinaryOperator::Create(Instruction::And, lastCond, cmp);
         And->insertBefore(term);
         lastCond = And;
@@ -406,6 +435,12 @@ bool InstrumentNontermination::instrumentEmptyLoop(Loop *L) {
 
   assert(_fail);
   for (auto I = pred_begin(header), E = pred_end(header); I != E; ++I) {
+    // Insert a failed assertion at the end of the loop.
+    // This avoids reporting loops like
+    // while (always_false()) {}
+    // as nonterminating.
+    if (!L->contains(*I))
+      continue;
     auto *term = (*I)->getTerminator();
     auto *CI = CallInst::Create(_fail);
     CloneMetadata(term, CI);
