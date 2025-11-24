@@ -154,7 +154,9 @@ class SymbioticBaseTool(object):
         if prop.memsafety() or prop.memcleanup():
             # slice with respect to the memory handling operations
             return (['__INSTR_mark_pointer','__INSTR_mark_free',
-                    '__INSTR_mark_allocation','__INSTR_mark_exit'],
+                     '__INSTR_mark_allocation','__INSTR_mark_exit',
+                     'sscanf', 'fscanf',
+                     '__isoc99_sscanf', '__isoc99_fscanf'],
                     ['-memsafety'])
 
         if prop.termination():
