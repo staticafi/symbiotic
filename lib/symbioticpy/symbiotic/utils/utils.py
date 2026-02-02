@@ -3,7 +3,6 @@
 import sys
 import os
 from time import time
-from distutils.version import LooseVersion
 
 COLORS = {
     'DARK_BLUE': '\033[0;34m',
