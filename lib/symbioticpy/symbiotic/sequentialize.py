@@ -14,8 +14,9 @@ CSEQ_OPTIONS = ['--sv-comp', '--threads', '100', '--atomic-parameters',
                 '--backend', 'cpachecker',
                 '--rounds', '2', '--unwind-while', '2', '--unwind-for', '2']
 
-# CSeq's model of rwlocks is wrong and it does not model C11 atomics
-UNSUPPORTED = re.compile(r'^(?!.*\bextern\b).*\bpthread_rwlock_\w*lock\s*\('
+# CSeq's model of rwlocks is wrong and it does not model semaphores,
+# spinlocks and C11 atomics (an unmodelled lock protects nothing)
+UNSUPPORTED = re.compile(r'^(?!.*\bextern\b).*\b(pthread_rwlock_\w*lock|sem_\w+|pthread_spin_\w+)\s*\('
                          r'|\b_Atomic\b|\b__atomic_\w+\s*\(|\b__sync_\w+\s*\(',
                          re.M)
 
