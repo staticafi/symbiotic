@@ -28,3 +28,5 @@ fi
 
 ./test_runner.py "$@" $ci_args ./*.set
 ./test_runner.py "$@" $ci_args --32 ./*.set
+(cd concurrency && ../test_runner.py "$@" $ci_args --sequentialize ./*.set)
+(cd concurrency && ../test_runner.py "$@" $ci_args --sequentialize --32 ./*.set)
