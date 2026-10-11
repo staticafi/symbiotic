@@ -39,6 +39,7 @@ class SymbioticOptions(object):
         self.propertystr = None
         self.property = None
         self.noslice = False
+        self.sequentialize = False
         self.malloc_never_fails = False
         self.explicit_symbolic = False
         self.undef_retval_nosym = False
@@ -151,6 +152,7 @@ def set_svcomp(opts):
     opts.linkundef.append('svcomp')
     opts.CFLAGS.append("-fbracket-depth=2048")
     opts.replay_error = True
+    opts.sequentialize = True
     opts.tool_name='svcomp'
     opts.slicer_timeout = 300
     opts.instrumentation_timeout = 400
@@ -250,7 +252,8 @@ def parse_command_line():
                                     'search-include-paths', 'replay-error', 'cc',
                                     'report=', 'no-replay-error',
                                     'unroll=', 'full-instrumentation', 'target-settings=',
-                                    'witness-check=', 'graphml-witness='])
+                                    'witness-check=', 'graphml-witness=',
+                                    'sequentialize', 'no-sequentialize'])
                                    # add klee-params
     except getopt.GetoptError as e:
         err('{0}'.format(str(e)))
@@ -283,6 +286,11 @@ def parse_command_line():
         elif opt == '--no-slice':
             dbg('Will not slice')
             options.noslice = True
+        elif opt == '--sequentialize':
+            dbg('Will sequentialize concurrent programs')
+            options.sequentialize = True
+        elif opt == '--no-sequentialize':
+            options.sequentialize = False
         elif opt == '--sv-comp':
             dbg('Using SV-COMP settings')
             set_svcomp(options)
@@ -475,6 +483,9 @@ where OPTS can be following:
     --slicer-timeout=t           Set timeout for slicer (if slicer fails/timeouts,
                                  the original bitcode is used)
     --no-slice                   Do not slice the code
+    --sequentialize              Verify concurrent programs sequentialized by CSeq
+                                 (only errors are reported)
+    --no-sequentialize           Do not sequentialize (overrides --sv-comp)
     --verifier=name              Use the tool 'name'. Default is KLEE, other tools that
                                  can be integrated are Ceagle, CPAchecker, Seahorn,
                                  Skink and SMACK.

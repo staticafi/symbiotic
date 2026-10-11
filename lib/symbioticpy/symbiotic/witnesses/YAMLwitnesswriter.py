@@ -33,11 +33,11 @@ class YAMLWriter(object):
         self.calls = dict()
         self.witness = []
 
-    def add_metadata(self):
+    def add_metadata(self, version='2.1'):
         witness = {}
         witness['entry_type'] = "violation_sequence" if not self._correctness_wit else "invariant_set"
         witness['metadata'] = {
-            'format_version' : "2.1",
+            'format_version' : version,
             'creation_time' :  '{date:%Y-%m-%dT%T}Z'.format(date=datetime.datetime.utcnow()),
             'producer' : {'name' : 'symbiotic',
                           'version' : get_versions()[0] },
@@ -66,6 +66,16 @@ class YAMLWriter(object):
         self.add_metadata()
         self.create_content()
 
+
+    def generate_target_witness(self, line, column):
+        """
+        Generate a violation witness that only marks the error location
+        (format 2.2, as required for concurrent programs)
+        """
+        self.add_metadata('2.2')
+        location = {'file_name' : self._relsource, 'line' : line, 'column' : column}
+        waypoint = {'type' : 'target', 'action' : 'follow', 'location' : location}
+        self.witness[0]['content'] = [{'segment' : [{'waypoint' : waypoint}]}]
 
     def generate_correctness_witness(self):
         self.add_metadata()

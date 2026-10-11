@@ -16,3 +16,6 @@
 [submodule "llvm2c"]
 	path = llvm2c
 	url = https://github.com/staticafi/llvm2c
+[submodule "cseq"]
+	path = cseq
+	url = https://github.com/vmihalko/cseq

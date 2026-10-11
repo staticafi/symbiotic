@@ -11,6 +11,22 @@ from . utils import err, dbg, print_elapsed_time, restart_counting_time
 from . utils.utils import print_stdout
 from . utils.process import ProcessRunner
 from . exceptions import SymbioticExceptionalResult
+from . sequentialize import sequentialize
+
+def _error_call(source, calls):
+    """ Line and column of the only call of an error function """
+    pattern = re.compile(r'\b(?:{0})\s*\('.format('|'.join(calls)))
+    found = None
+    with open(source, errors='replace') as f:
+        for lineno, line in enumerate(f, 1):
+            for m in pattern.finditer(line):
+                # skip the definition and declarations
+                if re.search(r'\bvoid\s*$', line[:m.start()]):
+                    continue
+                if found:
+                    return None
+                found = (lineno, m.start() + 1)
+    return found
 
 class Symbiotic(object):
     """
@@ -77,15 +93,15 @@ class Symbiotic(object):
 
         return res
 
-    def _run_symbiotic(self):
+    def _verify(self, sources, witness=True):
         options = self.options
-        cc = SymbioticCC(self.sources, self._tool, options, self.env)
+        cc = SymbioticCC(sources, self._tool, options, self.env)
         bitcode = cc.run()
 
         if options.no_verification:
             return 'No verification'
 
-        verifier = SymbioticVerifier(bitcode, self.sources,
+        verifier = SymbioticVerifier(bitcode, sources,
                                      self._tool, options, self.env)
         # result and the tool that decided this result
         res, tool = verifier.run()
@@ -101,7 +117,7 @@ class Symbiotic(object):
             options.replay_error = False # now we do not need to replay the error
             options.noslice = True # now we behave like without slicing
             bitcode = cc.prepare_unsliced_file(tool)
-            verifier = SymbioticVerifier(bitcode, self.sources,
+            verifier = SymbioticVerifier(bitcode, sources,
                                          self._tool, options, self.env)
             res, tool = verifier.run()
             print_elapsed_time('INFO: Running on unsliced code time', color='WHITE')
@@ -136,7 +152,7 @@ class Symbiotic(object):
         if res == 'cex not-confirmed':
             # if we failed confirming CEX, rerun on unsliced file
             bitcode = cc.prepare_unsliced_file(tool)
-            verifier = SymbioticVerifier(bitcode, self.sources,
+            verifier = SymbioticVerifier(bitcode, sources,
                                          self._tool, options, self.env)
             res, tool = verifier.run()
             has_error = res and\
@@ -148,11 +164,68 @@ class Symbiotic(object):
 
         if has_error and options.executable_witness and\
            hasattr(tool, "generate_exec_witness"):
-            tool.generate_exec_witness(cc.curfile, self.sources)
+            tool.generate_exec_witness(cc.curfile, sources)
 
-        if not options.nowitness and hasattr(tool, "generate_witness"):
-            tool.generate_witness(cc.curfile, self.sources, has_error)
+        if witness and not options.nowitness and hasattr(tool, "generate_witness"):
+            tool.generate_witness(cc.curfile, sources, has_error)
 
+        return res
+
+    def _generate_target_witness(self, source):
+        """ Witness that only marks the call of the error function """
+        options = self.options
+        if not options.property.unreachcall():
+            return
+        loc = _error_call(source, options.property.getcalls())
+        if loc is None:
+            return
+        from . witnesses.YAMLwitnesswriter import YAMLWriter
+        print_stdout('Generating YAML error witness: {0}'.format(options.witness_output))
+        gen = YAMLWriter(source, options.property, options.is32bit,
+                         False, options.witness_output)
+        gen.generate_target_witness(*loc)
+        gen.write(options.witness_output)
+
+    def _run_sequentialized(self):
+        options = self.options
+        source = self.sources[0]
+        seq = sequentialize(source, options.property, options.is32bit,
+                            os.path.join(self.env.symbiotic_dir, 'cseq'),
+                            os.getcwd())
+        if seq is None:
+            return None
+
+        print_stdout('INFO: Verifying the sequentialized program', color='WHITE')
+        res = self._verify([seq], witness=False)
+        # the sequentialization bounds the schedules, so only errors are real;
+        # not leaks: threads cut off by the bound never free their memory
+        if not res.startswith('false') or res == 'false(valid-memtrack)':
+            return None
+
+        if options.property.datarace():
+            return 'false(no-data-race)'
+        if options.witness_output and not options.nowitness:
+            self._generate_target_witness(source)
+        return res
+
+    def _run_symbiotic(self):
+        options = self.options
+        prp = options.property
+        if not (prp.unreachcall() or prp.memsafety()):
+            options.sequentialize = False
+
+        if prp.datarace():
+            # data races are found only in the sequentialized program
+            res = 'unknown'
+        else:
+            res = self._verify(self.sources)
+
+        undecided = not (res.startswith('true') or res.startswith('false'))
+        if options.sequentialize and undecided and\
+           not options.no_verification and len(self.sources) == 1:
+            seqres = self._run_sequentialized()
+            if seqres:
+                return seqres
         return res
 
     def run(self):

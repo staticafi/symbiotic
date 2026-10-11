@@ -11,3 +11,7 @@ install(PROGRAMS scripts/symbiotic scripts/gen-c scripts/kleetester.py
 install(DIRECTORY properties
 	DESTINATION ${INSTALL_DATA_DIR}/)
 
+install(DIRECTORY cseq
+	DESTINATION ${INSTALL_DATA_DIR}/
+	PATTERN "__pycache__" EXCLUDE)
+

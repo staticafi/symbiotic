@@ -49,10 +49,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def verifiers(self):
         prp = self._options.property
+        # leave time for the sequentialized program
+        threads_timeout = 120 if self._options.sequentialize else None
         if prp.unreachcall():
             yield (KleeTool(self._options), None, 333)
             if self._hit_threads:
-                yield (SlowbeastTool(self._options), ['-threads'], None)
+                yield (SlowbeastTool(self._options), ['-threads'], threads_timeout)
             else:
                 yield (SlowbeastTool(self._options), ['-sewpa'], 120)
                 yield (SlowbeastTool(self._options), ['-cse'], 60)
@@ -69,7 +71,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         else:
             yield (KleeTool(self._options), None, None)
             if self._hit_threads:
-                yield (SlowbeastTool(self._options), ['-threads'], None)
+                yield (SlowbeastTool(self._options), ['-threads'], threads_timeout)
 
     def name(self):
         return 'svcomp'
