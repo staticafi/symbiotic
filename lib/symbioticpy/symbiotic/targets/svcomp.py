@@ -103,6 +103,10 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
     def passes_after_slicing(self):
         passes = []
 
+        # let malloc/calloc fail (return NULL) unless told otherwise
+        if not self._options.malloc_never_fails:
+            passes.append('-instrument-alloc')
+
         # for the memsafety property, make functions behave like they have
         # side-effects, because LLVM optimizations could remove them otherwise,
         # even though they contain calls to assert

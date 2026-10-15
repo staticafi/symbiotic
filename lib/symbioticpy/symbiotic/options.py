@@ -145,7 +145,7 @@ def set_svcomp(opts):
     if not opts.graphml_witness_output:
         opts.graphml_witness_output = '{0}/witness.graphml'.format(getcwd())
     opts.no_integrity_check = True
-    opts.malloc_never_fails = True
+    opts.malloc_never_fails = False
     opts.explicit_symbolic = True
     opts.search_include_paths = False
     opts.linkundef.append('svcomp')
