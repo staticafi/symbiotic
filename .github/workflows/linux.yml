@@ -29,6 +29,11 @@ jobs:
           - {os: ubuntu-22.04, llvm: 13, compiler: clang}
           - {os: ubuntu-22.04, llvm: 14, compiler: clang}
 
+          # Ubuntu 24.04 has no LLVM older than 14, so these rows are added
+          # next to the Ubuntu 22.04 ones, not instead of them.
+          - {os: ubuntu-24.04, llvm: 14, compiler: gcc}
+          - {os: ubuntu-24.04, llvm: 14, compiler: clang}
+
     runs-on: ${{matrix.os}}
     steps:
       - name: Checkout Symbiotic and submodules
@@ -41,7 +46,14 @@ jobs:
           sudo apt update
           sudo apt install ccache cmake clang-${{matrix.llvm}} \
                            llvm-${{matrix.llvm}}-dev gcc-multilib \
-                           libz3-dev python3-clang
+                           libz3-dev
+
+          # Ubuntu 24.04 packages the bindings only versioned.
+          sudo apt install python3-clang-${{matrix.llvm}} \
+            || sudo apt install python3-clang
+
+          # Fail here rather than deep inside the witness writer.
+          python3 -c "import clang.cindex"
 
       - name: Set environment
         id: env
