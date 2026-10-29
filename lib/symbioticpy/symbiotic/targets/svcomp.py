@@ -34,6 +34,7 @@ except ImportError:
 
 from . klee import SymbioticTool as KleeTool
 from . slowbeast import SymbioticTool as SlowbeastTool
+from . reverseklee import SymbioticTool as ReverseKleeTool
 
 class SymbioticTool(BaseTool, SymbioticBaseTool):
     """
@@ -65,6 +66,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 # cases use incremental solving
                 #(SlowbeastTool(self._options), ['-threads', '-se-incremental-solving'], None),
                 yield (SlowbeastTool(self._options), ['-se-incremental-solving'], None)
+
+                # TODO: decide if and where to put reversing in the pipeline
+                # yield (ReverseKleeTool(self._options), None, None)
         else:
             yield (KleeTool(self._options), None, None)
             if self._hit_threads:

@@ -47,6 +47,7 @@ class SymbioticOptions(object):
         self.timeout = 0
         self.slicer_timeout = 0
         self.instrumentation_timeout = 0
+        self.reverser_timeout = 0
         self.no_optimize = False
         self.no_verification = False
         self.no_instrument = False
@@ -231,7 +232,8 @@ def parse_command_line():
         opts, args = getopt.getopt(argv[1:], '',
                                    ['no-slice', '32', '64', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=','slicer-timeout=',
-                                    'instrumentation-timeout=', 'version', 'help',
+                                    'instrumentation-timeout=', 'reverser-timeout=',
+                                    'version', 'help',
                                     'no-verification', 'output=', 'witness=', 'bc',
                                     'optimize=', 'malloc-never-fails',
                                     'pta=', 'no-link=', 'argv=', 'no-instrument',
@@ -375,6 +377,12 @@ def parse_command_line():
             except ValueError:
                 err('Invalid numerical argument for timeout: {0}'.format(arg))
             dbg('Timeout of instrumentation set to {0} sec'.format(arg))
+        elif opt == '--reverser-timeout':
+            try:
+                options.reverser_timeout = int(arg)
+            except ValueError:
+                err('Invalid numerical argument for timeout: {0}'.format(arg))
+            dbg('Timeout of reverser set to {0} sec'.format(arg))
         elif opt == '--output':
             options.final_output = abspath(arg)
             dbg('Output will be stored to {0}'.format(arg))
@@ -474,6 +482,8 @@ where OPTS can be following:
                                  is skipped)
     --slicer-timeout=t           Set timeout for slicer (if slicer fails/timeouts,
                                  the original bitcode is used)
+    --reverser-timeout=t         Set timeout for reverser (if reverser fails/timeouts,
+                                 the verifier that uses it fails)
     --no-slice                   Do not slice the code
     --verifier=name              Use the tool 'name'. Default is KLEE, other tools that
                                  can be integrated are Ceagle, CPAchecker, Seahorn,

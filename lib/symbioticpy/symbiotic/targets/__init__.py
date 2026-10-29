@@ -1,4 +1,5 @@
 from . klee import SymbioticTool as KleeTool
+from . reverseklee import SymbioticTool as ReverseKleeTool
 from . witchklee import SymbioticTool as WitchKleeTool
 from . ceagle import SymbioticTool as CeagleTool
 from . cbmc import SymbioticTool as CbmcTool
@@ -25,6 +26,7 @@ from . cc import CCTarget
 targets = {
     'klee':               KleeTool,
     'witch-klee':         WitchKleeTool,
+    'revklee':            ReverseKleeTool,
     'ceagle':             CeagleTool,
     'ikos':               IkosTool,
     'cbmc':               CbmcTool,

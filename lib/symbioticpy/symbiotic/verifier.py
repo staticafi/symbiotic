@@ -101,7 +101,10 @@ class SymbioticVerifier(object):
             self.run_opt(tool.passes_before_verification())
 
         if hasattr(tool, 'actions_before_verification'):
-            tool.actions_before_verification(self)
+            try:
+                tool.actions_before_verification(self)
+            except SymbioticException as e:
+                return 'error ({0})'.format(str(e)), None
 
         # setup tool parameters
         params = self.override_params or self.options.tool_params
