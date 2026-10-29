@@ -14,12 +14,11 @@ if [ ! -d CMakeFiles ]; then
 		-DLLVM_VERSION=${LLVM_VERSION} \
 		-DLLVM_DIR=$LLVM_DIR \
 		-DCMAKE_INSTALL_PREFIX=$LLVM_PREFIX \
+		-DREVERSER_BUILD_TESTS=OFF \
 		|| clean_and_exit 1 "git"
 fi
 
-# reverser has no install target, build only the binary (not the tests)
-# and copy it manually
-(build reverser && mkdir -p $LLVM_PREFIX/bin && cp reverser $LLVM_PREFIX/bin/) || exit 1
+(build && make install) || exit 1
 
 popd
 popd
