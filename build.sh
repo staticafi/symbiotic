@@ -95,6 +95,7 @@ BUILD_Z3='no'
 BUILD_SVF='no'
 BUILD_PREDATOR='no'
 BUILD_LLVM2C='yes'
+BUILD_REVERSER='yes'
 
 BUILD_KLEE="yes"
 BUILD_WITCH_KLEE="no"
@@ -144,6 +145,9 @@ while [ $# -gt 0 ]; do
 		;;
 		'no-llvm2c')
 			BUILD_LLVM2C="no"
+		;;
+		'no-reverser')
+			BUILD_REVERSER="no"
 		;;
 		'no-precompile-bitcode')
 			PRECOMPILE_BITCODE="no"
@@ -839,6 +843,18 @@ fi
 PHASE="building llvm2c"
 if [ $FROM -le 6 -a "$BUILD_LLVM2C" = "yes" ]; then
 	source scripts/build-llvm2c.sh
+fi
+
+if [ "`pwd`" != $ABS_SRCDIR ]; then
+	exitmsg "Inconsistency in the build script, should be in $ABS_SRCDIR"
+fi
+
+######################################################################
+#   reverser
+######################################################################
+PHASE="building reverser"
+if [ $FROM -le 6 -a "$BUILD_REVERSER" = "yes" ]; then
+	source scripts/build-reverser.sh
 fi
 
 if [ "`pwd`" != $ABS_SRCDIR ]; then

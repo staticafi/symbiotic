@@ -68,6 +68,7 @@ def _set_symbiotic_environ(tool, env, opts):
         # predator_wrapper.py
         env.prepend('PATH', '{0}/sbt-instrumentation/analyses'.format(env.symbiotic_dir, llvm_version))
         env.prepend('PATH', '{0}/llvm2c/build-{1}/'.format(env.symbiotic_dir, llvm_version))
+        env.prepend('PATH', '{0}/reverser/build-{1}/'.format(env.symbiotic_dir, llvm_version))
         env.prepend('PATH', '{0}/predator-{1}/sl_build/'.format(env.symbiotic_dir, llvm_version))
 
         env.prepend('LD_LIBRARY_PATH', '{0}/build/lib'.format(llvm_prefix))

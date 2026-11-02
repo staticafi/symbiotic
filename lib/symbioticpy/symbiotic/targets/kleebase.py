@@ -189,6 +189,58 @@ def _dumpObjects(ktestfile):
             print_object(o)
 
 
+def get_last_nondet_value(ktest_path, function_name):
+    """
+    Return the concrete i32 value of the LAST object recorded for calls to
+    `function_name` in the given .ktest file, or None if there is no such object.
+    """
+    name = function_name.encode('ascii')
+    value = None
+    for obj_name, data in _parseKtest(ktest_path):
+        # the name may be suffixed with the location of the call
+        if obj_name == name or obj_name.startswith(name + b':'):
+            value, = unpack('<i', data)
+    return value
+
+def parse_error_ids_file(path):
+    """
+    Parse a file produced by 'reverser --error-ids': one
+    "<id> <file>:<line>:<column>" per line. Returns a dict id -> (file, line, column).
+    """
+    mapping = {}
+    with open(path, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            id_str, loc = line.split(' ', 1)
+            file_name, line_str, col_str = loc.rsplit(':', 2)
+            mapping[int(id_str)] = (file_name, int(line_str), int(col_str))
+    return mapping
+
+def get_reverser_error_location(ktest_path, error_ids_file):
+    """
+    Find the LAST value returned by __reverser_error_id() on the error path recorded
+    in `ktest_path` and map it through `error_ids_file` (as produced by
+    'reverser --error-ids') to the (file, line, column) of the original assert that the
+    reversed program's discovered path actually corresponds to.
+
+    Returns None if no __reverser_error_id() call is recorded, or its value is not
+    present in the mapping - both signal that something is out of sync between the
+    reverser invocation and this witness generation and should not normally happen.
+    """
+    error_id = get_last_nondet_value(ktest_path, '__reverser_error_id')
+    if error_id is None:
+        dbg("No __reverser_error_id() value found in {0}".format(ktest_path))
+        return None
+
+    mapping = parse_error_ids_file(error_ids_file)
+    location = mapping.get(error_id)
+    if location is None:
+        dbg("error id {0} not found in {1}".format(error_id, error_ids_file))
+    return location
+
+
 def dump_errors(bindir):
     pths = []
     abd = abspath(bindir)
@@ -225,12 +277,16 @@ def generate_graphml(path, source, is_correctness_wit, opts, saveto):
         assert path is None
     gen.write(saveto)
 
-def generate_yaml(path, source, is_correctness_wit, opts, saveto):
+def generate_yaml(path, source, is_correctness_wit, opts, saveto,
+                  reversed_program=False, reverser_location=None):
     assert saveto is not None
     gen = YAMLWriter(source, opts.property.ltl(),
                         opts.is32bit, is_correctness_wit)
     if not is_correctness_wit:
-        gen.generate_violation_witness(path)
+        if reversed_program:
+            gen.generate_trivial_violation_witness(reverser_location)
+        else:
+            gen.generate_violation_witness(path)
     else:
         gen.generate_correctness_witness()
         assert path is None
@@ -260,7 +316,13 @@ def generate_graphml_witness(bindir, sources, is_correctness_wit, opts, saveto):
     graphml = '{0}.graphml'.format(splitext(pth)[0])
     generate_graphml(graphml, sources[0], is_correctness_wit, opts, saveto)
 
-def generate_yaml_witness(bindir, sources, is_correctness_wit, opts, saveto):
+def generate_yaml_witness(bindir, sources, is_correctness_wit, opts, saveto,
+                          reverser_error_ids=None):
+    """
+    \param reverser_error_ids  if not None, the error was found in a program
+                               reversed by reverser and this is the file
+                               produced by 'reverser --error-ids'
+    """
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
     print('Generating YAML {0} witness: {1}'.format('correctness' if is_correctness_wit else 'error', saveto))
     if is_correctness_wit:
@@ -276,7 +338,13 @@ def generate_yaml_witness(bindir, sources, is_correctness_wit, opts, saveto):
 
     pth = get_ktest(join(bindir, 'klee-last'))
     test = '{0}.waypoints'.format(splitext(pth)[0])
-    generate_yaml(test, sources[0], is_correctness_wit, opts, saveto)
+
+    reverser_location = None
+    if reverser_error_ids:
+        reverser_location = get_reverser_error_location(pth, reverser_error_ids)
+
+    generate_yaml(test, sources[0], is_correctness_wit, opts, saveto,
+                  reverser_error_ids is not None, reverser_location)
 
 def generate_exec_witness(bindir, sources, opts, saveto = None):
     assert len(sources) == 1 and "Can not generate witnesses for more sources yet"
