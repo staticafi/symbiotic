@@ -342,6 +342,10 @@ class SymbioticCC(object):
         cmd += ['sbt-instr', config, self.curfile, definitionsbc, output]
         if not shouldlink:
             cmd.append('--no-linking')
+        # let the analyses know that malloc/calloc/realloc may return NULL
+        # (we model that after slicing with -instrument-alloc)
+        if not self.options.malloc_never_fails:
+            cmd.append('--alloc-may-fail')
 
         restart_counting_time()
         watch = InstrumentationWatch()
