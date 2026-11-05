@@ -6,6 +6,14 @@ Symbiotic is a framework for analysis of computer programs written in the progra
 Components of Symbiotic can be found at <https://github.com/staticafi> with the only exception of the slicer, that can be found at <https://github.com/mchalupa/dg> (it will be moved to _staticafi_ in the future though). All parts of Symbiotic are open-source projects and are licensed under various open-source licenses (GPL, MIT license, University of Illinois Open Source license).
 
 ## Awards
+* Symbiotic 11 participating in [SV-COMP 2026](https://sv-comp.sosy-lab.org/2026/results/results-verified/), compiled version available at [Zenodo](https://zenodo.org/records/17698724)
+  * 1st in C.MemSafety
+  * 1st in C.FalseOverall
+  * 2nd in C.SoftwareSystems
+  * 3rd in C.ReachSafety
+  * **3rd in C.Overall**
+* Symbiotic 11 participating in [Test-Comp 2026](https://test-comp.sosy-lab.org/2026/results/results-verified/), compiled version available at [Zenodo](https://zenodo.org/records/17698724)
+  * 2nd in C.Cover-Error
 * Symbiotic 10.1 participating in [SV-COMP 2025](https://sv-comp.sosy-lab.org/2025/results/results-verified/), compiled version available at [Zenodo](https://zenodo.org/records/14230101)
   * 2nd in MemSafety
   * 2nd in FalsificationOverall
@@ -70,6 +78,8 @@ Components of Symbiotic can be found at <https://github.com/staticafi> with the 
 11. M. Chalupa, V. Mihalkovič, A. Řechtáčková, L. Zaoral, and J. Strejček: _Symbiotic 9: String Analysis and Backward Symbolic Execution with Loop Folding (Competition Contribution)_, in Proceedings of TACAS 2022, volume 13244 of LNCS, pages 462-467. Springer, 2022. \[[link](https://link.springer.com/chapter/10.1007/978-3-030-99527-0_32)\]
 
 12. M. Jonáš, K. Kumor, J. Novák, J. Sedláček, M. Trtík, L. Zaoral, P. Ayaziová, and J. Strejček: _Symbiotic 10: Lazy Memory Initialization and Compact Symbolic Execution (Competition Contribution)_, in Proceedings of TACAS 2024, volume 14572 of LNCS, pages 406-411. Springer, 2024. \[[link](https://link.springer.com/chapter/10.1007/978-3-031-57256-2_29)\]
+
+13. P. Ayaziová, M. Jonáš, V. Mihalkovič, J. Sedláček, and J. Strejček: _Symbiotic 11: Predicate Abstraction Joins the Party (Competition Contribution)_, in Proceedings of TACAS 2026, volume 16506 of LNCS. Springer, 2026. To appear. 
 
 ## Contact
 
