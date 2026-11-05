@@ -227,8 +227,8 @@ def generate_graphml(path, source, is_correctness_wit, opts, saveto):
 
 def generate_yaml(path, source, is_correctness_wit, opts, saveto):
     assert saveto is not None
-    gen = YAMLWriter(source, opts.property.ltl(),
-                        opts.is32bit, is_correctness_wit)
+    gen = YAMLWriter(source, opts.property,
+                        opts.is32bit, is_correctness_wit, saveto)
     if not is_correctness_wit:
         gen.generate_violation_witness(path)
     else:
@@ -267,10 +267,11 @@ def generate_yaml_witness(bindir, sources, is_correctness_wit, opts, saveto):
         generate_yaml(None, sources[0], is_correctness_wit, opts, saveto)
         return
 
-    yaml_support =  opts.property.signedoverflow() or opts.property.unreachcall() or \
-                    opts.property.assertions()
-
-    if not yaml_support:
+    if not opts.property.memsafety() and \
+       not opts.property.unreachcall() and \
+       not opts.property.assertions() and \
+       not opts.property.signedoverflow() and \
+       not opts.property.termination():
         print('Failed generating YAML witness: Property not supported by format')
         return
 

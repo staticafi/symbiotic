@@ -54,8 +54,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             if self._hit_threads:
                 yield (SlowbeastTool(self._options), ['-threads'], None)
             else:
+                yield (SlowbeastTool(self._options), ['-sewpa'], 120)
                 yield (SlowbeastTool(self._options), ['-cse'], 60)
-                yield (SlowbeastTool(self._options, bself=True), ['-bself'], None)
+                yield (SlowbeastTool(self._options, bself=True), ['-bself'], 120)
                 # if slowbeast crashes, run KLEE w/o timeout
                 # yield (KleeTool(self._options), None, None)
 
@@ -64,7 +65,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 # TODO: use threads only if KLEE hits threads and for other
                 # cases use incremental solving
                 #(SlowbeastTool(self._options), ['-threads', '-se-incremental-solving'], None),
-                yield (SlowbeastTool(self._options), ['-se-incremental-solving'], None)
+                yield (SlowbeastTool(self._options), ['-se', '-smt-solver', 'mathsat'], None)
         else:
             yield (KleeTool(self._options), None, None)
             if self._hit_threads:
