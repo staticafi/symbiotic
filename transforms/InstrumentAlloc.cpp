@@ -152,6 +152,43 @@ static void replace_calloc(Module *M, CallInst *CI, bool never_fails)
   CI->eraseFromParent();
 }
 
+static void replace_realloc(Module *M, CallInst *CI)
+{
+  // there is no variant that cannot fail; if the allocation
+  // cannot fail, we do not replace realloc at all
+  auto X = M->getOrInsertFunction("__VERIFIER_realloc", CI->getType(),
+                                  CI->getOperand(0)->getType(),
+                                  CI->getOperand(1)->getType()
+#if LLVM_VERSION_MAJOR < 5
+  , nullptr
+#endif
+  );
+  Value *C = nullptr;
+#if LLVM_VERSION_MAJOR >= 9
+  C = X.getCallee();
+#else
+  C = X;
+#endif
+  assert(C);
+  Function *Realloc = cast<Function>(C);
+
+  std::vector<Value *> args;
+  args.push_back(CI->getOperand(0));
+  args.push_back(CI->getOperand(1));
+
+  CallInst *new_CI = CallInst::Create(Realloc, args);
+
+  SmallVector<std::pair<unsigned, MDNode *>, 8> metadata;
+  CI->getAllMetadata(metadata);
+  for (auto& md : metadata)
+    new_CI->setMetadata(md.first, md.second);
+  new_CI->setAttributes(CI->getAttributes());
+
+  new_CI->insertBefore(CI);
+  CI->replaceAllUsesWith(new_CI);
+  CI->eraseFromParent();
+}
+
 static bool instrument_alloc(Function &F, bool never_fails)
 {
   // do not run the initializer on __VERIFIER and __INSTR functions
@@ -186,6 +223,10 @@ static bool instrument_alloc(Function &F, bool never_fails)
         modified = true;
       } else if (name.equals("calloc")) {
         replace_calloc(M, CI, never_fails);
+        modified = true;
+      } else if (!never_fails && name.equals("realloc") &&
+                 CI->arg_size() == 2) {
+        replace_realloc(M, CI);
         modified = true;
       }
     }
