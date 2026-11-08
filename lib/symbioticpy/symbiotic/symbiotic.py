@@ -10,7 +10,7 @@ from . utils import err, dbg, print_elapsed_time, restart_counting_time
 from . utils.utils import print_stdout
 from . utils.process import ProcessRunner
 from . exceptions import SymbioticException, SymbioticExceptionalResult
-from . sequentialize import check, sequentialize
+from . sequentialize import check, sequentialize, violation
 
 class Symbiotic(object):
     """
@@ -153,26 +153,25 @@ class Symbiotic(object):
         if witness and not options.nowitness and hasattr(tool, "generate_witness"):
             tool.generate_witness(cc.curfile, sources, has_error)
 
+        self._decider = tool
         return res
 
-    def _generate_target_witness(self, source, errcalls):
-        """ Witness that only marks the call of the error function """
+    def _generate_concurrent_witness(self, source, found):
         options = self.options
-        if not options.property.unreachcall() or len(errcalls) != 1:
-            return
         from . witnesses.YAMLwitnesswriter import YAMLWriter
         print_stdout('Generating YAML error witness: {0}'.format(options.witness_output))
         gen = YAMLWriter(source, options.property, options.is32bit, False,
                          options.witness_output)
-        gen.generate_target_witness(*errcalls[0])
+        gen.generate_concurrent_witness(*found, options.property.getcalls() +
+                                        ['__VERIFIER_error'])
         gen.write(options.witness_output)
 
     def _run_sequentialized(self):
         options = self.options
         source = self.sources[0]
-        seq = sequentialize(source, options.property, options.is32bit,
-                            os.path.join(self.env.symbiotic_dir, 'cseq'),
-                            os.getcwd())
+        seq, linemap = sequentialize(source, options.property, options.is32bit,
+                                     os.path.join(self.env.symbiotic_dir, 'cseq'),
+                                     os.getcwd()) or (None, None)
         if seq is None:
             return None
 
@@ -198,8 +197,19 @@ class Symbiotic(object):
 
         if options.property.datarace():
             return 'false(no-data-race)'
-        if options.witness_output and not options.nowitness:
-            self._generate_target_witness(source, self._errcalls)
+        # the witness comes from KLEE's error path; klee-last is not the
+        # error when slowbeast decided (no witness then, the verdict stays)
+        decider = getattr(self, '_decider', None)
+        if options.witness_output and not options.nowitness and\
+           options.property.unreachcall() and decider is not None and decider.name() == 'klee':
+            try:
+                found = violation(seq, linemap, os.path.join(os.getcwd(), 'klee-last'))
+                if found:
+                    self._generate_concurrent_witness(source, found)
+            except Exception as e:
+                # a witness is optional, the verdict is not
+                print_stdout('INFO: No witness for the sequentialized program: {0}'.format(e),
+                             color='WHITE')
         return res
 
     def _run_symbiotic(self):
@@ -207,13 +217,10 @@ class Symbiotic(object):
         prp = options.property
         # decide it before the first run, the tools leave time for the
         # sequentialized program only if it will be verified
-        self._errcalls = None
-        if options.sequentialize and (prp.unreachcall() or prp.memsafety())\
-           and not options.no_verification and len(self.sources) == 1:
-            self._errcalls = check(self.sources[0],
-                                   prp.getcalls() if prp.unreachcall() else [],
-                                   options.is32bit)
-        options.sequentialize = self._errcalls is not None
+        if options.sequentialize:
+            options.sequentialize = (prp.unreachcall() or prp.memsafety()) and\
+                not options.no_verification and len(self.sources) == 1 and\
+                check(self.sources[0], options.is32bit)
 
         # the options of the first run, the rerun without the cap starts with them
         initial = (options.noslice, options.replay_error,

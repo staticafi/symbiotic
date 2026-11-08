@@ -2,7 +2,8 @@
 
 import re
 import sys
-from os.path import basename, isfile, join
+from os import listdir
+from os.path import basename, dirname, isdir, isfile, join
 from shutil import copyfile
 from subprocess import run, PIPE, STDOUT, TimeoutExpired
 
@@ -37,7 +38,6 @@ THREAD_API = ['pthread_*', '_pthread_*', '__pthread_*', 'sem_*',
 PRELUDE = '''\
 extern void __assert_fail(const char *, const char *, unsigned int, const char *) __attribute__((__noreturn__));
 void reach_error(void) { __assert_fail("cseq", "sequentialized", 0, "reach_error"); }
-void __cs_seq_assert(int cond) { if (!cond) reach_error(); }
 #define __VERIFIER_error reach_error
 '''
 
@@ -58,8 +58,13 @@ NOOPS = '''\
 #define pthread_mutexattr_settype(a, k) ((void)(a), (unsigned int)(k) > 3 ? 22 : 0)
 '''
 
-# an undefined assert() would be invisible to the verifier
-ASSERT = '#define assert(c) __cs_seq_assert(c)\n'
+# a failing assert of the program aborts it as abort() does, only the
+# error calls are errors (CSeq gets them renamed to __VERIFIER_error)
+ASSERT = '''\
+extern void __VERIFIER_assume(int);
+void __cs_seq_assert_fail(const char *a, const char *f, unsigned int l, const char *fn) { __VERIFIER_assume(0); }
+#define __assert_fail __cs_seq_assert_fail
+'''
 
 # the program's own errors are pruned, the only error left is a race
 RACE_PRELUDE = '''\
@@ -70,13 +75,22 @@ void __cs_data_race(void) { reach_error(); }
 #define assert(c) __VERIFIER_assume(c)
 '''
 
+def _keep_lines(replacement):
+    return lambda m: replacement + '\n' * m.group().count('\n')
+
 REWRITES = [
     # CSeq keeps static in parameter lists
     (r'(\(|, )static ', r'\1'),
     # CSeq leaves the variables that choose the context switches uninitialized
     (r'(?m)^([ \t]*unsigned int __cs_tmp_t\d+_r\d+);', r'\1 = __VERIFIER_nondet_uint();'),
     # glibc prototypes conflict with CSeq's definitions of pthread functions
-    (r'extern\s+int\s+pthread_\w+\s*\([^;]*\)\s*;', ';'),
+    (r'extern\s+int\s+pthread_\w+\s*\([^;]*\)\s*;', _keep_lines(';')),
+]
+
+# calls of reach_error, not its definition; CSeq would turn them into
+# assert(0), the same as an assert of the program
+ERROR_REWRITES = [
+    (r'(?<!void )(?<!void\t)(?<!void\n)\breach_error\s*\(\s*\)', '__VERIFIER_error()'),
 ]
 
 RACE_REWRITES = [
@@ -89,19 +103,25 @@ def _rewrite(text, rewrites):
         text = re.sub(pattern, replacement, text)
     return text
 
-def _postprocess(text):
-    return PRELUDE + RENAMES + NOOPS + ASSERT + _rewrite(text, REWRITES)
+# KLEE then reports the lines of CSeq's output
+def _line_marker(name):
+    return '#line 1 "{0}"\n'.format(name)
 
-def _postprocess_race(text):
+def _postprocess(text, name):
+    return PRELUDE + RENAMES + NOOPS + ASSERT + _line_marker(name) +\
+           _rewrite(text, REWRITES)
+
+def _postprocess_race(text, name):
     text = _rewrite(text, RACE_REWRITES)
     if '__CPROVER' in text:
         return None
     # the race detector declares its address variables repeatedly in one scope
     temps = sorted(set(re.findall(r'^\s*static void \*(__\w+___);', text, re.M)))
-    text = re.sub(r'^\s*static void \*__\w+___;\n', '', text, flags=re.M)
+    text = re.sub(r'^\s*static void \*__\w+___;\n', _keep_lines(''), text,
+                  flags=re.M)
     decls = ''.join('void *{0};\n'.format(t) for t in temps)
     return PRELUDE + RENAMES + NOOPS + RACE_PRELUDE + decls +\
-           _rewrite(text, REWRITES)
+           _line_marker(name) + _rewrite(text, REWRITES)
 
 def _writes_thread_parameter(text):
     """
@@ -153,6 +173,15 @@ def _writes_thread_parameter(text):
                 return True
     return False
 
+def _linemap(out):
+    """ CSeq's -M table: line of its output -> line of its input """
+    linemap = {}
+    for line in out.splitlines():
+        if line.startswith('.'):
+            numbers = re.findall(r'-?\d+', line.split()[0])
+            linemap.setdefault(int(numbers[0]), int(numbers[-1]))
+    return linemap
+
 def _joins_without_result(bitcode):
     """
     CSeq's pthread_join never writes the thread's result, so accept only
@@ -184,67 +213,87 @@ def _joins_without_result(bitcode):
                     return False
     return True
 
-def check(source, errcalls, is32bit):
+def check(source, is32bit):
     """
     Check whether CSeq can sequentialize the program, that is, it creates
     threads and uses only the thread functions that CSeq models.
-    Return the locations of the calls of errcalls or None.
     """
     # most tasks have no threads, do not compile them for the check
     with open(source, errors='replace') as f:
         if 'pthread_create' not in f.read():
-            return None
+            return False
     cmd = ['clang', '-c', '-emit-llvm', '-g', '-fgnu89-inline', '-D__inline=',
            '-fbracket-depth=2048', '-w', '-o', 'check.bc', source]
     if is32bit:
         cmd.append('-m32')
     if run(cmd, stdout=PIPE, stderr=STDOUT).returncode != 0:
         dbg('Compiling the program for the check failed')
-        return None
+        return False
     cmd = ['opt', '-load', 'LLVMsbt.so', '-check-module', '-detect-atomics',
-           '-detect-calls=' + ','.join(THREAD_API + errcalls),
+           '-detect-calls=' + ','.join(THREAD_API),
            '-enable-new-pm=0', '-disable-output', 'check.bc']
     out = run(cmd, stdout=PIPE, stderr=STDOUT, universal_newlines=True).stdout
 
-    funs, locs = set(), []
-    for line in out.splitlines():
-        words = line.split()
-        if line.startswith('Found function '):
-            funs.add(words[2])
-        elif line.startswith('Found call to function ') and words[4] in errcalls:
-            locs.append(tuple(int(n) for n in words[6].split(':')))
-    if 'pthread_create' not in funs or 'Found atomic instruction' in out or\
-       not funs - set(errcalls) <= MODELLED or\
-       not _joins_without_result('check.bc'):
-        return None
-    return locs
+    funs = {line.split()[2] for line in out.splitlines()
+            if line.startswith('Found function ')}
+    return 'pthread_create' in funs and 'Found atomic instruction' not in out\
+           and funs <= MODELLED and _joins_without_result('check.bc')
+
+def _error_labels_are_errors(source):
+    """
+    Whether every label ERROR is followed by an error call, so that CSeq
+    may replace it and the gotos to it by an error (CSeq's inliner does not
+    rename labels, so a kept label in a function inlined twice is defined
+    twice)
+    """
+    with open(source, errors='replace') as f:
+        text = f.read()
+    return all(re.match(r'\s*\{?\s*(reach_error|__VERIFIER_error)\s*\(\s*\)',
+                        text[m.end():])
+               for m in re.finditer(r'\bERROR\s*:', text))
 
 def sequentialize(source, prp, is32bit, cseqdir, outdir):
     """
     Sequentialize the program with CSeq.
-    Return the path to the sequentialized program or None.
+    Return the path to the sequentialized program and the map of its lines
+    to the lines of the program, or None.
     """
     # CSeq writes _cs_<name>.c next to its input
     name = basename(source)
     copy = join(outdir, name)
-    copyfile(source, copy)
+    if prp.datarace():
+        copyfile(source, copy)
+    else:
+        with open(source, encoding='latin-1', newline='') as f:
+            text = _rewrite(f.read(), ERROR_REWRITES)
+        with open(copy, 'w', encoding='latin-1', newline='') as f:
+            f.write(text)
     if name.endswith('.i'):
         name = name[:-2] + '.c'
 
-    cmd = [sys.executable, join(cseqdir, 'cseq.py'), '-i', copy] + CSEQ_OPTIONS
+    cmd = [sys.executable, join(cseqdir, 'cseq.py'), '-i', copy, '-M'] +\
+          CSEQ_OPTIONS
     if is32bit:
         cmd.append('--32')
     if prp.datarace():
         cmd.append('--data-race-check')
+    elif not _error_labels_are_errors(source):
+        # CSeq turns the label ERROR and the gotos to it into an error, also
+        # if the label only marks cleanup code; then keep the label (the
+        # race detector drops the label, so keep it in race mode)
+        cmd += ['--error-label', '__cs_seq_no_error_label']
     try:
-        run(cmd, cwd=cseqdir, stdout=PIPE, stderr=STDOUT, timeout=CSEQ_TIMEOUT)
+        out = run(cmd, cwd=cseqdir, stdout=PIPE, stderr=STDOUT,
+                  timeout=CSEQ_TIMEOUT, universal_newlines=True,
+                  errors='replace').stdout
     except TimeoutExpired:
         dbg('CSeq timed out')
         return None
     except OSError as e:
         print_stdout('INFO: Cannot run CSeq: {0}'.format(e), color='WHITE')
         return None
-    cs = join(outdir, '_cs_' + name)
+    name = '_cs_' + name
+    cs = join(outdir, name)
     if not isfile(cs):
         dbg('CSeq failed')
         return None
@@ -254,15 +303,127 @@ def sequentialize(source, prp, is32bit, cseqdir, outdir):
     if _writes_thread_parameter(text):
         dbg('A thread assigns its parameter')
         return None
-    text = _postprocess_race(text) if prp.datarace() else _postprocess(text)
+    if prp.datarace():
+        text = _postprocess_race(text, name)
+    else:
+        text = _postprocess(text, name)
     if text is None:
         dbg('Rewriting the race checks failed')
         return None
-    seq = join(outdir, 'seq-' + name)
+    seq = join(outdir, 'seq-' + name[4:])
     with open(seq, 'w') as f:
         f.write(text)
     if run(['clang', '-fsyntax-only', '-fgnu89-inline', '-Wno-everything', seq],
            stdout=PIPE, stderr=STDOUT).returncode != 0:
         dbg('The sequentialized program does not compile')
         return None
-    return seq
+    return seq, _linemap(out)
+
+def _creations(text, threads):
+    """
+    The creations of threads in CSeq's output as (line, creating thread,
+    its block, created thread), or None; the statements of thread T after
+    IF(T,A,...) are its block A
+    """
+    creations, thread, block, depth, jumps = [], None, None, 0, False
+    for n, line in enumerate(text, 1):
+        m = re.match(r'\s*(?:void\s*\*\s*|(?:int|void)\s+)(\w+)\s*\(.*\)\s*$', line)
+        if m:
+            thread, block, depth, jumps = threads.get(m.group(1)), None, 0, False
+        m = re.search(r'\bIF\((\d+),(\d+),', line)
+        if m and thread is not None and int(m.group(1)) == thread:
+            block = int(m.group(2))
+        elif re.search(r'\bgoto\b', line):
+            jumps = True
+        m = re.search(r'pthread_create_\d+\(.*?,\s*\w+,\s*[^,]*,\s*(\d+)\)\)?\s*;', line)
+        if m:
+            if thread is None or block is None:
+                return None
+            if depth > 1 or jumps:
+                dbg('Thread {0} may be created conditionally'.format(m.group(1)))
+            creations.append((n, thread, block, int(m.group(1))))
+        depth += line.count('{') - line.count('}')
+    return creations
+
+def _creation_order(text, threads, waypoints, last):
+    """
+    The creations of threads in the order of KLEE's run as (line, creating
+    thread, created thread), or None; main() runs the threads in slots,
+    thread T runs its blocks from its pc up to the value chosen for its
+    slot (__cs_tmp_tT_rR) if it is active, last is (thread, line) of the
+    error, which ends the last slot
+    """
+    creations = _creations(text, threads)
+    if creations is None or not isfile(waypoints):
+        return None
+    slots = []
+    with open(waypoints) as f:
+        for m in re.finditer(r'^__VERIFIER_nondet_\w+:(\d+):\d+:(-?\d+)$', f.read(), re.M):
+            t = re.search(r'__cs_tmp_t(\d+)_r\d+', text[int(m.group(1)) - 1])
+            if t:
+                slots.append((int(m.group(1)), int(t.group(1)), int(m.group(2)) % 2**32))
+    declared = [n for n, l in enumerate(text, 1)
+                if re.search(r'\bunsigned int __cs_tmp_t\d+_r\d+\b', l)]
+    if not slots or [n for n, t, v in slots] != declared[:len(slots)] or\
+       slots[-1][1] != last[0]:
+        return None
+    order, pc, active = [], {}, {0}
+    for i, (_, t, value) in enumerate(slots):
+        if t not in active:
+            continue
+        for n, c, b, k in creations:
+            if c == t and pc.get(t, 0) <= b < value and\
+               (i < len(slots) - 1 or n < last[1]):
+                if k in active:
+                    return None
+                order.append((n, t, k))
+                active.add(k)
+        pc[t] = value
+    return order
+
+def violation(seq, linemap, kleedir):
+    """
+    Find KLEE's error in the sequentialized program in the program.
+    Return the creations of the threads on the path to the error and the
+    error, each as (thread, line), or None.
+    """
+    errs = [f for f in listdir(kleedir) if f.endswith('.err')]\
+           if isdir(kleedir) else []
+    if not errs:
+        return None
+    with open(join(kleedir, errs[0])) as f:
+        stack = re.findall(r'#\d+ in (\w+) \(.*\) at (\S+):(\d+)', f.read())
+    waypoints = join(kleedir, errs[0].split('.')[0] + '.waypoints')
+    name = '_cs_' + basename(seq)[4:]
+    with open(join(dirname(seq), name), errors='replace') as f:
+        text = f.read().split('\n')
+
+    threads = {'main_thread': 0}
+    for line in text:
+        for fun, k in re.findall(r'(\w+)\(__cs_threadargs\[(\d+)\]\)', line):
+            threads[fun] = int(k)
+
+    line = next((int(l) for fun, f, l in stack
+                 if f == name and linemap.get(int(l), -1) > 0), None)
+    thread = next((threads[fun] for fun, f, l in stack if fun in threads), None)
+    if line is None or thread is None:
+        return None
+
+    # the witness numbers the threads in the order of their creation
+    last = next(((threads[fun], int(l)) for fun, f, l in stack
+                 if fun in threads and f == name), None)
+    order = _creation_order(text, threads, waypoints, last) if last else None
+    if order is None:
+        return None
+    ids = {0: 0}
+    ids.update((k, i) for i, (n, t, k) in enumerate(order, 1))
+    if thread not in ids:
+        return None
+    # every creation KLEE logged happened on the path to the error, also
+    # after the erring thread was created (an error in main may need the
+    # writes of a thread created later)
+    created = [(ids[t], linemap.get(n, -1)) for n, t, k in order]
+    error = (ids[thread], linemap.get(line, -1))
+    if any(l <= 0 for t, l in created + [error]):
+        return None
+    return created, error
