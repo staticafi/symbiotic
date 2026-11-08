@@ -162,8 +162,7 @@ class Symbiotic(object):
         print_stdout('Generating YAML error witness: {0}'.format(options.witness_output))
         gen = YAMLWriter(source, options.property, options.is32bit, False,
                          options.witness_output)
-        gen.generate_concurrent_witness(*found, options.property.getcalls() +
-                                        ['__VERIFIER_error'])
+        gen.generate_concurrent_witness(*found)
         gen.write(options.witness_output)
 
     def _run_sequentialized(self):
@@ -183,6 +182,11 @@ class Symbiotic(object):
         options.sequentialize = False
         if hasattr(self._tool, '_hit_threads'):
             self._tool._hit_threads = False
+        # malloc does not fail here: a NULL from an unchecked malloc gave
+        # invalid dereferences in memory-safe tasks (sssc12), and races
+        # through CSeq's race slots, which use NULL for no access; only
+        # errors are reported here, fewer executions miss an error at most
+        options.malloc_never_fails = True
         try:
             res = self._verify([seq], witness=False)
         except (SymbioticException, SymbioticExceptionalResult) as e:
@@ -195,22 +199,23 @@ class Symbiotic(object):
         if not res.startswith('false') or res == 'false(valid-memtrack)':
             return None
 
-        if options.property.datarace():
-            return 'false(no-data-race)'
+        prp = options.property
         # the witness comes from KLEE's error path; klee-last is not the
         # error when slowbeast decided (no witness then, the verdict stays)
         decider = getattr(self, '_decider', None)
         if options.witness_output and not options.nowitness and\
-           options.property.unreachcall() and decider is not None and decider.name() == 'klee':
+           prp.unreachcall() and decider is not None and decider.name() == 'klee':
             try:
-                found = violation(seq, linemap, os.path.join(os.getcwd(), 'klee-last'))
+                found = violation(seq, linemap, os.path.join(os.getcwd(), 'klee-last'),
+                                  prp.getcalls() + ['__VERIFIER_error'],
+                                  prp.datarace())
                 if found:
                     self._generate_concurrent_witness(source, found)
             except Exception as e:
                 # a witness is optional, the verdict is not
                 print_stdout('INFO: No witness for the sequentialized program: {0}'.format(e),
                              color='WHITE')
-        return res
+        return 'false(no-data-race)' if prp.datarace() else res
 
     def _run_symbiotic(self):
         options = self.options

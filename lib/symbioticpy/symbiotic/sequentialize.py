@@ -94,8 +94,10 @@ ERROR_REWRITES = [
 ]
 
 RACE_REWRITES = [
-    # calls of the error functions, not their definitions
-    (r'(?<!void )\b(__VERIFIER_error|reach_error)\s*\(\s*\)', '__VERIFIER_assume(0)'),
+    # calls of the error functions, not their definitions; CSeq's race
+    # detector turns abort(), assert() and the error calls into __dummy__()
+    (r'(?<!void )(?<!void\t)(?<!void\n)\b(__VERIFIER_error|reach_error|__dummy__)\s*\(\s*\)',
+     '__VERIFIER_assume(0)'),
 ]
 
 def _rewrite(text, rewrites):
@@ -381,19 +383,68 @@ def _creation_order(text, threads, waypoints, last):
         pc[t] = value
     return order
 
-def violation(seq, linemap, kleedir):
+def _stack(kleedir):
+    errs = sorted(f for f in listdir(kleedir) if f.endswith('.err'))\
+           if isdir(kleedir) else []
+    if not errs:
+        return None, None
+    with open(join(kleedir, errs[0])) as f:
+        stack = re.findall(r'#\d+ in (\w+) \(.*\) at (\S+):(\d+)', f.read())
+    return stack, join(kleedir, errs[0].split('.')[0] + '.waypoints')
+
+def _race(text, stack, threads, name, waypoints):
+    """ The racing accesses as (thread, line of text) and the variable """
+    funs = [fun for fun, f, l in stack]
+    if '__cs_data_race' not in funs:
+        return None
+    below = stack[funs.index('__cs_data_race') + 1:]
+    if not below or below[0][1] != name:
+        return None
+    second = int(below[0][2])
+    thread = next((threads[fun] for fun, f, l in below if fun in threads), None)
+    # the check that fired names the other thread and the address
+    check = next((m for m in (re.search(r'if \(__cs_thread_to_write_pos\[(\d+)\] == (\w+)\)',
+                                       text[n - 1])
+                              for n in range(second, max(0, second - 12), -1)) if m), None)
+    if thread is None or check is None or not isfile(waypoints):
+        return None
+    k, addr = int(check.group(1)), check.group(2)
+
+    # the last context switch chosen for thread k is the label where it stopped
+    pc = None
+    with open(waypoints) as f:
+        for m in re.finditer(r'^__VERIFIER_nondet_\w+:(\d+):\d+:(-?\d+)$', f.read(), re.M):
+            t = re.search(r'__cs_tmp_t(\d+)_r\d+', text[int(m.group(1)) - 1])
+            if t and int(t.group(1)) == k:
+                pc = m.group(2)
+    fun = next((f for f, t in threads.items() if t == k), None)
+    label = 'tmain_' if k == 0 else 't{0}_'.format(fun)
+    stop = next((n for n, l in enumerate(text, 1)
+                 if l.strip().startswith(label + str(pc) + ':')), None)
+    if pc is None or fun is None or stop is None:
+        return None
+
+    # the write it is about to do is the statement after the last announcement
+    write = re.compile(r'__cs_thread_to_write_pos\[{0}\] = \((.*)\);'.format(k))
+    n = next((n for n in range(stop - 1, 0, -1) if write.search(text[n - 1])), None)
+    if n is None or write.search(text[n - 1]).group(1) != addr:
+        return None
+    n += 1
+    while n < len(text) and text[n - 1].strip() in ('', ';'):
+        n += 1
+    var = re.sub(r'^_+(cs_local_\w+?_|cs_param_\w+?_)?', '', addr).rstrip('_')
+    return [(k, n), (thread, second)], [var, var.split('_')[-1], var.replace('_', '.')]
+
+def violation(seq, linemap, kleedir, calls, race=False):
     """
     Find KLEE's error in the sequentialized program in the program.
     Return the creations of the threads on the path to the error and the
-    error, each as (thread, line), or None.
+    errors, each as (thread, line), and the names to find the column of an error
+    (the error calls or the racing variable), or None.
     """
-    errs = [f for f in listdir(kleedir) if f.endswith('.err')]\
-           if isdir(kleedir) else []
-    if not errs:
+    stack, waypoints = _stack(kleedir)
+    if not stack:
         return None
-    with open(join(kleedir, errs[0])) as f:
-        stack = re.findall(r'#\d+ in (\w+) \(.*\) at (\S+):(\d+)', f.read())
-    waypoints = join(kleedir, errs[0].split('.')[0] + '.waypoints')
     name = '_cs_' + basename(seq)[4:]
     with open(join(dirname(seq), name), errors='replace') as f:
         text = f.read().split('\n')
@@ -403,11 +454,18 @@ def violation(seq, linemap, kleedir):
         for fun, k in re.findall(r'(\w+)\(__cs_threadargs\[(\d+)\]\)', line):
             threads[fun] = int(k)
 
-    line = next((int(l) for fun, f, l in stack
-                 if f == name and linemap.get(int(l), -1) > 0), None)
-    thread = next((threads[fun] for fun, f, l in stack if fun in threads), None)
-    if line is None or thread is None:
-        return None
+    if race:
+        found = _race(text, stack, threads, name, waypoints)
+        if found is None:
+            return None
+        errors, calls = found
+    else:
+        line = next((int(l) for fun, f, l in stack
+                     if f == name and linemap.get(int(l), -1) > 0), None)
+        thread = next((threads[fun] for fun, f, l in stack if fun in threads), None)
+        if line is None or thread is None:
+            return None
+        errors = [(thread, line)]
 
     # the witness numbers the threads in the order of their creation
     last = next(((threads[fun], int(l)) for fun, f, l in stack
@@ -417,13 +475,13 @@ def violation(seq, linemap, kleedir):
         return None
     ids = {0: 0}
     ids.update((k, i) for i, (n, t, k) in enumerate(order, 1))
-    if thread not in ids:
+    if any(t not in ids for t, l in errors):
         return None
     # every creation KLEE logged happened on the path to the error, also
     # after the erring thread was created (an error in main may need the
     # writes of a thread created later)
     created = [(ids[t], linemap.get(n, -1)) for n, t, k in order]
-    error = (ids[thread], linemap.get(line, -1))
-    if any(l <= 0 for t, l in created + [error]):
+    errors = [(ids[t], linemap.get(l, -1)) for t, l in errors]
+    if any(l <= 0 for t, l in created + errors):
         return None
-    return created, error
+    return created, errors, calls

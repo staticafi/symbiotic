@@ -84,21 +84,22 @@ class YAMLWriter(object):
         self.add_metadata()
         self.create_content(trivial=True, error_location=error_location)
 
-    def generate_concurrent_witness(self, created, error, calls):
+    def generate_concurrent_witness(self, created, errors, names):
         """
         Generate a violation witness of a concurrent program (format 2.2):
-        the creations of the threads, then the error, each as (thread, line)
+        the creations of the threads, then the errors (one, or the two
+        accesses of a race), each as (thread, line)
         """
         with open(self._source, errors='replace') as f:
             self._lines = f.read().split('\n')
         self._find_references()
-        thread, line = error
-        line = self._error_line(line, calls)
+        if not self._prps.datarace():
+            errors = [(t, self._error_line(l, names)) for t, l in errors]
 
         self.add_metadata('2.2')
         content = [[self._waypoint('function_enter', t, l)] for t, l in created]
-        content.append([self._waypoint('target', thread, line,
-                                       self._column(line, calls))])
+        content.append([self._waypoint('target', t, l, self._column(l, names))
+                        for t, l in errors])
         self.witness[0]['content'] = [{'segment' : s} for s in content]
 
     def _waypoint(self, kind, thread, line, column=None):
