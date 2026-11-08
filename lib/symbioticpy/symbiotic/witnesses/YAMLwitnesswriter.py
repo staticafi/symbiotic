@@ -306,8 +306,11 @@ class YAMLWriter(object):
             cycle = False
             for line in testfile.readlines():
                 if line[0] == '@':
-                    self.errorLoc = tuple(map(int, line.strip('\n').split(':')[2:]))
-                    break
+                    # @TARGET ends the path; other entries (@MARK) are not nondets
+                    if line.startswith('@TARGET:'):
+                        self.errorLoc = tuple(map(int, line.strip('\n').split(':')[2:]))
+                        break
+                    continue
                 call = line.strip('\n').split(':')
                 line = int(call[1])
                 col = int(call[2])

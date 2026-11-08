@@ -15,7 +15,10 @@ CSEQ_TIMEOUT = 120
 CSEQ_OPTIONS = ['--sv-comp', '--threads', '100', '--atomic-parameters',
                 '--deep-propagation', '--nondet-condvar-wakeups',
                 '--backend', 'cpachecker',
-                '--rounds', '2', '--unwind-while', '2', '--unwind-for', '2']
+                '--rounds', '2', '--unwind-while', '2', '--unwind-for', '2',
+                # every thread creation calls __symbiotic_mark(creator << 16 |
+                # created), which KLEE logs in the waypoints of the error path
+                '--creation-markers']
 
 # the thread functions that CSeq models; any other (rwlocks, semaphores,
 # spinlocks, pthread_once, ...) would be a no-op with a nondet result;
@@ -321,66 +324,26 @@ def sequentialize(source, prp, is32bit, cseqdir, outdir):
         return None
     return seq, _linemap(out)
 
-def _creations(text, threads):
-    """
-    The creations of threads in CSeq's output as (line, creating thread,
-    its block, created thread), or None; the statements of thread T after
-    IF(T,A,...) are its block A
-    """
-    creations, thread, block, depth, jumps = [], None, None, 0, False
-    for n, line in enumerate(text, 1):
-        m = re.match(r'\s*(?:void\s*\*\s*|(?:int|void)\s+)(\w+)\s*\(.*\)\s*$', line)
-        if m:
-            thread, block, depth, jumps = threads.get(m.group(1)), None, 0, False
-        m = re.search(r'\bIF\((\d+),(\d+),', line)
-        if m and thread is not None and int(m.group(1)) == thread:
-            block = int(m.group(2))
-        elif re.search(r'\bgoto\b', line):
-            jumps = True
-        m = re.search(r'pthread_create_\d+\(.*?,\s*\w+,\s*[^,]*,\s*(\d+)\)\)?\s*;', line)
-        if m:
-            if thread is None or block is None:
-                return None
-            if depth > 1 or jumps:
-                dbg('Thread {0} may be created conditionally'.format(m.group(1)))
-            creations.append((n, thread, block, int(m.group(1))))
-        depth += line.count('{') - line.count('}')
-    return creations
-
-def _creation_order(text, threads, waypoints, last):
+def _creation_order(waypoints, name):
     """
     The creations of threads in the order of KLEE's run as (line, creating
-    thread, created thread), or None; main() runs the threads in slots,
-    thread T runs its blocks from its pc up to the value chosen for its
-    slot (__cs_tmp_tT_rR) if it is active, last is (thread, line) of the
-    error, which ends the last slot
+    thread, created thread), or None: CSeq marks every creation on its
+    line by __symbiotic_mark(creator << 16 | created) (--creation-markers)
+    and KLEE logs the marks of the error path in its waypoints as
+    @MARK:file:line:column:value, the file being CSeq's output (name)
     """
-    creations = _creations(text, threads)
-    if creations is None or not isfile(waypoints):
+    if not isfile(waypoints):
         return None
-    slots = []
     with open(waypoints) as f:
-        for m in re.finditer(r'^__VERIFIER_nondet_\w+:(\d+):\d+:(-?\d+)$', f.read(), re.M):
-            t = re.search(r'__cs_tmp_t(\d+)_r\d+', text[int(m.group(1)) - 1])
-            if t:
-                slots.append((int(m.group(1)), int(t.group(1)), int(m.group(2)) % 2**32))
-    declared = [n for n, l in enumerate(text, 1)
-                if re.search(r'\bunsigned int __cs_tmp_t\d+_r\d+\b', l)]
-    if not slots or [n for n, t, v in slots] != declared[:len(slots)] or\
-       slots[-1][1] != last[0]:
-        return None
-    order, pc, active = [], {}, {0}
-    for i, (_, t, value) in enumerate(slots):
-        if t not in active:
-            continue
-        for n, c, b, k in creations:
-            if c == t and pc.get(t, 0) <= b < value and\
-               (i < len(slots) - 1 or n < last[1]):
-                if k in active:
-                    return None
-                order.append((n, t, k))
-                active.add(k)
-        pc[t] = value
+        marks = re.findall(r'^@MARK:(?:.*/)?{0}:(\d+):\d+:(\d+)$'.format(re.escape(name)),
+                           f.read(), re.M)
+    order, active = [], {0}
+    for line, value in marks:
+        creator, created = int(value) >> 16, int(value) & 0xffff
+        if creator not in active or created in active:
+            return None
+        order.append((int(line), creator, created))
+        active.add(created)
     return order
 
 def _stack(kleedir):
@@ -468,9 +431,7 @@ def violation(seq, linemap, kleedir, calls, race=False):
         errors = [(thread, line)]
 
     # the witness numbers the threads in the order of their creation
-    last = next(((threads[fun], int(l)) for fun, f, l in stack
-                 if fun in threads and f == name), None)
-    order = _creation_order(text, threads, waypoints, last) if last else None
+    order = _creation_order(waypoints, name)
     if order is None:
         return None
     ids = {0: 0}
