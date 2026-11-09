@@ -38,6 +38,13 @@ class Symbiotic(object):
         pr = ProcessRunner()
         if pr.hasProcess():
             pr.terminate()
+            # give the process (e.g., runexec) a moment to clean up
+            # its children before we kill it
+            from time import sleep
+            for _ in range(20):
+                if pr.exitStatus() is not None:
+                    break
+                sleep(0.1)
 
     def kill(self):
         pr = ProcessRunner()

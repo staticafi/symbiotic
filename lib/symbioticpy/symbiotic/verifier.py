@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
 
 import sys
+from os import close, unlink
+from tempfile import mkstemp
 
 from . utils import dbg
 from . utils import dbg, print_elapsed_time, restart_counting_time
 from . utils.process import runcmd, ProcessRunner
 from . utils.watch import ProcessWatch, DbgWatch
 from . utils.utils import print_stderr, print_stdout
+from . utils.runexec import backend_memlimit, runexec_cmd,\
+                            parse_runexec_result, read_runexec_output,\
+                            new_cgroup, remove_cgroup
 from . exceptions import SymbioticException, SymbioticExceptionalResult
 from . transform import SymbioticCC
 
@@ -82,9 +87,24 @@ class SymbioticVerifier(object):
         watch = ToolWatch(tool)
         process = ProcessRunner()
 
-        returncode = process.run(cmd, watch)
+        memlimit = backend_memlimit(self.options)
+        if memlimit:
+            try:
+                returncode, outofmemory = self._run_under_runexec(cmd, memlimit, watch)
+            except SymbioticException as e:
+                # let the portfolio continue with the next verifier
+                return 'error ({0})'.format(str(e)), watch
+        else:
+            returncode, outofmemory = process.run(cmd, watch), False
+
         if returncode != 0:
             dbg('The verifier return non-0 return status')
+
+        if outofmemory:
+            print_stdout('{0} exceeded the memory limit ({1} MB)'\
+                         .format(tool.name(), memlimit // (1024 * 1024)),
+                         color='BROWN')
+            return 'OUT OF MEMORY', watch
 
         res = tool.determine_result(returncode, 0,
                                     watch.getLines(),
@@ -94,6 +114,45 @@ class SymbioticVerifier(object):
                 print_stderr(line.decode('utf-8', 'replace'),
                              color='RED', print_nl=False)
         return res, watch
+
+    def _run_under_runexec(self, cmd, memlimit, watch):
+        """
+        Run the command under runexec with the given memory limit and
+        pass the output of the command to the watch.
+        Returns the return code of the command (negative signal number if
+        it was killed by a signal) and whether it ran out of memory.
+        """
+        fd, outputfile = mkstemp(prefix='symbiotic-runexec-', suffix='.log')
+        close(fd)
+        cgroup = new_cgroup()
+        try:
+            runexec_watch = ProcessWatch(None)
+            runexec_ret = ProcessRunner().run(runexec_cmd(cmd, memlimit, outputfile),
+                                              runexec_watch, cgroup)
+            for line in read_runexec_output(outputfile):
+                watch.putLine(line)
+        finally:
+            remove_cgroup(cgroup)
+            try:
+                unlink(outputfile)
+            except OSError:
+                pass
+
+        result = parse_runexec_result(runexec_watch.getLines())
+        if runexec_ret != 0 or not result:
+            for line in runexec_watch.getLines():
+                print_stderr(line.decode('utf-8', 'replace'),
+                             color='RED', print_nl=False)
+            raise SymbioticException('Failed running the verifier under runexec')
+
+        dbg('runexec: ' + ', '.join('{0}={1}'.format(k, v) for k, v in result.items()))
+
+        if 'exitsignal' in result:
+            returncode = -int(result['exitsignal'])
+        else:
+            returncode = int(result.get('returnvalue', 0))
+
+        return returncode, result.get('terminationreason') == 'memory'
 
     def _run_verifier(self, tool, addparams, timeout):
         # do any additional transformations before verification

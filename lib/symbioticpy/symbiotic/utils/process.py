@@ -6,6 +6,7 @@ from . watch import ProcessWatch
 from .. import SymbioticException
 from signal import SIGKILL, SIGTERM
 from os import killpg, setpgid
+from os.path import join
 
 try:
     from benchexec.util import find_executable
@@ -18,11 +19,12 @@ class ProcessRunner(object):
     # (there's always at most one process running anyway)
     current_process = None
 
-    def run(self, cmd, watch = ProcessWatch()):
+    def run(self, cmd, watch = ProcessWatch(), cgroup = None):
         """
         Run command cmd and pass its stdout+stderr output
         to the watch object. watch object is supposed to be
-        an instance of ProcessWatch object.
+        an instance of ProcessWatch object. If cgroup is given,
+        the process is executed in it.
 
         \return return code of the process or None when the
         process has been stopped by the watch object
@@ -44,7 +46,10 @@ class ProcessRunner(object):
             # (assuming that they won't create their own process groups)
             def newpgrp():
                 # sets the subprocess pid as a pgid of the new process group
-                return setpgid(0, 0)
+                setpgid(0, 0)
+                if cgroup:
+                    with open(join(cgroup, 'cgroup.procs'), 'w') as f:
+                        f.write('0')
             ProcessRunner.current_process = Popen(cmd, stdout=PIPE,
                                                   stderr=STDOUT,
                                                   preexec_fn=newpgrp)
