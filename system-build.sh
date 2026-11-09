@@ -65,6 +65,7 @@ BUILD_KLEE="yes"
 BUILD_WITCH_KLEE="no"
 BUILD_PREDATOR="no"
 BUILD_LLVM2C='yes'
+BUILD_REVERSER='yes'
 LLVM_CONFIG=
 
 while [ $# -gt 0 ]; do
@@ -96,6 +97,9 @@ while [ $# -gt 0 ]; do
 		;;
 		'no-llvm2c')
 			BUILD_LLVM2C="no"
+		;;
+		'no-reverser')
+			BUILD_REVERSER="no"
 		;;
 		'update')
 			UPDATE=1
@@ -503,6 +507,14 @@ fi
 PHASE="building llvm2c"
 if [ $FROM -le 6 -a "$BUILD_LLVM2C" = "yes" ]; then
 	source scripts/build-llvm2c.sh
+fi
+
+######################################################################
+#   reverser
+######################################################################
+PHASE="building reverser"
+if [ $FROM -le 6 -a "$BUILD_REVERSER" = "yes" ]; then
+	source scripts/build-reverser.sh
 fi
 
 ######################################################################

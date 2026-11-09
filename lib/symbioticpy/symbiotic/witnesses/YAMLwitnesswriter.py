@@ -6,6 +6,7 @@ from os.path import relpath, dirname
 import datetime
 import yaml
 import sys
+from .. utils.utils import print_stderr, dbg
 import uuid
 from .. utils.utils import print_stderr
 from ..options import get_versions
@@ -26,6 +27,7 @@ class YAMLWriter(object):
         self._prps = prps
         self._is32bit = is32bit
         self._correctness_wit = is_correctness_wit
+        self._trivial_target = "reach_error"
 
         self.test = []
         self.errorLoc = None
@@ -65,6 +67,22 @@ class YAMLWriter(object):
 
         self.add_metadata()
         self.create_content()
+
+
+    def generate_trivial_violation_witness(self, error_location=None):
+        """
+        Generate a violation witness that contains only the target waypoint.
+        Used when the error was found in a program reversed by reverser, where the
+        waypoints of the error path do not correspond to the original program
+        (so the .waypoints file is not used at all).
+
+        \param error_location  (file, line, column) of the reached error
+                                  in the original program, or None
+        """
+        dbg("generating trivial violation YAML witness")
+
+        self.add_metadata()
+        self.create_content(trivial=True, error_location=error_location)
 
 
     def generate_correctness_witness(self):
@@ -114,14 +132,45 @@ class YAMLWriter(object):
             self.traverse_AST(child)
 
 
+    # Find the first call of the trivial target in the AST
+    def AST_find_trivial_target(self, node):
+        for child in node.get_children():
+            if self.errorExpr:
+                return
 
-    def create_content(self):
+            if not child.location.file or child.location.file.name != self._source:
+                continue
+
+            if child.kind == clang.cindex.CursorKind.CALL_EXPR:
+                called = child.referenced
+                if called is not None and called.spelling == self._trivial_target:
+                    start = child.extent.start
+                    self.errorExpr = start.line, start.column
+                    return
+
+            self.AST_find_trivial_target(child)
+
+
+
+    def create_content(self, trivial=False, error_location=None):
         sys.setrecursionlimit(2048)
 
-        index = clang.cindex.Index.create()
-        tu = index.parse(self._source, args=['-fbracket-depth=2048'])
-        root = tu.cursor
-        self.traverse_AST(root)
+        if trivial and error_location is not None:
+            # the exact target location is already known (mapped from the concrete
+            # value of __reverser_error_id() via reverser's --error-ids file), so
+            # there is no need to guess it by scanning the source's AST
+            _, line, col = error_location
+            self.errorExpr = (line, col)
+        else:
+            index = clang.cindex.Index.create()
+            tu = index.parse(self._source, args=['-fbracket-depth=2048'])
+            root = tu.cursor
+            if trivial:
+                print_stderr("Warning: error location for trivial witness not supplied, "
+                             "the witness will contain the first error location found in the AST")
+                self.AST_find_trivial_target(root)
+            else:
+                self.traverse_AST(root)
 
         if self.errorLoc and not self.errorExpr:
             print_stderr("Warning: Could not get target location for witness")
@@ -129,26 +178,27 @@ class YAMLWriter(object):
 
         content = []
 
-        for call in self.test:
-            new_location = self.calls[(call[0], call[1])]
-            assert new_location, "Failed creating witness"
+        if not trivial:
+            for call in self.test:
+                new_location = self.calls[(call[0], call[1])]
+                assert new_location, "Failed creating witness"
 
-            segment = []
-            waypoint = { 'type' : 'function_return',
-                          'action' : 'cycle' if call[3] else 'follow',
-                          'constraint' : {
-                            'format' : 'ext_c_expression',
-                            'value' : '\\result == ' + call[2]
-                          },
-                          'location' : {
-                            'file_name' : self._relsource,
-                            'line' : new_location[0],
-                            'column' : new_location[1]
-                          }
+                segment = []
+                waypoint = { 'type' : 'function_return',
+                            'action' : 'follow',
+                            'constraint' : {
+                                'format' : 'c_expression',
+                                'value' : '\\result == ' + call[2]
+                            },
+                            'location' : {
+                                'file_name' : self._source,
+                                'line' : new_location[0],
+                                'column' : new_location[1]
+                            }
 
-                        }
-            segment.append({'waypoint' : waypoint})
-            content.append({'segment' : segment})
+                            }
+                segment.append({'waypoint' : waypoint})
+                content.append({'segment' : segment})
 
         if self.errorLoc:
             last_segment = []

@@ -34,6 +34,7 @@ except ImportError:
 
 from . klee import SymbioticTool as KleeTool
 from . slowbeast import SymbioticTool as SlowbeastTool
+from . reverseklee import SymbioticTool as ReverseKleeTool
 
 class SymbioticTool(BaseTool, SymbioticBaseTool):
     """

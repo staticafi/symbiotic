@@ -96,6 +96,10 @@ fi
 if [ "${BUILD_LLVM2C}" = "yes" ];  then
 	BINARIES="$BINARIES $LLVM_PREFIX/bin/llvm2c"
 fi
+
+if [ "${BUILD_REVERSER}" = "yes" ];  then
+	BINARIES="$BINARIES $LLVM_PREFIX/bin/reverser"
+fi
 	LIBRARIES="\
 		$LLVM_PREFIX/lib/libdgllvmdg.so $LLVM_PREFIX/lib/libdgllvmpta.so \
 		$LLVM_PREFIX/lib/libdgdda.so $LLVM_PREFIX/lib/libdganalysis.so \
