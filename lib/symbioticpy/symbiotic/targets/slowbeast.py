@@ -47,6 +47,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if prp.unreachcall():
             funs = ','.join(prp.getcalls())
             cmd.append(f'-error-fn={funs}')
+        elif prp.signedoverflow():
+            cmd.append('-error-fn=__VERIFIER_error')
         if self._options.sv_comp:
             cmd.append('-svcomp-witness')
         cmd.extend(options)
@@ -155,6 +157,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             if asserterr:
                 if self._options.property.termination():
                     return result.RESULT_FALSE_TERMINATION
+                if self._options.property.signedoverflow():
+                    return result.RESULT_FALSE_OVERFLOW
                 return result.RESULT_FALSE_REACH
             elif memerr:
                 return f"{result.RESULT_UNKNOWN}(uninit mem)"

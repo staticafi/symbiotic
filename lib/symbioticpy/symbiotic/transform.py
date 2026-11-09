@@ -489,6 +489,40 @@ class SymbioticCC(object):
                 print_stdout('  ', print_nl=False)
                 print_stdout(f)
 
+    def _get_symbols(self, bitcode):
+        """ Names of all functions and globals declared or defined in `bitcode` """
+        cmd = ['llvm-nm', '-j', bitcode]
+        watch = ProcessWatch(None)
+        runcmd(cmd, watch, 'Failed getting symbols from bitcode')
+        return set(map(lambda s: s.strip().decode('ascii'), watch.getLines()))
+
+    def _has_atomic_instructions(self, bitcode):
+        """ Does `bitcode` contain atomicrmw or cmpxchg instructions? """
+        retval, lines = process_grep(['llvm-dis', '-o', '-', bitcode],
+                                     r'= (atomicrmw|cmpxchg) ')
+        return retval == 0 and len(lines) > 0
+
+    def _thread_slicer_options(self, crit, opts):
+        syms = self._get_symbols(self.curfile)
+        if 'pthread_create' not in syms:
+            return crit, opts, True
+
+        if self._has_atomic_instructions(self.curfile):
+            return crit, opts, False
+
+        sync = sorted(s for s in syms
+                      if s.startswith(('pthread_', 'sem_', '__VERIFIER_atomic')))
+        crit = crit + [s for s in sync if s not in crit]
+
+        user_opts = self.options.slicer_params or []
+        if not any(o.startswith(('-cda', '-cd-alg', '--cda', '--cd-alg'))
+                   for o in opts + user_opts):
+            opts = opts + ['-cda=ntscd']
+
+        dbg('Program uses threads, slicing with criteria {0} and options {1}'
+            .format(crit, opts))
+        return crit, opts, True
+
     def slicer(self, add_params=[]):
         if hasattr(self._tool, 'slicer_options'):
             crit, opts = self._tool.slicer_options()
@@ -496,6 +530,13 @@ class SymbioticCC(object):
             crit, opts = ['__assert_fail,__VERIFIER_error'], []
 
         assert len(crit) > 0
+        crit, opts, can_slice = self._thread_slicer_options(crit, opts)
+        if not can_slice:
+            print_stdout('INFO: Program uses threads and atomic instructions '
+                         '(atomicrmw/cmpxchg) that the slicer does not handle, '
+                         'not slicing', color='WHITE')
+            self.options.noslice = True
+            return
 
         output = '{0}.sliced'.format(self.curfile[:self.curfile.rfind('.')])
 
