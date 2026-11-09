@@ -1,4 +1,4 @@
-#include <stddef.h>
+#include "symbiotic-size_t.h"
 extern unsigned char __symbiotic_nondet_uchar();
 
 void __VERIFIER_nondet_memory(void *mem, size_t size) {
