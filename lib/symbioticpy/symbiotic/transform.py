@@ -467,21 +467,29 @@ class SymbioticCC(object):
             return [x for x in undefs if x in only_func]
         return undefs
 
-    def _rec_link_undefined(self, only_func=None):
+    def _rec_link_undefined(self, only_func=None, recursive=True):
         # get undefined functions from the bitcode
         undefs = self._get_undefined(self.curfile, only_func)
-        if self._link_undefined(undefs):
+        if self._link_undefined(undefs) and recursive:
             # if we linked someting, try get undefined again,
             # because the functions may have added some new undefined
             # functions
             self._rec_link_undefined()
 
-    def link_undefined(self, only_func=None):
+    def link_undefined(self, only_func=None, recursive=True):
+        """
+        Link our definitions of undefined functions. If 'only_func' is given,
+        link only definitions of the functions from this list. If 'recursive'
+        is True and something was linked, link then (all) undefined functions
+        that appeared in the module. With 'recursive' set to False, the linked
+        definitions must not call any function that has our definition
+        (it would be linked only later).
+        """
         if not self.options.linkundef:
             return
 
         self._linked_functions = [] # for printing
-        self._rec_link_undefined(only_func)
+        self._rec_link_undefined(only_func, recursive)
 
         if self._linked_functions:
             print('Linked our definitions to these undefined functions:')
@@ -815,6 +823,14 @@ class SymbioticCC(object):
         #################### #################### ###################
 
         if not self.options.no_instrument:
+            if prp.memsafety():
+                # printf reads the strings passed to %s conversions. Link our
+                # model of printf before the instrumentation so that the memory
+                # accesses that it performs get instrumented (and the calls
+                # of printf are therefore not sliced away). The model does not
+                # call any function, so we do not need to link recursively.
+                self.link_undefined(['printf'], recursive=False)
+
             self.instrument()
 
 
@@ -864,6 +880,14 @@ class SymbioticCC(object):
         if self.options.link_files_before_slicing:
             self.link_undefined(self.options.link_files_before_slicing)
 
+        # link definition of atexit and get rid of llvm.global_dtors,
+        # link also qsort before slicing as it can call function pointers.
+        # Do it before remembering the non-sliced file, so that the destructors
+        # (including the atexit handlers) are called before exit() also when
+        # the non-sliced code is verified.
+        self.link_undefined(['atexit', 'qsort'])
+        self.run_opt(['-explicit-consdes'])
+
         # remember the non-sliced llvmfile
         self.nonsliced_llvmfile = self.curfile
 
@@ -871,11 +895,6 @@ class SymbioticCC(object):
             passes = self._tool.passes_before_slicing()
             if passes:
                 self.run_opt(passes)
-
-        # link definition of atexit and get rid of llvm.global_dtors,
-        # link also qsort before slicing as it can call function pointers
-        self.link_undefined(['atexit', 'qsort'])
-        self.run_opt(['-explicit-consdes'])
 
         if not self.options.noslice:
             self.perform_slicing()
