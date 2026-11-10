@@ -73,7 +73,7 @@ RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=llvm
 
 # Helper for the component stages below:
 #   COPY <component> <component>                         - the sources
-#   COPY .git/modules/<componen>[t] .git/modules/<component>/
+#   COPY .git/modules/<componen>[t]/HEAD .git/modules/<component>/
 #                                                        - git metadata of the submodule
 #                                                          (used to embed versions);
 #                                                          the wildcard makes it optional
@@ -85,10 +85,11 @@ RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=llvm
 FROM llvm AS dg
 ARG LLVM_VERSION
 ARG JOBS
-COPY .git/modules/d[g] .git/modules/dg/
+COPY .git/modules/d[g]/HEAD .git/modules/dg/
 COPY dg dg
 COPY scripts/build-dg.sh scripts/
-RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=dg
+RUN mkdir -p .git/modules/dg/objects .git/modules/dg/refs && \
+    ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=dg
 
 ######################################################################
 # sbt-slicer (needs dg)
@@ -96,10 +97,11 @@ RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=dg
 FROM dg AS sbt-slicer
 ARG LLVM_VERSION
 ARG JOBS
-COPY .git/modules/sbt-slice[r] .git/modules/sbt-slicer/
+COPY .git/modules/sbt-slice[r]/HEAD .git/modules/sbt-slicer/
 COPY sbt-slicer sbt-slicer
 COPY scripts/build-sbt-slicer.sh scripts/
-RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=sbt-slicer
+RUN mkdir -p .git/modules/sbt-slicer/objects .git/modules/sbt-slicer/refs && \
+    ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=sbt-slicer
 
 ######################################################################
 # sbt-instrumentation (needs dg)
@@ -107,10 +109,11 @@ RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=sbt-slicer
 FROM dg AS sbt-instrumentation
 ARG LLVM_VERSION
 ARG JOBS
-COPY .git/modules/sbt-instrumentatio[n] .git/modules/sbt-instrumentation/
+COPY .git/modules/sbt-instrumentatio[n]/HEAD .git/modules/sbt-instrumentation/
 COPY sbt-instrumentation sbt-instrumentation
 COPY scripts/build-sbt-instrumentation.sh scripts/
-RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=sbt-instrumentation
+RUN mkdir -p .git/modules/sbt-instrumentation/objects .git/modules/sbt-instrumentation/refs && \
+    ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=sbt-instrumentation
 
 ######################################################################
 # KLEE (+ googletest)
@@ -120,10 +123,11 @@ ARG LLVM_VERSION
 ARG JOBS
 COPY scripts/build-googletest.sh scripts/
 RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=googletest
-COPY .git/modules/kle[e] .git/modules/klee/
+COPY .git/modules/kle[e]/HEAD .git/modules/klee/
 COPY klee klee
 COPY scripts/build-klee.sh scripts/
-RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=klee
+RUN mkdir -p .git/modules/klee/objects .git/modules/klee/refs && \
+    ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=klee
 
 ######################################################################
 # llvm2c
@@ -131,10 +135,11 @@ RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=klee
 FROM llvm AS llvm2c
 ARG LLVM_VERSION
 ARG JOBS
-COPY .git/modules/llvm2[c] .git/modules/llvm2c/
+COPY .git/modules/llvm2[c]/HEAD .git/modules/llvm2c/
 COPY llvm2c llvm2c
 COPY scripts/build-llvm2c.sh scripts/
-RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=llvm2c
+RUN mkdir -p .git/modules/llvm2c/objects .git/modules/llvm2c/refs && \
+    ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=llvm2c
 
 ######################################################################
 # reverser
@@ -142,10 +147,11 @@ RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=llvm2c
 FROM llvm AS reverser
 ARG LLVM_VERSION
 ARG JOBS
-COPY .git/modules/reverse[r] .git/modules/reverser/
+COPY .git/modules/reverse[r]/HEAD .git/modules/reverser/
 COPY reverser reverser
 COPY scripts/build-reverser.sh scripts/
-RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=reverser
+RUN mkdir -p .git/modules/reverser/objects .git/modules/reverser/refs && \
+    ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=reverser
 
 ######################################################################
 # transforms (LLVMsbt.so)
