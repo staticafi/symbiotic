@@ -1,0 +1,50 @@
+# Keep artifacts of local (non-docker) builds out of the build context,
+# so that they neither end up in the image nor invalidate the docker cache.
+# Note: .git must NOT be ignored, scripts/gen-version.sh needs it.
+
+# installation prefix and distribution archives
+install
+symbiotic.zip
+symbiotic_build
+
+# LLVM sources and build
+llvm-*
+
+# build directories of the components
+dg/build-*
+sbt-slicer/build-*
+sbt-instrumentation/build-*
+sbt-instrumentation/jsoncpp
+klee/build-*
+llvm2c/build-*
+reverser/build-*
+transforms/build-*
+
+# dependencies downloaded by build.sh
+SVF
+zlib
+minisat
+stp
+googletest
+z3
+nidhugg
+predator-*
+witch-klee
+
+# dependencies downloaded by contrib/build_slowbeast.sh
+contrib/llvmlite
+contrib/slowbeast
+contrib/mathsat
+contrib/gmp
+contrib/cadical
+contrib/mpfr
+contrib/bitwuzla
+
+# in-source cmake files of the top-level project
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+install_manifest.txt
+Makefile
+
+**/__pycache__
