@@ -195,7 +195,7 @@ COPY --from=transforms          /opt/symbiotic/install install
 COPY --from=predator            /opt/symbiotic/install install
 COPY --from=slowbeast           /opt/symbiotic/contrib/slowbeast/dist/sb install/slowbeast
 
-# build directories (scripts/gen-version.sh reads the build types from them)
+# build directories (scripts/gen-version.sh reads the versions and build types from them)
 COPY --from=dg                  /opt/symbiotic/dg/build-${LLVM_VERSION} dg/build-${LLVM_VERSION}
 COPY --from=sbt-slicer          /opt/symbiotic/sbt-slicer/build-${LLVM_VERSION} sbt-slicer/build-${LLVM_VERSION}
 COPY --from=sbt-instrumentation /opt/symbiotic/sbt-instrumentation/build-${LLVM_VERSION} sbt-instrumentation/build-${LLVM_VERSION}
@@ -203,6 +203,8 @@ COPY --from=klee                /opt/symbiotic/klee/build-${LLVM_VERSION} klee/b
 COPY --from=llvm2c              /opt/symbiotic/llvm2c/build-${LLVM_VERSION} llvm2c/build-${LLVM_VERSION}
 COPY --from=reverser            /opt/symbiotic/reverser/build-${LLVM_VERSION} reverser/build-${LLVM_VERSION}
 COPY --from=transforms          /opt/symbiotic/transforms/build-${LLVM_VERSION} transforms/build-${LLVM_VERSION}
+# only the git metadata of Predator (its sources are not needed, the version is)
+COPY --from=predator            /opt/symbiotic/predator-${LLVM_VERSION}/.git predator-${LLVM_VERSION}/.git
 
 # fixes the "No module named clang" error
 RUN pip3 install --no-deps --target install/lib/symbioticpy libclang==14.0.6
