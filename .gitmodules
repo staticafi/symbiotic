@@ -20,3 +20,6 @@
 	path = reverser
 	url = https://gitlab.fi.muni.cz/xstepkov/reverser.git
 	ignore = untracked
+[submodule "cseq"]
+	path = cseq
+	url = https://github.com/vmihalko/cseq

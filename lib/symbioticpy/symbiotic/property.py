@@ -39,6 +39,10 @@ class Property:
         """ Check for undefined behavior """
         return False
 
+    def datarace(self):
+        """ Check for data races """
+        return False
+
     def termination(self):
         """ Check termination """
         return False
@@ -137,6 +141,17 @@ class PropertyAssertions(PropertyUnreachCall):
     def assertions(self):
         return True
 
+class PropertyNoDataRace(PropertyUnreachCall):
+    """
+    Data races are checked only in the program sequentialized by CSeq,
+    where a race is a reachable call of reach_error()
+    """
+    def datarace(self):
+        return True
+
+    def help(self):
+        return "data races"
+
 class PropertyTermination(Property):
     def __init__(self, prpfile = None):
         Property.__init__(self, prpfile)
@@ -216,6 +231,7 @@ supported_ltl_properties = {
     'CHECK( init(main()), LTL(G valid-memcleanup) )'                   : PropertyMemCleanup,
     'CHECK( init(main()), LTL(G ! overflow) )'                         : PropertyNoOverflow,
     'CHECK( init(main()), LTL(G def-behavior) )'                       : PropertyDefBehavior,
+    'CHECK( init(main()), LTL(G ! data-race) )'                        : PropertyNoDataRace,
     'CHECK( init(main()), LTL(F end) )'                                : PropertyTermination,
     'COVER( init(main()), FQL(COVER EDGES(@DECISIONEDGE)) )'           : PropertyCoverBranches,
     'COVER( init(main()), FQL(COVER EDGES(@CONDITIONEDGE)) )'          : PropertyCoverConditions,
@@ -237,6 +253,7 @@ supported_properties = {
     'no-overflow'                                              : PropertyNoOverflow,
     'memsafety'                                                : PropertyMemSafety,
     'memcleanup'                                               : PropertyMemCleanup,
+    'no-data-race'                                             : PropertyNoDataRace,
     'termination'                                              : PropertyTermination,
     'coverage'                                                 : PropertyCoverStmts,
     'cover-branches'                                           : PropertyCoverBranches,
@@ -339,7 +356,9 @@ def _get_parametrized_property(prps, prpfile):
 def _assign_default_prpfile(p, symbiotic_dir):
     prpfile = abspath(join(symbiotic_dir, 'properties'))
 
-    if p.unreachcall() or p.assertions():
+    if p.datarace():
+        p._prpfile = join(prpfile, 'no-data-race.prp')
+    elif p.unreachcall() or p.assertions():
         p._prpfile = join(prpfile, 'unreach-call.prp')
     elif p.memsafety():
         p._prpfile = join(prpfile, 'valid-memsafety.prp')

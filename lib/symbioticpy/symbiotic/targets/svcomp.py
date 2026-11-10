@@ -55,6 +55,8 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
 
     def verifiers(self):
         prp = self._options.property
+        # leave time for the sequentialized program
+        threads_timeout = 120 if self._options.sequentialize else None
         if prp.unreachcall():
             yield (KleeTool(self._options), None, 333)
             if self._hit_threads or self._has_threads:

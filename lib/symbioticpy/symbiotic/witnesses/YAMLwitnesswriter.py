@@ -35,11 +35,11 @@ class YAMLWriter(object):
         self.calls = dict()
         self.witness = []
 
-    def add_metadata(self):
+    def add_metadata(self, version='2.1'):
         witness = {}
         witness['entry_type'] = "violation_sequence" if not self._correctness_wit else "invariant_set"
         witness['metadata'] = {
-            'format_version' : "2.1",
+            'format_version' : version,
             'creation_time' :  '{date:%Y-%m-%dT%T}Z'.format(date=datetime.datetime.utcnow()),
             'producer' : {'name' : 'symbiotic',
                           'version' : get_versions()[0] },
@@ -84,6 +84,78 @@ class YAMLWriter(object):
         self.add_metadata()
         self.create_content(trivial=True, error_location=error_location)
 
+    def generate_concurrent_witness(self, created, errors, names):
+        """
+        Generate a violation witness of a concurrent program (format 2.2):
+        the creations of the threads, then the errors (one, or the two
+        accesses of a race), each as (thread, line)
+        """
+        with open(self._source, errors='replace') as f:
+            self._lines = f.read().split('\n')
+        self._find_references()
+        if not self._prps.datarace():
+            errors = [(t, self._error_line(l, names)) for t, l in errors]
+
+        self.add_metadata('2.2')
+        content = [[self._waypoint('function_enter', t, l)] for t, l in created]
+        content.append([self._waypoint('target', t, l, self._column(l, names))
+                        for t, l in errors])
+        self.witness[0]['content'] = [{'segment' : s} for s in content]
+
+    def _waypoint(self, kind, thread, line, column=None):
+        # validators do not match function_enter waypoints with a column
+        location = {'file_name' : self._relsource, 'line' : line}
+        if column:
+            location['column'] = column
+        location['function'] = self._function(line)
+        return {'waypoint' : {'type' : kind, 'action' : 'follow',
+                              'thread_id' : thread, 'location' : location}}
+
+    def _find_references(self):
+        """ The definitions of functions and the names used on each line """
+        sys.setrecursionlimit(2048)
+        index = clang.cindex.Index.create()
+        tu = index.parse(self._source, args=['-fbracket-depth=2048'])
+        kinds = clang.cindex.CursorKind
+        self._functions = []
+        self._references = {}
+        for node in tu.cursor.walk_preorder():
+            if not node.location.file or node.location.file.name != self._source:
+                continue
+            start, end = node.extent.start, node.extent.end
+            if node.kind == kinds.FUNCTION_DECL and node.is_definition():
+                self._functions.append((node.spelling, start.line, end.line))
+            elif node.kind in (kinds.CALL_EXPR, kinds.DECL_REF_EXPR):
+                # the location of a call in a macro is that of the macro
+                self._references.setdefault(node.location.line, []).append(
+                    (node.spelling, node.location.column))
+            elif node.kind == kinds.MEMBER_REF_EXPR:
+                self._references.setdefault(node.location.line, []).append(
+                    (node.spelling, start.column))
+
+    def _column(self, line, names):
+        references = self._references.get(line, [])
+        for name in names:
+            columns = [c for n, c in references if n == name.split('.')[-1]]
+            if columns:
+                return min(columns)
+        text = self._lines[line - 1]
+        return len(text) - len(text.lstrip()) + 1
+
+    def _error_line(self, line, calls):
+        """
+        CSeq maps a labelled statement to the line before the label, so
+        the error is the first error call from the line on in its function
+        """
+        end = next((end for f, start, end in self._functions
+                    if start <= line <= end), line)
+        return next((n for n in range(line, end + 1)
+                     if any(r in calls for r, c in self._references.get(n, []))),
+                    line)
+
+    def _function(self, line):
+        return next((f for f, start, end in self._functions
+                     if start <= line <= end), None)
 
     def generate_correctness_witness(self):
         self.add_metadata()
@@ -234,8 +306,11 @@ class YAMLWriter(object):
             cycle = False
             for line in testfile.readlines():
                 if line[0] == '@':
-                    self.errorLoc = tuple(map(int, line.strip('\n').split(':')[2:]))
-                    break
+                    # @TARGET ends the path; other entries (@MARK) are not nondets
+                    if line.startswith('@TARGET:'):
+                        self.errorLoc = tuple(map(int, line.strip('\n').split(':')[2:]))
+                        break
+                    continue
                 call = line.strip('\n').split(':')
                 line = int(call[1])
                 col = int(call[2])

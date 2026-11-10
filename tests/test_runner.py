@@ -57,6 +57,9 @@ def run_tests(test_files, prp, expected_result, args):
     if args.is32bit:
         cmd.append('--32')
 
+    if args.sequentialize:
+        cmd.append('--sequentialize')
+
     if not args.with_integrity_check:
         cmd.append('--no-integrity-check')
 
@@ -129,6 +132,8 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--with-integrity-check', action='store_true',
                         default=False,
                         help='enable Symbiotic\'s integrity check')
+    parser.add_argument('-s', '--sequentialize', action='store_true',
+                        default=False, help='sequentialize concurrent programs')
     parser.add_argument('-t', '--timeout', action='store', type=int,
                         default=20, help='single test timeout')
     parser.add_argument('test_sets', nargs='+', type=str,
