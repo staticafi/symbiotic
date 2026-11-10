@@ -49,6 +49,7 @@ class SymbioticOptions(object):
         self.slicer_timeout = 0
         self.instrumentation_timeout = 0
         self.reverser_timeout = 0
+        self.backend_memlimit = None
         self.no_optimize = False
         self.no_verification = False
         self.no_instrument = False
@@ -235,6 +236,7 @@ def parse_command_line():
                                    ['no-slice', '32', '64', 'prp=', 'no-optimize',
                                     'debug=', 'timeout=','slicer-timeout=',
                                     'instrumentation-timeout=', 'reverser-timeout=',
+                                    'backend-memlimit=',
                                     'version', 'help',
                                     'no-verification', 'output=', 'witness=', 'bc',
                                     'optimize=', 'malloc-never-fails',
@@ -391,6 +393,13 @@ def parse_command_line():
             except ValueError:
                 err('Invalid numerical argument for timeout: {0}'.format(arg))
             dbg('Timeout of reverser set to {0} sec'.format(arg))
+        elif opt == '--backend-memlimit':
+            from . utils.runexec import parse_memory_size
+            try:
+                options.backend_memlimit = parse_memory_size(arg)
+            except ValueError:
+                err('Invalid argument for --backend-memlimit: {0}'.format(arg))
+            dbg('Memory limit of back-ends set to {0} B'.format(options.backend_memlimit))
         elif opt == '--output':
             options.final_output = abspath(arg)
             dbg('Output will be stored to {0}'.format(arg))
@@ -496,6 +505,11 @@ where OPTS can be following:
                                  the original bitcode is used)
     --reverser-timeout=t         Set timeout for reverser (if reverser fails/timeouts,
                                  the verifier that uses it fails)
+    --backend-memlimit=m         Limit memory of each verification back-end to m
+                                 bytes (suffixes K, M, G are allowed). The back-ends
+                                 are run under runexec.
+                                 Default is the memory available to symbiotic
+                                 minus 512 MB, 0 disables the limit.
     --no-slice                   Do not slice the code
     --sequentialize              Verify concurrent programs sequentialized by CSeq
                                  (only errors are reported)

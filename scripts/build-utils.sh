@@ -95,6 +95,11 @@ git_submodule_init()
 {
 	cd "$SRCDIR"
 
+	if [ ! -e .git ]; then
+		# e.g., in the docker build, where only the sources of the component are copied
+		exitmsg "Submodules are not checked out and $SRCDIR is not a git repository. Run 'git submodule update --init' first."
+	fi
+
 	git submodule init || exitmsg "submodule init failed"
 	git submodule update || exitmsg "submodule update failed"
 

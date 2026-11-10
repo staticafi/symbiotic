@@ -47,6 +47,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         self._options = opts
         self._env = None
         self._hit_threads = False
+        # the module creates threads (set before slicing); the sequential
+        # slowbeast modes (-sewpa, -cse, -bself, -se) ignore threads, so they
+        # must not be used then, even if KLEE fails for a different reason
+        # than hitting pthread_create (e.g., by crashing)
+        self._has_threads = False
 
     def verifiers(self):
         prp = self._options.property
@@ -54,25 +59,32 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         threads_timeout = 120 if self._options.sequentialize else None
         if prp.unreachcall():
             yield (KleeTool(self._options), None, 333)
-            if self._hit_threads:
-                yield (SlowbeastTool(self._options), ['-threads'], threads_timeout)
+            if self._hit_threads or self._has_threads:
+                yield (SlowbeastTool(self._options), ['-threads-dpor'], None)
             else:
-                yield (SlowbeastTool(self._options), ['-sewpa'], 120)
+                yield (SlowbeastTool(self._options), ['-sewpa', '-smt-solver', 'mathsat'], 120)
                 yield (SlowbeastTool(self._options), ['-cse'], 60)
-                yield (SlowbeastTool(self._options, bself=True), ['-bself'], 120)
-                # if slowbeast crashes, run KLEE w/o timeout
-                # yield (KleeTool(self._options), None, None)
+                yield (SlowbeastTool(self._options, bself=True), ['-bself'], 100)
+                yield (ReverseKleeTool(self._options), None, 150)
 
-                # slowbeast  got better support for floats and threads,
+                # slowbeast  got better support for floats
                 # so if KLEE fails, try slowbeast once more
                 # TODO: use threads only if KLEE hits threads and for other
                 # cases use incremental solving
                 #(SlowbeastTool(self._options), ['-threads', '-se-incremental-solving'], None),
                 yield (SlowbeastTool(self._options), ['-se', '-smt-solver', 'mathsat'], None)
+        elif prp.signedoverflow():
+            yield (KleeTool(self._options), None, 400)
+            if self._hit_threads or self._has_threads:
+                yield (SlowbeastTool(self._options), ['-threads-dpor'], None)
+            else:
+                # SEWPA needs interpolation, which the default z3 backend
+                # does not provide in slowbeast
+                yield (SlowbeastTool(self._options), ['-sewpa', '-smt-solver', 'mathsat'], None)
         else:
             yield (KleeTool(self._options), None, None)
-            if self._hit_threads:
-                yield (SlowbeastTool(self._options), ['-threads'], threads_timeout)
+            if self._hit_threads or self._has_threads:
+                yield (SlowbeastTool(self._options), ['-threads-dpor'], None)
 
     def name(self):
         return 'svcomp'
@@ -91,6 +103,11 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         self.slowbeast.set_environment(env, self._options)
 
     def actions_before_slicing(self, symbiotic):
+        if hasattr(symbiotic, '_get_symbols'):
+            syms = symbiotic._get_symbols(symbiotic.curfile)
+            self._has_threads = 'pthread_create' in syms or 'thrd_create' in syms
+            if self._has_threads:
+                dbg('The program creates threads, will use only thread-aware verifiers')
         if hasattr(self.klee, 'actions_before_slicing'):
             self.klee.actions_before_slicing(symbiotic)
 
