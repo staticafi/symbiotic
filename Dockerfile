@@ -13,6 +13,7 @@
 #                  ├─ klee ───────────────────────────┤
 #                  ├─ llvm2c ─────────────────────────┼─ final
 #                  ├─ reverser ───────────────────────┤
+#                  ├─ predator ───────────────────────┤
 #                  └─ transforms ─────────────────────┘
 #
 # Requires BuildKit (default in recent Docker), which also builds independent
@@ -22,7 +23,8 @@
 #
 # Components cloned from the internet (slowbeast and its dependencies, LLVM
 # release tarballs, googletest, jsoncpp) are cached as well; to force fetching
-# a fresh slowbeast, use: docker build --no-cache-filter slowbeast ...
+# a fresh slowbeast or Predator (both are cloned from a branch), use e.g.:
+#   docker build --no-cache-filter slowbeast,predator ...
 
 ARG LLVM_VERSION=14.0.0
 ARG JOBS=8
@@ -154,6 +156,15 @@ RUN mkdir -p .git/modules/reverser/objects .git/modules/reverser/refs && \
     ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} only=reverser
 
 ######################################################################
+# Predator (cloned from github by scripts/build-predator.sh)
+######################################################################
+FROM llvm AS predator
+ARG LLVM_VERSION
+ARG JOBS
+COPY scripts/build-predator.sh scripts/
+RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} build-predator only=predator
+
+######################################################################
 # transforms (LLVMsbt.so)
 ######################################################################
 FROM llvm AS transforms
@@ -181,6 +192,7 @@ COPY --from=klee                /opt/symbiotic/install install
 COPY --from=llvm2c              /opt/symbiotic/install install
 COPY --from=reverser            /opt/symbiotic/install install
 COPY --from=transforms          /opt/symbiotic/install install
+COPY --from=predator            /opt/symbiotic/install install
 COPY --from=slowbeast           /opt/symbiotic/contrib/slowbeast/dist/sb install/slowbeast
 
 # build directories (scripts/gen-version.sh reads the build types from them)
@@ -196,4 +208,4 @@ COPY --from=transforms          /opt/symbiotic/transforms/build-${LLVM_VERSION} 
 RUN pip3 install --no-deps --target install/lib/symbioticpy libclang==14.0.6
 
 #RUN ./system-build.sh . full-archive -j8
-RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} full-archive only=files,dist
+RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} full-archive build-predator only=files,dist
