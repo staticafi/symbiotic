@@ -209,5 +209,18 @@ COPY --from=predator            /opt/symbiotic/predator-${LLVM_VERSION}/.git pre
 # fixes the "No module named clang" error
 RUN pip3 install --no-deps --target install/lib/symbioticpy libclang==14.0.6
 
+# BenchExec for bin/runexec (limits the memory of the verification back-ends);
+# runexec needs no dependencies. Not in lib/symbioticpy, it would shadow
+# Symbiotic's own copy of the BenchExec modules.
+RUN pip3 install --no-deps --no-compile --target install/lib/benchexec benchexec==3.35 && \
+    rm -rf install/lib/benchexec/bin install/lib/benchexec/benchexec/tablegenerator \
+           install/lib/benchexec/benchexec/test_*.py && \
+    { echo "BenchExec (https://github.com/sosy-lab/benchexec), bundled in lib/benchexec"; \
+      echo "and used by bin/runexec, is licensed under the Apache License 2.0;"; \
+      echo "some of its files are under the other licenses below (see their headers)."; \
+      for f in install/lib/benchexec/benchexec-*.dist-info/licenses/LICENSES/*.txt; do \
+          printf '\n==== %s ====\n\n' "$(basename "$f" .txt)"; cat "$f"; \
+      done; } > install/benchexec.LICENSE.txt
+
 #RUN ./system-build.sh . full-archive -j8
 RUN ./build.sh llvm-version=${LLVM_VERSION} -j${JOBS} full-archive build-predator only=files,dist

@@ -34,8 +34,19 @@ def parse_memory_size(s):
     return int(float(s) * mult)
 
 
+def _bundled_runexec():
+    # bin/runexec of the distribution, runs the BenchExec in lib/benchexec
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                        '..', '..', '..', '..'))
+    runexec = os.path.join(root, 'bin', 'runexec')
+    if os.path.isfile(runexec) and os.access(runexec, os.X_OK) and\
+       os.path.isdir(os.path.join(root, 'lib', 'benchexec', 'benchexec')):
+        return runexec
+    return None
+
+
 def find_runexec():
-    return shutil.which('runexec')
+    return _bundled_runexec() or shutil.which('runexec')
 
 
 class _DelegatedCgroup:

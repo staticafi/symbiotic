@@ -175,6 +175,8 @@ git add \
 	bin/symbiotic \
 	bin/kleetester.py \
 	bin/gen-c \
+	bin/runexec \
+	$(find lib/benchexec -type f -not -name "*.pyc" 2>/dev/null) \
 	include/symbiotic.h \
 	include/symbiotic-size_t.h \
 	$LLVM_PREFIX/lib/clang/*/include/*.h \
@@ -182,7 +184,8 @@ git add \
 	$(find . -name '*.bc')\
 	properties/* \
 	$(find lib/symbioticpy/symbiotic -name '*.py')\
-	LICENSE.txt README.md
+	LICENSE.txt README.md \
+	$(ls benchexec.LICENSE.txt 2>/dev/null)
 
 git commit -m "Create Symbiotic distribution `date`" || true
 

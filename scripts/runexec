@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+#
+# runexec from the BenchExec package bundled with Symbiotic
+# (in lib/benchexec, kept outside of lib/symbioticpy so that the bundled
+# package does not shadow Symbiotic's own copy of the BenchExec modules)
+
+import os
+import sys
+
+exec_path = os.path.realpath(__file__)
+sys.path.insert(0, os.path.join(os.path.dirname(exec_path), '..', 'lib', 'benchexec'))
+
+from benchexec.runexecutor import main
+
+if __name__ == '__main__':
+    sys.exit(main())
