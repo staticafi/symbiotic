@@ -60,7 +60,7 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
         if prp.unreachcall():
             yield (KleeTool(self._options), None, 333)
             if self._hit_threads or self._has_threads:
-                yield (SlowbeastTool(self._options), ['-threads-dpor'], None)
+                yield (SlowbeastTool(self._options), ['-threads-dpor'], threads_timeout)
             else:
                 yield (SlowbeastTool(self._options), ['-sewpa', '-smt-solver', 'mathsat'], 120)
                 yield (SlowbeastTool(self._options), ['-cse'], 60)
@@ -82,9 +82,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 # does not provide in slowbeast
                 yield (SlowbeastTool(self._options), ['-sewpa', '-smt-solver', 'mathsat'], None)
         else:
+            # slowbeast does not check memory safety (nor the other
+            # properties): for these properties it stopped at the benchmark's
+            # own reach_error() calls and reported false(unreach-call), and
+            # its 'true' does not say anything about these properties.
+            # Threaded programs are left for the sequentialization.
             yield (KleeTool(self._options), None, None)
-            if self._hit_threads or self._has_threads:
-                yield (SlowbeastTool(self._options), ['-threads-dpor'], None)
 
     def name(self):
         return 'svcomp'
