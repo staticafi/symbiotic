@@ -87,9 +87,6 @@ build_llvm()
 
 	# build llvm
 	ONLY_TOOLS="$LLVM_TOOLS" build
-	# copy the generated stddef.h due to compilation of instrumentation libraries
-	#mkdir -p "$LLVM_PREFIX/include"
-	#cp "lib/clang/${LLVM_VERSION}/include/stddef.h" "$LLVM_PREFIX/include" || exitmsg "Copying stddef.h"
 
 	popd
 }
@@ -106,4 +103,16 @@ fi
 mkdir -p $LLVM_PREFIX/bin
 for B in $LLVM_TOOLS; do
 	cp $LLVM_LOCATION/bin/${B} $LLVM_PREFIX/bin/${B} || exitmsg "Failed copying LLVM executables"
+done
+
+# clang needs its own headers (those that the C library does not provide,
+# e.g., stddef.h) to compile programs that are not preprocessed. It looks
+# for them in ../lib/clang/<version>/include relative to its binary.
+# Copy only the headers that the SV-COMP benchmarks (may) include.
+CLANG_HEADERS="stddef.h __stddef_max_align_t.h stdarg.h stdint.h stdbool.h \
+	       float.h inttypes.h stdatomic.h limits.h"
+CLANG_INCLUDE=lib/clang/${LLVM_VERSION}/include
+mkdir -p $LLVM_PREFIX/$CLANG_INCLUDE
+for H in $CLANG_HEADERS; do
+	cp $LLVM_LOCATION/$CLANG_INCLUDE/$H $LLVM_PREFIX/$CLANG_INCLUDE/$H || exitmsg "Failed copying clang headers"
 done

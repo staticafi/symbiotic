@@ -177,12 +177,12 @@ git add \
 	bin/gen-c \
 	include/symbiotic.h \
 	include/symbiotic-size_t.h \
+	$LLVM_PREFIX/lib/clang/*/include/*.h \
 	$(find lib -name '*.c')\
 	$(find . -name '*.bc')\
 	properties/* \
 	$(find lib/symbioticpy/symbiotic -name '*.py')\
 	LICENSE.txt README.md
-	#$LLVM_PREFIX/include/stddef.h \
 
 git commit -m "Create Symbiotic distribution `date`" || true
 
