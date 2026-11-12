@@ -14,6 +14,6 @@ fi
 PHASE="precompiling function models"
 if [ "$PRECOMPILE_BITCODE" = "yes" ]; then
 	# precompile bitcode files
-	CPPFLAGS="-I$LLVM_BUILD_PATH/lib/clang/$LLVM_VERSION/include/ -I/usr/include $CPPFLAGS" scripts/precompile_bitcode_files.sh\
+	CPPFLAGS="-I/usr/include $CPPFLAGS" scripts/precompile_bitcode_files.sh\
         || exitmsg "Failed compiling function models (Symbotic should work, though, so you can skip this step)"
 fi
