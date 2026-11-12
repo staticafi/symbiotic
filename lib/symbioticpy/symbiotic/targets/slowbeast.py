@@ -92,7 +92,9 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
        #    passes.append(",".join(prp.getcalls())+f",__VERIFIER_assert,__VERIFIER_assume,assume_abort_if_not")
         passes = ["-lowerswitch", "-simplifycfg"]
         if self._bself:
-            passes.append("-flatten-loops")
+            # -flatten-loops does not update PHI nodes, get rid of them
+            # (it broke, e.g., our model of printf)
+            passes += ["-reg2mem", "-flatten-loops"]
         return passes + ["-O3", "-remove-constant-exprs", "-reg2mem"]
 
     def generate_witness(self, llvmfile, sources, has_error):

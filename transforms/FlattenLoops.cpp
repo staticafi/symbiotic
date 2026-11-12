@@ -39,6 +39,12 @@ class FlattenLoops : public LoopPass {
 
         auto *parentheader = PL->getHeader();
         auto *innerheader = L->getHeader();
+        // we redirect the edges to the headers without updating PHI nodes,
+        // so we can flatten only loops whose headers have no PHI nodes
+        // (run -reg2mem before this pass)
+        if (isa<PHINode>(parentheader->begin()) ||
+            isa<PHINode>(innerheader->begin()))
+            return false;
         auto *fun = parentheader->getParent();
         auto& M = *fun->getParent();
         auto& Ctx = M.getContext();

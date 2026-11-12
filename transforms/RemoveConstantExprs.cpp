@@ -4,6 +4,7 @@
 // License. See LICENSE.TXT for details.
 
 #include <cassert>
+#include <map>
 #include <set>
 
 #include "llvm/IR/Constants.h"
@@ -82,6 +83,30 @@ bool RemoveConstantExprs::runOnFunction(Function &F) {
 #endif
         continue;
     }
+    // the operand of a PHI node must be computed at the end of the incoming
+    // block (inserting it before the PHI node would break the function)
+    if (auto *Phi = dyn_cast<PHINode>(I)) {
+      // a block can be incoming more times, it must have the same value then
+      std::map<BasicBlock *, Instruction *> newInsts;
+      for (unsigned i = 0; i < Phi->getNumIncomingValues(); ++i) {
+        if (Phi->getIncomingValue(i) != CE)
+          continue;
+        auto *inBlock = Phi->getIncomingBlock(i);
+        auto &newI = newInsts[inBlock];
+        if (!newI) {
+          newI = CE->getAsInstruction();
+          newI->insertBefore(inBlock->getTerminator());
+          // the new instruction may contain CE
+          queueCEInst(instsWithCE, *newI);
+        }
+        Phi->setIncomingValue(i, newI);
+      }
+      // the PHI node may contain another CE
+      queueCEInst(instsWithCE, *I);
+      changed = true;
+      continue;
+    }
+
     auto *newI = CE->getAsInstruction();
     newI->insertBefore(I);
     I->replaceUsesOfWith(CE, newI);
