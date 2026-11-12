@@ -161,10 +161,22 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
                 no_path_killed = True
             elif 'Did not extend the path and reached entry of CFG' in line or\
                  'a problem was met' in line or\
-                 'Failed deciding the result.' in line:
+                 'Failed deciding the result.' in line or\
+                 'Ignoring function pointer call' in line:
+                 # the call graph of BSELF and others ignores calls via
+                 # function pointers, so the code reachable only via them
+                 # was not checked
                  have_problem = True
             elif 'Found errors: 0' in line:
                 no_errors = True
+
+        prp = self._options.property
+        if not (prp.unreachcall() or prp.signedoverflow() or prp.termination()):
+            # slowbeast checks only the reachability of error calls (and
+            # assertions); it cannot decide other properties (e.g.,
+            # memory safety), an assertion error is not their violation
+            # and not finding an error does not mean they hold
+            return result.RESULT_UNKNOWN
 
         if not no_errors:
             if asserterr:
