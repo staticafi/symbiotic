@@ -257,18 +257,18 @@ class YAMLWriter(object):
 
                 segment = []
                 waypoint = { 'type' : 'function_return',
-                            'action' : 'follow',
-                            'constraint' : {
-                                'format' : 'c_expression',
+                             'action' : 'cycle' if call[3] else 'follow',
+                             'constraint' : {
+                                'format' : 'ext_c_expression',
                                 'value' : '\\result == ' + call[2]
-                            },
-                            'location' : {
-                                'file_name' : self._source,
+                              },
+                             'location' : {
+                                'file_name' : self._relsource,
                                 'line' : new_location[0],
                                 'column' : new_location[1]
-                            }
+                             }
+                           }
 
-                            }
                 segment.append({'waypoint' : waypoint})
                 content.append({'segment' : segment})
 
