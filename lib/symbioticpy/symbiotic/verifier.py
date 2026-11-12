@@ -157,7 +157,11 @@ class SymbioticVerifier(object):
     def _run_verifier(self, tool, addparams, timeout):
         # do any additional transformations before verification
         if hasattr(tool, 'passes_before_verification'):
-            self.run_opt(tool.passes_before_verification())
+            try:
+                self.run_opt(tool.passes_before_verification())
+            except SymbioticException as e:
+                # let the portfolio continue with the next verifier
+                return 'error ({0})'.format(str(e)), None
 
         if hasattr(tool, 'actions_before_verification'):
             try:
