@@ -6,7 +6,7 @@ void *memchr(const void *mem, int c, size_t n)
 	const unsigned char *byte = mem;
 	for (i = 0; i < n; ++i)
 		if (byte[i] == (unsigned char) c)
-			return (void *) byte;
+			return (void *) &byte[i];
 
 	return ((void *) 0);
 }
