@@ -346,6 +346,13 @@ class SymbioticCC(object):
         # (we model that after slicing with -instrument-alloc)
         if not self.options.malloc_never_fails:
             cmd.append('--alloc-may-fail')
+            # PredatorPlugin (run from sbt-instr) does not forward
+            # --alloc-may-fail, so tell Predator directly via slllvm's
+            # SL_OPTS (inherited through sbt-instr -> predator_wrapper.py)
+            # to simulate failing allocations (OOM)
+            sl_opts = os.environ.get('SL_OPTS', '')
+            if 'oom' not in sl_opts:
+                os.environ['SL_OPTS'] = (sl_opts + ' -args=oom').strip()
 
         restart_counting_time()
         watch = InstrumentationWatch()
