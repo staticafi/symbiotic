@@ -478,9 +478,24 @@ class SymbioticCC(object):
             return [x for x in undefs if x in only_func]
         return undefs
 
+    # our models of these functions are exact only in single-threaded programs
+    # (a wait at a barrier blocks forever, as no other thread can arrive)
+    SINGLE_THREAD_MODELS = ('pthread_barrier_init', 'pthread_barrier_wait',
+                            'pthread_barrier_destroy')
+    # creating threads or processes (a process-shared barrier may be waited
+    # for by a forked process)
+    THREAD_CREATION = ('pthread_create', 'thrd_create', 'fork', 'vfork')
+
     def _rec_link_undefined(self, only_func=None, recursive=True):
         # get undefined functions from the bitcode
-        undefs = self._get_undefined(self.curfile, only_func)
+        undefs = self._get_undefined(self.curfile)
+        if any(f in undefs for f in self.THREAD_CREATION):
+            # with threads, the model would cut off the executions in which
+            # the other threads arrive at the barrier later, leave the calls
+            # undefined (they return immediately, which only adds executions)
+            undefs = [f for f in undefs if f not in self.SINGLE_THREAD_MODELS]
+        if only_func:
+            undefs = [f for f in undefs if f in only_func]
         if self._link_undefined(undefs) and recursive:
             # if we linked someting, try get undefined again,
             # because the functions may have added some new undefined
@@ -933,11 +948,14 @@ class SymbioticCC(object):
             self.link_undefined(self.options.link_files_before_slicing)
 
         # link definition of atexit and get rid of llvm.global_dtors,
-        # link also qsort before slicing as it can call function pointers.
+        # link also qsort and pthread_once before slicing as they call function
+        # pointers (the slicer would remove the calls of the undefined functions
+        # otherwise), and the barriers, whose waits may block.
         # Do it before remembering the non-sliced file, so that the destructors
         # (including the atexit handlers) are called before exit() also when
         # the non-sliced code is verified.
-        self.link_undefined(['atexit', 'qsort'])
+        self.link_undefined(['atexit', 'qsort', 'pthread_once']
+                            + list(self.SINGLE_THREAD_MODELS))
         self.run_opt(['-explicit-consdes'])
 
         # remember the non-sliced llvmfile
