@@ -252,8 +252,14 @@ class YAMLWriter(object):
 
         if not trivial:
             for call in self.test:
-                new_location = self.calls[(call[0], call[1])]
-                assert new_location, "Failed creating witness"
+                new_location = self.calls.get((call[0], call[1]))
+                if not new_location:
+                    # the call is not in the source file (or the debug
+                    # location is imprecise), the waypoint is not necessary
+                    # for the witness to be valid, just skip it
+                    print_stderr("Warning: Did not find a call at {0}:{1} "
+                                 "for the witness, skipping it".format(call[0], call[1]))
+                    continue
 
                 segment = []
                 waypoint = { 'type' : 'function_return',

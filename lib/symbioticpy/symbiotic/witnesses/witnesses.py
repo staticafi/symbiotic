@@ -144,8 +144,8 @@ class GraphMLWriter(object):
         assert self._graphml, "Failed parsing a witness" 
         self._root = self._graphml.getroot()
 
-        assert len(self._root.getchildren()) == 1
-        self._graph = list(self._root.getchildren())[0]
+        assert len(list(self._root)) == 1
+        self._graph = list(self._root)[0]
         self._addCInfo()
 
 
