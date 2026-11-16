@@ -1,4 +1,4 @@
-from os.path import abspath, dirname, join as pathjoin
+from os.path import abspath, basename, dirname, isdir, join as pathjoin
 from os import listdir
 from shutil import copy as copyfile
 from symbiotic.utils.utils import dbg, print_stdout
@@ -52,6 +52,12 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             cmd.append('-error-fn=__VERIFIER_error')
         if self._options.sv_comp:
             cmd.append('-svcomp-witness')
+        if not self._options.nowitness and self._options.witness_output:
+            # data for YAML violation witnesses
+            cmd.append('-write-waypoints')
+            if len(self._options.sources) == 1:
+                cmd.append('-waypoints-in-file={0}'
+                           .format(basename(self._options.sources[0])))
         cmd.extend(options)
         unsupported_undefs = ["_setjmp", "longjmp", "setlocale"]
         if '-bself' in cmd:
@@ -97,19 +103,48 @@ class SymbioticTool(BaseTool, SymbioticBaseTool):
             passes += ["-reg2mem", "-flatten-loops"]
         return passes + ["-O3", "-remove-constant-exprs", "-reg2mem"]
 
+    def _generate_yaml_witness(self, llvmfile, sources, has_error):
+        opts = self._options
+        if not has_error:
+            # Generate trivial YAML correctness witness
+            print_stdout('Generating trivial correctness witness: {0}'
+                         .format(opts.witness_output))
+            gen = YAMLWriter(sources[0], opts.property, opts.is32bit,
+                             True, opts.witness_output)
+            gen.generate_correctness_witness()
+            gen.write(opts.witness_output)
+            return
+
+        prp = opts.property
+        if prp.termination() or not (prp.unreachcall() or
+                                     prp.assertions() or
+                                     prp.signedoverflow() or
+                                     prp.memsafety()):
+            print_stdout('Not generating YAML violation witness: '
+                         'property not supported with slowbeast')
+            return
+
+        sbdir = pathjoin(dirname(llvmfile), 'sb-out')
+        waypoints = [abspath(pathjoin(sbdir, f)) for f in listdir(sbdir)
+                     if f.endswith('.waypoints')] if isdir(sbdir) else []
+        if len(waypoints) != 1:
+            print_stdout('Not generating YAML violation witness: '
+                         'do not have a unique .waypoints file '
+                         'in slowbeast output')
+            return
+
+        print_stdout('Generating YAML violation witness: {0}'
+                     .format(opts.witness_output))
+        gen = YAMLWriter(sources[0], prp, opts.is32bit, False,
+                         opts.witness_output)
+        gen.generate_violation_witness(waypoints[0])
+        gen.write(opts.witness_output)
+
     def generate_witness(self, llvmfile, sources, has_error):
         assert len(sources) == 1
 
-        # Generate trivial YAML correctness witness
-        if self._options.witness_output and not has_error:
-            print_stdout('Generating trivial correctness witness: {0}'
-                         .format(self._options.witness_output))
-            gen = YAMLWriter(sources[0], self._options.property,
-                             self._options.is32bit, not has_error,
-                             self._options.witness_output)
-
-            gen.generate_correctness_witness()
-            gen.write(self._options.witness_output)
+        if self._options.witness_output:
+            self._generate_yaml_witness(llvmfile, sources, has_error)
 
         if not self._options.graphml_witness_output:
             return
